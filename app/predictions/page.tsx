@@ -124,7 +124,7 @@ export default async function PredictionsPage() {
       {/* Consensus highlight legend */}
       <div className="flex items-center gap-2 text-xs text-gray-400">
         <span className="inline-block w-5 h-5 rounded-full border-2 border-yellow-400 bg-yellow-100 dark:bg-yellow-900/30"></span>
-        <span>Numbers appearing in 4+ predictions (consensus picks)</span>
+        <span>Numbers appearing in 3+ predictions (consensus picks)</span>
       </div>
 
       <div className="space-y-3">
@@ -137,7 +137,7 @@ export default async function PredictionsPage() {
                 <p className="text-xs text-gray-400 mb-2">{c.method}</p>
                 <div className="flex gap-2 flex-wrap">
                   {c.numbers.map(n=>{
-                    const hot = (numCount[n] ?? 0) > 3;
+                    const hot = (numCount[n] ?? 0) >= 3;
                     return (
                       <div key={n} className="relative">
                         <div
