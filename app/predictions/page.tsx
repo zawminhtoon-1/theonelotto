@@ -42,6 +42,85 @@ function ballColor(n: number): string {
   return "#8e44ad";
 }
 
+
+function solveLS(X: number[][], y: number[]): number[] {
+  const cols = X[0].length;
+  // Build normal equations A=X^T X, b=X^T y
+  const A: number[][] = Array.from({length: cols}, (_, i) =>
+    Array.from({length: cols}, (__, j) =>
+      X.reduce((s, row) => s + row[i] * row[j], 0)
+    )
+  );
+  const bv: number[] = Array.from({length: cols}, (_, i) =>
+    X.reduce((s, row, r) => s + row[i] * y[r], 0)
+  );
+  // Gauss-Jordan elimination
+  const aug = A.map((row, i) => [...row, bv[i]]);
+  for (let col = 0; col < cols; col++) {
+    let maxRow = col;
+    for (let r = col + 1; r < cols; r++)
+      if (Math.abs(aug[r][col]) > Math.abs(aug[maxRow][col])) maxRow = r;
+    [aug[col], aug[maxRow]] = [aug[maxRow], aug[col]];
+    if (Math.abs(aug[col][col]) < 1e-12) continue;
+    for (let r = 0; r < cols; r++) {
+      if (r === col) continue;
+      const f = aug[r][col] / aug[col][col];
+      for (let c = col; c <= cols; c++) aug[r][c] -= f * aug[col][c];
+    }
+  }
+  return aug.map((row, i) => Math.abs(aug[i][i]) < 1e-12 ? 0 : row[cols] / aug[i][i]);
+}
+
+function arimaPred(series: number[]): number {
+  const s = series.slice(-150);
+  const diff: number[] = [];
+  for (let i = 1; i < s.length; i++) diff.push(s[i] - s[i - 1]);
+  const n = diff.length;
+  if (n < 5) return Math.max(1, Math.min(43, Math.round(s.reduce((a, b) => a + b, 0) / s.length)));
+  // AR(2) on first differences: diff[t] = c + phi1*diff[t-1] + phi2*diff[t-2]
+  const X: number[][] = [];
+  const yv: number[] = [];
+  for (let i = 2; i < n; i++) { X.push([1, diff[i - 1], diff[i - 2]]); yv.push(diff[i]); }
+  try {
+    const coeffs = solveLS(X, yv);
+    const predDiff = coeffs[0] + coeffs[1] * diff[n - 1] + coeffs[2] * diff[n - 2];
+    return Math.max(1, Math.min(43, Math.round(s[s.length - 1] + predDiff)));
+  } catch {
+    return Math.max(1, Math.min(43, Math.round(s.slice(-20).reduce((a, b) => a + b, 0) / Math.min(20, s.length))));
+  }
+}
+
+function rfPred(series: number[]): number {
+  const LAGS = 8, N_BAGS = 30;
+  const s = series.slice(-80);
+  if (s.length < LAGS + 5) return Math.max(1, Math.min(43, Math.round(s.reduce((a, b) => a + b, 0) / s.length)));
+  const X: number[][] = [];
+  const yv: number[] = [];
+  for (let i = LAGS; i < s.length; i++) { X.push([1, ...s.slice(i - LAGS, i)]); yv.push(s[i]); }
+  const n = yv.length;
+  const xNew = [1, ...s.slice(-LAGS)];
+  // LCG PRNG (seed 42) for reproducibility
+  let seed = 42;
+  const rndInt = (max: number) => {
+    seed = ((seed * 1664525 + 1013904223) & 0x7fffffff);
+    return ((seed >>> 0) % max);
+  };
+  const preds: number[] = [];
+  for (let bag = 0; bag < N_BAGS; bag++) {
+    const idx = Array.from({length: n}, () => rndInt(n));
+    const Xb = idx.map(i => X[i]);
+    const yb = idx.map(i => yv[i]);
+    try {
+      const c = solveLS(Xb, yb);
+      preds.push(xNew.reduce((sum, v, i) => sum + v * c[i], 0));
+    } catch {
+      preds.push(yv.reduce((a, b) => a + b, 0) / n);
+    }
+  }
+  const fc = preds.reduce((a, b) => a + b, 0) / preds.length;
+  return Math.max(1, Math.min(43, Math.round(fc)));
+}
+
 export default async function PredictionsPage() {
   const draws = await getAllDraws();
   draws.reverse(); // oldest first for fitting
@@ -88,6 +167,10 @@ export default async function PredictionsPage() {
       raw: makeUnique(Object.entries(freqAll).sort((a,b)=>+b[1]-+a[1]).slice(0,6).map(([n])=>+n)) },
     { label:"6", color:"#0ea5e9", method:"Markov chain",
       raw: makeUnique(markovScores.slice(0,6).map(s=>s.n)) },
+    { label:"7", color:"#f87171", method:"ARIMA(2,1,0)",
+      raw: makeUnique([0,1,2,3,4,5].map(p=>arimaPred(nums.map(d=>d[p])))) },
+    { label:"8", color:"#34d399", method:"Random Forest (bagged OLS)",
+      raw: makeUnique([0,1,2,3,4,5].map(p=>rfPred(nums.map(d=>d[p])))) },
   ];
 
   const used=new Set<string>();
