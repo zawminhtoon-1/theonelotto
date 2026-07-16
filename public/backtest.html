@@ -103,11 +103,29 @@
   <div class="chart-wrap"><canvas id="bonusChart" height="160"></canvas></div>
 </div>
 <div id="tab-detail" class="panel">
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center;">
+    <span style="font-size:.75rem;color:var(--muted);margin-right:4px;">Filter actual by position:</span>
+    <input id="f1" type="number" min="1" max="43" placeholder="Pos 1" oninput="filterDetail()"
+           style="width:68px;padding:4px 6px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:.8rem;">
+    <input id="f2" type="number" min="1" max="43" placeholder="Pos 2" oninput="filterDetail()"
+           style="width:68px;padding:4px 6px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:.8rem;">
+    <input id="f3" type="number" min="1" max="43" placeholder="Pos 3" oninput="filterDetail()"
+           style="width:68px;padding:4px 6px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:.8rem;">
+    <input id="f4" type="number" min="1" max="43" placeholder="Pos 4" oninput="filterDetail()"
+           style="width:68px;padding:4px 6px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:.8rem;">
+    <input id="f5" type="number" min="1" max="43" placeholder="Pos 5" oninput="filterDetail()"
+           style="width:68px;padding:4px 6px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:.8rem;">
+    <input id="f6" type="number" min="1" max="43" placeholder="Pos 6" oninput="filterDetail()"
+           style="width:68px;padding:4px 6px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:.8rem;">
+    <button onclick="clearFilters()"
+            style="padding:4px 10px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:.8rem;cursor:pointer;">Clear</button>
+    <span id="filterCount" style="font-size:.75rem;color:var(--muted);"></span>
+  </div>
   <div class="detail-wrap">
     <table id="detailTable">
       <thead><tr>
         <th>#</th><th>Date</th><th>Actual</th>
-        <th>Poly Full</th><th>MovAvg 20</th><th>Exp-Wt</th><th>Poly 200</th><th>Freq 100</th>
+        <th>Poly Full</th><th>MovAvg 20</th><th>Exp-Wt</th><th>Poly 200</th><th>Freq All</th>
       </tr></thead>
       <tbody id="detailBody"></tbody>
     </table>
@@ -228,6 +246,7 @@ DATA.forEach(r => {
   const actual = r.a;
   const actualSet = new Set(actual);
   const tr = document.createElement("tr");
+  tr.dataset.actual = JSON.stringify(actual);
   let cells = `<td>${r.s}</td><td>${r.d ? r.d.slice(0,10) : ""}</td>`;
   cells += `<td><div class="balls">${makeBalls(actual, new Set(), r.b)} <span class="ball bonus">${r.b}★</span></div></td>`;
   r.p.forEach((pred, mi) => {
@@ -246,6 +265,29 @@ DATA.forEach(r => {
   tr.innerHTML = cells;
   tbody.appendChild(tr);
 });
+
+// --- Position filter ---
+const allRows = Array.from(document.getElementById("detailBody").rows);
+function filterDetail() {
+  const filters = [1,2,3,4,5,6].map(i => {
+    const v = document.getElementById("f"+i).value.trim();
+    return v === "" ? null : parseInt(v);
+  });
+  let shown = 0;
+  allRows.forEach(tr => {
+    const actual = JSON.parse(tr.dataset.actual);
+    const sorted = [...actual].sort((a,b)=>a-b);
+    const match = filters.every((f,i) => f === null || sorted[i] === f);
+    tr.style.display = match ? "" : "none";
+    if (match) shown++;
+  });
+  const active = filters.some(f => f !== null);
+  document.getElementById("filterCount").textContent = active ? shown + " / " + allRows.length + " draws" : "";
+}
+function clearFilters() {
+  [1,2,3,4,5,6].forEach(i => document.getElementById("f"+i).value = "");
+  filterDetail();
+}
 
 // --- Tab switching ---
 function switchTab(name) {
