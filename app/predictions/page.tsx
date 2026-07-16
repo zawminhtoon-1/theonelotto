@@ -3,16 +3,12 @@ import { getAllDraws } from "@/lib/db";
 export const revalidate = 3600;
 
 function fitPredict(serials: number[], values: number[], target: number): number {
-  const slice = serials.length > 200 ? serials.length - 200 : 0;
-  const x = serials.slice(slice);
-  const y = values.slice(slice);
-  const n = x.length;
-  const xm = x.reduce((a, b) => a + b, 0) / n;
-  const xn = x.map((v) => v - xm);
+  const n = serials.length;
+  const xm = serials.reduce((a, b) => a + b, 0) / n;
+  const xn = serials.map((v) => v - xm);
   const xp = target - xm;
-  // Least-squares degree-2 via normal equations (3x3 Cramer)
   const s = [0,1,2,3,4].map((k) => xn.reduce((a, v) => a + Math.pow(v, k), 0));
-  const t = [0,1,2].map((k) => xn.reduce((a, v, i) => a + Math.pow(v, k) * y[i], 0));
+  const t = [0,1,2].map((k) => xn.reduce((a, v, i) => a + Math.pow(v, k) * values[i], 0));
   const A = [[s[4],s[3],s[2]],[s[3],s[2],s[1]],[s[2],s[1],s[0]]];
   const b = [t[2],t[1],t[0]];
   function det(m: number[][]): number {
@@ -21,8 +17,8 @@ function fitPredict(serials: number[], values: number[], target: number): number
           +m[0][2]*(m[1][0]*m[2][1]-m[1][1]*m[2][0]);
   }
   const d = det(A);
-  if (Math.abs(d) < 1e-12) return Math.round(y[n-1]);
-  const c = b.map((_, i) => det(A.map((row, r) => row.map((v, c) => c === i ? b[r] : v))) / d);
+  if (Math.abs(d) < 1e-12) return Math.round(values[n-1]);
+  const c = b.map((_, i) => det(A.map((row, r) => row.map((v, ci) => ci === i ? b[r] : v))) / d);
   return Math.max(1, Math.min(43, Math.round(c[0]*xp*xp + c[1]*xp + c[2])));
 }
 
@@ -57,10 +53,27 @@ export default async function PredictionsPage() {
   function isHist(n: number[]) { return histSet.has([...n].sort((a,b)=>a-b).join(",")); }
 
   const last20 = nums.slice(-20);
-  const freq: Record<number,number> = {};
-  nums.slice(-100).forEach(d=>d.forEach(n=>{freq[n]=(freq[n]??0)+1;}));
-
   const lam=0.95, wts=nums.map((_,i)=>Math.pow(lam,nums.length-1-i)), ws=wts.reduce((a,b)=>a+b,0);
+
+  // Most frequent — all history
+  const freqAll: Record<number,number> = {};
+  nums.forEach(d=>d.forEach(n=>{freqAll[n]=(freqAll[n]??0)+1;}));
+
+  // Markov chain transition matrix
+  const T: number[][] = Array.from({length: 44}, () => new Array(44).fill(0));
+  for (let k = 0; k < nums.length - 1; k++) {
+    for (const a of nums[k]) {
+      for (const b2 of nums[k+1]) {
+        T[a][b2]++;
+      }
+    }
+  }
+  const lastDraw = nums[nums.length - 1];
+  const markovScores = Array.from({length: 43}, (_, i) => ({
+    n: i + 1,
+    score: lastDraw.reduce((sum, a) => sum + T[a][i+1], 0)
+  }));
+  markovScores.sort((a, b) => b.score - a.score);
 
   const combos = [
     { label:"1", color:"#2a78d6", method:"Poly deg-2 · full history",
@@ -69,10 +82,12 @@ export default async function PredictionsPage() {
       raw: makeUnique([0,1,2,3,4,5].map(p=>Math.round(last20.reduce((s,d)=>s+d[p],0)/20))) },
     { label:"3", color:"#4a3aa7", method:"Exp-weighted recency",
       raw: makeUnique([0,1,2,3,4,5].map(p=>Math.round(nums.reduce((s,d,i)=>s+wts[i]*d[p],0)/ws))) },
-    { label:"4", color:"#eda100", method:"Most frequent · last 100",
-      raw: makeUnique(Object.entries(freq).sort((a,b)=>+b[1]-+a[1]).slice(0,6).map(([n])=>+n)) },
-    { label:"5", color:"#e34948", method:"Poly deg-2 · last 200",
+    { label:"4", color:"#eda100", method:"Poly deg-2 · last 200",
       raw: makeUnique([0,1,2,3,4,5].map(p=>fitPredict(serials.slice(-200),nums.slice(-200).map(d=>d[p]),nextSerial))) },
+    { label:"5", color:"#e34948", method:"Most frequent · all history",
+      raw: makeUnique(Object.entries(freqAll).sort((a,b)=>+b[1]-+a[1]).slice(0,6).map(([n])=>+n)) },
+    { label:"6", color:"#0ea5e9", method:"Markov chain",
+      raw: makeUnique(markovScores.slice(0,6).map(s=>s.n)) },
   ];
 
   const used=new Set<string>();
@@ -89,6 +104,14 @@ export default async function PredictionsPage() {
     return {...c,numbers,method};
   });
 
+  // Count how many predictions each number appears in
+  const numCount: Record<number,number> = {};
+  for (const c of verified) {
+    for (const n of c.numbers) {
+      numCount[n] = (numCount[n] ?? 0) + 1;
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -97,6 +120,13 @@ export default async function PredictionsPage() {
           Draw #{nextSerial} &middot; {draws.length.toLocaleString()} draws analyzed &middot; verified against full history
         </p>
       </div>
+
+      {/* Consensus highlight legend */}
+      <div className="flex items-center gap-2 text-xs text-gray-400">
+        <span className="inline-block w-5 h-5 rounded-full border-2 border-yellow-400 bg-yellow-100 dark:bg-yellow-900/30"></span>
+        <span>Numbers appearing in 4+ predictions (consensus picks)</span>
+      </div>
+
       <div className="space-y-3">
         {verified.map(c=>(
           <div key={c.label} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
@@ -106,10 +136,23 @@ export default async function PredictionsPage() {
               <div>
                 <p className="text-xs text-gray-400 mb-2">{c.method}</p>
                 <div className="flex gap-2 flex-wrap">
-                  {c.numbers.map(n=>(
-                    <div key={n} className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-sm shadow-sm"
-                      style={{background:ballColor(n)}}>{n}</div>
-                  ))}
+                  {c.numbers.map(n=>{
+                    const hot = (numCount[n] ?? 0) > 3;
+                    return (
+                      <div key={n} className="relative">
+                        <div
+                          className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-sm shadow-sm${hot ? " ring-2 ring-yellow-400 ring-offset-1 dark:ring-offset-gray-900" : ""}`}
+                          style={{background:ballColor(n)}}
+                          title={hot ? `Appears in ${numCount[n]} predictions` : ""}
+                        >{n}</div>
+                        {hot && (
+                          <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-yellow-400 text-yellow-900 text-[9px] font-bold flex items-center justify-center">
+                            {numCount[n]}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
