@@ -229,7 +229,7 @@ DATA.forEach(r => {
   const actualSet = new Set(actual);
   const tr = document.createElement("tr");
   let cells = `<td>${r.s}</td><td>${r.d ? r.d.slice(0,10) : ""}</td>`;
-  cells += `<td><div class="balls">${makeBalls(actual,[],r.b).replace(/bonus/g,"bonus")} <span class="ball bonus">${r.b}★</span></div></td>`;
+  cells += `<td><div class="balls">${makeBalls(actual, new Set(), r.b)} <span class="ball bonus">${r.b}★</span></div></td>`;
   r.p.forEach((pred, mi) => {
     const combo = pred[0];
     const matched = pred[1];
