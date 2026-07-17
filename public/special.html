@@ -214,7 +214,7 @@ new Chart(timeCtx,{
 
 // Draw detail table
 const tbody = document.getElementById("tbody");
-BT.forEach(r=>{
+[...BT].reverse().forEach(r=>{
   const actualSet = new Set(r.actual);
   const comboSet  = new Set(r.combo);
   const matchSet  = new Set(r.combo.filter(n=>actualSet.has(n)));

@@ -261,7 +261,7 @@ function makeBalls(nums, matchSet, bonus) {
   }).join("");
 }
 const tbody = document.getElementById("detailBody");
-DATA.forEach(r => {
+[...DATA].reverse().forEach(r => {
   const actual = r.a;
   const actualSet = new Set(actual);
   const tr = document.createElement("tr");
