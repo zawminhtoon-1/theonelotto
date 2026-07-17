@@ -1,6 +1,6 @@
 import { getAllDraws } from "@/lib/db";
 
-export const revalidate = 3600;
+export const revalidate = 300; // revalidate every 5 minutes
 
 function fitPredict(serials: number[], values: number[], target: number): number {
   const n = serials.length;
@@ -246,3 +246,4 @@ export default async function PredictionsPage() {
     </div>
   );
 }
+

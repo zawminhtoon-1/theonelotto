@@ -1,7 +1,7 @@
 import { getAllDraws } from "@/lib/db";
 import { HistoryTable } from "@/components/HistoryTable";
 
-export const revalidate = 3600;
+export const revalidate = 300; // revalidate every 5 minutes
 
 export default async function HistoryPage() {
   const draws = await getAllDraws();
@@ -18,3 +18,4 @@ export default async function HistoryPage() {
     </div>
   );
 }
+

@@ -1,7 +1,7 @@
 import { getLatestDraw, getRecentDraws } from "@/lib/db";
 import { BallRow } from "@/components/BallRow";
 
-export const revalidate = 3600; // revalidate every hour
+export const revalidate = 300; // revalidate every 5 minutes
 
 function formatDate(d: string | null): string {
   if (!d) return "—";
@@ -99,3 +99,4 @@ export default async function HomePage() {
     </div>
   );
 }
+
