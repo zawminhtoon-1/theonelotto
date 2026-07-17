@@ -20,6 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <a href="/predictions" className="hover:text-gray-900 dark:hover:text-white transition-colors">Predictions</a>
               <a href="/history" className="hover:text-gray-900 dark:hover:text-white transition-colors">History</a>
               <a href="/backtest.html" className="hover:text-gray-900 dark:hover:text-white transition-colors">Backtest</a>
+                <a href="/special.html" className="hover:text-gray-900 dark:hover:text-white transition-colors">Special</a>
             </nav>
           </div>
         </header>
@@ -31,3 +32,4 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   );
 }
+
