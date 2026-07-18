@@ -81,6 +81,31 @@ function arimaPred(series: number[]): number {
   }
 }
 
+function rlLinearQPred(allDraws: number[][]): number[] {
+  // Linear Q-learning bandit: W[i][j] = score for number i+1 when j+1 appeared last draw
+  const MAX = 43;
+  const ALPHA = 0.001;
+  const W = new Float64Array(MAX * MAX); // flat row-major, zeros
+
+  for (let t = 0; t < allDraws.length - 1; t++) {
+    const cur = allDraws[t];
+    const nextSet = new Set(allDraws[t + 1]);
+    const Q = new Float64Array(MAX);
+    for (let i = 0; i < MAX; i++)
+      for (const j of cur) Q[i] += W[i * MAX + (j - 1)];
+    for (let i = 0; i < MAX; i++) {
+      const delta = ALPHA * ((nextSet.has(i + 1) ? 1 : 0) - Q[i]);
+      for (const j of cur) W[i * MAX + (j - 1)] += delta;
+    }
+  }
+  const lastDraw = allDraws[allDraws.length - 1];
+  const Qf = Array.from({ length: MAX }, (_, i) => {
+    let q = 0;
+    for (const j of lastDraw) q += W[i * MAX + (j - 1)];
+    return { n: i + 1, q };
+  });
+  return Qf.sort((a, b) => b.q - a.q).slice(0, 15).map(x => x.n).sort((a, b) => a - b);
+}
 function rfPred(series: number[]): number {
   const LAGS = 8, N_BAGS = 30;
   const s = series.slice(-80);
@@ -143,6 +168,8 @@ export default async function PredictionsPage() {
       raw: makeUnique([0,1,2,3,4,5].map(p=>arimaPred(nums.map(d=>d[p]))), freqAll) },
     { label:"8", color:"#34d399", method:"Random Forest (bagged OLS)",
       raw: makeUnique([0,1,2,3,4,5].map(p=>rfPred(nums.map(d=>d[p]))), freqAll) },
+    { label:"9", color:"#a78bfa", method:"RL (Linear Q-learning)",
+      raw: rlLinearQPred(nums) },
   ];
 
   return (
@@ -153,3 +180,5 @@ export default async function PredictionsPage() {
     />
   );
 }
+
+

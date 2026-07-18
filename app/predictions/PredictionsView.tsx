@@ -62,7 +62,7 @@ export default function PredictionsView({
       {selected === "all" && (
         <div className="flex items-center gap-2 text-xs text-gray-400">
           <span className="inline-block w-5 h-5 rounded-full border-2 border-yellow-400 bg-yellow-100 dark:bg-yellow-900/30" />
-          <span>Numbers appearing in 5+ models (strong consensus)</span>
+          <span>Numbers appearing in 6+ models (strong consensus)</span>
         </div>
       )}
 
@@ -84,7 +84,7 @@ export default function PredictionsView({
                 <div className="flex gap-2 flex-wrap">
                   {c.numbers.map((n) => {
                     const count = numCount[n] ?? 0;
-                    const hot = selected === "all" && count >= 5;
+                    const hot = selected === "all" && count >= 6;
                     return (
                       <div key={n} className="relative">
                         <div
@@ -92,7 +92,7 @@ export default function PredictionsView({
                             hot ? " ring-2 ring-yellow-400 ring-offset-1 dark:ring-offset-gray-900" : ""
                           }`}
                           style={{ background: ballColor(n) }}
-                          title={selected === "all" ? `In ${count}/8 models` : ""}
+                          title={selected === "all" ? `In ${count}/9 models` : ""}
                         >
                           {n}
                         </div>
@@ -117,3 +117,4 @@ export default function PredictionsView({
     </div>
   );
 }
+
