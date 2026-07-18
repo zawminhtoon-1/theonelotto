@@ -92,7 +92,7 @@ export default function PredictionsView({
                             hot ? " ring-2 ring-yellow-400 ring-offset-1 dark:ring-offset-gray-900" : ""
                           }`}
                           style={{ background: ballColor(n) }}
-                          title={selected === "all" ? `In ${count}/9 models` : ""}
+                          title={selected === "all" ? `In ${count}/10 models` : ""}
                         >
                           {n}
                         </div>
@@ -117,4 +117,5 @@ export default function PredictionsView({
     </div>
   );
 }
+
 

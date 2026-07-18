@@ -81,6 +81,126 @@ function arimaPred(series: number[]): number {
   }
 }
 
+function hmmPred(allDraws: number[][], K = 3, nIter = 5, maxTrain = 300): number[] {
+  const draws = allDraws.slice(-maxTrain);
+  const T = draws.length;
+  const N = 43;
+
+  // Binary observation matrix flat (T*N)
+  const O = new Float64Array(T * N);
+  for (let t = 0; t < T; t++)
+    for (const n of draws[t]) O[t * N + (n - 1)] = 1;
+
+  // Empirical frequency
+  const emp = new Float64Array(N);
+  for (let t = 0; t < T; t++)
+    for (const n of draws[t]) emp[n - 1] += 1 / T;
+
+  // Init: stay-biased transition A, frequency-based B
+  const pi = new Float64Array(K).fill(1 / K);
+  const A = new Float64Array(K * K);
+  for (let k = 0; k < K; k++)
+    for (let l = 0; l < K; l++)
+      A[k * K + l] = k === l ? 0.9 : 0.1 / (K - 1);
+  let rSeed = 42;
+  const lcg = () => { rSeed = ((rSeed * 1664525 + 1013904223) & 0x7fffffff); return (rSeed >>> 0) / 0x7fffffff - 0.5; };
+  const B = new Float64Array(K * N);
+  for (let k = 0; k < K; k++)
+    for (let n = 0; n < N; n++)
+      B[k * N + n] = Math.max(0.02, Math.min(0.98, emp[n] + lcg() * 0.06));
+
+  const alpha = new Float64Array(T * K);
+  const beta  = new Float64Array(T * K);
+  const gamma = new Float64Array(T * K);
+  const emit  = new Float64Array(T * K);
+
+  for (let iter = 0; iter < nIter; iter++) {
+    // Emission: log P(o_t|k), then row-max stabilize and normalize
+    for (let t = 0; t < T; t++) {
+      let mx = -Infinity;
+      for (let k = 0; k < K; k++) {
+        let lg = 0;
+        for (let n = 0; n < N; n++) {
+          const o = O[t * N + n], b = B[k * N + n];
+          lg += o * Math.log(b) + (1 - o) * Math.log(1 - b);
+        }
+        emit[t * K + k] = lg;
+        if (lg > mx) mx = lg;
+      }
+      let sm = 0;
+      for (let k = 0; k < K; k++) { emit[t*K+k] = Math.exp(emit[t*K+k] - mx); sm += emit[t*K+k]; }
+      for (let k = 0; k < K; k++) emit[t*K+k] /= sm + 1e-300;
+    }
+
+    // Forward (scaled)
+    let s0 = 0;
+    for (let k = 0; k < K; k++) { alpha[k] = pi[k] * emit[k]; s0 += alpha[k]; }
+    for (let k = 0; k < K; k++) alpha[k] /= s0 + 1e-300;
+    for (let t = 1; t < T; t++) {
+      let st = 0;
+      for (let l = 0; l < K; l++) {
+        let sm = 0;
+        for (let k = 0; k < K; k++) sm += alpha[(t-1)*K+k] * A[k*K+l];
+        alpha[t*K+l] = sm * emit[t*K+l]; st += alpha[t*K+l];
+      }
+      for (let l = 0; l < K; l++) alpha[t*K+l] /= st + 1e-300;
+    }
+
+    // Backward (scaled)
+    for (let k = 0; k < K; k++) beta[(T-1)*K+k] = 1;
+    for (let t = T - 2; t >= 0; t--) {
+      let st = 0;
+      for (let k = 0; k < K; k++) {
+        let sm = 0;
+        for (let l = 0; l < K; l++) sm += A[k*K+l] * emit[(t+1)*K+l] * beta[(t+1)*K+l];
+        beta[t*K+k] = sm; st += sm;
+      }
+      for (let k = 0; k < K; k++) beta[t*K+k] /= st + 1e-300;
+    }
+
+    // Gamma
+    for (let t = 0; t < T; t++) {
+      let st = 0;
+      for (let k = 0; k < K; k++) { gamma[t*K+k] = alpha[t*K+k] * beta[t*K+k]; st += gamma[t*K+k]; }
+      for (let k = 0; k < K; k++) gamma[t*K+k] /= st + 1e-300;
+    }
+
+    // M-step: pi
+    for (let k = 0; k < K; k++) pi[k] = gamma[k];
+
+    // M-step: A via xi (pairwise posteriors, not stored — accumulate directly)
+    const Anew = new Float64Array(K * K);
+    for (let t = 0; t < T - 1; t++) {
+      let tot = 0;
+      for (let k = 0; k < K; k++)
+        for (let l = 0; l < K; l++) {
+          const v = alpha[t*K+k] * A[k*K+l] * emit[(t+1)*K+l] * beta[(t+1)*K+l];
+          Anew[k*K+l] += v; tot += v;
+        }
+    }
+    for (let k = 0; k < K; k++) {
+      let rs = 0; for (let l = 0; l < K; l++) rs += Anew[k*K+l];
+      for (let l = 0; l < K; l++) A[k*K+l] = rs > 1e-300 ? Anew[k*K+l] / rs : 1/K;
+    }
+
+    // M-step: B
+    for (let k = 0; k < K; k++) {
+      let gs = 0; for (let t = 0; t < T; t++) gs += gamma[t*K+k];
+      for (let n = 0; n < N; n++) {
+        let num = 0; for (let t = 0; t < T; t++) num += gamma[t*K+k] * O[t*N+n];
+        B[k*N+n] = Math.max(0.02, Math.min(0.98, gs > 1e-300 ? num/gs : emp[n]));
+      }
+    }
+  }
+
+  // Expected emission = sum_k P(state_k | all obs) * B[k,n]
+  const expE = new Float64Array(N);
+  for (let k = 0; k < K; k++)
+    for (let n = 0; n < N; n++) expE[n] += alpha[(T-1)*K+k] * B[k*N+n];
+
+  return Array.from({length: N}, (_, i) => ({n: i+1, e: expE[i]}))
+    .sort((a, b) => b.e - a.e).slice(0, 15).map(x => x.n).sort((a, b) => a - b);
+}
 function rlLinearQPred(allDraws: number[][]): number[] {
   // Linear Q-learning bandit: W[i][j] = score for number i+1 when j+1 appeared last draw
   const MAX = 43;
@@ -168,8 +288,9 @@ export default async function PredictionsPage() {
       raw: makeUnique([0,1,2,3,4,5].map(p=>arimaPred(nums.map(d=>d[p]))), freqAll) },
     { label:"8", color:"#34d399", method:"Random Forest (bagged OLS)",
       raw: makeUnique([0,1,2,3,4,5].map(p=>rfPred(nums.map(d=>d[p]))), freqAll) },
-    { label:"9", color:"#a78bfa", method:"RL (Linear Q-learning)",
-      raw: rlLinearQPred(nums) },
+    { label:"9", color:"#a78bfa", method:"RL (Linear Q-learning)",      raw: rlLinearQPred(nums) },
+    { label:"10", color:"#fb7185", method:"Hidden Markov Model (K=3)",
+      raw: hmmPred(nums) },
   ];
 
   return (
@@ -180,5 +301,8 @@ export default async function PredictionsPage() {
     />
   );
 }
+
+
+
 
 
