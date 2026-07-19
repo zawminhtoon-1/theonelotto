@@ -382,14 +382,15 @@ function buildDetail() {
   body.innerHTML = "";
 
   if (mi === -1) {
-    // ── All-models compact: match counts in one row
+    // ── All-models compact: match counts in one row, respects SHOW_K
     head.innerHTML =
       `<tr><th>#</th><th>Date</th><th>Actual</th>` +
-      MSHORT.map((s,i) => `<th style="color:${COLORS[i]};text-align:center">${s}</th>`).join("") +
+      MSHORT.map((s,i) => `<th style="color:${COLORS[i]};text-align:center">${s}<br><span style="font-weight:400;font-size:.7rem;color:#64748b">${SHOW_K}pk</span></th>`).join("") +
       `</tr>`;
     REV_DATA.forEach(r => {
       const tr = document.createElement("tr");
       tr.dataset.actual = JSON.stringify(r.a);
+      const actualSet = new Set(r.a);
       let cells =
         `<td>${r.s}</td>` +
         `<td>${r.d ? r.d.slice(0,10) : ""}</td>` +
@@ -398,7 +399,9 @@ function buildDetail() {
           `<span class="ball bonus">${r.b}★</span>`
         }</div></td>`;
       r.p.forEach((pred,i) => {
-        const m = pred[1], bh = pred[2];
+        const combo = topKNums(pred[0], r, SHOW_K);
+        const m = combo.filter(n => actualSet.has(n)).length;
+        const bh = pred[2] && combo.includes(r.b);
         cells += `<td style="text-align:center;font-weight:700;color:${matchColor(m)}">${m}${bh?"✦":""}</td>`;
       });
       tr.innerHTML = cells;
