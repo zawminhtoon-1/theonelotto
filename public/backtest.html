@@ -49,6 +49,9 @@
   .ball.bonus  { background: var(--orange); color: #431407; }
   /* Controls */
   .ctrl-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+  .pick-toggle { display:flex; background:var(--surface); border:1px solid var(--border); border-radius:6px; overflow:hidden; }
+  .ptbtn { padding:5px 12px; background:transparent; border:none; color:var(--muted); font-size:.8rem; cursor:pointer; transition:background .15s,color .15s; }
+  .ptbtn.active { background:var(--accent); color:#fff; }
   .ctrl-row label { font-size: .8rem; color: var(--muted); }
   select.model-sel {
     padding: 6px 10px; background: var(--surface); border: 1px solid var(--border);
@@ -175,7 +178,7 @@
 
 <!-- Draw Detail tab -->
 <div id="tab-detail" class="panel">
-  <!-- Model selector -->
+  <!-- Model selector + pick toggle -->
   <div class="ctrl-row">
     <label>Model:</label>
     <select id="modelSelect" class="model-sel" onchange="buildDetail()">
@@ -194,6 +197,10 @@
       <option value="11">12: Modular Cycle (k=28)</option>
 
     </select>
+    <div class="pick-toggle" id="pickToggle">
+      <button class="ptbtn active" onclick="setPickK(10,this)">10 picks</button>
+      <button class="ptbtn" onclick="setPickK(15,this)">15 picks</button>
+    </div>
   </div>
   <!-- Position filter -->
   <div class="ctrl-row" id="posFilterRow">
@@ -319,9 +326,29 @@ new Chart(document.getElementById("bonusChart").getContext("2d"), {
 // ── Draw Detail — dynamic builder
 const REV_DATA = [...DATA].reverse();
 let builtModel = -999;  // sentinel
+let SHOW_K = 10;        // 10 or 15 picks displayed
+
+function setPickK(k, btn) {
+  SHOW_K = k;
+  document.querySelectorAll(".ptbtn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  builtModel = -999;   // force rebuild
+  buildDetail();
+}
 
 function matchColor(m) {
   return m >= 4 ? "#4ade80" : m >= 3 ? "#86efac" : m >= 2 ? "#facc15" : "#94a3b8";
+}
+
+// Return top-K numbers from combo ranked by cross-method frequency for this draw
+function topKNums(combo, r, k) {
+  if (combo.length <= k) return combo;
+  const freq = {};
+  r.p.forEach(pred => pred[0].forEach(n => { freq[n] = (freq[n]||0)+1; }));
+  return [...combo]
+    .sort((a,b) => (freq[b]||0)-(freq[a]||0))
+    .slice(0, k)
+    .sort((a,b) => a-b);
 }
 
 function buildDetail() {
@@ -357,17 +384,17 @@ function buildDetail() {
       body.appendChild(tr);
     });
   } else {
-    // ── Single model: 15 balls per prediction
+    // ── Single model: SHOW_K balls per prediction
     head.innerHTML =
       `<tr><th>#</th><th>Date</th><th>Actual (6)</th>` +
-      `<th>${METHODS[mi]} — 15 picks</th><th style="text-align:center">Hits</th></tr>`;
+      `<th>${METHODS[mi]} — ${SHOW_K} picks</th><th style="text-align:center">Hits</th></tr>`;
     REV_DATA.forEach(r => {
       const tr = document.createElement("tr");
       tr.dataset.actual = JSON.stringify(r.a);
       const actualSet = new Set(r.a);
       const pred    = r.p[mi];
-      const combo   = pred[0];
-      const matched = pred[1];
+      const combo   = topKNums(pred[0], r, SHOW_K);
+      const matched = combo.filter(n => actualSet.has(n)).length;
       const bHit    = pred[2];
       const predSet = new Set(combo);
 
@@ -382,7 +409,7 @@ function buildDetail() {
         `<span class="ball${bHit?" bonus":""}"">${r.b}${bHit?"★":""}</span>` +
         `</div></td>`;
 
-      // 15 predicted balls: green if in actual set
+      // SHOW_K predicted balls: green if in actual set
       cells +=
         `<td><div class="balls">` +
         combo.map(n => `<span class="ball${actualSet.has(n)?" match":""}"">${n}</span>`).join("") +
