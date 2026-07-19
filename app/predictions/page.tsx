@@ -224,6 +224,50 @@ function modularCyclePred(allDraws: number[][], K = 28): number[] {
     .sort((a, b) => b.s - a.s).slice(0, K).map(x => x.n).sort((a, b) => a - b);
 }
 
+function monteCarloP red(allDraws: number[][], nSims = 5000): number[] {
+  const N = 43;
+  const T = allDraws.length;
+  if (T === 0) return [];
+
+  // Exponentially-weighted frequency → draw probability for each number
+  const lam = 0.99;
+  const weights = new Float64Array(N);
+  for (let t = 0; t < T; t++) {
+    const w = Math.pow(lam, T - 1 - t);
+    for (const n of allDraws[t]) weights[n - 1] += w;
+  }
+  const wSum = weights.reduce((a, b) => a + b, 0);
+  const probs = Array.from(weights, w => w / wSum);
+
+  // Cumulative distribution for inverse-CDF sampling
+  const cdf = new Float64Array(N);
+  cdf[0] = probs[0];
+  for (let i = 1; i < N; i++) cdf[i] = cdf[i - 1] + probs[i];
+
+  // Seeded LCG so predictions are deterministic
+  let seed = allDraws[T - 1].reduce((a, b) => a + b, 0) * 1000003 + T;
+  const rng = () => {
+    seed = ((seed * 1664525 + 1013904223) & 0x7fffffff);
+    return (seed >>> 0) / 0x80000000;
+  };
+
+  // Run simulations: each draws 6 unique numbers from the weighted distribution
+  const count = new Float64Array(N);
+  for (let s = 0; s < nSims; s++) {
+    const drawn = new Uint8Array(N);
+    let need = 6;
+    while (need > 0) {
+      const r = rng();
+      let lo = 0, hi = N - 1;
+      while (lo < hi) { const mid = (lo + hi) >> 1; if (cdf[mid] < r) lo = mid + 1; else hi = mid; }
+      if (!drawn[lo]) { drawn[lo] = 1; count[lo]++; need--; }
+    }
+  }
+
+  return Array.from({ length: N }, (_, i) => ({ n: i + 1, c: count[i] }))
+    .sort((a, b) => b.c - a.c).slice(0, 15).map(x => x.n).sort((a, b) => a - b);
+}
+
 function aprioriPred(allDraws: number[][], minSupFrac = 0.05): number[] {
   const N = 43;
   const T = allDraws.length;
@@ -410,6 +454,8 @@ export default async function PredictionsPage() {
       raw: modularCyclePred(nums) },
     { label:"13", color:"#e879f9", method:"Apriori Association Rules (seq 1-item + 2-item)",
       raw: aprioriPred(nums) },
+    { label:"14", color:"#06b6d4", method:"Monte Carlo (5000 sims, exp-weighted sampling)",
+      raw: monteCarloP red(nums) },
   ];
 
   return (
