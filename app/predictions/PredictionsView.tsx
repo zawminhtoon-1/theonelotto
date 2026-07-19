@@ -47,7 +47,7 @@ export default function PredictionsView({
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Predictions</h1>
         <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
-          Draw #{nextSerial} &middot; {drawCount.toLocaleString()} draws analysed &middot; 12 models
+          Draw #{nextSerial} &middot; {drawCount.toLocaleString()} draws analysed &middot; 13 models
         </p>
       </div>
 
@@ -117,7 +117,7 @@ export default function PredictionsView({
           </div>
           {filterNum !== null && (
             <span className="text-xs text-cyan-600 dark:text-cyan-400 font-medium">
-              #{filterNum} in {modelsWithFilter}/10 models
+              #{filterNum} in {modelsWithFilter}/{combos.length} models
             </span>
           )}
         </div>
@@ -128,7 +128,7 @@ export default function PredictionsView({
         {selected === "all" && (
           <div className="flex items-center gap-1.5">
             <span className="inline-block w-4 h-4 rounded-full border-2 border-yellow-400 bg-yellow-100 dark:bg-yellow-900/30" />
-            <span>6+ of 11 models (consensus)</span>
+            <span>7+ of 13 models (consensus)</span>
           </div>
         )}
         {filterNum !== null && (
@@ -170,7 +170,7 @@ export default function PredictionsView({
                   <div className="flex gap-2 flex-wrap">
                     {visibleNums.map((n) => {
                       const count = numCount[n] ?? 0;
-                      const hot = selected === "all" && count >= 6;
+                      const hot = selected === "all" && count >= 7;
                       const isFilterMatch = filterNum !== null && n === filterNum;
                       const dimmed = filterNum !== null && !isFilterMatch;
                       return (
@@ -186,9 +186,9 @@ export default function PredictionsView({
                             style={{ background: ballColor(n) }}
                             title={
                               isFilterMatch
-                                ? `#${n} — in ${count}/12 models`
+                                ? `#${n} — in ${count}/13 models`
                                 : selected === "all"
-                                ? `In ${count}/12 models`
+                                ? `In ${count}/13 models`
                                 : ""
                             }
                           >

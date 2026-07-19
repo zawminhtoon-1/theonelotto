@@ -224,6 +224,66 @@ function modularCyclePred(allDraws: number[][], K = 28): number[] {
     .sort((a, b) => b.s - a.s).slice(0, K).map(x => x.n).sort((a, b) => a - b);
 }
 
+function aprioriPred(allDraws: number[][], minSupFrac = 0.05): number[] {
+  const N = 43;
+  const T = allDraws.length;
+  if (T < 2) return [];
+
+  const sup1    = new Float64Array(N);           // how often number n appears
+  const seq1    = new Float64Array(N * N);       // seq1[n][c]: n in t → c in t+1
+  const pairCnt = new Float64Array(N * N);       // pairCnt[a][b]: a&b co-occur in same draw
+  const seq2    = new Float64Array(N * N * N);   // seq2[a][b][c]: {a,b} in t → c in t+1
+
+  for (let t = 0; t < T; t++) {
+    const cur  = allDraws[t];
+    const next = t < T - 1 ? allDraws[t + 1] : null;
+    for (const ni of cur) sup1[ni - 1]++;
+    for (let i = 0; i < cur.length; i++) {
+      if (next) for (const c of next) seq1[(cur[i]-1)*N + (c-1)]++;
+      for (let j = i + 1; j < cur.length; j++) {
+        const a = cur[i]-1, b = cur[j]-1;
+        pairCnt[a*N+b]++;
+        pairCnt[b*N+a]++;
+        if (next) for (const c of next) {
+          seq2[a*N*N + b*N + (c-1)]++;
+          seq2[b*N*N + a*N + (c-1)]++;
+        }
+      }
+    }
+  }
+
+  const minSup  = minSupFrac * T;
+  const lastDraw = allDraws[T - 1];
+  const lastSet  = new Set(lastDraw);
+  const score    = new Float64Array(N);
+
+  // 1-item antecedents
+  for (const ni of lastDraw) {
+    const n = ni - 1;
+    if (sup1[n] < minSup) continue;
+    for (let c = 0; c < N; c++) {
+      if (lastSet.has(c + 1)) continue;
+      score[c] += seq1[n*N + c] / Math.max(sup1[n], 1);
+    }
+  }
+
+  // 2-item antecedents (weight ×2 — more specific rules)
+  for (let i = 0; i < lastDraw.length; i++) {
+    for (let j = i + 1; j < lastDraw.length; j++) {
+      const a = lastDraw[i]-1, b = lastDraw[j]-1;
+      const pCnt = pairCnt[a*N + b];
+      if (pCnt < minSup) continue;
+      for (let c = 0; c < N; c++) {
+        if (lastSet.has(c + 1)) continue;
+        score[c] += 2.0 * seq2[a*N*N + b*N + c] / Math.max(pCnt, 1);
+      }
+    }
+  }
+
+  return Array.from({ length: N }, (_, i) => ({ n: i+1, s: score[i] }))
+    .sort((a, b) => b.s - a.s).slice(0, 15).map(x => x.n).sort((a, b) => a - b);
+}
+
 function knnPred(allDraws: number[][], k = 10): number[] {
   const N = 43;
   if (allDraws.length < k + 2) {
@@ -348,6 +408,8 @@ export default async function PredictionsPage() {
       raw: knnPred(nums) },
     { label:"12", color:"#10b981", method:"Modular Cycle (k=28, optimal by 1000-draw backtest)",
       raw: modularCyclePred(nums) },
+    { label:"13", color:"#e879f9", method:"Apriori Association Rules (seq 1-item + 2-item)",
+      raw: aprioriPred(nums) },
   ];
 
   return (
