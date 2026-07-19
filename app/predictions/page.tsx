@@ -201,6 +201,36 @@ function hmmPred(allDraws: number[][], K = 3, nIter = 5, maxTrain = 300): number
   return Array.from({length: N}, (_, i) => ({n: i+1, e: expE[i]}))
     .sort((a, b) => b.e - a.e).slice(0, 15).map(x => x.n).sort((a, b) => a - b);
 }
+function knnPred(allDraws: number[][], k = 10): number[] {
+  const N = 43;
+  if (allDraws.length < k + 2) {
+    const freq: Record<number, number> = {};
+    for (const d of allDraws) for (const n of d) freq[n] = (freq[n] ?? 0) + 1;
+    return makeUnique([], freq);
+  }
+  const lastDraw = allDraws[allDraws.length - 1];
+  const lastSet = new Set(lastDraw);
+
+  // Jaccard similarity between each past draw and the last draw
+  const sims: { sim: number; idx: number }[] = [];
+  for (let i = 0; i < allDraws.length - 1; i++) {
+    const dSet = new Set(allDraws[i]);
+    let inter = 0, union = 0;
+    for (const n of dSet) { if (lastSet.has(n)) inter++; union++; }
+    for (const n of lastSet) { if (!dSet.has(n)) union++; }
+    sims.push({ sim: union > 0 ? inter / union : 0, idx: i });
+  }
+  sims.sort((a, b) => b.sim - a.sim);
+
+  // Aggregate the k draws that followed the most similar past draws
+  const scores = new Float64Array(N);
+  for (const { sim, idx } of sims.slice(0, k)) {
+    for (const n of allDraws[idx + 1]) scores[n - 1] += sim;
+  }
+  return Array.from({ length: N }, (_, i) => ({ n: i + 1, s: scores[i] }))
+    .sort((a, b) => b.s - a.s).slice(0, 15).map(x => x.n).sort((a, b) => a - b);
+}
+
 function rlLinearQPred(allDraws: number[][]): number[] {
   // Linear Q-learning bandit: W[i][j] = score for number i+1 when j+1 appeared last draw
   const MAX = 43;
@@ -291,6 +321,8 @@ export default async function PredictionsPage() {
     { label:"9", color:"#a78bfa", method:"RL (Linear Q-learning)",      raw: rlLinearQPred(nums) },
     { label:"10", color:"#fb7185", method:"Hidden Markov Model (K=3)",
       raw: hmmPred(nums) },
+    { label:"11", color:"#f59e0b", method:"kNN (k=10, Jaccard similarity)",
+      raw: knnPred(nums) },
   ];
 
   return (

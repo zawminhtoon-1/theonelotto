@@ -46,7 +46,7 @@ export default function PredictionsView({
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Predictions</h1>
         <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
-          Draw #{nextSerial} &middot; {drawCount.toLocaleString()} draws analysed &middot; 15 candidates per model
+          Draw #{nextSerial} &middot; {drawCount.toLocaleString()} draws analysed &middot; 11 models &middot; 15 candidates each
         </p>
       </div>
 
@@ -110,7 +110,7 @@ export default function PredictionsView({
         {selected === "all" && (
           <div className="flex items-center gap-1.5">
             <span className="inline-block w-4 h-4 rounded-full border-2 border-yellow-400 bg-yellow-100 dark:bg-yellow-900/30" />
-            <span>6+ models (consensus)</span>
+            <span>6+ of 11 models (consensus)</span>
           </div>
         )}
         {filterNum !== null && (
@@ -163,9 +163,9 @@ export default function PredictionsView({
                             style={{ background: ballColor(n) }}
                             title={
                               isFilterMatch
-                                ? `#${n} — in ${count}/10 models`
+                                ? `#${n} — in ${count}/11 models`
                                 : selected === "all"
-                                ? `In ${count}/10 models`
+                                ? `In ${count}/11 models`
                                 : ""
                             }
                           >
