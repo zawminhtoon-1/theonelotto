@@ -273,7 +273,7 @@ function naiveBayesPred(allDraws: number[][]): number[] {
     .sort((a, b) => b.s - a.s).slice(0, 15).map(x => x.n).sort((a, b) => a - b);
 }
 
-function monteCarloP red(allDraws: number[][], nSims = 5000): number[] {
+function monteCarloPred(allDraws: number[][], nSims = 5000): number[] {
   const N = 43;
   const T = allDraws.length;
   if (T === 0) return [];
@@ -504,7 +504,7 @@ export default async function PredictionsPage() {
     { label:"13", color:"#e879f9", method:"Apriori Association Rules (seq 1-item + 2-item)",
       raw: aprioriPred(nums) },
     { label:"14", color:"#06b6d4", method:"Monte Carlo (5000 sims, exp-weighted sampling)",
-      raw: monteCarloP red(nums) },
+      raw: monteCarloPred(nums) },
     { label:"15", color:"#84cc16", method:"Naive Bayes (Bernoulli, sequential co-occurrence)",
       raw: naiveBayesPred(nums) },
   ];
