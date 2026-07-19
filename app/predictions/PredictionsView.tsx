@@ -22,6 +22,7 @@ export default function PredictionsView({
 }) {
   const [selected, setSelected] = useState("all");
   const [filterInput, setFilterInput] = useState("");
+  const [showK, setShowK] = useState<10 | 15>(15);
 
   const filterNum = (() => {
     const v = parseInt(filterInput, 10);
@@ -69,6 +70,23 @@ export default function PredictionsView({
               </option>
             ))}
           </select>
+        </div>
+
+        {/* Pick count toggle */}
+        <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+          {([10, 15] as const).map((k) => (
+            <button
+              key={k}
+              onClick={() => setShowK(k)}
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors${
+                showK === k
+                  ? " bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
+                  : " text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+              }`}
+            >
+              {k} picks
+            </button>
+          ))}
         </div>
 
         {/* Number highlight filter */}
@@ -123,7 +141,14 @@ export default function PredictionsView({
 
       <div className="space-y-3">
         {displayed.map((c) => {
-          const hasFilter = filterNum !== null && c.numbers.includes(filterNum);
+          // In 10-pick mode: keep the 10 numbers with most cross-model support
+          const visibleNums = showK === 10
+            ? [...c.numbers]
+                .sort((a, b) => (numCount[b] ?? 0) - (numCount[a] ?? 0))
+                .slice(0, 10)
+                .sort((a, b) => a - b)
+            : c.numbers;
+          const hasFilter = filterNum !== null && visibleNums.includes(filterNum);
           return (
             <div
               key={c.label}
@@ -145,7 +170,7 @@ export default function PredictionsView({
                 <div className="flex-1">
                   <p className="text-xs text-gray-400 mb-3">{c.method}</p>
                   <div className="flex gap-2 flex-wrap">
-                    {c.numbers.map((n) => {
+                    {visibleNums.map((n) => {
                       const count = numCount[n] ?? 0;
                       const hot = selected === "all" && count >= 6;
                       const isFilterMatch = filterNum !== null && n === filterNum;
