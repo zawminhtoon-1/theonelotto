@@ -141,13 +141,11 @@ export default function PredictionsView({
 
       <div className="space-y-3">
         {displayed.map((c) => {
-          // In 10-pick mode: keep the 10 numbers with most cross-model support
-          const visibleNums = showK === 10
-            ? [...c.numbers]
-                .sort((a, b) => (numCount[b] ?? 0) - (numCount[a] ?? 0))
-                .slice(0, 10)
-                .sort((a, b) => a - b)
-            : c.numbers;
+          // Always cap to showK, keeping the numbers with most cross-model support
+          const visibleNums = [...c.numbers]
+            .sort((a, b) => (numCount[b] ?? 0) - (numCount[a] ?? 0))
+            .slice(0, showK)
+            .sort((a, b) => a - b);
           const hasFilter = filterNum !== null && visibleNums.includes(filterNum);
           return (
             <div
