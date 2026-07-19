@@ -224,6 +224,55 @@ function modularCyclePred(allDraws: number[][], K = 28): number[] {
     .sort((a, b) => b.s - a.s).slice(0, K).map(x => x.n).sort((a, b) => a - b);
 }
 
+function naiveBayesPred(allDraws: number[][]): number[] {
+  // Bernoulli Naive Bayes: for each candidate number c, compute
+  // log P(c in next draw | features of last draw) using sequential co-occurrence counts.
+  const N = 43;
+  const T = allDraws.length;
+  if (T < 2) return [];
+
+  // posCount[c*N+f]: how often f appeared in draw t when c appeared in draw t+1
+  // negCount[c*N+f]: how often f appeared in draw t when c did NOT appear in draw t+1
+  const posCount = new Float64Array(N * N);
+  const negCount = new Float64Array(N * N);
+  const priorPos = new Float64Array(N);  // how many draws had c in next
+  const priorNeg = new Float64Array(N);  // how many draws did NOT have c in next
+
+  for (let t = 0; t < T - 1; t++) {
+    const cur  = allDraws[t];
+    const next = new Set(allDraws[t + 1]);
+    for (let c = 0; c < N; c++) {
+      if (next.has(c + 1)) {
+        priorPos[c]++;
+        for (const f of cur) posCount[c * N + (f - 1)]++;
+      } else {
+        priorNeg[c]++;
+        for (const f of cur) negCount[c * N + (f - 1)]++;
+      }
+    }
+  }
+
+  const alpha  = 1.0;  // Laplace smoothing
+  const lastVec = new Float64Array(N);
+  for (const f of allDraws[T - 1]) lastVec[f - 1] = 1;
+
+  const scores = new Float64Array(N);
+  for (let c = 0; c < N; c++) {
+    const pp = priorPos[c], pn = priorNeg[c], tot = pp + pn;
+    let logScore = Math.log((pp + alpha) / (tot + 2 * alpha));
+    for (let f = 0; f < N; f++) {
+      if (!lastVec[f]) continue;
+      const pPos = (posCount[c * N + f] + alpha) / (pp + 2 * alpha);
+      const pNeg = (negCount[c * N + f] + alpha) / (pn + 2 * alpha);
+      logScore += Math.log(pPos) - Math.log(pNeg);
+    }
+    scores[c] = logScore;
+  }
+
+  return Array.from({ length: N }, (_, i) => ({ n: i + 1, s: scores[i] }))
+    .sort((a, b) => b.s - a.s).slice(0, 15).map(x => x.n).sort((a, b) => a - b);
+}
+
 function monteCarloP red(allDraws: number[][], nSims = 5000): number[] {
   const N = 43;
   const T = allDraws.length;
@@ -456,6 +505,8 @@ export default async function PredictionsPage() {
       raw: aprioriPred(nums) },
     { label:"14", color:"#06b6d4", method:"Monte Carlo (5000 sims, exp-weighted sampling)",
       raw: monteCarloP red(nums) },
+    { label:"15", color:"#84cc16", method:"Naive Bayes (Bernoulli, sequential co-occurrence)",
+      raw: naiveBayesPred(nums) },
   ];
 
   return (
