@@ -65,6 +65,18 @@
     padding: 4px 10px; background: var(--surface); border: 1px solid var(--border);
     border-radius: 6px; color: var(--muted); font-size: .8rem; cursor: pointer;
   }
+  /* Sticky first 3 columns in compact view */
+  .sticky-cols th:nth-child(1), .sticky-cols td:nth-child(1) {
+    position: sticky; left: 0; background: var(--surface); z-index: 2; min-width: 48px;
+  }
+  .sticky-cols th:nth-child(2), .sticky-cols td:nth-child(2) {
+    position: sticky; left: 48px; background: var(--surface); z-index: 2; min-width: 88px;
+  }
+  .sticky-cols th:nth-child(3), .sticky-cols td:nth-child(3) {
+    position: sticky; left: 136px; background: var(--surface); z-index: 2; min-width: 200px;
+    border-right: 1px solid var(--border);
+  }
+  .scroll-hint { font-size:.75rem; color:#64748b; display:none; margin-left:auto; }
 </style>
 </head>
 <body>
@@ -74,7 +86,7 @@
      onmouseout="this.style.textDecoration='none'">&larr; Back to site</a>
 </p>
 <h1>Loto 6 — 1000-Draw Backtest Report</h1>
-<p class="subtitle">Walk-forward evaluation &middot; Draws #1121–#2120 &middot; 13 methods &middot; 15 picks each (Method 12: 28 picks)</p>
+<p class="subtitle">Walk-forward evaluation &middot; Draws #1121–#2120 &middot; 15 methods &middot; 15 picks each (Method 12: 28 picks)</p>
 
 <div class="cards">
       <div class="card">
@@ -222,6 +234,7 @@
       <button class="ptbtn active" onclick="setPickK(10,this)">10 picks</button>
       <button class="ptbtn" onclick="setPickK(15,this)">15 picks</button>
     </div>
+    <span id="scrollHint" class="scroll-hint">⟵ scroll right to see all 15 models ⟶</span>
   </div>
   <!-- Position filter -->
   <div class="ctrl-row" id="posFilterRow">
@@ -381,7 +394,11 @@ function buildDetail() {
   const body = document.getElementById("detailBody");
   body.innerHTML = "";
 
+  const tbl = document.getElementById("detailTable");
+  const hint = document.getElementById("scrollHint");
   if (mi === -1) {
+    tbl.classList.add("sticky-cols");
+    hint.style.display = "inline";
     // ── All-models compact: match counts in one row, respects SHOW_K
     head.innerHTML =
       `<tr><th>#</th><th>Date</th><th>Actual</th>` +
@@ -408,6 +425,8 @@ function buildDetail() {
       body.appendChild(tr);
     });
   } else {
+    tbl.classList.remove("sticky-cols");
+    hint.style.display = "none";
     // ── Single model: SHOW_K balls per prediction
     head.innerHTML =
       `<tr><th>#</th><th>Date</th><th>Actual (6)</th>` +
