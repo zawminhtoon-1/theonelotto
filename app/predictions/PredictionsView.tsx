@@ -46,7 +46,7 @@ export default function PredictionsView({
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Predictions</h1>
         <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
-          Draw #{nextSerial} &middot; {drawCount.toLocaleString()} draws analysed &middot; 11 models &middot; 15 candidates each
+          Draw #{nextSerial} &middot; {drawCount.toLocaleString()} draws analysed &middot; 12 models
         </p>
       </div>
 
@@ -163,9 +163,9 @@ export default function PredictionsView({
                             style={{ background: ballColor(n) }}
                             title={
                               isFilterMatch
-                                ? `#${n} — in ${count}/11 models`
+                                ? `#${n} — in ${count}/12 models`
                                 : selected === "all"
-                                ? `In ${count}/11 models`
+                                ? `In ${count}/12 models`
                                 : ""
                             }
                           >
