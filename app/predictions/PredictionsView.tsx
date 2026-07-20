@@ -47,7 +47,7 @@ export default function PredictionsView({
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Predictions</h1>
         <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
-          Draw #{nextSerial} &middot; {drawCount.toLocaleString()} draws analysed &middot; 15 models
+          Draw #{nextSerial} &middot; {drawCount.toLocaleString()} draws analysed &middot; 14 models
         </p>
       </div>
 
