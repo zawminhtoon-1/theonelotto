@@ -463,7 +463,7 @@ export default async function PredictionsPage() {
   const nums = draws.map(d => [d.num1,d.num2,d.num3,d.num4,d.num5,d.num6]);
   const nextSerial = (serials[serials.length-1] ?? 2120) + 1;
 
-  const last20 = nums.slice(-20);
+  const last43 = nums.slice(-43);
   const lam=0.95, wts=nums.map((_,i)=>Math.pow(lam,nums.length-1-i)), ws=wts.reduce((a,b)=>a+b,0);
 
   const freqAll: Record<number,number> = {};
@@ -480,8 +480,8 @@ export default async function PredictionsPage() {
   const combos = [
     { label:"1", color:"#2a78d6", method:"Poly deg-2 · full history",
       raw: makeUnique([0,1,2,3,4,5].map(p=>fitPredict(serials,nums.map(d=>d[p]),nextSerial)), freqAll) },
-    { label:"2", color:"#1baf7a", method:"Moving average · last 20",
-      raw: makeUnique([0,1,2,3,4,5].map(p=>Math.round(last20.reduce((s,d)=>s+d[p],0)/20)), freqAll) },
+    { label:"2", color:"#1baf7a", method:"Reverse MA · last 43",
+      raw: makeUnique([0,1,2,3,4,5].map(p=>Math.max(1,Math.min(43,44-Math.round(last43.reduce((s,d)=>s+d[p],0)/last43.length)))), freqAll) },
     { label:"3", color:"#4a3aa7", method:"Exp-weighted recency",
       raw: makeUnique([0,1,2,3,4,5].map(p=>Math.round(nums.reduce((s,d,i)=>s+wts[i]*d[p],0)/ws)), freqAll) },
     { label:"4", color:"#e34948", method:"Most frequent · all history",
