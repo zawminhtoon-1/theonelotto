@@ -20,8 +20,11 @@
   .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
            padding: 16px 20px; min-width: 160px; flex: 1; }
   .card-name { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
-  .card-avg  { font-size: 2rem; font-weight: 700; color: var(--accent); margin: 6px 0 2px; }
-  .card-label { font-size: .75rem; color: var(--muted); }
+  .card-hits { margin: 6px 0 4px; }
+  .hit-grid  { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px 6px; }
+  .hk { font-size: .72rem; white-space: nowrap; }
+  .hk .hl { color: var(--muted); font-size: .65rem; }
+  .hk .hv { font-weight: 700; display: block; font-size: .95rem; }
   .card-bonus { font-size: .8rem; color: var(--green); margin-top: 8px; }
   .baseline-note { font-size: .8rem; color: var(--muted); margin-bottom: 20px; }
   /* Tabs */
@@ -89,100 +92,83 @@
 <p class="subtitle">Walk-forward evaluation &middot; Draws #1121–#2120 &middot; 15 methods &middot; 15 picks each (Method 12: 28 picks)</p>
 
 <div class="cards">
-      <div class="card">
+      <div class="card" data-mi="0">
         <div class="card-name">Poly deg-2 full</div>
-        <div class="card-avg">2.060</div>
-        <div class="card-label">avg matches</div>
+        <div class="card-hits"></div>
         <div class="card-bonus">34.2% bonus hit &nbsp;·&nbsp; 0.98× lift</div>
       </div>
-      <div class="card">
+      <div class="card" data-mi="1">
         <div class="card-name">Moving avg 20</div>
-        <div class="card-avg">2.064</div>
-        <div class="card-label">avg matches</div>
+        <div class="card-hits"></div>
         <div class="card-bonus">36.9% bonus hit &nbsp;·&nbsp; 0.99× lift</div>
       </div>
-      <div class="card">
+      <div class="card" data-mi="2">
         <div class="card-name">Exp-weighted</div>
-        <div class="card-avg">2.037</div>
-        <div class="card-label">avg matches</div>
+        <div class="card-hits"></div>
         <div class="card-bonus">35.3% bonus hit &nbsp;·&nbsp; 0.97× lift</div>
       </div>
-      <div class="card">
+      <div class="card" data-mi="3">
         <div class="card-name">Poly deg-2 last 200</div>
-        <div class="card-avg">2.056</div>
-        <div class="card-label">avg matches</div>
+        <div class="card-hits"></div>
         <div class="card-bonus">34.5% bonus hit &nbsp;·&nbsp; 0.98× lift</div>
       </div>
-      <div class="card">
+      <div class="card" data-mi="4">
         <div class="card-name">Most frequent all</div>
-        <div class="card-avg">2.095</div>
-        <div class="card-label">avg matches</div>
+        <div class="card-hits"></div>
         <div class="card-bonus">33.3% bonus hit &nbsp;·&nbsp; 1.00× lift</div>
       </div>
-      <div class="card">
+      <div class="card" data-mi="5">
         <div class="card-name">Markov chain</div>
-        <div class="card-avg">2.097</div>
-        <div class="card-label">avg matches</div>
+        <div class="card-hits"></div>
         <div class="card-bonus">34.3% bonus hit &nbsp;·&nbsp; 1.00× lift</div>
       </div>
-      <div class="card">
+      <div class="card" data-mi="6">
         <div class="card-name">ARIMA(2,1,0)</div>
-        <div class="card-avg">2.024</div>
-        <div class="card-label">avg matches</div>
+        <div class="card-hits"></div>
         <div class="card-bonus">32.3% bonus hit &nbsp;·&nbsp; 0.97× lift</div>
       </div>
-      <div class="card">
+      <div class="card" data-mi="7">
         <div class="card-name">Random Forest</div>
-        <div class="card-avg">2.104</div>
-        <div class="card-label">avg matches</div>
+        <div class="card-hits"></div>
         <div class="card-bonus">35.1% bonus hit &nbsp;·&nbsp; 1.01× lift</div>
       </div>
-      <div class="card">
+      <div class="card" data-mi="8">
         <div class="card-name">RL (Linear Q)</div>
-        <div class="card-avg">2.086</div>
-        <div class="card-label">avg matches</div>
+        <div class="card-hits"></div>
         <div class="card-bonus">34.6% bonus hit &nbsp;·&nbsp; 1.00× lift</div>
       </div>
-      <div class="card">
+      <div class="card" data-mi="9">
         <div class="card-name">Hidden Markov Model</div>
-        <div class="card-avg">2.088</div>
-        <div class="card-label">avg matches</div>
+        <div class="card-hits"></div>
         <div class="card-bonus">32.7% bonus hit &nbsp;·&nbsp; 1.00× lift</div>
       </div>
-      <div class="card">
+      <div class="card" data-mi="10">
         <div class="card-name">kNN (k=10)</div>
-        <div class="card-avg">2.084</div>
-        <div class="card-label">avg matches</div>
+        <div class="card-hits"></div>
         <div class="card-bonus">32.3% bonus hit &nbsp;·&nbsp; 1.00× lift</div>
       </div>
-      <div class="card">
+      <div class="card" data-mi="11">
         <div class="card-name">Modular Cycle (k=28)</div>
-        <div class="card-avg">3.981</div>
-        <div class="card-label">avg matches</div>
+        <div class="card-hits"></div>
         <div class="card-bonus">65.3% bonus hit &nbsp;·&nbsp; 1.90× lift</div>
       </div>
-      <div class="card">
+      <div class="card" data-mi="12">
         <div class="card-name">Apriori Assoc Rules</div>
-        <div class="card-avg">2.066</div>
-        <div class="card-label">avg matches</div>
+        <div class="card-hits"></div>
         <div class="card-bonus">35.9% bonus hit &nbsp;·&nbsp; 0.99× lift</div>
       </div>
-      <div class="card">
+      <div class="card" data-mi="13">
         <div class="card-name">Monte Carlo</div>
-        <div class="card-avg">2.053</div>
-        <div class="card-label">avg matches</div>
+        <div class="card-hits"></div>
         <div class="card-bonus">35.0% bonus hit &nbsp;·&nbsp; 0.98× lift</div>
       </div>
-      <div class="card">
+      <div class="card" data-mi="14">
         <div class="card-name">Naive Bayes</div>
-        <div class="card-avg">2.074</div>
-        <div class="card-label">avg matches</div>
+        <div class="card-hits"></div>
         <div class="card-bonus">35.3% bonus hit &nbsp;·&nbsp; 0.99× lift</div>
       </div>
 </div>
-<p class="baseline-note">
-  Random baseline (15 picks): 2.093 avg matches &middot; 34.9% bonus hit (dashed lines)
-</p>
+<p class="baseline-note">Random baseline (15 picks): 34.9% bonus hit rate (dashed lines)</p>
 
 <div class="tabs">
   <button class="tab active" onclick="switchTab('dist',this)">Distribution</button>
@@ -273,6 +259,25 @@ const HP = k => C(NPICKS,k)*C(43-NPICKS,6-k)/C(43,6);
 // ── Distribution chart (0–6 matches)
 const distCounts = METHODS.map(() => [0,0,0,0,0,0,0]);
 DATA.forEach(r => r.p.forEach((p,mi) => distCounts[mi][Math.min(p[1],6)]++));
+
+// ── Hit-count summary cards
+(function() {
+  const hitColors = ['','#94a3b8','#f1f5f9','#f1f5f9','#facc15','#4ade80','#38bdf8'];
+  document.querySelectorAll('.card[data-mi]').forEach(card => {
+    const mi = parseInt(card.dataset.mi);
+    const c  = distCounts[mi];
+    card.querySelector('.card-hits').innerHTML =
+      '<div class="hit-grid">' +
+      [1,2,3,4,5,6].map(k =>
+        '<span class="hk">' +
+        '<span class="hl">' + k + ' hit</span>' +
+        '<span class="hv" style="color:' + hitColors[k] + '">' + c[k] + '</span>' +
+        '</span>'
+      ).join('') +
+      '</div>';
+  });
+})();
+
 const distLabels = ["0","1","2","3","4","5","6"];
 const randFreq   = [0,1,2,3,4,5,6].map(k => HP(k)*N);
 
