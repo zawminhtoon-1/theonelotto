@@ -377,13 +377,13 @@ function buildAll(K) {
   });
 
   // Summary cards — 1-6 hit counts
-  const hitColors = ['','#94a3b8','#f1f5f9','#f1f5f9','#facc15','#4ade80','#38bdf8'];
+  const hitColors = ['#475569','#94a3b8','#f1f5f9','#f1f5f9','#facc15','#4ade80','#38bdf8'];
   document.querySelectorAll('.card[data-mi]').forEach(card => {
     const mi = parseInt(card.dataset.mi);
     const c  = hitCounts[mi];
     card.querySelector('.card-hits').innerHTML =
       '<div class="hit-grid">' +
-      [1,2,3,4,5,6].map(k =>
+      [0,1,2,3,4,5,6].map(k =>
         '<span class="hk"><span class="hl">'+k+' hit</span>' +
         '<span class="hv" style="color:'+hitColors[k]+'">'+c[k]+'</span></span>'
       ).join('') +
