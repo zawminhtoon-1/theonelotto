@@ -22,7 +22,7 @@ export default function PredictionsView({
 }) {
   const [selected, setSelected] = useState("all");
   const [filterInput, setFilterInput] = useState("");
-  const [showK, setShowK] = useState<10 | 15>(15);
+  const [showK, setShowK] = useState<6 | 8 | 10>(6);
 
   const filterNum = (() => {
     const v = parseInt(filterInput, 10);
@@ -74,7 +74,7 @@ export default function PredictionsView({
 
         {/* Pick count toggle */}
         <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
-          {([10, 15] as const).map((k) => (
+          {([6, 8, 10] as const).map((k) => (
             <button
               key={k}
               onClick={() => setShowK(k)}
