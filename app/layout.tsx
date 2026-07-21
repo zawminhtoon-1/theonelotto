@@ -19,6 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <a href="/" className="hover:text-gray-900 dark:hover:text-white transition-colors">Latest</a>
               <a href="/predictions" className="hover:text-gray-900 dark:hover:text-white transition-colors">Predictions</a>
               <a href="/history" className="hover:text-gray-900 dark:hover:text-white transition-colors">History</a>
+              <a href="/numbers" className="hover:text-gray-900 dark:hover:text-white transition-colors">Numbers</a>
               <a href="/backtest.html" className="hover:text-gray-900 dark:hover:text-white transition-colors">Backtest</a>
                 <a href="/special.html" className="hover:text-gray-900 dark:hover:text-white transition-colors">Special</a>
                 <a href="/consecutive.html" className="hover:text-gray-900 dark:hover:text-white transition-colors">Consecutive</a>

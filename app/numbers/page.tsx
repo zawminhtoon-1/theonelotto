@@ -1,0 +1,76 @@
+import { getAllDraws } from "@/lib/db";
+import type { Draw } from "@/lib/db";
+import NumbersView from "./NumbersView";
+
+export type NumberStat = {
+  n: number;
+  mainHits: number;
+  bonusHits: number;
+  lastMainSerial: number | null;
+  lastMainDate: string | null;
+  coldStreak: number;
+  avgGap: number;
+  maxGap: number;
+  positions: [number, number, number, number, number, number];
+  buckets: number[];       // hit count per era (each ~250 draws)
+  bucketSize: number;
+};
+
+function computeStats(draws: Draw[], latestSerial: number): NumberStat[] {
+  // draws arrive DESC from getAllDraws — reverse to chronological
+  const asc = [...draws].reverse();
+  const total = asc.length;
+  const BUCKET_SIZE = 250;
+  const numBuckets = Math.ceil(total / BUCKET_SIZE);
+
+  return Array.from({ length: 43 }, (_, i) => {
+    const n = i + 1;
+    let mainHits = 0;
+    let bonusHits = 0;
+    let lastMainSerial: number | null = null;
+    let lastMainDate: string | null = null;
+    const positions: [number, number, number, number, number, number] = [0, 0, 0, 0, 0, 0];
+    const appearances: number[] = [];
+    const buckets: number[] = new Array(numBuckets).fill(0);
+
+    asc.forEach((d, idx) => {
+      const main = [d.num1, d.num2, d.num3, d.num4, d.num5, d.num6];
+      if (main.includes(n)) {
+        mainHits++;
+        lastMainSerial = d.draw_serial;
+        lastMainDate = d.draw_date;
+        appearances.push(d.draw_serial);
+        positions[main.indexOf(n)]++;
+        buckets[Math.floor(idx / BUCKET_SIZE)]++;
+      }
+      if (d.bonus === n) bonusHits++;
+    });
+
+    const coldStreak = lastMainSerial !== null ? latestSerial - lastMainSerial : total;
+
+    let avgGap = 0;
+    let maxGap = 0;
+    if (appearances.length > 1) {
+      const gaps: number[] = [];
+      for (let j = 1; j < appearances.length; j++) gaps.push(appearances[j] - appearances[j - 1]);
+      avgGap = gaps.reduce((a, b) => a + b, 0) / gaps.length;
+      maxGap = Math.max(...gaps);
+    }
+
+    return { n, mainHits, bonusHits, lastMainSerial, lastMainDate, coldStreak, avgGap, maxGap, positions, buckets, bucketSize: BUCKET_SIZE };
+  });
+}
+
+export default async function NumbersPage() {
+  const draws = await getAllDraws();
+  const latestSerial = draws[0]?.draw_serial ?? 0;
+  const stats = computeStats(draws, latestSerial);
+
+  return (
+    <NumbersView
+      stats={stats}
+      totalDraws={draws.length}
+      latestSerial={latestSerial}
+    />
+  );
+}
