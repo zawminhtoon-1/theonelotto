@@ -26,7 +26,17 @@ export type NumberStat = {
   positions: [number, number, number, number, number, number];
   buckets: number[];       // hit count per era (each ~250 draws)
   bucketSize: number;
+  // Option 1: recurrence — % of appearances where n reappears within W draws
+  recurrence: { window: number; pct: number; count: number; total: number }[];
+  // Option 3: co-appearance with previous draw's numbers
+  prevOverlap: {
+    avgOverlap: number;       // avg number of prev-draw numbers that reappear alongside n
+    atLeastOne: number;       // % of times at least 1 prev-draw number reappears with n
+    dist: number[];           // distribution [0..6] count
+  };
 };
+
+const RECURRENCE_WINDOWS = [1, 2, 3, 5, 10, 20];
 
 function computeStats(draws: Draw[], latestSerial: number): NumberStat[] {
   // draws arrive DESC from getAllDraws — reverse to chronological
@@ -35,6 +45,9 @@ function computeStats(draws: Draw[], latestSerial: number): NumberStat[] {
   const BUCKET_SIZE = 250;
   const numBuckets = Math.ceil(total / BUCKET_SIZE);
 
+  // Precompute per-draw number sets (chronological)
+  const drawSets: Set<number>[] = asc.map(d => new Set([d.num1, d.num2, d.num3, d.num4, d.num5, d.num6]));
+
   return Array.from({ length: 43 }, (_, i) => {
     const n = i + 1;
     let mainHits = 0;
@@ -42,7 +55,7 @@ function computeStats(draws: Draw[], latestSerial: number): NumberStat[] {
     let lastMainSerial: number | null = null;
     let lastMainDate: string | null = null;
     const positions: [number, number, number, number, number, number] = [0, 0, 0, 0, 0, 0];
-    const appearances: number[] = [];
+    const appearances: number[] = [];       // draw indices (not serials) where n appeared as main
     const buckets: number[] = new Array(numBuckets).fill(0);
     const history: DrawEntry[] = [];
 
@@ -54,7 +67,7 @@ function computeStats(draws: Draw[], latestSerial: number): NumberStat[] {
         mainHits++;
         lastMainSerial = d.draw_serial;
         lastMainDate = d.draw_date;
-        appearances.push(d.draw_serial);
+        appearances.push(idx);   // store index, not serial
         positions[main.indexOf(n)]++;
         buckets[Math.floor(idx / BUCKET_SIZE)]++;
       }
@@ -71,18 +84,56 @@ function computeStats(draws: Draw[], latestSerial: number): NumberStat[] {
     let maxGap = 0;
     let minGap = 0;
     const gaps: number[] = [];
-    const gapSerials: number[] = []; // serial of the draw that started each gap
+    const gapSerials: number[] = [];
     if (appearances.length > 1) {
       for (let j = 1; j < appearances.length; j++) {
-        gaps.push(appearances[j] - appearances[j - 1]);
-        gapSerials.push(appearances[j - 1]);
+        const g = appearances[j] - appearances[j - 1];
+        gaps.push(g);
+        gapSerials.push(asc[appearances[j - 1]].draw_serial);
       }
       avgGap = gaps.reduce((a, b) => a + b, 0) / gaps.length;
       maxGap = Math.max(...gaps);
       minGap = Math.min(...gaps);
     }
 
-    return { n, mainHits, bonusHits, lastMainSerial, lastMainDate, coldStreak, avgGap, maxGap, minGap, gaps, gapSerials, history, positions, buckets, bucketSize: BUCKET_SIZE };
+    // ── Option 1: recurrence probability ──
+    const recurrence = RECURRENCE_WINDOWS.map(w => {
+      let count = 0;
+      let eligible = 0;
+      for (const idx of appearances) {
+        if (idx + w >= total) continue; // not enough future draws
+        eligible++;
+        for (let fw = 1; fw <= w; fw++) {
+          if (drawSets[idx + fw].has(n)) { count++; break; }
+        }
+      }
+      return { window: w, count, total: eligible, pct: eligible > 0 ? count / eligible : 0 };
+    });
+
+    // ── Option 3: co-appearance with previous draw's numbers ──
+    const prevDist: number[] = [0, 0, 0, 0, 0, 0, 0]; // overlap 0..6
+    for (const idx of appearances) {
+      if (idx === 0) continue;
+      const prevSet = drawSets[idx - 1];
+      const currSet = drawSets[idx];
+      let overlap = 0;
+      for (const num of prevSet) { if (currSet.has(num)) overlap++; }
+      prevDist[overlap]++;
+    }
+    const prevTotal = prevDist.reduce((a, b) => a + b, 0);
+    const avgOverlap = prevTotal > 0
+      ? prevDist.reduce((s, c, k) => s + k * c, 0) / prevTotal
+      : 0;
+    const atLeastOne = prevTotal > 0
+      ? prevDist.slice(1).reduce((a, b) => a + b, 0) / prevTotal
+      : 0;
+
+    return {
+      n, mainHits, bonusHits, lastMainSerial, lastMainDate, coldStreak,
+      avgGap, maxGap, minGap, gaps, gapSerials, history, positions, buckets, bucketSize: BUCKET_SIZE,
+      recurrence,
+      prevOverlap: { avgOverlap, atLeastOne, dist: prevDist },
+    };
   });
 }
 

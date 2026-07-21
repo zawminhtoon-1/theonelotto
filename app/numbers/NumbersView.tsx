@@ -154,6 +154,55 @@ export default function NumbersView({
           </div>
         </div>
 
+        {/* Recurrence probability */}
+        <div>
+          <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wide">
+            Recurrence — how often does it reappear within N draws?
+          </h3>
+          <div className="flex gap-2 flex-wrap">
+            {s.recurrence.map(r => (
+              <div key={r.window} className="bg-gray-50 dark:bg-gray-800 rounded-xl px-4 py-3 text-center min-w-[70px]">
+                <div className="text-lg font-bold" style={{ color: r.pct > 6/43 ? ballColor(s.n) : "#94a3b8" }}>
+                  {(r.pct * 100).toFixed(1)}%
+                </div>
+                <div className="text-xs text-gray-400 mt-0.5">within {r.window}</div>
+                <div className="text-[10px] text-gray-500">{r.count}/{r.total}</div>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-gray-400 mt-2">
+            Expected random baseline: {((1 - Math.pow(37/43, 6)) * 100).toFixed(1)}% per draw &nbsp;·&nbsp; coloured = above baseline
+          </p>
+        </div>
+
+        {/* Co-appearance with previous draw */}
+        <div>
+          <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wide">
+            Previous draw carry-over — when #{s.n} appears, how many numbers from the prior draw also appear?
+          </h3>
+          <div className="flex gap-1 items-end h-20">
+            {s.prevOverlap.dist.map((count, k) => {
+              const maxD = Math.max(...s.prevOverlap.dist, 1);
+              const pct = count / maxD;
+              return (
+                <div key={k} className="flex-1 flex flex-col items-center gap-1">
+                  <span className="text-xs text-gray-400">{count}</span>
+                  <div
+                    className="w-full rounded-t-sm"
+                    style={{ height: `${Math.max(3, pct * 60)}px`, background: k === 0 ? "#475569" : ballColor(s.n), opacity: 0.5 + pct * 0.5 }}
+                  />
+                  <span className="text-xs text-gray-400">{k}</span>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex gap-4 mt-2 text-xs text-gray-400 flex-wrap">
+            <span>Avg carry-over: <strong className="text-gray-200">{s.prevOverlap.avgOverlap.toFixed(2)}</strong> numbers</span>
+            <span>At least 1: <strong className="text-gray-200">{(s.prevOverlap.atLeastOne * 100).toFixed(1)}%</strong></span>
+            <span className="text-gray-500">· random baseline avg ≈ 0.84</span>
+          </div>
+        </div>
+
         {/* Gap history */}
         {s.gaps.length > 0 && (
           <div>
