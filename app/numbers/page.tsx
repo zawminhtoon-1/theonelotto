@@ -11,6 +11,9 @@ export type NumberStat = {
   coldStreak: number;
   avgGap: number;
   maxGap: number;
+  minGap: number;
+  gaps: number[];          // gap (draws) between each consecutive appearance
+  gapSerials: number[];    // the draw serial where each gap started
   positions: [number, number, number, number, number, number];
   buckets: number[];       // hit count per era (each ~250 draws)
   bucketSize: number;
@@ -50,14 +53,20 @@ function computeStats(draws: Draw[], latestSerial: number): NumberStat[] {
 
     let avgGap = 0;
     let maxGap = 0;
+    let minGap = 0;
+    const gaps: number[] = [];
+    const gapSerials: number[] = []; // serial of the draw that started each gap
     if (appearances.length > 1) {
-      const gaps: number[] = [];
-      for (let j = 1; j < appearances.length; j++) gaps.push(appearances[j] - appearances[j - 1]);
+      for (let j = 1; j < appearances.length; j++) {
+        gaps.push(appearances[j] - appearances[j - 1]);
+        gapSerials.push(appearances[j - 1]);
+      }
       avgGap = gaps.reduce((a, b) => a + b, 0) / gaps.length;
       maxGap = Math.max(...gaps);
+      minGap = Math.min(...gaps);
     }
 
-    return { n, mainHits, bonusHits, lastMainSerial, lastMainDate, coldStreak, avgGap, maxGap, positions, buckets, bucketSize: BUCKET_SIZE };
+    return { n, mainHits, bonusHits, lastMainSerial, lastMainDate, coldStreak, avgGap, maxGap, minGap, gaps, gapSerials, positions, buckets, bucketSize: BUCKET_SIZE };
   });
 }
 

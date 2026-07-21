@@ -154,6 +154,44 @@ export default function NumbersView({
           </div>
         </div>
 
+        {/* Gap history */}
+        {s.gaps.length > 0 && (
+          <div>
+            <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wide">
+              Draws between appearances (gap history)
+            </h3>
+            <div className="flex gap-0.5 items-end h-20 overflow-x-auto pb-1">
+              {s.gaps.map((gap, gi) => {
+                const maxG = Math.max(...s.gaps, 1);
+                const pct = gap / maxG;
+                const isLong = gap > s.avgGap * 1.5;
+                const isShort = gap <= 3;
+                const barColor = isLong ? "#ef4444" : isShort ? "#22c55e" : ballColor(s.n);
+                return (
+                  <div
+                    key={gi}
+                    className="flex-shrink-0 flex flex-col items-center gap-0.5"
+                    style={{ width: `${Math.max(6, Math.min(16, 600 / s.gaps.length))}px` }}
+                    title={`After draw #${s.gapSerials[gi]}: ${gap} draws until next appearance`}
+                  >
+                    <div
+                      className="w-full rounded-t-sm"
+                      style={{ height: `${Math.max(3, pct * 60)}px`, background: barColor, opacity: 0.8 }}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex gap-4 mt-2 text-xs text-gray-400 flex-wrap">
+              <span>Min gap: <strong className="text-green-500">{s.minGap}</strong></span>
+              <span>Avg gap: <strong className="text-gray-300">{s.avgGap.toFixed(1)}</strong></span>
+              <span>Max gap: <strong className="text-red-400">{s.maxGap}</strong></span>
+              <span>Current streak: <strong className={s.coldStreak > s.avgGap * 1.5 ? "text-red-400" : "text-gray-300"}>{s.coldStreak}</strong></span>
+              <span className="ml-auto">🟢 ≤3 draws &nbsp; 🔴 &gt;1.5× avg</span>
+            </div>
+          </div>
+        )}
+
         {/* Era trend */}
         <div>
           <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wide">
