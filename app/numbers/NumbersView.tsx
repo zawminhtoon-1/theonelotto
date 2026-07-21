@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import type { NumberStat } from "./page";
+import type { NumberStat, DrawEntry } from "./page";
 
 function ballColor(n: number): string {
   if (n <= 10) return "#e74c3c";
@@ -219,6 +219,70 @@ export default function NumbersView({
           <p className="text-xs text-gray-400 mt-1">
             Coloured bars = above average · grey = below average · avg {expectedPerBucket.toFixed(1)} per era
           </p>
+        </div>
+
+        {/* Draw history list */}
+        <div>
+          <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wide">
+            Draw history ({s.history.length} appearances)
+          </h3>
+          <div className="overflow-y-auto max-h-80 rounded-xl border border-gray-100 dark:border-gray-800">
+            <table className="w-full text-sm">
+              <thead className="sticky top-0 bg-gray-50 dark:bg-gray-800">
+                <tr className="text-left text-xs text-gray-400">
+                  <th className="px-3 py-2 font-medium">Draw</th>
+                  <th className="px-3 py-2 font-medium">Date</th>
+                  <th className="px-3 py-2 font-medium">Numbers drawn</th>
+                  <th className="px-3 py-2 font-medium">Bonus</th>
+                </tr>
+              </thead>
+              <tbody>
+                {s.history.map((entry: DrawEntry, i: number) => (
+                  <tr
+                    key={entry.serial}
+                    className={`border-t border-gray-50 dark:border-gray-800 ${
+                      i % 2 === 0 ? "bg-white dark:bg-gray-900" : "bg-gray-50/50 dark:bg-gray-800/30"
+                    }`}
+                  >
+                    <td className="px-3 py-2 font-mono text-gray-500 dark:text-gray-400">
+                      #{entry.serial}
+                    </td>
+                    <td className="px-3 py-2 text-gray-400 whitespace-nowrap">
+                      {entry.date ?? "—"}
+                    </td>
+                    <td className="px-3 py-2">
+                      <div className="flex gap-1 flex-wrap">
+                        {entry.nums.map((n2) => (
+                          <span
+                            key={n2}
+                            className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold text-white`}
+                            style={{
+                              background: n2 === s.n ? ballColor(n2) : "#64748b",
+                              opacity: n2 === s.n ? 1 : 0.5,
+                              transform: n2 === s.n ? "scale(1.15)" : "scale(1)",
+                            }}
+                          >
+                            {n2}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="px-3 py-2">
+                      <span
+                        className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold text-white`}
+                        style={{
+                          background: entry.bonus === s.n ? "#f59e0b" : "#374151",
+                          opacity: entry.bonus === s.n ? 1 : 0.4,
+                        }}
+                      >
+                        {entry.bonus}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

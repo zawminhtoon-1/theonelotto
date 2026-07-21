@@ -2,6 +2,14 @@ import { getAllDraws } from "@/lib/db";
 import type { Draw } from "@/lib/db";
 import NumbersView from "./NumbersView";
 
+export type DrawEntry = {
+  serial: number;
+  date: string | null;
+  nums: [number, number, number, number, number, number];
+  bonus: number;
+  asBonus: boolean;
+};
+
 export type NumberStat = {
   n: number;
   mainHits: number;
@@ -14,6 +22,7 @@ export type NumberStat = {
   minGap: number;
   gaps: number[];          // gap (draws) between each consecutive appearance
   gapSerials: number[];    // the draw serial where each gap started
+  history: DrawEntry[];    // all draws where number appeared (DESC order)
   positions: [number, number, number, number, number, number];
   buckets: number[];       // hit count per era (each ~250 draws)
   bucketSize: number;
@@ -35,10 +44,13 @@ function computeStats(draws: Draw[], latestSerial: number): NumberStat[] {
     const positions: [number, number, number, number, number, number] = [0, 0, 0, 0, 0, 0];
     const appearances: number[] = [];
     const buckets: number[] = new Array(numBuckets).fill(0);
+    const history: DrawEntry[] = [];
 
     asc.forEach((d, idx) => {
-      const main = [d.num1, d.num2, d.num3, d.num4, d.num5, d.num6];
-      if (main.includes(n)) {
+      const main = [d.num1, d.num2, d.num3, d.num4, d.num5, d.num6] as [number,number,number,number,number,number];
+      const isMain = main.includes(n);
+      const isBonus = d.bonus === n;
+      if (isMain) {
         mainHits++;
         lastMainSerial = d.draw_serial;
         lastMainDate = d.draw_date;
@@ -46,8 +58,12 @@ function computeStats(draws: Draw[], latestSerial: number): NumberStat[] {
         positions[main.indexOf(n)]++;
         buckets[Math.floor(idx / BUCKET_SIZE)]++;
       }
-      if (d.bonus === n) bonusHits++;
+      if (isBonus) bonusHits++;
+      if (isMain || isBonus) {
+        history.push({ serial: d.draw_serial, date: d.draw_date, nums: main, bonus: d.bonus, asBonus: isBonus && !isMain });
+      }
     });
+    history.reverse(); // newest first
 
     const coldStreak = lastMainSerial !== null ? latestSerial - lastMainSerial : total;
 
@@ -66,7 +82,7 @@ function computeStats(draws: Draw[], latestSerial: number): NumberStat[] {
       minGap = Math.min(...gaps);
     }
 
-    return { n, mainHits, bonusHits, lastMainSerial, lastMainDate, coldStreak, avgGap, maxGap, minGap, gaps, gapSerials, positions, buckets, bucketSize: BUCKET_SIZE };
+    return { n, mainHits, bonusHits, lastMainSerial, lastMainDate, coldStreak, avgGap, maxGap, minGap, gaps, gapSerials, history, positions, buckets, bucketSize: BUCKET_SIZE };
   });
 }
 
