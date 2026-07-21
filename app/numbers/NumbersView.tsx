@@ -226,7 +226,7 @@ export default function NumbersView({
           <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wide">
             Draw history ({s.history.length} appearances)
           </h3>
-          <div className="overflow-y-auto max-h-80 rounded-xl border border-gray-100 dark:border-gray-800">
+          <div className="overflow-y-auto max-h-[600px] rounded-xl border border-gray-100 dark:border-gray-800">
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-gray-50 dark:bg-gray-800">
                 <tr className="text-left text-xs text-gray-400">
