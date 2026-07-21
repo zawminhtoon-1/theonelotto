@@ -207,10 +207,11 @@ export default function NumbersView({
         {s.gaps.length > 0 && (
           <div>
             <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wide">
-              Draws between appearances (gap history)
+              Draws between appearances (newest → oldest)
             </h3>
             <div className="flex gap-0.5 items-end h-20 overflow-x-auto pb-1">
-              {s.gaps.map((gap, gi) => {
+              {[...s.gaps].reverse().map((gap, gi) => {
+                const revIdx = s.gaps.length - 1 - gi;
                 const maxG = Math.max(...s.gaps, 1);
                 const pct = gap / maxG;
                 const isLong = gap > s.avgGap * 1.5;
@@ -221,7 +222,7 @@ export default function NumbersView({
                     key={gi}
                     className="flex-shrink-0 flex flex-col items-center gap-0.5"
                     style={{ width: `${Math.max(6, Math.min(16, 600 / s.gaps.length))}px` }}
-                    title={`After draw #${s.gapSerials[gi]}: ${gap} draws until next appearance`}
+                    title={`After draw #${s.gapSerials[revIdx]}: ${gap} draws until next appearance`}
                   >
                     <div
                       className="w-full rounded-t-sm"
