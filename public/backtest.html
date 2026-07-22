@@ -529,6 +529,7 @@ function switchTab(name, btn) {
   document.getElementById('tab-'+name).classList.add('active');
   btn.classList.add('active');
   if (name==='detail' && builtModel===-999) buildDetail();
+  if (name==='bestcombo') buildBestCombo();
 }
 
 // Initial build with K=6
@@ -703,12 +704,7 @@ function buildZeroCombo() {
   container.appendChild(card);
 }
 
-// Hook into tab switching
-const _origSwitch = switchTab;
-function switchTab(name, btn) {
-  _origSwitch(name, btn);
-  if (name === 'bestcombo') buildBestCombo();
-}
+
 
 </script>
 </body>
