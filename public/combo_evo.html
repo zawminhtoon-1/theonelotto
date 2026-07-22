@@ -16,43 +16,34 @@
 body { background:var(--bg); color:var(--text); font-family:system-ui,sans-serif; font-size:.9rem; }
 a { color:var(--accent); text-decoration:none; }
 .wrap { max-width:1100px; margin:0 auto; padding:24px 16px; }
-
-/* Header */
-.page-header { display:flex; align-items:center; gap:16px; margin-bottom:24px; flex-wrap:wrap; }
+.page-header { display:flex; align-items:center; gap:16px; margin-bottom:16px; flex-wrap:wrap; }
 .page-header h1 { font-size:1.4rem; font-weight:700; }
 .page-header p { color:var(--muted); font-size:.8rem; margin-top:2px; }
-.back-link { color:var(--muted); font-size:.8rem; }
-.back-link:hover { color:var(--accent); }
-
-/* K toggle */
+.formula-box { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:12px 16px; margin-bottom:20px; font-size:.8rem; color:var(--muted); line-height:1.7; }
+.formula-box strong { color:var(--accent); }
 .k-toggle { display:flex; gap:0; background:var(--surface); border:1px solid var(--border); border-radius:8px; overflow:hidden; }
 .k-toggle button { padding:7px 18px; background:none; border:none; color:var(--muted); cursor:pointer; font-size:.85rem; font-weight:600; transition:all .15s; }
 .k-toggle button.active { background:var(--accent); color:#0f172a; }
-
-/* Summary cards */
-.summary-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px; margin-bottom:24px; }
+.summary-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:12px; margin-bottom:24px; }
 .scard { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px; }
 .scard-label { font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:8px; }
-.scard-title { font-size:1rem; font-weight:700; margin-bottom:4px; line-height:1.3; }
+.scard-title { font-size:.95rem; font-weight:700; margin-bottom:4px; line-height:1.3; }
 .scard-sub { font-size:.75rem; color:var(--muted); }
 .scard-stats { display:flex; gap:16px; margin-top:10px; }
-.stat { }
 .stat-val { font-size:1.2rem; font-weight:800; }
 .stat-lbl { font-size:.7rem; color:var(--muted); }
 .best { border-left:3px solid var(--green); }
 .worst { border-left:3px solid var(--red); }
 .best4 { border-left:3px solid var(--yellow); }
-.worst4 { border-left:3px solid var(--purple); }
 .bestz0 { border-left:3px solid var(--accent); }
-
-/* Charts */
-.charts-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px; }
+.bestz6 { border-left:3px solid var(--green); }
+.charts-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
 @media(max-width:700px) { .charts-row { grid-template-columns:1fr; } }
 .chart-box { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px; }
-.chart-box h3 { font-size:.85rem; font-weight:600; color:var(--muted); margin-bottom:12px; }
-.chart-wrap { position:relative; height:220px; }
-
-/* Table */
+.chart-box h3 { font-size:.8rem; font-weight:600; color:var(--muted); margin-bottom:12px; }
+.chart-wrap { position:relative; height:200px; }
+.legend { display:flex; gap:16px; flex-wrap:wrap; font-size:.75rem; color:var(--muted); margin-bottom:24px; }
+.legend-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:4px; vertical-align:middle; }
 .tbl-wrap { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:24px; }
 .tbl-header { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid var(--border); flex-wrap:wrap; gap:8px; }
 .tbl-header h3 { font-size:.9rem; font-weight:600; }
@@ -61,8 +52,8 @@ a { color:var(--accent); text-decoration:none; }
 table { width:100%; border-collapse:collapse; }
 thead th { padding:10px 14px; text-align:left; font-size:.75rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; cursor:pointer; user-select:none; white-space:nowrap; background:var(--surface2); border-bottom:1px solid var(--border); }
 thead th:hover { color:var(--text); }
-thead th .sort-icon { margin-left:4px; opacity:.4; }
 thead th.sorted .sort-icon { opacity:1; color:var(--accent); }
+.sort-icon { margin-left:4px; opacity:.4; }
 tbody tr { border-bottom:1px solid var(--border); transition:background .1s; }
 tbody tr:last-child { border-bottom:none; }
 tbody tr:hover { background:var(--surface2); }
@@ -74,23 +65,45 @@ tbody td { padding:10px 14px; font-size:.82rem; }
 .pill { display:inline-block; padding:2px 7px; border-radius:4px; font-size:.72rem; font-weight:600; background:var(--surface2); color:var(--muted); }
 .hit-bar { display:flex; gap:1px; align-items:flex-end; height:20px; }
 .hit-bar span { display:block; min-width:4px; border-radius:1px 1px 0 0; }
-.hb-0 { background:#475569; }
-.hb-1 { background:#64748b; }
-.hb-2 { background:#94a3b8; }
-.hb-3 { background:#e2e8f0; }
-.hb-4 { background:#facc15; }
-.hb-5 { background:#4ade80; }
-.hb-6 { background:#38bdf8; }
+.hb-0{background:#475569}.hb-1{background:#64748b}.hb-2{background:#94a3b8}.hb-3{background:#e2e8f0}.hb-4{background:#facc15}.hb-5{background:#4ade80}.hb-6{background:#38bdf8}
 .evo-link { font-size:.75rem; color:var(--accent); cursor:pointer; }
 .evo-link:hover { text-decoration:underline; }
-
-/* Loading */
 #loading { text-align:center; padding:60px 20px; color:var(--muted); }
 #app { display:none; }
 
-/* Legend */
-.legend { display:flex; gap:16px; flex-wrap:wrap; font-size:.75rem; color:var(--muted); margin-bottom:16px; }
-.legend-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:4px; vertical-align:middle; }
+/* Overlay */
+.overlay { position:fixed; inset:0; background:rgba(0,0,0,.75); z-index:100; display:flex; align-items:center; justify-content:center; padding:16px; }
+.overlay-box { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:24px; width:min(820px,100%); max-height:90vh; display:flex; flex-direction:column; }
+.overlay-box h3 { font-size:1rem; font-weight:700; margin-bottom:4px; }
+.overlay-box .sub { font-size:.78rem; color:var(--muted); margin-bottom:16px; }
+.tab-bar { display:flex; gap:4px; margin-bottom:16px; background:var(--surface2); border-radius:8px; padding:4px; width:fit-content; }
+.tab-bar button { padding:6px 16px; background:none; border:none; color:var(--muted); cursor:pointer; font-size:.82rem; font-weight:600; border-radius:6px; transition:all .15s; }
+.tab-bar button.active { background:var(--surface); color:var(--text); }
+.tab-content { flex:1; overflow:hidden; display:flex; flex-direction:column; }
+.tab-pane { display:none; flex:1; overflow:auto; }
+.tab-pane.active { display:flex; flex-direction:column; }
+
+/* Detail table */
+.detail-table-wrap { overflow:auto; flex:1; }
+.detail-table-wrap table { font-size:.75rem; }
+.detail-table-wrap thead th { font-size:.7rem; padding:8px 10px; position:sticky; top:0; z-index:2; }
+.detail-table-wrap tbody td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top; }
+.balls { display:flex; flex-wrap:wrap; gap:3px; }
+.ball { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; font-size:.68rem; font-weight:700; color:#fff; flex-shrink:0; }
+.ball.hit  { box-shadow:0 0 0 2px #4ade80; }
+.ball.miss { opacity:.45; }
+.hit-score { display:inline-flex; align-items:center; justify-content:center; min-width:28px; height:22px; border-radius:6px; font-size:.78rem; font-weight:800; padding:0 6px; }
+.score-0 { background:#1e293b; color:#64748b; }
+.score-1 { background:#1e293b; color:#94a3b8; }
+.score-2 { background:#292524; color:#d4d4aa; }
+.score-3 { background:#2c2312; color:#facc15; }
+.score-4 { background:#14532d; color:#4ade80; }
+.score-5 { background:#0c4a6e; color:#38bdf8; }
+.score-6 { background:#1a0044; color:#a78bfa; font-size:.85rem; }
+.detail-stats { display:flex; gap:20px; margin-bottom:12px; flex-wrap:wrap; }
+.dstat { background:var(--surface2); border-radius:8px; padding:10px 16px; }
+.dstat-val { font-size:1.1rem; font-weight:800; }
+.dstat-lbl { font-size:.7rem; color:var(--muted); }
 </style>
 </head>
 <body>
@@ -100,7 +113,7 @@ tbody td { padding:10px 14px; font-size:.82rem; }
     <div class="page-header">
       <div>
         <h1>Combo Evolution</h1>
-        <p>All C(16,2) = 120 two-method combos · 1,001 backtested draws · <a class="back-link" href="/backtest.html">&#8592; Backtest</a></p>
+        <p>All C(16,2) = 120 two-method combos · 1,001 backtested draws · <a href="/backtest.html" style="color:var(--muted)">&#8592; Backtest</a></p>
       </div>
       <div class="k-toggle" id="kToggle">
         <button onclick="setK(15,this)" class="active">K = 15</button>
@@ -108,40 +121,37 @@ tbody td { padding:10px 14px; font-size:.82rem; }
       </div>
     </div>
 
-    <!-- Summary cards -->
+    <div class="formula-box">
+      <strong>Formula:</strong> For each round, take the top-<em>K</em> picks from Method A (by all-method consensus rank among its 15 stored picks) and top-<em>K</em> from Method B — same rule. Union the two sets (up to 2K unique numbers). Count how many of the 6 actual drawn balls fall in that union = <strong>score</strong>.
+      <br>K=15 → union ≤ 30 numbers &nbsp;|&nbsp; K=20 → union ≤ 40 numbers.
+    </div>
+
     <div class="summary-grid" id="summaryCards"></div>
 
-    <!-- Evolution charts -->
     <div class="charts-row">
       <div class="chart-box">
-        <h3>Rolling 50-draw avg hits — Best vs Worst (avg)</h3>
+        <h3>Rolling 50-draw avg score — Best vs Worst (avg)</h3>
         <div class="chart-wrap"><canvas id="chartAvg"></canvas></div>
       </div>
       <div class="chart-box">
-        <h3>Rolling 50-draw avg hits — Best vs Worst (4+ draws)</h3>
+        <h3>Rolling 50-draw avg score — Best vs Worst (6-hit)</h3>
         <div class="chart-wrap"><canvas id="chartFP"></canvas></div>
       </div>
     </div>
     <div class="legend">
       <span><span class="legend-dot" style="background:#4ade80"></span>Best avg</span>
       <span><span class="legend-dot" style="background:#f87171"></span>Worst avg</span>
-      <span><span class="legend-dot" style="background:#facc15"></span>Best 4+</span>
-      <span><span class="legend-dot" style="background:#a78bfa"></span>Worst 4+</span>
+      <span><span class="legend-dot" style="background:#38bdf8"></span>Best 6-hit</span>
+      <span><span class="legend-dot" style="background:#a78bfa"></span>Most 0-hit</span>
     </div>
 
-    <!-- Table -->
     <div class="tbl-wrap">
       <div class="tbl-header">
         <h3>All 120 combos</h3>
         <input class="tbl-search" type="text" id="search" placeholder="Filter method name…" oninput="renderTable()">
       </div>
       <div style="overflow-x:auto">
-        <table>
-          <thead>
-            <tr id="thead"></tr>
-          </thead>
-          <tbody id="tbody"></tbody>
-        </table>
+        <table><thead><tr id="thead"></tr></thead><tbody id="tbody"></tbody></table>
       </div>
     </div>
   </div>
@@ -149,20 +159,22 @@ tbody td { padding:10px 14px; font-size:.82rem; }
 
 <script>
 let DATA = null;
+let ROUNDS = null;  // lazy-loaded
 let currentK = 15;
 let sortCol = 'z6';
 let sortDir = -1;
 let chartAvg = null, chartFP = null;
 
 const COL_DEFS = [
-  { key: 'rank',  label: '#',             sortable: false },
-  { key: 'combo', label: 'Methods',       sortable: false },
-  { key: 'z6',    label: '6-Hit Draws ★', sortable: true  },
-  { key: 'avg',   label: 'Avg Hits',      sortable: true  },
-  { key: 'fp',    label: '4+ Draws',      sortable: true  },
-  { key: 'z0',    label: '0-Hit Draws ↓', sortable: true  },
-  { key: 'dist',  label: 'Dist 0–6',      sortable: false },
-  { key: 'evo',   label: 'View',          sortable: false },
+  { key:'rank',  label:'#',              sortable:false },
+  { key:'combo', label:'Methods',        sortable:false },
+  { key:'z6',    label:'6-Hit ★',        sortable:true  },
+  { key:'avg',   label:'Avg Score',      sortable:true  },
+  { key:'fp',    label:'4+ Draws',       sortable:true  },
+  { key:'z0',    label:'0-Hit ↓',        sortable:true  },
+  { key:'union', label:'Avg Union Size', sortable:false },
+  { key:'dist',  label:'Dist 0–6',       sortable:false },
+  { key:'evo',   label:'Detail',         sortable:false },
 ];
 
 async function init() {
@@ -170,7 +182,6 @@ async function init() {
   DATA = await resp.json();
   document.getElementById('loading').style.display = 'none';
   document.getElementById('app').style.display = 'block';
-  buildTable();
   render();
 }
 
@@ -181,18 +192,14 @@ function setK(k, btn) {
   render();
 }
 
-function render() {
-  renderSummary();
-  renderCharts();
-  renderTable();
-}
+function render() { renderSummary(); renderCharts(); renderTable(); }
 
 function getRows(K) {
   const ks = String(K);
   return Object.entries(DATA.combos).map(([key, val]) => {
     const [m0, m1] = key.split(',').map(Number);
     const d = val[ks];
-    return { key, m0, m1, ...d, z0: d.dist[0], z6: d.dist[6] };
+    return { key, m0, m1, ...d };
   });
 }
 
@@ -202,261 +209,348 @@ function sortedRows(K) {
   if (q) rows = rows.filter(r =>
     DATA.methods[r.m0].toLowerCase().includes(q) ||
     DATA.methods[r.m1].toLowerCase().includes(q));
-  if (['avg','fp','z0','z6'].includes(sortCol)) {
-    rows.sort((a, b) => sortDir * (b[sortCol] - a[sortCol]));
-  }
+  if (['avg','fp','z0','z6'].includes(sortCol))
+    rows.sort((a,b) => sortDir * (b[sortCol] - a[sortCol]));
   return rows;
 }
 
-function highlight(rows, K) {
-  const ks = String(K);
+function highlights(K) {
   const all = getRows(K);
-  const bestAvg  = all.reduce((b,r) => r.avg > b.avg ? r : b).key;
-  const worstAvg = all.reduce((b,r) => r.avg < b.avg ? r : b).key;
-  const bestFP   = all.reduce((b,r) => r.fp  > b.fp  ? r : b).key;
-  const worstFP  = all.reduce((b,r) => r.fp  < b.fp  ? r : b).key;
-  return { bestAvg, worstAvg, bestFP, worstFP };
+  return {
+    bestAvg:  all.reduce((b,r) => r.avg > b.avg ? r : b).key,
+    worstAvg: all.reduce((b,r) => r.avg < b.avg ? r : b).key,
+    bestZ6:   all.reduce((b,r) => r.z6  > b.z6  ? r : b).key,
+    worstZ0:  all.reduce((b,r) => r.z0  > b.z0  ? r : b).key,
+    bestZ0:   all.reduce((b,r) => r.z0  < b.z0  ? r : b).key,
+    bestFP:   all.reduce((b,r) => r.fp  > b.fp  ? r : b).key,
+  };
 }
 
 // ── Summary cards ─────────────────────────────────────────────────────────────
 function renderSummary() {
   const all = getRows(currentK);
-  const bestAvg  = all.reduce((b,r) => r.avg > b.avg ? r : b);
-  const worstAvg = all.reduce((b,r) => r.avg < b.avg ? r : b);
-  const bestFP   = all.reduce((b,r) => r.fp  > b.fp  ? r : b);
-  const worstFP  = all.reduce((b,r) => r.fp  < b.fp  ? r : b);
+  const h = highlights(currentK);
+  const byKey = Object.fromEntries(all.map(r => [r.key, r]));
+  const mname = mi => DATA.methods[mi].replace(/\s*\(.*?\)/g,'');
 
-  const bestZ0  = all.reduce((b,r) => r.z0 < b.z0 ? r : b);
-  const worstZ0 = all.reduce((b,r) => r.z0 > b.z0 ? r : b);
-  const bestZ6  = all.reduce((b,r) => r.z6 > b.z6 ? r : b);
   const cards = [
-    { cls:'best',   label:'Most 6-hit draws (best — all 6 predicted)',  r: bestZ6,  statKey:'z6',  statFmt: v=>v },
-    { cls:'worst',  label:'Most 0-hit draws (worst — missed completely)',r: worstZ0, statKey:'z0',  statFmt: v=>v },
-    { cls:'bestz0', label:'Fewest 0-hit draws (most consistent)',        r: bestZ0,  statKey:'z0',  statFmt: v=>v },
-    { cls:'best4',  label:'Most 4+ draws',                              r: bestFP,  statKey:'fp',  statFmt: v=>v },
-    { cls:'worst4', label:'Best avg hits',                              r: bestAvg, statKey:'avg', statFmt: v=>v.toFixed(4) },
+    { cls:'bestz6', label:'Most 6-hit draws (all 6 predicted)',  key:h.bestZ6,  statKey:'z6',  fmtStat: v=>v, fmtSub: r=>'avg '+r.avg.toFixed(3)+' · 0-hit '+r.z0 },
+    { cls:'worst',  label:'Most 0-hit draws (worst miss rate)',  key:h.worstZ0, statKey:'z0',  fmtStat: v=>v, fmtSub: r=>'avg '+r.avg.toFixed(3)+' · 6-hit '+r.z6 },
+    { cls:'bestz0', label:'Fewest 0-hit (most consistent)',      key:h.bestZ0,  statKey:'z0',  fmtStat: v=>v, fmtSub: r=>'avg '+r.avg.toFixed(3)+' · 6-hit '+r.z6 },
+    { cls:'best4',  label:'Most 4+ draws',                      key:h.bestFP,  statKey:'fp',  fmtStat: v=>v, fmtSub: r=>'avg '+r.avg.toFixed(3)+' · 6-hit '+r.z6 },
+    { cls:'best',   label:'Best avg score',                     key:h.bestAvg, statKey:'avg', fmtStat: v=>v.toFixed(4), fmtSub: r=>'6-hit '+r.z6+' · 0-hit '+r.z0 },
   ];
 
-  document.getElementById('summaryCards').innerHTML = cards.map(c => `
-    <div class="scard ${c.cls}">
+  document.getElementById('summaryCards').innerHTML = cards.map(c => {
+    const r = byKey[c.key];
+    return `<div class="scard ${c.cls}">
       <div class="scard-label">${c.label} · K=${currentK}</div>
-      <div class="scard-title">${DATA.methods[c.r.m0].replace(/\s*\(.*?\)/g,'')} + ${DATA.methods[c.r.m1].replace(/\s*\(.*?\)/g,'')}</div>
-      <div class="scard-sub">Methods ${c.r.m0+1} &amp; ${c.r.m1+1}</div>
+      <div class="scard-title">${mname(r.m0)} + ${mname(r.m1)}</div>
+      <div class="scard-sub">Methods ${r.m0+1} &amp; ${r.m1+1}</div>
       <div class="scard-stats">
-        <div class="stat"><div class="stat-val">${c.statFmt(c.r[c.statKey])}</div><div class="stat-lbl">${{avg:'avg hits',fp:'4+ draws',z0:'0-hit draws',z6:'6-hit draws'}[c.statKey]||c.statKey}</div></div>
-        <div class="stat"><div class="stat-val">${c.r.avg.toFixed(3)}</div><div class="stat-lbl">avg hits</div></div>
+        <div><div class="stat-val">${c.fmtStat(r[c.statKey])}</div><div class="stat-lbl">${{z6:'6-hit draws',z0:'0-hit draws',fp:'4+ draws',avg:'avg score'}[c.statKey]}</div></div>
+        <div><div class="stat-val" style="font-size:.85rem;color:var(--muted)">${c.fmtSub(r)}</div></div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
-// ── Rolling average helper ────────────────────────────────────────────────────
+// ── Rolling avg ───────────────────────────────────────────────────────────────
 function rolling(arr, w) {
-  return arr.map((_, i) => {
-    const start = Math.max(0, i - w + 1);
-    const sl = arr.slice(start, i + 1);
-    return sl.reduce((a,b) => a+b, 0) / sl.length;
+  return arr.map((_,i) => {
+    const sl = arr.slice(Math.max(0,i-w+1), i+1);
+    return sl.reduce((a,b)=>a+b,0)/sl.length;
   });
 }
 
 // ── Charts ────────────────────────────────────────────────────────────────────
 function renderCharts() {
   const all = getRows(currentK);
-  const bestAvg  = all.reduce((b,r) => r.avg > b.avg ? r : b);
-  const worstAvg = all.reduce((b,r) => r.avg < b.avg ? r : b);
-  const bestFP   = all.reduce((b,r) => r.fp  > b.fp  ? r : b);
-  const worstFP  = all.reduce((b,r) => r.fp  < b.fp  ? r : b);
-
+  const h = highlights(currentK);
+  const byKey = Object.fromEntries(all.map(r => [r.key, r]));
+  const mname = mi => DATA.methods[mi].replace(/\s*\(.*?\)/g,'').trim();
   const W = 50;
-  const labels = DATA.dates;
 
-  const mname = (mi) => DATA.methods[mi].replace(/\s*\(.*?\)/g,'').replace(/\s+/g,' ').trim();
-
-  function mkDataset(r, color, label) {
-    return {
-      label,
-      data: rolling(r.hits, W),
-      borderColor: color,
-      borderWidth: 1.5,
-      pointRadius: 0,
-      tension: 0.4,
-      fill: false,
-    };
+  function ds(r, color, label) {
+    return { label, data:rolling(r.hits, W), borderColor:color, borderWidth:1.5, pointRadius:0, tension:.4, fill:false };
   }
-
-  const chartOpts = {
-    responsive: true, maintainAspectRatio: false,
-    animation: false,
-    plugins: { legend: { display:true, labels:{ color:'#94a3b8', font:{size:10}, boxWidth:12 } } },
-    scales: {
-      x: { ticks: { color:'#64748b', maxTicksLimit:8, font:{size:9} }, grid: { color:'#1e293b' } },
-      y: { ticks: { color:'#64748b', font:{size:9} }, grid: { color:'#334155' } },
+  const opts = {
+    responsive:true, maintainAspectRatio:false, animation:false,
+    plugins:{ legend:{ display:true, labels:{ color:'#94a3b8', font:{size:9}, boxWidth:10 }}},
+    scales:{
+      x:{ ticks:{ color:'#64748b', maxTicksLimit:8, font:{size:9}}, grid:{color:'#1e293b'}},
+      y:{ ticks:{ color:'#64748b', font:{size:9}}, grid:{color:'#334155'}},
     },
   };
 
   if (chartAvg) chartAvg.destroy();
   chartAvg = new Chart(document.getElementById('chartAvg'), {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        mkDataset(bestAvg,  '#4ade80', `Best avg: ${mname(bestAvg.m0)}+${mname(bestAvg.m1)}`),
-        mkDataset(worstAvg, '#f87171', `Worst avg: ${mname(worstAvg.m0)}+${mname(worstAvg.m1)}`),
-      ],
-    },
-    options: chartOpts,
+    type:'line', options:opts,
+    data:{ labels:DATA.dates, datasets:[
+      ds(byKey[h.bestAvg],  '#4ade80', 'Best: '+mname(byKey[h.bestAvg].m0)+'+'+mname(byKey[h.bestAvg].m1)),
+      ds(byKey[h.worstAvg], '#f87171', 'Worst: '+mname(byKey[h.worstAvg].m0)+'+'+mname(byKey[h.worstAvg].m1)),
+    ]},
   });
 
   if (chartFP) chartFP.destroy();
   chartFP = new Chart(document.getElementById('chartFP'), {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        mkDataset(bestFP,  '#facc15', `Best 4+: ${mname(bestFP.m0)}+${mname(bestFP.m1)}`),
-        mkDataset(worstFP, '#a78bfa', `Worst 4+: ${mname(worstFP.m0)}+${mname(worstFP.m1)}`),
-      ],
-    },
-    options: chartOpts,
+    type:'line', options:opts,
+    data:{ labels:DATA.dates, datasets:[
+      ds(byKey[h.bestZ6],  '#38bdf8', 'Best 6-hit: '+mname(byKey[h.bestZ6].m0)+'+'+mname(byKey[h.bestZ6].m1)),
+      ds(byKey[h.worstZ0], '#a78bfa', 'Most 0-hit: '+mname(byKey[h.worstZ0].m0)+'+'+mname(byKey[h.worstZ0].m1)),
+    ]},
   });
 }
 
 // ── Table ─────────────────────────────────────────────────────────────────────
-function buildTable() {
-  const tr = document.getElementById('thead');
-  tr.innerHTML = COL_DEFS.map(c => `
-    <th ${c.sortable ? `onclick="toggleSort('${c.key}')"` : ''} ${sortCol===c.key?'class="sorted"':''}>
-      ${c.label}${c.sortable ? `<span class="sort-icon">${sortCol===c.key?(sortDir<0?'▼':'▲'):'⇅'}</span>`:''}
-    </th>`).join('');
-}
-
-function toggleSort(col) {
-  if (sortCol === col) sortDir *= -1;
-  else { sortCol = col; sortDir = -1; }
-  buildTable();
-  renderTable();
-}
-
-const BAR_MAX_BY_K = {};
-function getBarMax(K) {
-  if (BAR_MAX_BY_K[K]) return BAR_MAX_BY_K[K];
-  const all = getRows(K);
-  const m = Math.max(...all.flatMap(r => r.dist));
-  BAR_MAX_BY_K[K] = m;
-  return m;
-}
-
 function renderTable() {
-  buildTable();
+  const h = highlights(currentK);
   const rows = sortedRows(currentK);
-  const all  = getRows(currentK);
-  const bestAvgKey  = all.reduce((b,r) => r.avg > b.avg ? r : b).key;
-  const worstAvgKey = all.reduce((b,r) => r.avg < b.avg ? r : b).key;
-  const bestFPKey   = all.reduce((b,r) => r.fp  > b.fp  ? r : b).key;
-  const worstFPKey  = all.reduce((b,r) => r.fp  < b.fp  ? r : b).key;
-  const bestZ0Key   = all.reduce((b,r) => r.z0  < b.z0  ? r : b).key;
-  const worstZ0Key  = all.reduce((b,r) => r.z0  > b.z0  ? r : b).key;
-  const bestZ6Key   = all.reduce((b,r) => r.z6  > b.z6  ? r : b).key;
-  const barMax = getBarMax(currentK);
-
   const T = DATA.T;
+  const all = getRows(currentK);
+  const barMax = Math.max(...all.flatMap(r => r.dist));
+
+  // thead
+  document.getElementById('thead').innerHTML = COL_DEFS.map(c =>
+    `<th ${c.sortable?`onclick="toggleSort('${c.key}')"`:''}${sortCol===c.key?' class="sorted"':''}>
+      ${c.label}${c.sortable?`<span class="sort-icon">${sortCol===c.key?(sortDir<0?'▼':'▲'):'⇅'}</span>`:''}
+    </th>`
+  ).join('');
+
+  const mname = mi => DATA.methods[mi].replace(/\s*\(.*?\)/g,'');
+
   document.getElementById('tbody').innerHTML = rows.map((r, i) => {
-    const rank = i + 1;
-    let badge = `<span style="color:var(--muted);font-size:.8rem">${rank}</span>`;
-    if (rank===1) badge = `<span class="rank-badge rank-1">1</span>`;
-    else if (rank===2) badge = `<span class="rank-badge rank-2">2</span>`;
-    else if (rank===3) badge = `<span class="rank-badge rank-3">3</span>`;
+    let badge = `<span style="color:var(--muted);font-size:.8rem">${i+1}</span>`;
+    if (i===0) badge = '<span class="rank-badge rank-1">1</span>';
+    else if (i===1) badge = '<span class="rank-badge rank-2">2</span>';
+    else if (i===2) badge = '<span class="rank-badge rank-3">3</span>';
 
-    const m0n = DATA.methods[r.m0].replace(/\s*\(.*?\)/g,'');
-    const m1n = DATA.methods[r.m1].replace(/\s*\(.*?\)/g,'');
-
-    // highlight badges
     let tags = '';
-    if (r.key === bestAvgKey)  tags += '<span class="pill" style="background:#14532d;color:#4ade80;margin-left:4px">★ avg</span>';
-    if (r.key === worstAvgKey) tags += '<span class="pill" style="background:#450a0a;color:#f87171;margin-left:4px">↓ avg</span>';
-    if (r.key === bestFPKey)   tags += '<span class="pill" style="background:#713f12;color:#facc15;margin-left:4px">★ 4+</span>';
-    if (r.key === worstFPKey)  tags += '<span class="pill" style="background:#2e1065;color:#a78bfa;margin-left:4px">↓ 4+</span>';
-    if (r.key === bestZ0Key)   tags += '<span class="pill" style="background:#0c4a6e;color:#38bdf8;margin-left:4px">★ consistent</span>';
-    if (r.key === worstZ0Key)  tags += '<span class="pill" style="background:#450a0a;color:#f87171;margin-left:4px">↑ misses</span>';
-    if (r.key === bestZ6Key)   tags += '<span class="pill" style="background:#14532d;color:#4ade80;margin-left:4px">★ 6-hit</span>';
+    if (r.key===h.bestZ6)  tags += '<span class="pill" style="background:#14532d;color:#4ade80;margin-left:4px">★ 6-hit</span>';
+    if (r.key===h.worstZ0) tags += '<span class="pill" style="background:#450a0a;color:#f87171;margin-left:4px">↑ misses</span>';
+    if (r.key===h.bestZ0)  tags += '<span class="pill" style="background:#0c4a6e;color:#38bdf8;margin-left:4px">★ consistent</span>';
+    if (r.key===h.bestFP)  tags += '<span class="pill" style="background:#713f12;color:#facc15;margin-left:4px">★ 4+</span>';
+    if (r.key===h.bestAvg) tags += '<span class="pill" style="background:#14532d;color:#a3e635;margin-left:4px">★ avg</span>';
 
-    // dist mini-bar
-    const distBar = r.dist.map((c, hi) =>
-      `<span class="hb-${hi}" style="height:${Math.round(c/barMax*18)+2}px" title="${hi} hits: ${c} draws (${(c/T*100).toFixed(1)}%)"></span>`
+    const distBar = r.dist.map((c,hi) =>
+      `<span class="hb-${hi}" style="height:${Math.round(c/barMax*18)+2}px" title="${hi} hits: ${c} (${(c/T*100).toFixed(1)}%)"></span>`
     ).join('');
+
+    const z6color = r.z6>=20?'#4ade80':r.z6>=5?'#facc15':'#94a3b8';
+    const z0color = r.z0<=5?'#4ade80':r.z0<=20?'#facc15':'#f87171';
 
     return `<tr>
       <td>${badge}</td>
       <td>
-        <div style="font-weight:600">${m0n} <span style="color:var(--muted)">+</span> ${m1n}${tags}</div>
-        <div style="color:var(--muted);font-size:.72rem">Methods ${r.m0+1} &amp; ${r.m1+1}</div>
+        <div style="font-weight:600">${mname(r.m0)} <span style="color:var(--muted)">+</span> ${mname(r.m1)}${tags}</div>
+        <div style="color:var(--muted);font-size:.72rem">Methods ${r.m0+1} &amp; ${r.m1+1} · union avg ${r.union_avg}</div>
       </td>
-      <td><span style="font-weight:700;color:${r.z6>=5?'#4ade80':r.z6>=2?'#facc15':'#94a3b8'}">${r.z6}</span> <span style="color:var(--muted);font-size:.75rem">(${(r.z6/T*100).toFixed(2)}%)</span></td>
+      <td><span style="font-weight:700;color:${z6color}">${r.z6}</span> <span style="color:var(--muted);font-size:.73rem">(${(r.z6/T*100).toFixed(2)}%)</span></td>
       <td><span style="font-weight:700;color:var(--accent)">${r.avg.toFixed(4)}</span></td>
-      <td><span style="font-weight:700;color:var(--yellow)">${r.fp}</span> <span style="color:var(--muted);font-size:.75rem">(${(r.fp/T*100).toFixed(1)}%)</span></td>
-      <td><span style="font-weight:700;color:${r.z0<=20?'#4ade80':r.z0<=50?'#facc15':'#f87171'}">${r.z0}</span> <span style="color:var(--muted);font-size:.75rem">(${(r.z0/T*100).toFixed(1)}%)</span></td>
+      <td><span style="font-weight:700;color:var(--yellow)">${r.fp}</span> <span style="color:var(--muted);font-size:.73rem">(${(r.fp/T*100).toFixed(1)}%)</span></td>
+      <td><span style="font-weight:700;color:${z0color}">${r.z0}</span> <span style="color:var(--muted);font-size:.73rem">(${(r.z0/T*100).toFixed(1)}%)</span></td>
+      <td><span style="color:var(--muted)">${r.union_avg}</span></td>
       <td><div class="hit-bar">${distBar}</div></td>
-      <td><span class="evo-link" onclick="showEvo('${r.key}')">chart</span></td>
+      <td><span class="evo-link" onclick="showDetail('${r.key}')">view</span></td>
     </tr>`;
   }).join('');
 }
 
-// ── Show single combo evolution overlay ───────────────────────────────────────
-let evoChart = null;
-function showEvo(key) {
+function toggleSort(col) {
+  if (sortCol===col) sortDir*=-1; else { sortCol=col; sortDir=-1; }
+  renderTable();
+}
+
+// ── Detail overlay ────────────────────────────────────────────────────────────
+let evoChart2 = null;
+let roundsLoading = false;
+
+async function loadRounds() {
+  if (ROUNDS) return ROUNDS;
+  if (roundsLoading) return null;
+  roundsLoading = true;
+  const resp = await fetch('combo_evo_rounds.json');
+  ROUNDS = await resp.json();
+  return ROUNDS;
+}
+
+function ballColor(n) {
+  if (n<=10) return '#e74c3c';
+  if (n<=19) return '#e67e22';
+  if (n<=29) return '#27ae60';
+  if (n<=38) return '#2980b9';
+  return '#8e44ad';
+}
+
+async function showDetail(key) {
   const [m0, m1] = key.split(',').map(Number);
-  const d15 = DATA.combos[key]['15'];
-  const d20 = DATA.combos[key]['20'];
-  const m0n = DATA.methods[m0].replace(/\s*\(.*?\)/g,'');
-  const m1n = DATA.methods[m1].replace(/\s*\(.*?\)/g,'');
+  const ks = String(currentK);
+  const d = DATA.combos[key][ks];
+  const mname = mi => DATA.methods[mi].replace(/\s*\(.*?\)/g,'');
+  const K = currentK;
 
+  // Create overlay immediately
   const overlay = document.createElement('div');
-  overlay.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:flex;align-items:center;justify-content:center;`;
-  const box = document.createElement('div');
-  box.style.cssText = `background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;width:min(700px,95vw);`;
-  box.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:16px">
-      <div>
-        <div style="font-weight:700;font-size:1rem">${m0n} + ${m1n}</div>
-        <div style="color:var(--muted);font-size:.78rem">Methods ${m0+1} &amp; ${m1+1} · Rolling 50-draw average hits</div>
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="overlay-box">
+      <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:4px">
+        <div>
+          <h3>${mname(m0)} + ${mname(m1)}</h3>
+          <div class="sub">Methods ${m0+1} &amp; ${m1+1} · K=${K} · union = top-${K} from each, unique numbers checked against draw</div>
+        </div>
+        <button onclick="this.closest('.overlay').remove()" style="background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;line-height:1;flex-shrink:0">&times;</button>
       </div>
-      <button onclick="this.closest('[style]').remove()" style="background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;line-height:1">&times;</button>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
-      <div style="background:var(--surface2);border-radius:8px;padding:12px">
-        <div style="font-size:.7rem;color:var(--muted);text-transform:uppercase;margin-bottom:6px">K=15</div>
-        <div>Avg: <b>${d15.avg}</b> · 4+: <b>${d15.fp}</b></div>
-        <div style="color:var(--muted);font-size:.75rem">Dist: ${d15.dist.join(' / ')}</div>
-      </div>
-      <div style="background:var(--surface2);border-radius:8px;padding:12px">
-        <div style="font-size:.7rem;color:var(--muted);text-transform:uppercase;margin-bottom:6px">K=20</div>
-        <div>Avg: <b>${d20.avg}</b> · 4+: <b>${d20.fp}</b></div>
-        <div style="color:var(--muted);font-size:.75rem">Dist: ${d20.dist.join(' / ')}</div>
-      </div>
-    </div>
-    <div style="position:relative;height:220px"><canvas id="evoCanvas"></canvas></div>`;
-  overlay.appendChild(box);
-  document.body.appendChild(overlay);
-  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
 
-  const W = 50;
-  if (evoChart) evoChart.destroy();
-  evoChart = new Chart(document.getElementById('evoCanvas'), {
-    type: 'line',
-    data: {
-      labels: DATA.dates,
-      datasets: [
-        { label:'K=15', data: rolling(d15.hits, W), borderColor:'#38bdf8', borderWidth:1.5, pointRadius:0, tension:.4, fill:false },
-        { label:'K=20', data: rolling(d20.hits, W), borderColor:'#4ade80', borderWidth:1.5, pointRadius:0, tension:.4, fill:false },
-      ],
-    },
-    options: {
+      <div class="tab-bar">
+        <button class="active" onclick="switchTab(this,'tab-chart')">Evolution</button>
+        <button onclick="switchTab(this,'tab-detail')">Round Detail</button>
+      </div>
+
+      <div class="tab-content">
+        <!-- Evolution tab -->
+        <div class="tab-pane active" id="tab-chart">
+          <div class="detail-stats">
+            <div class="dstat"><div class="dstat-val" style="color:var(--accent)">${d.avg}</div><div class="dstat-lbl">Avg score/draw</div></div>
+            <div class="dstat"><div class="dstat-val" style="color:#4ade80">${d.z6}</div><div class="dstat-lbl">6-hit draws</div></div>
+            <div class="dstat"><div class="dstat-val" style="color:#facc15">${d.fp}</div><div class="dstat-lbl">4+ draws</div></div>
+            <div class="dstat"><div class="dstat-val" style="color:#f87171">${d.z0}</div><div class="dstat-lbl">0-hit draws</div></div>
+            <div class="dstat"><div class="dstat-val" style="color:var(--muted)">${d.union_avg}</div><div class="dstat-lbl">Avg union size</div></div>
+          </div>
+          <div style="position:relative;height:220px"><canvas id="detailCanvas"></canvas></div>
+          <div style="margin-top:10px;font-size:.75rem;color:var(--muted)">Dist 0–6: ${d.dist.map((c,i)=>i+'='+c).join(' · ')}</div>
+        </div>
+
+        <!-- Detail table tab -->
+        <div class="tab-pane" id="tab-detail">
+          <div id="detail-loading" style="padding:30px;text-align:center;color:var(--muted)">Loading round data…</div>
+          <div id="detail-table-inner" style="display:none;flex:1;overflow:hidden;display:none;flex-direction:column">
+            <div style="padding:8px 0 10px;font-size:.75rem;color:var(--muted)">
+              Showing all <strong id="detail-count"></strong> rounds · <strong style="color:#4ade80">Green border</strong> = hit · <strong style="color:#94a3b8">Dim</strong> = miss
+            </div>
+            <div class="detail-table-wrap">
+              <table>
+                <thead><tr>
+                  <th>#</th><th>Date</th>
+                  <th>Method ${m0+1} top-${K}</th>
+                  <th>Method ${m1+1} top-${K}</th>
+                  <th>Union (≤${2*K})</th>
+                  <th>Actual Draw</th>
+                  <th>Score</th>
+                </tr></thead>
+                <tbody id="detail-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target===overlay) overlay.remove(); });
+
+  // Draw evolution chart
+  if (evoChart2) evoChart2.destroy();
+  evoChart2 = new Chart(document.getElementById('detailCanvas'), {
+    type:'line',
+    data:{ labels:DATA.dates, datasets:[{
+      label:'Rolling 50-draw avg score',
+      data: rolling(d.hits, 50),
+      borderColor:'#38bdf8', borderWidth:1.5, pointRadius:0, tension:.4, fill:false,
+    }]},
+    options:{
       responsive:true, maintainAspectRatio:false, animation:false,
-      plugins:{ legend:{ display:true, labels:{ color:'#94a3b8', font:{size:10}, boxWidth:12 }}},
+      plugins:{ legend:{ display:false }},
       scales:{
-        x:{ ticks:{ color:'#64748b', maxTicksLimit:8, font:{size:9}}, grid:{color:'#1e293b'}},
+        x:{ ticks:{ color:'#64748b', maxTicksLimit:10, font:{size:9}}, grid:{color:'#1e293b'}},
         y:{ ticks:{ color:'#64748b', font:{size:9}}, grid:{color:'#334155'}},
       },
     },
+  });
+
+  // Load round detail lazily
+  overlay.querySelector('#tab-detail').addEventListener('click', async () => {
+    const inner = overlay.querySelector('#detail-table-inner');
+    if (inner.style.display === 'flex') return;
+    const rounds = await loadRounds();
+    if (!rounds) return;
+    buildDetailTable(overlay, rounds, m0, m1, K, key);
+  }, { once: true });
+}
+
+function switchTab(btn, tabId) {
+  btn.closest('.tab-bar').querySelectorAll('button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  btn.closest('.tab-content').querySelectorAll('.tab-pane').forEach(p => {
+    p.classList.remove('active');
+    p.style.display = 'none';
+  });
+  const pane = document.getElementById(tabId);
+  pane.classList.add('active');
+  pane.style.display = 'flex';
+  pane.style.flexDirection = 'column';
+  // trigger lazy load if switching to detail
+  if (tabId === 'tab-detail') pane.dispatchEvent(new Event('click'));
+}
+
+function buildDetailTable(overlay, rounds, m0, m1, K, key) {
+  const loading = overlay.querySelector('#detail-loading');
+  const inner   = overlay.querySelector('#detail-table-inner');
+  const tbody   = overlay.querySelector('#detail-tbody');
+  const T = rounds.dates.length;
+
+  // For each round: compute top-K for each method using all-method consensus
+  // all_freq[n] = count of methods predicting n (from rounds.picks[t])
+  const rows_html = [];
+  const ks = String(K);
+
+  for (let t = 0; t < T; t++) {
+    const allPicks = rounds.picks[t];       // [16][15]
+    const actual   = rounds.actuals[t];     // [6]
+    const date     = rounds.dates[t];
+    const actualSet = new Set(actual);
+
+    // All-method frequency for this round
+    const freq = {};
+    for (const mp of allPicks) for (const n of mp) freq[n] = (freq[n]||0)+1;
+
+    // Top-K from m0: rank m0's picks by all-method freq, take K
+    const m0picks = allPicks[m0];
+    const m0topK = [...m0picks].sort((a,b)=>(freq[b]||0)-(freq[a]||0)).slice(0,K);
+
+    // Top-K from m1
+    const m1picks = allPicks[m1];
+    const m1topK = [...m1picks].sort((a,b)=>(freq[b]||0)-(freq[a]||0)).slice(0,K);
+
+    // Union
+    const union = [...new Set([...m0topK, ...m1topK])].sort((a,b)=>a-b);
+    const score = union.filter(n => actualSet.has(n)).length;
+
+    const ballsHtml = (nums, highlightSet) => nums.map(n =>
+      `<div class="ball ${highlightSet.has(n)?'hit':'miss'}" style="background:${ballColor(n)}">${n}</div>`
+    ).join('');
+
+    const unionSet = new Set(union);
+    rows_html.push(`<tr>
+      <td style="color:var(--muted)">${t+1}</td>
+      <td style="white-space:nowrap;color:var(--muted)">${date}</td>
+      <td><div class="balls">${ballsHtml(m0topK.sort((a,b)=>a-b), actualSet)}</div></td>
+      <td><div class="balls">${ballsHtml(m1topK.sort((a,b)=>a-b), actualSet)}</div></td>
+      <td><div class="balls">${ballsHtml(union, actualSet)}</div></td>
+      <td><div class="balls">${actual.map(n=>`<div class="ball hit" style="background:${ballColor(n)};box-shadow:0 0 0 2px #4ade80">${n}</div>`).join('')}</div></td>
+      <td><span class="hit-score score-${score}">${score}</span></td>
+    </tr>`);
+  }
+
+  loading.style.display = 'none';
+  overlay.querySelector('#detail-count').textContent = T;
+  tbody.innerHTML = rows_html.join('');
+  inner.style.display = 'flex';
+}
+
+function rolling(arr, w) {
+  return arr.map((_,i) => {
+    const sl = arr.slice(Math.max(0,i-w+1),i+1);
+    return sl.reduce((a,b)=>a+b,0)/sl.length;
   });
 }
 
