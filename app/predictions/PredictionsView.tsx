@@ -42,6 +42,24 @@ export default function PredictionsView({
     ? combos.filter((c) => c.numbers.includes(filterNum)).length
     : 0;
 
+  // Best combo per K (from backtest combination analysis)
+  const BEST_COMBOS: Record<number, { labels: string[]; name: string }> = {
+    6:  { labels: ["7","10","11","14"], name: "RF + kNN + ModCyc + NaiveBay" },
+    8:  { labels: ["4","5","7","10","11"], name: "FreqAll + Markov + RF + kNN + ModCyc" },
+    10: { labels: ["8","9","10","11"], name: "RL-Q + HMM + kNN + ModCyc" },
+  };
+  const bestComboConfig = BEST_COMBOS[showK];
+  const bestComboCombos = combos.filter(c => bestComboConfig.labels.includes(c.label));
+  const bestCount: Record<number, number> = {};
+  for (const c of bestComboCombos) {
+    for (const n of c.numbers) bestCount[n] = (bestCount[n] ?? 0) + 1;
+  }
+  const bestComboNums = Object.entries(bestCount)
+    .sort((a, b) => +b[1] - +a[1])
+    .slice(0, showK)
+    .map(([n]) => +n)
+    .sort((a, b) => a - b);
+
   return (
     <div className="space-y-6">
       <div>
@@ -138,6 +156,36 @@ export default function PredictionsView({
           </div>
         )}
       </div>
+
+      {/* Best Combo panel */}
+      {selected === "all" && (
+        <div className="bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 rounded-2xl border border-yellow-200 dark:border-yellow-700/50 p-5 shadow-sm">
+          <div className="flex items-start gap-4">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center text-yellow-900 dark:text-yellow-200 font-bold text-sm flex-shrink-0 bg-yellow-400 dark:bg-yellow-600">
+              ★
+            </div>
+            <div className="flex-1">
+              <p className="text-xs font-semibold text-yellow-700 dark:text-yellow-400 mb-0.5">
+                Best Combo for {showK} picks · {bestComboConfig.name}
+              </p>
+              <p className="text-[10px] text-yellow-600/70 dark:text-yellow-500/60 mb-3">
+                Top combination by backtest score across 1,001 draws
+              </p>
+              <div className="flex gap-2 flex-wrap">
+                {bestComboNums.map(n => (
+                  <div
+                    key={n}
+                    className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-sm shadow-sm ring-2 ring-yellow-400/60"
+                    style={{ background: ballColor(n) }}
+                  >
+                    {n}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-3">
         {displayed.map((c) => {
