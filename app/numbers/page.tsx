@@ -34,6 +34,11 @@ export type NumberStat = {
     atLeastOne: number;       // % of times at least 1 prev-draw number reappears with n
     dist: number[];           // distribution [0..6] count
   };
+  // Next-draw relation: what numbers appear in the draw immediately after n is drawn
+  nextRelation: {
+    freq: number[];   // [43] — how many times number (i+1) appeared in the very next draw
+    total: number;    // appearances that had a valid next draw
+  };
 };
 
 const RECURRENCE_WINDOWS = [1, 2, 3, 5, 10, 20];
@@ -128,11 +133,23 @@ function computeStats(draws: Draw[], latestSerial: number): NumberStat[] {
       ? prevDist.slice(1).reduce((a, b) => a + b, 0) / prevTotal
       : 0;
 
+    // ── Next-draw relation: what numbers follow in the very next draw ──
+    const nextFreq = new Array(43).fill(0);
+    let nextTotal = 0;
+    for (const idx of appearances) {
+      if (idx + 1 >= total) continue; // no next draw available
+      nextTotal++;
+      for (const num of drawSets[idx + 1]) {
+        nextFreq[num - 1]++;
+      }
+    }
+
     return {
       n, mainHits, bonusHits, lastMainSerial, lastMainDate, coldStreak,
       avgGap, maxGap, minGap, gaps, gapSerials, history, positions, buckets, bucketSize: BUCKET_SIZE,
       recurrence,
       prevOverlap: { avgOverlap, atLeastOne, dist: prevDist },
+      nextRelation: { freq: nextFreq, total: nextTotal },
     };
   });
 }

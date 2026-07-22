@@ -203,6 +203,95 @@ export default function NumbersView({
           </div>
         </div>
 
+        {/* Next-draw relation */}
+        {s.nextRelation.total > 0 && (() => {
+          const { freq, total } = s.nextRelation;
+          const baseline = 6 / 43; // expected rate per draw
+          const maxFreq = Math.max(...freq, 1);
+          // Top 8 follower numbers (excluding n itself)
+          const sorted = freq
+            .map((c, i) => ({ n: i + 1, count: c, pct: c / total }))
+            .filter(x => x.n !== s.n)
+            .sort((a, b) => b.count - a.count);
+          const top8 = sorted.slice(0, 8);
+          return (
+            <div>
+              <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">
+                Next draw relation — after #{s.n} is drawn, which numbers follow?
+              </h3>
+              <p className="text-xs text-gray-500 mb-3">
+                Based on {total} draws where #{s.n} appeared and a next draw exists.
+                Baseline: each number expected {(baseline * 100).toFixed(1)}% of the time.
+              </p>
+
+              {/* Ball grid — all 43, sized/coloured by next-draw frequency */}
+              <div className="flex flex-wrap gap-1.5 mb-4">
+                {freq.map((count, i) => {
+                  const num = i + 1;
+                  const pct = count / total;
+                  const ratio = pct / baseline; // >1 = above baseline
+                  const isHighlight = ratio >= 1.3;
+                  const isSelf = num === s.n;
+                  const opacity = isSelf ? 0.2 : Math.max(0.15, pct / (maxFreq / total));
+                  return (
+                    <button
+                      key={num}
+                      onClick={() => !isSelf && setSelected(num)}
+                      title={`${num}: ${count}/${total} = ${(pct * 100).toFixed(1)}% (${ratio.toFixed(2)}× baseline)`}
+                      className={`rounded-full text-white text-xs font-bold transition-all flex items-center justify-center
+                        ${isSelf ? "cursor-default" : "hover:scale-110 hover:opacity-100"}
+                        ${isHighlight ? "ring-2 ring-white/40" : ""}
+                      `}
+                      style={{
+                        width: isHighlight ? "36px" : "30px",
+                        height: isHighlight ? "36px" : "30px",
+                        background: isSelf ? "#475569" : ballColor(num),
+                        opacity,
+                        fontSize: isHighlight ? "13px" : "11px",
+                      }}
+                    >
+                      {num}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Top followers */}
+              <div className="flex flex-wrap gap-2">
+                {top8.map(({ n: fn, count, pct }) => {
+                  const ratio = pct / baseline;
+                  return (
+                    <button
+                      key={fn}
+                      onClick={() => setSelected(fn)}
+                      className="bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl px-3 py-2 text-center transition-colors"
+                    >
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span
+                          className="inline-flex items-center justify-center w-6 h-6 rounded-full text-white text-xs font-bold"
+                          style={{ background: ballColor(fn) }}
+                        >
+                          {fn}
+                        </span>
+                        <span
+                          className="text-sm font-bold"
+                          style={{ color: ratio >= 1.3 ? ballColor(fn) : "#94a3b8" }}
+                        >
+                          {(pct * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-gray-500">{count}/{total} · {ratio.toFixed(2)}×</div>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Highlighted balls (bright ring) = ≥1.3× above baseline · click any ball to open its profile
+              </p>
+            </div>
+          );
+        })()}
+
         {/* Gap history */}
         {s.gaps.length > 0 && (
           <div>
