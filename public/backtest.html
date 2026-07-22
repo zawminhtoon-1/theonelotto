@@ -96,6 +96,8 @@
     <button class="ptbtn active" onclick="setGlobalK(6,this)">6 picks</button>
     <button class="ptbtn" onclick="setGlobalK(8,this)">8 picks</button>
     <button class="ptbtn" onclick="setGlobalK(10,this)">10 picks</button>
+    <button class="ptbtn" onclick="setGlobalK(15,this)">15 picks</button>
+    <button class="ptbtn" onclick="setGlobalK(20,this)">20 picks</button>
   </div>
 </div>
 
@@ -283,10 +285,21 @@ const HP = (k,np) => C(np,k)*C(43-np,6-k)/C(43,6);
 
 // Return top-K numbers ranked by cross-method consensus frequency
 function topKNums(combo, r, k) {
-  if (combo.length <= k) return combo;
   const freq = {};
   r.p.forEach(pred => pred[0].forEach(n => { freq[n] = (freq[n]||0)+1; }));
-  return [...combo].sort((a,b)=>(freq[b]||0)-(freq[a]||0)).slice(0,k).sort((a,b)=>a-b);
+  if (combo.length === k) return combo;
+  if (combo.length > k) {
+    // Trim: keep top-k by cross-method frequency
+    return [...combo].sort((a,b)=>(freq[b]||0)-(freq[a]||0)).slice(0,k).sort((a,b)=>a-b);
+  }
+  // Pad: K > stored picks, fill extra slots from cross-method consensus
+  const inCombo = new Set(combo);
+  const extra = Object.keys(freq)
+    .map(Number)
+    .filter(n => !inCombo.has(n))
+    .sort((a,b) => (freq[b]||0)-(freq[a]||0))
+    .slice(0, k - combo.length);
+  return [...combo, ...extra].sort((a,b)=>a-b);
 }
 
 // Compute hit distributions, match series, bonus counts for a given K
@@ -557,6 +570,10 @@ const BC_CONFIGS = [
     note: "Most 4+ hit draws (13)" },
   { K: 10, methods: [7,8,9,10], label: "RL-Q + HMM + kNN + ModCyc",
     note: "Best avg hits + most 4+ draws (30)" },
+  { K: 15, methods: [4,5,11,13], label: "Markov + ARIMA + Apriori + NaiveBay",
+    note: "Best avg hits (2.19) across 1,001 draws" },
+  { K: 20, methods: [3,6,8,10], label: "FreqAll + RF + HMM + ModCyc",
+    note: "Best avg hits (2.85) + most 4+ draws (304)" },
 ];
 const BC_HITCOLORS = ['#475569','#94a3b8','#e2e8f0','#e2e8f0','#facc15','#4ade80','#38bdf8'];
 
