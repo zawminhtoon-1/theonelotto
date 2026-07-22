@@ -178,6 +178,7 @@
   <button class="tab" onclick="switchTab('time',this)">Timeline</button>
   <button class="tab" onclick="switchTab('bonus',this)">Bonus ball</button>
   <button class="tab" onclick="switchTab('detail',this)">Draw Detail</button>
+  <button class="tab" onclick="switchTab('bestcombo',this)">Best Combo</button>
 </div>
 
 <!-- Distribution tab -->
@@ -237,6 +238,16 @@
       <thead id="detailHead"></thead>
       <tbody id="detailBody"></tbody>
     </table>
+  </div>
+</div>
+
+<!-- Best Combo tab -->
+<div id="tab-bestcombo" class="panel">
+  <div id="bc-content" style="padding:8px 0">
+    <p style="color:var(--muted);font-size:.85rem;margin-bottom:16px">
+      Backtest-optimised method combinations — computed from 1,001 draws. Numbers shown are consensus picks for the <strong style="color:var(--text)">next draw</strong>.
+    </p>
+    <div id="bc-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px"></div>
   </div>
 </div>
 
@@ -516,6 +527,103 @@ function switchTab(name, btn) {
 
 // Initial build with K=6
 buildAll(6);
+
+
+
+// ── Best Combo Tab ──────────────────────────────────────────────
+const BC_CONFIGS = [
+  { K: 6,  methods: [6,9,10,13], label: "RF + kNN + ModCyc + NaiveBay",
+    note: "Best avg hits across 1,001 draws" },
+  { K: 8,  methods: [3,4,6,9,10], label: "FreqAll + Markov + RF + kNN + ModCyc",
+    note: "Most 4+ hit draws (13)" },
+  { K: 10, methods: [7,8,9,10], label: "RL-Q + HMM + kNN + ModCyc",
+    note: "Best avg hits + most 4+ draws (30)" },
+];
+const BC_HITCOLORS = ['#475569','#94a3b8','#e2e8f0','#e2e8f0','#facc15','#4ade80','#38bdf8'];
+
+function evalCombo(methodIndices, K) {
+  const hitCounts = [0,0,0,0,0,0,0];
+  for (const entry of DATA) {
+    const votes = {};
+    for (const mi of methodIndices) {
+      for (const n of entry.p[mi][0]) votes[n] = (votes[n]||0) + 1;
+    }
+    const topK = Object.entries(votes).sort((a,b)=>+b[1]-+a[1]).slice(0,K).map(([n])=>+n);
+    const actualSet = new Set(entry.a);
+    const hits = topK.filter(n=>actualSet.has(n)).length;
+    hitCounts[Math.min(hits,6)]++;
+  }
+  return hitCounts;
+}
+
+function getNextCombo(methodIndices, K) {
+  const lastEntry = DATA[DATA.length-1];
+  const votes = {};
+  for (const mi of methodIndices) {
+    for (const n of lastEntry.p[mi][0]) votes[n] = (votes[n]||0) + 1;
+  }
+  return Object.entries(votes).sort((a,b)=>+b[1]-+a[1]).slice(0,K).map(([n])=>+n).sort((a,b)=>a-b);
+}
+
+function ballBg(n) {
+  if (n<=10) return '#e74c3c';
+  if (n<=19) return '#e67e22';
+  if (n<=29) return '#27ae60';
+  if (n<=38) return '#2980b9';
+  return '#8e44ad';
+}
+
+function buildBestCombo() {
+  const container = document.getElementById('bc-cards');
+  if (!container || container.dataset.built) return;
+  container.dataset.built = '1';
+  const total = DATA.length;
+
+  BC_CONFIGS.forEach(cfg => {
+    const hits = evalCombo(cfg.methods, cfg.K);
+    const avg = hits.reduce((s,c,k)=>s+k*c,0)/total;
+    const fourPlus = hits.slice(4).reduce((a,b)=>a+b,0);
+    const picks = getNextCombo(cfg.methods, cfg.K);
+    const maxH = Math.max(...hits,1);
+
+    const card = document.createElement('div');
+    card.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;';
+
+    // Header
+    card.innerHTML = `
+      <div style="font-size:.75rem;color:var(--accent);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">${cfg.K} picks</div>
+      <div style="font-size:.95rem;color:var(--text);font-weight:700;margin-bottom:2px">${cfg.label}</div>
+      <div style="font-size:.75rem;color:var(--muted);margin-bottom:14px">${cfg.note}</div>
+      <div style="display:flex;gap:16px;margin-bottom:16px">
+        <div><div style="font-size:1.4rem;font-weight:800;color:var(--text)">${avg.toFixed(3)}</div><div style="font-size:.7rem;color:var(--muted)">avg hits</div></div>
+        <div><div style="font-size:1.4rem;font-weight:800;color:var(--yellow)">${fourPlus}</div><div style="font-size:.7rem;color:var(--muted)">4+ hit draws</div></div>
+        <div><div style="font-size:1.4rem;font-weight:800;color:var(--green)">${(fourPlus/total*100).toFixed(1)}%</div><div style="font-size:.7rem;color:var(--muted)">4+ rate</div></div>
+      </div>
+      <div style="font-size:.7rem;color:var(--muted);margin-bottom:6px">Hit distribution (0–6)</div>
+      <div style="display:flex;gap:3px;align-items:flex-end;height:48px;margin-bottom:14px">
+        ${hits.map((c,k)=>{
+          const pct=c/maxH;
+          return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px" title="${k} hits: ${c}">
+            <div style="width:100%;border-radius:2px 2px 0 0;height:${Math.max(3,pct*40)}px;background:${BC_HITCOLORS[k]}"></div>
+            <span style="font-size:9px;color:var(--muted)">${k}</span>
+          </div>`;
+        }).join('')}
+      </div>
+      <div style="font-size:.7rem;color:var(--muted);margin-bottom:8px">Next draw consensus picks</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${picks.map(n=>`<div style="width:32px;height:32px;border-radius:50%;background:${ballBg(n)};display:flex;align-items:center;justify-content:center;color:#fff;font-size:.75rem;font-weight:700">${n}</div>`).join('')}
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+// Hook into tab switching
+const _origSwitch = switchTab;
+function switchTab(name, btn) {
+  _origSwitch(name, btn);
+  if (name === 'bestcombo') buildBestCombo();
+}
 
 </script>
 </body>
