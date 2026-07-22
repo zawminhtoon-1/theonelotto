@@ -916,8 +916,8 @@ export default async function PredictionsPage() {
   const combos = [
     { label:"1", color:"#2a78d6", method:"Poly deg-2 · full history",
       raw: makeUnique([0,1,2,3,4,5].map(p=>fitPredict(serials,nums.map(d=>d[p]),nextSerial)), freqAll) },
-    { label:"2", color:"#1baf7a", method:"Reverse MA · last 43",
-      raw: makeUnique([0,1,2,3,4,5].map(p=>Math.max(1,Math.min(43,44-Math.round(last43.reduce((s,d)=>s+d[p],0)/last43.length)))), freqAll) },
+    { label:"2", color:"#1baf7a", method:"MA · last 43",
+      raw: makeUnique([0,1,2,3,4,5].map(p=>Math.max(1,Math.min(43,Math.round(last43.reduce((s,d)=>s+d[p],0)/last43.length)))), freqAll) },
     { label:"3", color:"#4a3aa7", method:"Exp-weighted recency",
       raw: makeUnique([0,1,2,3,4,5].map(p=>Math.round(nums.reduce((s,d,i)=>s+wts[i]*d[p],0)/ws)), freqAll) },
     { label:"4", color:"#e34948", method:"Most frequent · all history",
