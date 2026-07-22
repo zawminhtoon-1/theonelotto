@@ -119,6 +119,9 @@ tbody td { padding:10px 14px; font-size:.82rem; }
         <p>All C(16,2) = 120 two-method combos · 1,001 backtested draws · <a href="/backtest.html" style="color:var(--muted)">&#8592; Backtest</a></p>
       </div>
       <div class="k-toggle" id="kToggle">
+        <button onclick="setK(6,this)">K = 6</button>
+        <button onclick="setK(8,this)">K = 8</button>
+        <button onclick="setK(10,this)">K = 10</button>
         <button onclick="setK(15,this)" class="active">K = 15</button>
         <button onclick="setK(20,this)">K = 20</button>
       </div>
@@ -126,7 +129,7 @@ tbody td { padding:10px 14px; font-size:.82rem; }
 
     <div class="formula-box">
       <strong>Formula:</strong> For each round, take the top-<em>K</em> picks from Method A (by all-method consensus rank among its 15 stored picks) and top-<em>K</em> from Method B — same rule. Union the two sets (up to 2K unique numbers). Count how many of the 6 actual drawn balls fall in that union = <strong>score</strong>.
-      <br>K=15 → union ≤ 30 numbers &nbsp;|&nbsp; K=20 → union ≤ 40 numbers.
+      <br>K=6 → ≤12 &nbsp;|&nbsp; K=8 → ≤16 &nbsp;|&nbsp; K=10 → ≤20 &nbsp;|&nbsp; K=15 → ≤30 &nbsp;|&nbsp; K=20 → ≤40 unique numbers in union.
     </div>
 
     <div class="summary-grid" id="summaryCards"></div>
