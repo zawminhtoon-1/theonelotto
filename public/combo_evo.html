@@ -43,6 +43,7 @@ a { color:var(--accent); text-decoration:none; }
 .worst { border-left:3px solid var(--red); }
 .best4 { border-left:3px solid var(--yellow); }
 .worst4 { border-left:3px solid var(--purple); }
+.bestz0 { border-left:3px solid var(--accent); }
 
 /* Charts */
 .charts-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px; }
@@ -149,17 +150,19 @@ tbody td { padding:10px 14px; font-size:.82rem; }
 <script>
 let DATA = null;
 let currentK = 15;
-let sortCol = 'avg';
+let sortCol = 'z6';
 let sortDir = -1;
 let chartAvg = null, chartFP = null;
 
 const COL_DEFS = [
-  { key: 'rank',  label: '#',          sortable: false },
-  { key: 'combo', label: 'Methods',    sortable: false },
-  { key: 'avg',   label: 'Avg Hits',   sortable: true  },
-  { key: 'fp',    label: '4+ Draws',   sortable: true  },
-  { key: 'dist',  label: 'Dist 0–6',   sortable: false },
-  { key: 'evo',   label: 'View',       sortable: false },
+  { key: 'rank',  label: '#',             sortable: false },
+  { key: 'combo', label: 'Methods',       sortable: false },
+  { key: 'z6',    label: '6-Hit Draws ★', sortable: true  },
+  { key: 'avg',   label: 'Avg Hits',      sortable: true  },
+  { key: 'fp',    label: '4+ Draws',      sortable: true  },
+  { key: 'z0',    label: '0-Hit Draws ↓', sortable: true  },
+  { key: 'dist',  label: 'Dist 0–6',      sortable: false },
+  { key: 'evo',   label: 'View',          sortable: false },
 ];
 
 async function init() {
@@ -189,7 +192,7 @@ function getRows(K) {
   return Object.entries(DATA.combos).map(([key, val]) => {
     const [m0, m1] = key.split(',').map(Number);
     const d = val[ks];
-    return { key, m0, m1, ...d };
+    return { key, m0, m1, ...d, z0: d.dist[0], z6: d.dist[6] };
   });
 }
 
@@ -199,7 +202,7 @@ function sortedRows(K) {
   if (q) rows = rows.filter(r =>
     DATA.methods[r.m0].toLowerCase().includes(q) ||
     DATA.methods[r.m1].toLowerCase().includes(q));
-  if (sortCol === 'avg' || sortCol === 'fp') {
+  if (['avg','fp','z0','z6'].includes(sortCol)) {
     rows.sort((a, b) => sortDir * (b[sortCol] - a[sortCol]));
   }
   return rows;
@@ -223,11 +226,15 @@ function renderSummary() {
   const bestFP   = all.reduce((b,r) => r.fp  > b.fp  ? r : b);
   const worstFP  = all.reduce((b,r) => r.fp  < b.fp  ? r : b);
 
+  const bestZ0  = all.reduce((b,r) => r.z0 < b.z0 ? r : b);
+  const worstZ0 = all.reduce((b,r) => r.z0 > b.z0 ? r : b);
+  const bestZ6  = all.reduce((b,r) => r.z6 > b.z6 ? r : b);
   const cards = [
-    { cls:'best',   label:'Best avg hits',     r: bestAvg,  statKey:'avg', statFmt: v=>v.toFixed(4) },
-    { cls:'worst',  label:'Worst avg hits',    r: worstAvg, statKey:'avg', statFmt: v=>v.toFixed(4) },
-    { cls:'best4',  label:'Most 4+ draws',     r: bestFP,   statKey:'fp',  statFmt: v=>v },
-    { cls:'worst4', label:'Fewest 4+ draws',   r: worstFP,  statKey:'fp',  statFmt: v=>v },
+    { cls:'best',   label:'Most 6-hit draws (best — all 6 predicted)',  r: bestZ6,  statKey:'z6',  statFmt: v=>v },
+    { cls:'worst',  label:'Most 0-hit draws (worst — missed completely)',r: worstZ0, statKey:'z0',  statFmt: v=>v },
+    { cls:'bestz0', label:'Fewest 0-hit draws (most consistent)',        r: bestZ0,  statKey:'z0',  statFmt: v=>v },
+    { cls:'best4',  label:'Most 4+ draws',                              r: bestFP,  statKey:'fp',  statFmt: v=>v },
+    { cls:'worst4', label:'Best avg hits',                              r: bestAvg, statKey:'avg', statFmt: v=>v.toFixed(4) },
   ];
 
   document.getElementById('summaryCards').innerHTML = cards.map(c => `
@@ -236,8 +243,8 @@ function renderSummary() {
       <div class="scard-title">${DATA.methods[c.r.m0].replace(/\s*\(.*?\)/g,'')} + ${DATA.methods[c.r.m1].replace(/\s*\(.*?\)/g,'')}</div>
       <div class="scard-sub">Methods ${c.r.m0+1} &amp; ${c.r.m1+1}</div>
       <div class="scard-stats">
-        <div class="stat"><div class="stat-val">${c.statFmt(c.r[c.statKey])}</div><div class="stat-lbl">${c.statKey==='avg'?'avg hits':'4+ draws'}</div></div>
-        <div class="stat"><div class="stat-val">${c.statKey==='avg'?c.r.fp:c.r.avg.toFixed(3)}</div><div class="stat-lbl">${c.statKey==='avg'?'4+ draws':'avg hits'}</div></div>
+        <div class="stat"><div class="stat-val">${c.statFmt(c.r[c.statKey])}</div><div class="stat-lbl">${{avg:'avg hits',fp:'4+ draws',z0:'0-hit draws',z6:'6-hit draws'}[c.statKey]||c.statKey}</div></div>
+        <div class="stat"><div class="stat-val">${c.r.avg.toFixed(3)}</div><div class="stat-lbl">avg hits</div></div>
       </div>
     </div>`).join('');
 }
@@ -346,6 +353,9 @@ function renderTable() {
   const worstAvgKey = all.reduce((b,r) => r.avg < b.avg ? r : b).key;
   const bestFPKey   = all.reduce((b,r) => r.fp  > b.fp  ? r : b).key;
   const worstFPKey  = all.reduce((b,r) => r.fp  < b.fp  ? r : b).key;
+  const bestZ0Key   = all.reduce((b,r) => r.z0  < b.z0  ? r : b).key;
+  const worstZ0Key  = all.reduce((b,r) => r.z0  > b.z0  ? r : b).key;
+  const bestZ6Key   = all.reduce((b,r) => r.z6  > b.z6  ? r : b).key;
   const barMax = getBarMax(currentK);
 
   const T = DATA.T;
@@ -365,6 +375,9 @@ function renderTable() {
     if (r.key === worstAvgKey) tags += '<span class="pill" style="background:#450a0a;color:#f87171;margin-left:4px">↓ avg</span>';
     if (r.key === bestFPKey)   tags += '<span class="pill" style="background:#713f12;color:#facc15;margin-left:4px">★ 4+</span>';
     if (r.key === worstFPKey)  tags += '<span class="pill" style="background:#2e1065;color:#a78bfa;margin-left:4px">↓ 4+</span>';
+    if (r.key === bestZ0Key)   tags += '<span class="pill" style="background:#0c4a6e;color:#38bdf8;margin-left:4px">★ consistent</span>';
+    if (r.key === worstZ0Key)  tags += '<span class="pill" style="background:#450a0a;color:#f87171;margin-left:4px">↑ misses</span>';
+    if (r.key === bestZ6Key)   tags += '<span class="pill" style="background:#14532d;color:#4ade80;margin-left:4px">★ 6-hit</span>';
 
     // dist mini-bar
     const distBar = r.dist.map((c, hi) =>
@@ -377,8 +390,10 @@ function renderTable() {
         <div style="font-weight:600">${m0n} <span style="color:var(--muted)">+</span> ${m1n}${tags}</div>
         <div style="color:var(--muted);font-size:.72rem">Methods ${r.m0+1} &amp; ${r.m1+1}</div>
       </td>
+      <td><span style="font-weight:700;color:${r.z6>=5?'#4ade80':r.z6>=2?'#facc15':'#94a3b8'}">${r.z6}</span> <span style="color:var(--muted);font-size:.75rem">(${(r.z6/T*100).toFixed(2)}%)</span></td>
       <td><span style="font-weight:700;color:var(--accent)">${r.avg.toFixed(4)}</span></td>
       <td><span style="font-weight:700;color:var(--yellow)">${r.fp}</span> <span style="color:var(--muted);font-size:.75rem">(${(r.fp/T*100).toFixed(1)}%)</span></td>
+      <td><span style="font-weight:700;color:${r.z0<=20?'#4ade80':r.z0<=50?'#facc15':'#f87171'}">${r.z0}</span> <span style="color:var(--muted);font-size:.75rem">(${(r.z0/T*100).toFixed(1)}%)</span></td>
       <td><div class="hit-bar">${distBar}</div></td>
       <td><span class="evo-link" onclick="showEvo('${r.key}')">chart</span></td>
     </tr>`;
