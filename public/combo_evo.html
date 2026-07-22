@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Combo Evolution · 2-Method Picks</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg:#0f172a; --surface:#1e293b; --surface2:#293548;
+  --border:#334155; --text:#e2e8f0; --muted:#94a3b8;
+  --accent:#38bdf8; --green:#4ade80; --yellow:#facc15;
+  --red:#f87171; --pink:#e11d48; --purple:#a78bfa;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:var(--bg); color:var(--text); font-family:system-ui,sans-serif; font-size:.9rem; }
+a { color:var(--accent); text-decoration:none; }
+.wrap { max-width:1100px; margin:0 auto; padding:24px 16px; }
+
+/* Header */
+.page-header { display:flex; align-items:center; gap:16px; margin-bottom:24px; flex-wrap:wrap; }
+.page-header h1 { font-size:1.4rem; font-weight:700; }
+.page-header p { color:var(--muted); font-size:.8rem; margin-top:2px; }
+.back-link { color:var(--muted); font-size:.8rem; }
+.back-link:hover { color:var(--accent); }
+
+/* K toggle */
+.k-toggle { display:flex; gap:0; background:var(--surface); border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+.k-toggle button { padding:7px 18px; background:none; border:none; color:var(--muted); cursor:pointer; font-size:.85rem; font-weight:600; transition:all .15s; }
+.k-toggle button.active { background:var(--accent); color:#0f172a; }
+
+/* Summary cards */
+.summary-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px; margin-bottom:24px; }
+.scard { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px; }
+.scard-label { font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:8px; }
+.scard-title { font-size:1rem; font-weight:700; margin-bottom:4px; line-height:1.3; }
+.scard-sub { font-size:.75rem; color:var(--muted); }
+.scard-stats { display:flex; gap:16px; margin-top:10px; }
+.stat { }
+.stat-val { font-size:1.2rem; font-weight:800; }
+.stat-lbl { font-size:.7rem; color:var(--muted); }
+.best { border-left:3px solid var(--green); }
+.worst { border-left:3px solid var(--red); }
+.best4 { border-left:3px solid var(--yellow); }
+.worst4 { border-left:3px solid var(--purple); }
+
+/* Charts */
+.charts-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px; }
+@media(max-width:700px) { .charts-row { grid-template-columns:1fr; } }
+.chart-box { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px; }
+.chart-box h3 { font-size:.85rem; font-weight:600; color:var(--muted); margin-bottom:12px; }
+.chart-wrap { position:relative; height:220px; }
+
+/* Table */
+.tbl-wrap { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:24px; }
+.tbl-header { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid var(--border); flex-wrap:wrap; gap:8px; }
+.tbl-header h3 { font-size:.9rem; font-weight:600; }
+.tbl-search { padding:6px 10px; background:var(--surface2); border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:.8rem; width:160px; }
+.tbl-search:focus { outline:none; border-color:var(--accent); }
+table { width:100%; border-collapse:collapse; }
+thead th { padding:10px 14px; text-align:left; font-size:.75rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; cursor:pointer; user-select:none; white-space:nowrap; background:var(--surface2); border-bottom:1px solid var(--border); }
+thead th:hover { color:var(--text); }
+thead th .sort-icon { margin-left:4px; opacity:.4; }
+thead th.sorted .sort-icon { opacity:1; color:var(--accent); }
+tbody tr { border-bottom:1px solid var(--border); transition:background .1s; }
+tbody tr:last-child { border-bottom:none; }
+tbody tr:hover { background:var(--surface2); }
+tbody td { padding:10px 14px; font-size:.82rem; }
+.rank-badge { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; font-size:.7rem; font-weight:700; }
+.rank-1 { background:#facc15; color:#0f172a; }
+.rank-2 { background:#94a3b8; color:#0f172a; }
+.rank-3 { background:#b45309; color:#fff; }
+.pill { display:inline-block; padding:2px 7px; border-radius:4px; font-size:.72rem; font-weight:600; background:var(--surface2); color:var(--muted); }
+.hit-bar { display:flex; gap:1px; align-items:flex-end; height:20px; }
+.hit-bar span { display:block; min-width:4px; border-radius:1px 1px 0 0; }
+.hb-0 { background:#475569; }
+.hb-1 { background:#64748b; }
+.hb-2 { background:#94a3b8; }
+.hb-3 { background:#e2e8f0; }
+.hb-4 { background:#facc15; }
+.hb-5 { background:#4ade80; }
+.hb-6 { background:#38bdf8; }
+.evo-link { font-size:.75rem; color:var(--accent); cursor:pointer; }
+.evo-link:hover { text-decoration:underline; }
+
+/* Loading */
+#loading { text-align:center; padding:60px 20px; color:var(--muted); }
+#app { display:none; }
+
+/* Legend */
+.legend { display:flex; gap:16px; flex-wrap:wrap; font-size:.75rem; color:var(--muted); margin-bottom:16px; }
+.legend-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:4px; vertical-align:middle; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="loading">Loading combo data…</div>
+  <div id="app">
+    <div class="page-header">
+      <div>
+        <h1>Combo Evolution</h1>
+        <p>All C(16,2) = 120 two-method combos · 1,001 backtested draws · <a class="back-link" href="/backtest.html">&#8592; Backtest</a></p>
+      </div>
+      <div class="k-toggle" id="kToggle">
+        <button onclick="setK(15,this)" class="active">K = 15</button>
+        <button onclick="setK(20,this)">K = 20</button>
+      </div>
+    </div>
+
+    <!-- Summary cards -->
+    <div class="summary-grid" id="summaryCards"></div>
+
+    <!-- Evolution charts -->
+    <div class="charts-row">
+      <div class="chart-box">
+        <h3>Rolling 50-draw avg hits — Best vs Worst (avg)</h3>
+        <div class="chart-wrap"><canvas id="chartAvg"></canvas></div>
+      </div>
+      <div class="chart-box">
+        <h3>Rolling 50-draw avg hits — Best vs Worst (4+ draws)</h3>
+        <div class="chart-wrap"><canvas id="chartFP"></canvas></div>
+      </div>
+    </div>
+    <div class="legend">
+      <span><span class="legend-dot" style="background:#4ade80"></span>Best avg</span>
+      <span><span class="legend-dot" style="background:#f87171"></span>Worst avg</span>
+      <span><span class="legend-dot" style="background:#facc15"></span>Best 4+</span>
+      <span><span class="legend-dot" style="background:#a78bfa"></span>Worst 4+</span>
+    </div>
+
+    <!-- Table -->
+    <div class="tbl-wrap">
+      <div class="tbl-header">
+        <h3>All 120 combos</h3>
+        <input class="tbl-search" type="text" id="search" placeholder="Filter method name…" oninput="renderTable()">
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr id="thead"></tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let DATA = null;
+let currentK = 15;
+let sortCol = 'avg';
+let sortDir = -1;
+let chartAvg = null, chartFP = null;
+
+const COL_DEFS = [
+  { key: 'rank',  label: '#',          sortable: false },
+  { key: 'combo', label: 'Methods',    sortable: false },
+  { key: 'avg',   label: 'Avg Hits',   sortable: true  },
+  { key: 'fp',    label: '4+ Draws',   sortable: true  },
+  { key: 'dist',  label: 'Dist 0–6',   sortable: false },
+  { key: 'evo',   label: 'View',       sortable: false },
+];
+
+async function init() {
+  const resp = await fetch('combo_evo_data.json');
+  DATA = await resp.json();
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  buildTable();
+  render();
+}
+
+function setK(k, btn) {
+  currentK = k;
+  document.querySelectorAll('#kToggle button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+
+function render() {
+  renderSummary();
+  renderCharts();
+  renderTable();
+}
+
+function getRows(K) {
+  const ks = String(K);
+  return Object.entries(DATA.combos).map(([key, val]) => {
+    const [m0, m1] = key.split(',').map(Number);
+    const d = val[ks];
+    return { key, m0, m1, ...d };
+  });
+}
+
+function sortedRows(K) {
+  let rows = getRows(K);
+  const q = document.getElementById('search')?.value.trim().toLowerCase();
+  if (q) rows = rows.filter(r =>
+    DATA.methods[r.m0].toLowerCase().includes(q) ||
+    DATA.methods[r.m1].toLowerCase().includes(q));
+  if (sortCol === 'avg' || sortCol === 'fp') {
+    rows.sort((a, b) => sortDir * (b[sortCol] - a[sortCol]));
+  }
+  return rows;
+}
+
+function highlight(rows, K) {
+  const ks = String(K);
+  const all = getRows(K);
+  const bestAvg  = all.reduce((b,r) => r.avg > b.avg ? r : b).key;
+  const worstAvg = all.reduce((b,r) => r.avg < b.avg ? r : b).key;
+  const bestFP   = all.reduce((b,r) => r.fp  > b.fp  ? r : b).key;
+  const worstFP  = all.reduce((b,r) => r.fp  < b.fp  ? r : b).key;
+  return { bestAvg, worstAvg, bestFP, worstFP };
+}
+
+// ── Summary cards ─────────────────────────────────────────────────────────────
+function renderSummary() {
+  const all = getRows(currentK);
+  const bestAvg  = all.reduce((b,r) => r.avg > b.avg ? r : b);
+  const worstAvg = all.reduce((b,r) => r.avg < b.avg ? r : b);
+  const bestFP   = all.reduce((b,r) => r.fp  > b.fp  ? r : b);
+  const worstFP  = all.reduce((b,r) => r.fp  < b.fp  ? r : b);
+
+  const cards = [
+    { cls:'best',   label:'Best avg hits',     r: bestAvg,  statKey:'avg', statFmt: v=>v.toFixed(4) },
+    { cls:'worst',  label:'Worst avg hits',    r: worstAvg, statKey:'avg', statFmt: v=>v.toFixed(4) },
+    { cls:'best4',  label:'Most 4+ draws',     r: bestFP,   statKey:'fp',  statFmt: v=>v },
+    { cls:'worst4', label:'Fewest 4+ draws',   r: worstFP,  statKey:'fp',  statFmt: v=>v },
+  ];
+
+  document.getElementById('summaryCards').innerHTML = cards.map(c => `
+    <div class="scard ${c.cls}">
+      <div class="scard-label">${c.label} · K=${currentK}</div>
+      <div class="scard-title">${DATA.methods[c.r.m0].replace(/\s*\(.*?\)/g,'')} + ${DATA.methods[c.r.m1].replace(/\s*\(.*?\)/g,'')}</div>
+      <div class="scard-sub">Methods ${c.r.m0+1} &amp; ${c.r.m1+1}</div>
+      <div class="scard-stats">
+        <div class="stat"><div class="stat-val">${c.statFmt(c.r[c.statKey])}</div><div class="stat-lbl">${c.statKey==='avg'?'avg hits':'4+ draws'}</div></div>
+        <div class="stat"><div class="stat-val">${c.statKey==='avg'?c.r.fp:c.r.avg.toFixed(3)}</div><div class="stat-lbl">${c.statKey==='avg'?'4+ draws':'avg hits'}</div></div>
+      </div>
+    </div>`).join('');
+}
+
+// ── Rolling average helper ────────────────────────────────────────────────────
+function rolling(arr, w) {
+  return arr.map((_, i) => {
+    const start = Math.max(0, i - w + 1);
+    const sl = arr.slice(start, i + 1);
+    return sl.reduce((a,b) => a+b, 0) / sl.length;
+  });
+}
+
+// ── Charts ────────────────────────────────────────────────────────────────────
+function renderCharts() {
+  const all = getRows(currentK);
+  const bestAvg  = all.reduce((b,r) => r.avg > b.avg ? r : b);
+  const worstAvg = all.reduce((b,r) => r.avg < b.avg ? r : b);
+  const bestFP   = all.reduce((b,r) => r.fp  > b.fp  ? r : b);
+  const worstFP  = all.reduce((b,r) => r.fp  < b.fp  ? r : b);
+
+  const W = 50;
+  const labels = DATA.dates;
+
+  const mname = (mi) => DATA.methods[mi].replace(/\s*\(.*?\)/g,'').replace(/\s+/g,' ').trim();
+
+  function mkDataset(r, color, label) {
+    return {
+      label,
+      data: rolling(r.hits, W),
+      borderColor: color,
+      borderWidth: 1.5,
+      pointRadius: 0,
+      tension: 0.4,
+      fill: false,
+    };
+  }
+
+  const chartOpts = {
+    responsive: true, maintainAspectRatio: false,
+    animation: false,
+    plugins: { legend: { display:true, labels:{ color:'#94a3b8', font:{size:10}, boxWidth:12 } } },
+    scales: {
+      x: { ticks: { color:'#64748b', maxTicksLimit:8, font:{size:9} }, grid: { color:'#1e293b' } },
+      y: { ticks: { color:'#64748b', font:{size:9} }, grid: { color:'#334155' } },
+    },
+  };
+
+  if (chartAvg) chartAvg.destroy();
+  chartAvg = new Chart(document.getElementById('chartAvg'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        mkDataset(bestAvg,  '#4ade80', `Best avg: ${mname(bestAvg.m0)}+${mname(bestAvg.m1)}`),
+        mkDataset(worstAvg, '#f87171', `Worst avg: ${mname(worstAvg.m0)}+${mname(worstAvg.m1)}`),
+      ],
+    },
+    options: chartOpts,
+  });
+
+  if (chartFP) chartFP.destroy();
+  chartFP = new Chart(document.getElementById('chartFP'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        mkDataset(bestFP,  '#facc15', `Best 4+: ${mname(bestFP.m0)}+${mname(bestFP.m1)}`),
+        mkDataset(worstFP, '#a78bfa', `Worst 4+: ${mname(worstFP.m0)}+${mname(worstFP.m1)}`),
+      ],
+    },
+    options: chartOpts,
+  });
+}
+
+// ── Table ─────────────────────────────────────────────────────────────────────
+function buildTable() {
+  const tr = document.getElementById('thead');
+  tr.innerHTML = COL_DEFS.map(c => `
+    <th ${c.sortable ? `onclick="toggleSort('${c.key}')"` : ''} ${sortCol===c.key?'class="sorted"':''}>
+      ${c.label}${c.sortable ? `<span class="sort-icon">${sortCol===c.key?(sortDir<0?'▼':'▲'):'⇅'}</span>`:''}
+    </th>`).join('');
+}
+
+function toggleSort(col) {
+  if (sortCol === col) sortDir *= -1;
+  else { sortCol = col; sortDir = -1; }
+  buildTable();
+  renderTable();
+}
+
+const BAR_MAX_BY_K = {};
+function getBarMax(K) {
+  if (BAR_MAX_BY_K[K]) return BAR_MAX_BY_K[K];
+  const all = getRows(K);
+  const m = Math.max(...all.flatMap(r => r.dist));
+  BAR_MAX_BY_K[K] = m;
+  return m;
+}
+
+function renderTable() {
+  buildTable();
+  const rows = sortedRows(currentK);
+  const all  = getRows(currentK);
+  const bestAvgKey  = all.reduce((b,r) => r.avg > b.avg ? r : b).key;
+  const worstAvgKey = all.reduce((b,r) => r.avg < b.avg ? r : b).key;
+  const bestFPKey   = all.reduce((b,r) => r.fp  > b.fp  ? r : b).key;
+  const worstFPKey  = all.reduce((b,r) => r.fp  < b.fp  ? r : b).key;
+  const barMax = getBarMax(currentK);
+
+  const T = DATA.T;
+  document.getElementById('tbody').innerHTML = rows.map((r, i) => {
+    const rank = i + 1;
+    let badge = `<span style="color:var(--muted);font-size:.8rem">${rank}</span>`;
+    if (rank===1) badge = `<span class="rank-badge rank-1">1</span>`;
+    else if (rank===2) badge = `<span class="rank-badge rank-2">2</span>`;
+    else if (rank===3) badge = `<span class="rank-badge rank-3">3</span>`;
+
+    const m0n = DATA.methods[r.m0].replace(/\s*\(.*?\)/g,'');
+    const m1n = DATA.methods[r.m1].replace(/\s*\(.*?\)/g,'');
+
+    // highlight badges
+    let tags = '';
+    if (r.key === bestAvgKey)  tags += '<span class="pill" style="background:#14532d;color:#4ade80;margin-left:4px">★ avg</span>';
+    if (r.key === worstAvgKey) tags += '<span class="pill" style="background:#450a0a;color:#f87171;margin-left:4px">↓ avg</span>';
+    if (r.key === bestFPKey)   tags += '<span class="pill" style="background:#713f12;color:#facc15;margin-left:4px">★ 4+</span>';
+    if (r.key === worstFPKey)  tags += '<span class="pill" style="background:#2e1065;color:#a78bfa;margin-left:4px">↓ 4+</span>';
+
+    // dist mini-bar
+    const distBar = r.dist.map((c, hi) =>
+      `<span class="hb-${hi}" style="height:${Math.round(c/barMax*18)+2}px" title="${hi} hits: ${c} draws (${(c/T*100).toFixed(1)}%)"></span>`
+    ).join('');
+
+    return `<tr>
+      <td>${badge}</td>
+      <td>
+        <div style="font-weight:600">${m0n} <span style="color:var(--muted)">+</span> ${m1n}${tags}</div>
+        <div style="color:var(--muted);font-size:.72rem">Methods ${r.m0+1} &amp; ${r.m1+1}</div>
+      </td>
+      <td><span style="font-weight:700;color:var(--accent)">${r.avg.toFixed(4)}</span></td>
+      <td><span style="font-weight:700;color:var(--yellow)">${r.fp}</span> <span style="color:var(--muted);font-size:.75rem">(${(r.fp/T*100).toFixed(1)}%)</span></td>
+      <td><div class="hit-bar">${distBar}</div></td>
+      <td><span class="evo-link" onclick="showEvo('${r.key}')">chart</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Show single combo evolution overlay ───────────────────────────────────────
+let evoChart = null;
+function showEvo(key) {
+  const [m0, m1] = key.split(',').map(Number);
+  const d15 = DATA.combos[key]['15'];
+  const d20 = DATA.combos[key]['20'];
+  const m0n = DATA.methods[m0].replace(/\s*\(.*?\)/g,'');
+  const m1n = DATA.methods[m1].replace(/\s*\(.*?\)/g,'');
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:flex;align-items:center;justify-content:center;`;
+  const box = document.createElement('div');
+  box.style.cssText = `background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;width:min(700px,95vw);`;
+  box.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:16px">
+      <div>
+        <div style="font-weight:700;font-size:1rem">${m0n} + ${m1n}</div>
+        <div style="color:var(--muted);font-size:.78rem">Methods ${m0+1} &amp; ${m1+1} · Rolling 50-draw average hits</div>
+      </div>
+      <button onclick="this.closest('[style]').remove()" style="background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;line-height:1">&times;</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+      <div style="background:var(--surface2);border-radius:8px;padding:12px">
+        <div style="font-size:.7rem;color:var(--muted);text-transform:uppercase;margin-bottom:6px">K=15</div>
+        <div>Avg: <b>${d15.avg}</b> · 4+: <b>${d15.fp}</b></div>
+        <div style="color:var(--muted);font-size:.75rem">Dist: ${d15.dist.join(' / ')}</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:8px;padding:12px">
+        <div style="font-size:.7rem;color:var(--muted);text-transform:uppercase;margin-bottom:6px">K=20</div>
+        <div>Avg: <b>${d20.avg}</b> · 4+: <b>${d20.fp}</b></div>
+        <div style="color:var(--muted);font-size:.75rem">Dist: ${d20.dist.join(' / ')}</div>
+      </div>
+    </div>
+    <div style="position:relative;height:220px"><canvas id="evoCanvas"></canvas></div>`;
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+
+  const W = 50;
+  if (evoChart) evoChart.destroy();
+  evoChart = new Chart(document.getElementById('evoCanvas'), {
+    type: 'line',
+    data: {
+      labels: DATA.dates,
+      datasets: [
+        { label:'K=15', data: rolling(d15.hits, W), borderColor:'#38bdf8', borderWidth:1.5, pointRadius:0, tension:.4, fill:false },
+        { label:'K=20', data: rolling(d20.hits, W), borderColor:'#4ade80', borderWidth:1.5, pointRadius:0, tension:.4, fill:false },
+      ],
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false, animation:false,
+      plugins:{ legend:{ display:true, labels:{ color:'#94a3b8', font:{size:10}, boxWidth:12 }}},
+      scales:{
+        x:{ ticks:{ color:'#64748b', maxTicksLimit:8, font:{size:9}}, grid:{color:'#1e293b'}},
+        y:{ ticks:{ color:'#64748b', font:{size:9}}, grid:{color:'#334155'}},
+      },
+    },
+  });
+}
+
+init();
+</script>
+</body>
+</html>
