@@ -464,6 +464,9 @@ export default async function PredictionsPage() {
   const nextSerial = (serials[serials.length-1] ?? 2120) + 1;
 
   const last43 = nums.slice(-43);
+  // WMA weights: oldest=1, newest=43
+  const wmaWts = Array.from({length: last43.length}, (_, i) => i + 1);
+  const wmaTotalWt = wmaWts.reduce((a, b) => a + b, 0);
   const lam=0.95, wts=nums.map((_,i)=>Math.pow(lam,nums.length-1-i)), ws=wts.reduce((a,b)=>a+b,0);
 
   const freqAll: Record<number,number> = {};
@@ -505,6 +508,8 @@ export default async function PredictionsPage() {
       raw: monteCarloPred(nums) },
     { label:"14", color:"#84cc16", method:"Naive Bayes (Bernoulli, sequential co-occurrence)",
       raw: naiveBayesPred(nums) },
+    { label:"15", color:"#f97316", method:"Weighted MA · last 43 (linear weights)",
+      raw: makeUnique([0,1,2,3,4,5].map(p=>Math.max(1,Math.min(43,Math.round(last43.reduce((s,d,i)=>s+wmaWts[i]*d[p],0)/wmaTotalWt)))), freqAll) },
   ];
 
   return (
