@@ -100,6 +100,9 @@ tbody td { padding:10px 14px; font-size:.82rem; }
 .score-4 { background:#14532d; color:#4ade80; }
 .score-5 { background:#0c4a6e; color:#38bdf8; }
 .score-6 { background:#1a0044; color:#a78bfa; font-size:.85rem; }
+.sfbtn { padding:3px 10px; background:var(--surface2); border:1px solid var(--border); border-radius:6px; cursor:pointer; font-size:.75rem; font-weight:600; color:var(--muted); transition:all .15s; }
+.sfbtn.active { background:var(--accent); color:#0f172a; border-color:var(--accent); }
+.sfbtn:hover:not(.active) { border-color:var(--accent); }
 .detail-stats { display:flex; gap:20px; margin-bottom:12px; flex-wrap:wrap; }
 .dstat { background:var(--surface2); border-radius:8px; padding:10px 16px; }
 .dstat-val { font-size:1.1rem; font-weight:800; }
@@ -243,7 +246,7 @@ function renderSummary() {
 
   document.getElementById('summaryCards').innerHTML = cards.map(c => {
     const r = byKey[c.key];
-    return `<div class="scard ${c.cls}">
+    return `<div class="scard ${c.cls}" style="cursor:pointer" onclick="showDetail('${c.key}')" title="Click to view round detail">
       <div class="scard-label">${c.label} · K=${currentK}</div>
       <div class="scard-title">${mname(r.m0)} + ${mname(r.m1)}</div>
       <div class="scard-sub">Methods ${r.m0+1} &amp; ${r.m1+1}</div>
@@ -251,6 +254,7 @@ function renderSummary() {
         <div><div class="stat-val">${c.fmtStat(r[c.statKey])}</div><div class="stat-lbl">${{z6:'6-hit draws',z0:'0-hit draws',fp:'4+ draws',avg:'avg score'}[c.statKey]}</div></div>
         <div><div class="stat-val" style="font-size:.85rem;color:var(--muted)">${c.fmtSub(r)}</div></div>
       </div>
+      <div style="margin-top:8px;font-size:.72rem;color:var(--accent)">View detail ↗</div>
     </div>`;
   }).join('');
 }
@@ -424,9 +428,20 @@ async function showDetail(key) {
         <!-- Detail table tab -->
         <div class="tab-pane" id="tab-detail">
           <div id="detail-loading" style="padding:30px;text-align:center;color:var(--muted)">Loading round data…</div>
-          <div id="detail-table-inner" style="display:none;flex:1;overflow:hidden;display:none;flex-direction:column">
-            <div style="padding:8px 0 10px;font-size:.75rem;color:var(--muted)">
-              Showing all <strong id="detail-count"></strong> rounds · <strong style="color:#4ade80">Green border</strong> = hit · <strong style="color:#94a3b8">Dim</strong> = miss
+          <div id="detail-table-inner" style="display:none;flex:1;overflow:hidden;flex-direction:column">
+            <div style="display:flex;align-items:center;gap:10px;padding:8px 0 10px;flex-wrap:wrap">
+              <span style="font-size:.75rem;color:var(--muted)">Filter score:</span>
+              <div style="display:flex;gap:4px;flex-wrap:wrap" id="score-filter-btns">
+                <button class="sfbtn active" data-score="all" onclick="filterScore(this,'all')">All (<span id="cnt-all"></span>)</button>
+                <button class="sfbtn" data-score="0" onclick="filterScore(this,'0')" style="color:#f87171">0-hit (<span id="cnt-0"></span>)</button>
+                <button class="sfbtn" data-score="1" onclick="filterScore(this,'1')">1 (<span id="cnt-1"></span>)</button>
+                <button class="sfbtn" data-score="2" onclick="filterScore(this,'2')">2 (<span id="cnt-2"></span>)</button>
+                <button class="sfbtn" data-score="3" onclick="filterScore(this,'3')">3 (<span id="cnt-3"></span>)</button>
+                <button class="sfbtn" data-score="4" onclick="filterScore(this,'4')" style="color:#facc15">4 (<span id="cnt-4"></span>)</button>
+                <button class="sfbtn" data-score="5" onclick="filterScore(this,'5')" style="color:#4ade80">5 (<span id="cnt-5"></span>)</button>
+                <button class="sfbtn" data-score="6" onclick="filterScore(this,'6')" style="color:#a78bfa">6-hit (<span id="cnt-6"></span>)</button>
+              </div>
+              <span style="font-size:.72rem;color:var(--muted)">· <strong style="color:#4ade80">Green ring</strong> = hit · <strong style="color:#94a3b8">Dim</strong> = miss</span>
             </div>
             <div class="detail-table-wrap">
               <table>
@@ -492,45 +507,48 @@ function switchTab(btn, tabId) {
   if (tabId === 'tab-detail') pane.dispatchEvent(new Event('click'));
 }
 
+// Store built rows for filtering
+let detailRows = null;  // { score: [html, ...] }
+
+function filterScore(btn, score) {
+  document.querySelectorAll('.sfbtn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const tbody = document.getElementById('detail-tbody');
+  if (!detailRows) return;
+  const rows = score === 'all' ? Object.values(detailRows).flat() : (detailRows[score] || []);
+  tbody.innerHTML = rows.join('');
+}
+
 function buildDetailTable(overlay, rounds, m0, m1, K, key) {
   const loading = overlay.querySelector('#detail-loading');
   const inner   = overlay.querySelector('#detail-table-inner');
   const tbody   = overlay.querySelector('#detail-tbody');
   const T = rounds.dates.length;
 
-  // For each round: compute top-K for each method using all-method consensus
-  // all_freq[n] = count of methods predicting n (from rounds.picks[t])
-  const rows_html = [];
-  const ks = String(K);
+  // rows_by_score[score] = [html, ...]
+  const byScore = {'0':[],'1':[],'2':[],'3':[],'4':[],'5':[],'6':[]};
+  const allRows = [];
 
   for (let t = 0; t < T; t++) {
-    const allPicks = rounds.picks[t];       // [16][15]
-    const actual   = rounds.actuals[t];     // [6]
+    const allPicks = rounds.picks[t];
+    const actual   = rounds.actuals[t];
     const date     = rounds.dates[t];
     const actualSet = new Set(actual);
 
-    // All-method frequency for this round
+    // All-method frequency
     const freq = {};
     for (const mp of allPicks) for (const n of mp) freq[n] = (freq[n]||0)+1;
 
-    // Top-K from m0: rank m0's picks by all-method freq, take K
-    const m0picks = allPicks[m0];
-    const m0topK = [...m0picks].sort((a,b)=>(freq[b]||0)-(freq[a]||0)).slice(0,K);
+    const m0topK = [...allPicks[m0]].sort((a,b)=>(freq[b]||0)-(freq[a]||0)).slice(0,K);
+    const m1topK = [...allPicks[m1]].sort((a,b)=>(freq[b]||0)-(freq[a]||0)).slice(0,K);
+    const union  = [...new Set([...m0topK, ...m1topK])].sort((a,b)=>a-b);
+    const score  = union.filter(n => actualSet.has(n)).length;
 
-    // Top-K from m1
-    const m1picks = allPicks[m1];
-    const m1topK = [...m1picks].sort((a,b)=>(freq[b]||0)-(freq[a]||0)).slice(0,K);
-
-    // Union
-    const union = [...new Set([...m0topK, ...m1topK])].sort((a,b)=>a-b);
-    const score = union.filter(n => actualSet.has(n)).length;
-
-    const ballsHtml = (nums, highlightSet) => nums.map(n =>
-      `<div class="ball ${highlightSet.has(n)?'hit':'miss'}" style="background:${ballColor(n)}">${n}</div>`
+    const ballsHtml = (nums, hs) => nums.map(n =>
+      `<div class="ball ${hs.has(n)?'hit':'miss'}" style="background:${ballColor(n)}">${n}</div>`
     ).join('');
 
-    const unionSet = new Set(union);
-    rows_html.push(`<tr>
+    const rowHtml = `<tr>
       <td style="color:var(--muted)">${t+1}</td>
       <td style="white-space:nowrap;color:var(--muted)">${date}</td>
       <td><div class="balls">${ballsHtml(m0topK.sort((a,b)=>a-b), actualSet)}</div></td>
@@ -538,12 +556,23 @@ function buildDetailTable(overlay, rounds, m0, m1, K, key) {
       <td><div class="balls">${ballsHtml(union, actualSet)}</div></td>
       <td><div class="balls">${actual.map(n=>`<div class="ball hit" style="background:${ballColor(n)};box-shadow:0 0 0 2px #4ade80">${n}</div>`).join('')}</div></td>
       <td><span class="hit-score score-${score}">${score}</span></td>
-    </tr>`);
+    </tr>`;
+    allRows.push(rowHtml);
+    byScore[String(score)].push(rowHtml);
   }
 
+  detailRows = { all: allRows, ...byScore };
+
+  // Fill score filter counts
+  for (let s = 0; s <= 6; s++) {
+    const el = overlay.querySelector('#cnt-'+s);
+    if (el) el.textContent = byScore[String(s)].length;
+  }
+  const elAll = overlay.querySelector('#cnt-all');
+  if (elAll) elAll.textContent = T;
+
   loading.style.display = 'none';
-  overlay.querySelector('#detail-count').textContent = T;
-  tbody.innerHTML = rows_html.join('');
+  tbody.innerHTML = allRows.join('');
   inner.style.display = 'flex';
 }
 
