@@ -65,7 +65,7 @@ export default function PredictionsView({
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Predictions</h1>
         <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
-          Draw #{nextSerial} &middot; {drawCount.toLocaleString()} draws analysed &middot; 15 models
+          Draw #{nextSerial} &middot; {drawCount.toLocaleString()} draws analysed &middot; 16 models
         </p>
       </div>
 
@@ -146,7 +146,7 @@ export default function PredictionsView({
         {selected === "all" && (
           <div className="flex items-center gap-1.5">
             <span className="inline-block w-4 h-4 rounded-full border-2 border-yellow-400 bg-yellow-100 dark:bg-yellow-900/30" />
-            <span>8+ of 15 models (consensus)</span>
+            <span>9+ of 16 models (consensus)</span>
           </div>
         )}
         {filterNum !== null && (
@@ -218,7 +218,7 @@ export default function PredictionsView({
                   <div className="flex gap-2 flex-wrap">
                     {visibleNums.map((n) => {
                       const count = numCount[n] ?? 0;
-                      const hot = selected === "all" && count >= 8;
+                      const hot = selected === "all" && count >= 9;
                       const isFilterMatch = filterNum !== null && n === filterNum;
                       const dimmed = filterNum !== null && !isFilterMatch;
                       return (
@@ -234,9 +234,9 @@ export default function PredictionsView({
                             style={{ background: ballColor(n) }}
                             title={
                               isFilterMatch
-                                ? `#${n} — in ${count}/15 models`
+                                ? `#${n} — in ${count}/16 models`
                                 : selected === "all"
-                                ? `In ${count}/15 models`
+                                ? `In ${count}/16 models`
                                 : ""
                             }
                           >
