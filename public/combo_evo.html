@@ -485,25 +485,30 @@ async function showDetail(key) {
   // Load round detail lazily
   overlay.querySelector('#tab-detail').addEventListener('click', async () => {
     const inner = overlay.querySelector('#detail-table-inner');
-    if (inner.style.display === 'flex') return;
-    const rounds = await loadRounds();
-    if (!rounds) return;
-    buildDetailTable(overlay, rounds, m0, m1, K, key);
+    if (inner && inner.style.display === 'flex') return;
+    const loadEl = overlay.querySelector('#detail-loading');
+    try {
+      const rounds = await loadRounds();
+      if (!rounds) { if (loadEl) loadEl.textContent = 'Failed to load round data.'; return; }
+      buildDetailTable(overlay, rounds, m0, m1, K, key);
+    } catch(e) {
+      if (loadEl) loadEl.textContent = 'Error: ' + e.message;
+    }
   }, { once: true });
 }
 
 function switchTab(btn, tabId) {
-  btn.closest('.tab-bar').querySelectorAll('button').forEach(b => b.classList.remove('active'));
+  const box = btn.closest('.overlay-box');
+  box.querySelectorAll('.tab-bar button').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  btn.closest('.tab-content').querySelectorAll('.tab-pane').forEach(p => {
+  box.querySelectorAll('.tab-pane').forEach(p => {
     p.classList.remove('active');
     p.style.display = 'none';
   });
-  const pane = document.getElementById(tabId);
+  const pane = box.querySelector('#' + tabId);
   pane.classList.add('active');
   pane.style.display = 'flex';
   pane.style.flexDirection = 'column';
-  // trigger lazy load if switching to detail
   if (tabId === 'tab-detail') pane.dispatchEvent(new Event('click'));
 }
 
@@ -515,7 +520,7 @@ function filterScore(btn, score) {
   btn.classList.add('active');
   const tbody = document.getElementById('detail-tbody');
   if (!detailRows) return;
-  const rows = score === 'all' ? Object.values(detailRows).flat() : (detailRows[score] || []);
+  const rows = score === 'all' ? detailRows.all : (detailRows[score] || []);
   tbody.innerHTML = rows.join('');
 }
 
