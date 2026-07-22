@@ -622,6 +622,85 @@ function buildBestCombo() {
     `;
     container.appendChild(card);
   });
+  buildZeroCombo();
+}
+
+const BC_ZERO = {
+  methods: [2, 4, 8],
+  label: "Exp-W + Markov + HMM",
+  zeroPct: 42.3,
+  zeroCount: 423,
+  note: "Most 0-hit draws across 1,001 backtest draws — use as anti-pick"
+};
+
+function buildZeroCombo() {
+  const container = document.getElementById('bc-cards');
+  const total = DATA.length;
+  const lastEntry = DATA[DATA.length - 1];
+
+  // Compute picks for next draw
+  const votes = {};
+  for (const mi of BC_ZERO.methods) {
+    for (const n of lastEntry.p[mi][0]) votes[n] = (votes[n]||0) + 1;
+  }
+  const avoidNums = Object.entries(votes).sort((a,b)=>+b[1]-+a[1]).slice(0,6).map(([n])=>+n).sort((a,b)=>a-b);
+  const avoidSet = new Set(avoidNums);
+
+  // Anti-picks: frequency of each num across all DATA actual draws (all-history freq)
+  const freq = {};
+  for (const entry of DATA) for (const n of entry.a) freq[n] = (freq[n]||0)+1;
+  const antiPicks = Object.entries(freq)
+    .filter(([n])=>!avoidSet.has(+n))
+    .sort((a,b)=>+b[1]-+a[1])
+    .slice(0,6)
+    .map(([n])=>+n)
+    .sort((a,b)=>a-b);
+
+  // Hit dist for this combo K=6
+  const hitCounts = [0,0,0,0,0,0,0];
+  for (const entry of DATA) {
+    const sv = {};
+    for (const mi of BC_ZERO.methods) for (const n of entry.p[mi][0]) sv[n]=(sv[n]||0)+1;
+    const picks = Object.entries(sv).sort((a,b)=>+b[1]-+a[1]).slice(0,6).map(([n])=>+n);
+    const actualSet = new Set(entry.a);
+    hitCounts[Math.min(picks.filter(n=>actualSet.has(n)).length, 6)]++;
+  }
+  const avg = hitCounts.reduce((s,c,k)=>s+k*c,0)/total;
+  const maxH = Math.max(...hitCounts, 1);
+
+  const card = document.createElement('div');
+  card.style.cssText = 'background:#1a0a0a;border:1px solid #7f1d1d;border-radius:12px;padding:20px;grid-column:1/-1;';
+  card.innerHTML = `
+    <div style="font-size:.75rem;color:#f87171;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">⚠ 0-Hit Combo (Anti-Pick)</div>
+    <div style="font-size:.95rem;color:var(--text);font-weight:700;margin-bottom:2px">${BC_ZERO.label}</div>
+    <div style="font-size:.75rem;color:#f87171;opacity:.7;margin-bottom:14px">${BC_ZERO.note}</div>
+    <div style="display:flex;gap:16px;margin-bottom:16px;flex-wrap:wrap">
+      <div><div style="font-size:1.4rem;font-weight:800;color:#f87171">${BC_ZERO.zeroCount}</div><div style="font-size:.7rem;color:var(--muted)">0-hit draws</div></div>
+      <div><div style="font-size:1.4rem;font-weight:800;color:#f87171">${BC_ZERO.zeroPct}%</div><div style="font-size:.7rem;color:var(--muted)">0-hit rate</div></div>
+      <div><div style="font-size:1.4rem;font-weight:800;color:var(--text)">${avg.toFixed(3)}</div><div style="font-size:.7rem;color:var(--muted)">avg hits</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:.7rem;color:#f87171;margin-bottom:8px">❌ Avoid — this combo's next-draw picks</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          ${avoidNums.map(n=>`<div style="width:32px;height:32px;border-radius:50%;background:#7f1d1d;border:2px solid #f87171;display:flex;align-items:center;justify-content:center;color:#f87171;font-size:.75rem;font-weight:700">${n}</div>`).join('')}
+        </div>
+      </div>
+      <div>
+        <div style="font-size:.7rem;color:var(--green);margin-bottom:8px">✓ Anti-picks — most frequent numbers NOT in combo</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          ${antiPicks.map(n=>`<div style="width:32px;height:32px;border-radius:50%;background:${ballBg(n)};display:flex;align-items:center;justify-content:center;color:#fff;font-size:.75rem;font-weight:700">${n}</div>`).join('')}
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:16px">
+      <div style="font-size:.7rem;color:var(--muted);margin-bottom:6px">Hit distribution (0–6)</div>
+      <div style="display:flex;gap:3px;align-items:flex-end;height:36px">
+        ${hitCounts.map((c,k)=>{const pct=c/maxH;return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px" title="${k} hits: ${c}"><div style="width:100%;border-radius:2px 2px 0 0;height:${Math.max(3,pct*28)}px;background:${BC_HITCOLORS[k]}"></div><span style="font-size:9px;color:var(--muted)">${k}</span></div>`;}).join('')}
+      </div>
+    </div>
+  `;
+  container.appendChild(card);
 }
 
 // Hook into tab switching
