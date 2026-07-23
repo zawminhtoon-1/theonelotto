@@ -25,6 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <a href="/consecutive.html" className="hover:text-gray-900 dark:hover:text-white transition-colors">Consecutive</a>
                 <a href="/position.html" className="hover:text-gray-900 dark:hover:text-white transition-colors">Position Freq</a>
                 <a href="/overdue.html" className="hover:text-gray-900 dark:hover:text-white transition-colors">Overdue</a>
+                <a href="/miss_analysis.html" className="hover:text-gray-900 dark:hover:text-white transition-colors">Miss Analysis</a>
             </nav>
           </div>
         </header>
