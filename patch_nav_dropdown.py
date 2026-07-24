@@ -82,7 +82,6 @@ NAV_HTML = """
         <div class="nav-divider"></div>
         <div class="nav-dd-label">Position</div>
         <a href="/position.html">📍 Position Freq</a>
-        <a href="/position.html#pos1pred">🎯 Pos-1 Predict</a>
         <a href="/pos_predict.html">📊 Pos 1–6 Predict</a>
       </div>
     </div>
