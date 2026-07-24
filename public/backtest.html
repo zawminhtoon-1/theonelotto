@@ -6,6 +6,19 @@
 <title>Loto 6 — 1000-Draw Backtest Report</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
+/* ====== SHARED FIXED NAV ====== */
+.site-nav{position:fixed;top:0;left:0;right:0;height:52px;background:#0a0f1e;
+  border-bottom:1px solid #1e293b;display:flex;align-items:center;padding:0 16px;
+  gap:0;z-index:9999;box-shadow:0 2px 12px rgba(0,0,0,.5)}
+.site-nav .nav-logo{font-size:1rem;font-weight:800;color:#f1f5f9;text-decoration:none;
+  white-space:nowrap;margin-right:16px;flex-shrink:0}
+.site-nav .nav-links{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+.site-nav .nav-links::-webkit-scrollbar{display:none}
+.site-nav .nav-links a{color:#94a3b8;text-decoration:none;font-size:.78rem;padding:5px 10px;
+  border-radius:6px;white-space:nowrap;transition:.15s}
+.site-nav .nav-links a:hover,.site-nav .nav-links a.active{color:#f1f5f9;background:#1e293b}
+/* ============================== */
+
   :root {
     --bg: #0f172a; --surface: #1e293b; --border: #334155;
     --text: #f1f5f9; --muted: #94a3b8; --accent: #38bdf8;
@@ -82,16 +95,25 @@
   .scroll-hint { font-size:.75rem; color:#64748b; display:none; margin-left:auto; }
 </style>
 </head>
-<body>
-<p style="font-size:.8rem;color:#94a3b8;margin-bottom:16px;">
-  <a href="/" style="color:#94a3b8;text-decoration:none;"
-     onmouseover="this.style.textDecoration='underline'"
-     onmouseout="this.style.textDecoration='none'">&larr; Back to site</a>
-  &nbsp;&middot;&nbsp;
-  <a href="/combo_evo.html" style="color:#94a3b8;text-decoration:none;"
-     onmouseover="this.style.textDecoration='underline'"
-     onmouseout="this.style.textDecoration='none'">Combo Evolution &#8594;</a>
-</p>
+<body style="padding-top:52px">
+<nav class="site-nav">
+  <a class="nav-logo" href="/">🎱 TheOneLotto</a>
+  <div class="nav-links">
+    <a href="/">Latest</a>
+    <a href="/predictions">Predictions</a>
+    <a href="/history">History</a>
+    <a href="/numbers">Numbers</a>
+    <a href="/backtest.html">Backtest</a>
+    <a href="/combo_evo.html">Combo Evo</a>
+    <a href="/special.html">Special</a>
+    <a href="/consecutive.html">Consecutive</a>
+    <a href="/position.html">Position</a>
+    <a href="/position.html#pos1pred">Pos-1 Predict</a>
+    <a href="/overdue.html">Overdue</a>
+    <a href="/miss_analysis.html">Miss Analysis</a>
+  </div>
+</nav>
+
 <h1>Loto 6 — 1000-Draw Backtest Report</h1>
 <p class="subtitle">Walk-forward evaluation &middot; Draws #1121–#2121 &middot; 1001 draws &middot; 15 methods &middot; 15 picks each (Method 11: 28 picks)</p>
 <div style="display:flex;align-items:center;gap:10px;margin:10px 0 20px;">
