@@ -21,8 +21,9 @@ const NAV_GROUPS = [
       { href: "/predictions",        icon: "🎯", label: "Predictions" },
       { href: "/backtest.html",      icon: "📊", label: "Backtest" },
       { href: "/combo_evo.html",     icon: "🧬", label: "Combo Evo" },
-      { href: "/overdue.html",       icon: "⏳", label: "Overdue" },
-      { href: "/miss_analysis.html", icon: "❌", label: "Miss Analysis" },
+      { href: "/overdue.html",        icon: "⏳", label: "Overdue" },
+      { href: "/miss_analysis.html",  icon: "❌", label: "Miss Analysis" },
+      { href: "/state_machine.html",  icon: "🔄", label: "State Machine" },
     ],
   },
   {
