@@ -83,6 +83,7 @@ NAV_HTML = """
         <div class="nav-dd-label">Position</div>
         <a href="/position.html">📍 Position Freq</a>
         <a href="/position.html#pos1pred">🎯 Pos-1 Predict</a>
+        <a href="/pos_predict.html">📊 Pos 1–6 Predict</a>
       </div>
     </div>
 
@@ -117,6 +118,7 @@ HTML_FILES = [
     "position.html",
     "special.html",
     "state_machine.html",
+    "pos_predict.html",
 ]
 
 for fname in HTML_FILES:

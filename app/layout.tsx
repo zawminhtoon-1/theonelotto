@@ -31,8 +31,9 @@ const NAV_GROUPS = [
     items: [
       { href: "/special.html",          icon: "⭐", label: "Special" },
       { href: "/consecutive.html",      icon: "🔗", label: "Consecutive" },
-      { href: "/position.html",         icon: "📍", label: "Position Freq" },
-      { href: "/position.html#pos1pred",icon: "🎯", label: "Pos-1 Predict" },
+      { href: "/position.html",          icon: "📍", label: "Position Freq" },
+      { href: "/position.html#pos1pred", icon: "🎯", label: "Pos-1 Predict" },
+      { href: "/pos_predict.html",       icon: "📊", label: "Pos 1–6 Predict" },
     ],
   },
 ];
