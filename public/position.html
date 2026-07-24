@@ -608,6 +608,7 @@ window.showTab = function(id, el) {
 </script>
 
 
+<script>
 // Hash-based tab deep-linking
 (function(){
   function activateFromHash() {
@@ -621,6 +622,7 @@ window.showTab = function(id, el) {
   window.addEventListener('DOMContentLoaded', activateFromHash);
   window.addEventListener('hashchange', activateFromHash);
 })();
+</script>
 
 
 <script>
