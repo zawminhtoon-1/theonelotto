@@ -47,6 +47,8 @@
 
 
 
+
+
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}
 header{background:#1e293b;padding:14px 20px;display:flex;align-items:center;gap:16px;border-bottom:1px solid #334155}
@@ -119,6 +121,7 @@ main{padding:20px;max-width:1300px;margin:0 auto}
 
 
 
+
 <nav class="site-nav">
   <a class="nav-logo" href="/">🎱 The<span>One</span>Lotto</a>
   <div class="nav-groups">
@@ -166,6 +169,7 @@ main{padding:20px;max-width:1300px;margin:0 auto}
 
   </div>
 </nav>
+
 
 
 
@@ -374,6 +378,23 @@ function showTab(id,tabEl){
 
 buildCurrentOverdue();
 </script>
+
+<script>
+(function(){
+  var path = window.location.pathname + window.location.hash;
+  document.querySelectorAll('.nav-dropdown a').forEach(function(a){
+    var href = a.getAttribute('href');
+    if(!href) return;
+    var hPath = href.split('#')[0];
+    var hHash = href.includes('#') ? href : '';
+    if(href === path) { a.classList.add('active'); return; }
+    if(hPath && hPath !== '/' && path.startsWith(hPath) && !href.includes('#')) {
+      a.classList.add('active');
+    }
+  });
+})();
+</script>
+
 
 <script>
 (function(){

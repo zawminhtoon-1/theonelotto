@@ -19,7 +19,7 @@ OUT_PATH = r"C:\Users\Zaw Min Htoon\source\repos\theonelotto\public\pos_predict.
 
 BT_DRAWS    = 1000
 CMP_WINDOW  = 200
-WINDOWS     = [50, 100, 200, 500, 0]
+WINDOWS     = [0]   # all-time only
 HALF_LIFE   = 50.0
 SIGMA       = 3.5
 DRIFT_ALPHA = 0.20
@@ -208,47 +208,43 @@ for pi in range(6):
 print("\nBuilding per-position detail...")
 
 def compute_detail(pos_idx, best_key):
-    bt      = {w: [] for w in WINDOWS}
-    total_h = {w: 0 for w in WINDOWS}
+    bt      = []
+    total_h = 0
 
     for i in range(test_start, T):
         actual = draws[i]["n"][pos_idx]
-        for w in WINDOWS:
-            train = draws[:i] if w == 0 else draws[max(0, i-w):i]
-            if len(train) < 5:
-                continue
-            pred     = predict(best_key, train, pos_idx)
-            hit      = actual in pred
-            min_dist = min(abs(actual - p) for p in pred) if pred else 99
-            if hit: total_h[w] += 1
-            bt[w].append({"s": draws[i]["s"], "d": draws[i]["d"],
-                          "v": actual, "pr": pred, "hit": hit, "md": min_dist})
-
-    current, stats = {}, {}
-    for w in WINDOWS:
-        train    = draws if w == 0 else draws[max(0, T-w):]
+        train  = draws[:i]
+        if len(train) < 5:
+            continue
         d_val    = final_drifts[pos_idx] if best_key == "adb" else 0.0
-        current[str(w)] = predict(best_key, train, pos_idx, d_val)
-        tot  = len(bt[w])
-        hr   = total_h[w] / tot if tot else 0
-        k    = cmp_results[best_key][pos_idx]["k"]
-        rand = k / 43
-        lift = hr / rand if rand else 0
-        tol  = {str(t): sum(1 for e in bt[w] if e["md"] <= t) for t in [0,1,2,3]}
-        stats[str(w)] = {"hitRate": round(hr,4), "rand": round(rand,4),
-                         "lift": round(lift,4), "hits": total_h[w], "total": tot,
-                         "k": k, "tol": tol}
+        pred     = predict(best_key, train, pos_idx, d_val)
+        hit      = actual in pred
+        min_dist = min(abs(actual - p) for p in pred) if pred else 99
+        if hit: total_h += 1
+        bt.append({"s": draws[i]["s"], "d": draws[i]["d"],
+                   "v": actual, "pr": pred, "hit": hit, "md": min_dist})
+
+    d_val   = final_drifts[pos_idx] if best_key == "adb" else 0.0
+    current = predict(best_key, draws, pos_idx, d_val)
+    tot     = len(bt)
+    hr      = total_h / tot if tot else 0
+    k       = cmp_results[best_key][pos_idx]["k"]
+    rand    = k / 43
+    lift    = hr / rand if rand else 0
+    tol     = {str(t): sum(1 for e in bt if e["md"] <= t) for t in [0,1,2,3]}
+    stats   = {"hitRate": round(hr,4), "rand": round(rand,4),
+               "lift": round(lift,4), "hits": total_h, "total": tot,
+               "k": k, "tol": tol}
 
     freq_all = [0]*43
     for d in draws:
         freq_all[d["n"][pos_idx]-1] += 1
     history = [{"s": d["s"], "v": d["n"][pos_idx]} for d in draws[-30:]]
 
-    return {"windows": WINDOWS,
-            "bt":      {str(w): list(reversed(bt[w]))[:120] for w in WINDOWS},
-            "current": current, "stats": stats,
+    return {"current": current, "stats": stats,
+            "bt": list(reversed(bt))[:120],
             "freqAll": freq_all, "history": history,
-            "drift":   final_drifts[pos_idx]}
+            "drift": final_drifts[pos_idx]}
 
 POS_DATA = [compute_detail(pi, best_strategy[pi]) for pi in range(6)]
 
@@ -369,10 +365,6 @@ h1{{font-size:1.4rem;font-weight:800;color:#f1f5f9;margin-bottom:4px}}
   transition:.15s;white-space:nowrap;margin-bottom:-2px;flex-shrink:0}}
 .pos-tab.active{{color:#f1f5f9;border-color:#1e293b;border-bottom:2px solid #0f172a}}
 .pos-panel{{display:none;padding-top:20px}}.pos-panel.active{{display:block}}
-.win-tabs{{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}}
-.win-btn{{padding:5px 14px;border-radius:6px;cursor:pointer;font-size:.8rem;color:#94a3b8;border:1px solid #334155;background:#1e293b;transition:.15s}}
-.win-btn:hover{{color:#e2e8f0}}
-.win-btn.active{{color:#fff}}
 .info-row{{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center}}
 .badge{{padding:4px 12px;border-radius:8px;font-size:.78rem;font-weight:700}}
 .bg{{background:#0c2e1f;color:#4ade80;border:1px solid #4ade8033}}
@@ -427,7 +419,7 @@ h1{{font-size:1.4rem;font-weight:800;color:#f1f5f9;margin-bottom:4px}}
 {NAV_HTML}
 <main>
   <h1>📊 Position Prediction</h1>
-  <p class="subtitle">8 strategies compared · {BT_DRAWS}-draw walk-forward backtest · window={CMP_WINDOW} · ABD = Gaussian proximity + adaptive drift correction</p>
+  <p class="subtitle">8 strategies compared · {BT_DRAWS}-draw walk-forward backtest · all-time history · ABD = Gaussian proximity + adaptive drift correction</p>
 
   <div class="sec">
     <div class="sec-title">Best Predictions for Draw #<span id="nd"></span></div>
@@ -516,7 +508,6 @@ D.posMeta.forEach((pm,pi)=>{{
         <span class="badge bg">✦ Best: ${{bl}} · K=${{bK}}</span>
         <span class="badge ${{dc}}">⇄ Drift: ${{ds}}${{drift.toFixed(2)}} numbers</span>
       </div>
-      <div class="win-tabs" id="wt-${{pi}}"></div>
     </div>
     <div class="sec">
       <div class="sec-title">Prediction for Draw #${{D.latestSerial+1}}</div>
@@ -552,30 +543,21 @@ D.posMeta.forEach((pm,pi)=>{{
       </table></div>
     </div>`;
   panelsEl.appendChild(panel);
-  renderPos(pi,pd.windows[1]);
+  renderPos(pi);
 }});
 
-function renderPos(pi,aw){{
-  const pm=D.posMeta[pi],pd=D.posData[pi],wk=String(aw),bk=D.bestStrategy[pi];
-  const ps=new Set(pd.current[wk]||[]),st=pd.stats[wk]||{{}};
+function renderPos(pi){{
+  const pm=D.posMeta[pi],pd=D.posData[pi],bk=D.bestStrategy[pi];
+  const ps=new Set(pd.current||[]),st=pd.stats||{{}};
 
-  // Window buttons
-  const wt=document.getElementById(`wt-${{pi}}`); wt.innerHTML='';
-  pd.windows.forEach(w=>{{
-    const b=document.createElement('div');
-    b.className='win-btn'+(w===aw?' active':'');
-    if(w===aw) b.style.cssText=`background:${{hx(pm.color,.2)}};border-color:${{pm.color}};color:${{pm.color}}`;
-    b.textContent=w===0?'All-time':'Last '+w;
-    b.onclick=()=>renderPos(pi,w); wt.appendChild(b);
-  }});
-
+  // (no window buttons — all-time only)
   // Picks
-  const picks=pd.current[wk]||[];
+  const picks=pd.current||[];
   document.getElementById(`pk-${{pi}}`).innerHTML=
     picks.map((n,i)=>`<div style="text-align:center">
       <div class="pick-ball" style="background:${{hx(pm.color,.7+i*.1)}}">${{n}}</div>
       <div class="pick-lbl">Pick ${{i+1}}</div></div>`).join('')+
-    `<span style="color:#64748b;font-size:.82rem;margin-left:10px">draw #${{D.latestSerial+1}}<br>${{aw===0?'All-time':'Last '+aw}}</span>`;
+    `<span style="color:#64748b;font-size:.82rem;margin-left:10px">draw #${{D.latestSerial+1}}<br>All-time history</span>`;
 
   // Tolerance bars
   const tol=st.tol||{{}}, tot=st.total||1;
@@ -617,7 +599,7 @@ function renderPos(pi,aw){{
 
   // BT table
   const tbody=document.getElementById(`bt-${{pi}}`); tbody.innerHTML='';
-  (pd.bt[wk]||[]).slice(0,100).forEach(e=>{{
+  (pd.bt||[]).slice(0,100).forEach(e=>{{
     const md=e.md!==undefined?e.md:Math.min(...(e.pr||[]).map(p=>Math.abs(p-e.v)));
     const dc=md===0?'d0':md===1?'d1':md===2?'d2':'dmiss';
     const tr=document.createElement('tr'); tr.className=dc;
