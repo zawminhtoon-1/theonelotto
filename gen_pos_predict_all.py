@@ -248,19 +248,63 @@ def compute_detail(pos_idx, best_key):
 
 POS_DATA = [compute_detail(pi, best_strategy[pi]) for pi in range(6)]
 
+# ── Combined 6-number backtest ─────────────────────────────────────────────────
+print("\nBuilding combined combo backtest...")
+combo_bt    = []
+match_dist  = [0] * 7   # index = number of matched numbers (0-6)
+
+for i in range(test_start, T):
+    actual = draws[i]["n"]
+    train  = draws[:i]
+    if len(train) < 5:
+        continue
+    combo = []
+    for pos_idx in range(6):
+        bk    = best_strategy[pos_idx]
+        d_val = final_drifts[pos_idx] if bk == "adb" else 0.0
+        pred  = predict(bk, train, pos_idx, d_val)
+        combo.append(pred[0])   # top-1 from each position
+    matches = len(set(combo) & set(actual))
+    match_dist[matches] += 1
+    combo_bt.append({"s": draws[i]["s"], "d": draws[i]["d"],
+                     "actual": actual, "combo": sorted(combo), "matches": matches})
+
+# Current prediction combo (top-1 from each position, using all draws)
+combo_now = []
+for pos_idx in range(6):
+    bk    = best_strategy[pos_idx]
+    d_val = final_drifts[pos_idx] if bk == "adb" else 0.0
+    pred  = predict(bk, draws, pos_idx, d_val)
+    combo_now.append(pred[0])
+combo_now = sorted(combo_now)
+
+total_combo  = len(combo_bt)
+avg_matches  = sum(k * match_dist[k] for k in range(7)) / total_combo if total_combo else 0
+rand_expected = 6 * 6 / 43   # expected matches picking 6 from 43 vs lottery 6
+
+print(f"  Avg matches: {avg_matches:.3f}  (random baseline: {rand_expected:.3f})")
+print(f"  Match dist: {match_dist}")
+print(f"  Combo now: {combo_now}")
+
 # ── Serialize ──────────────────────────────────────────────────────────────────
 DATA = {
-    "strategies":   STRATEGIES,
-    "posMeta":      POS_META,
-    "posData":      POS_DATA,
-    "cmp":          cmp_results,
-    "bestStrategy": best_strategy,
-    "finalDrifts":  final_drifts,
-    "totalDraws":   T,
-    "btDraws":      BT_DRAWS,
-    "cmpWindow":    CMP_WINDOW,
-    "latestSerial": draws[-1]["s"],
-    "latestDate":   draws[-1]["d"],
+    "strategies":    STRATEGIES,
+    "posMeta":       POS_META,
+    "posData":       POS_DATA,
+    "cmp":           cmp_results,
+    "bestStrategy":  best_strategy,
+    "finalDrifts":   final_drifts,
+    "totalDraws":    T,
+    "btDraws":       BT_DRAWS,
+    "cmpWindow":     CMP_WINDOW,
+    "latestSerial":  draws[-1]["s"],
+    "latestDate":    draws[-1]["d"],
+    "comboNow":      combo_now,
+    "comboBt":       list(reversed(combo_bt))[:200],
+    "matchDist":     match_dist,
+    "avgMatches":    round(avg_matches, 4),
+    "randExpected":  round(rand_expected, 4),
+    "comboTotal":    total_combo,
 }
 DATA_JSON = json.dumps(DATA, separators=(",",":"))
 print(f"\nJSON size: {len(DATA_JSON):,} bytes")
@@ -412,6 +456,24 @@ h1{{font-size:1.4rem;font-weight:800;color:#f1f5f9;margin-bottom:4px}}
 .pc-near{{background:#0c2240;color:#38bdf8;border:1px solid #38bdf8}}
 .pc-miss{{background:#1e293b;color:#64748b;border:1px solid #334155}}
 .dist-badge{{font-size:.7rem;font-weight:700;padding:2px 6px;border-radius:4px}}
+/* match bars */
+.match-bars{{display:flex;gap:6px;align-items:flex-end;height:120px;margin-bottom:8px}}
+.match-bar-col{{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1}}
+.match-bar{{width:100%;border-radius:4px 4px 0 0;min-height:4px;transition:height .4s}}
+.match-bar-lbl{{font-size:.7rem;color:#94a3b8}}
+.match-bar-cnt{{font-size:.72rem;font-weight:700}}
+/* combo balls row */
+.combo-row{{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}}
+.c-ball{{width:52px;height:52px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:1.1rem;font-weight:800;color:#fff}}
+.c-ball-lbl{{font-size:.7rem;color:#94a3b8;margin-top:3px;text-align:center}}
+/* combo bt table */
+.act-ball{{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;font-size:.75rem;font-weight:700}}
+.act-ball.hit{{background:#14532d;color:#4ade80;border:2px solid #22c55e}}
+.act-ball.miss{{background:#1e293b;color:#64748b}}
+.pred-ball{{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;font-size:.75rem;font-weight:700}}
+.pred-ball.hit{{background:#14532d;color:#4ade80;border:2px solid #22c55e}}
+.pred-ball.miss{{background:#1e293b;color:#475569}}
+.match-badge{{display:inline-flex;align-items:center;justify-content:center;padding:2px 8px;border-radius:6px;font-size:.75rem;font-weight:700}}
 @media(max-width:640px){{.cmp-strip{{grid-template-columns:repeat(3,1fr)}}.pos-tab{{padding:8px 12px;font-size:.78rem}}}}
 </style>
 </head>
@@ -615,6 +677,106 @@ function renderPos(pi){{
     tbody.appendChild(tr);
   }});
 }}
+
+// ── Combined tab ──────────────────────────────────────────────────────────────
+(function(){{
+  // Tab button
+  const tab=document.createElement('div');
+  tab.className='pos-tab'; tab.textContent='Combined';
+  tab.style.borderTopColor='#a855f7'; tab.style.color='';
+  tab.onclick=()=>activatePos(6); tabsEl.appendChild(tab);
+
+  // Colours per position for the combo balls
+  const PC=D.posMeta.map(m=>m.color);
+
+  // Panel
+  const panel=document.createElement('div');
+  panel.className='pos-panel';
+  panel.innerHTML=`
+    <div class="sec">
+      <div class="sec-title" style="color:#a855f7">Combined Ticket — Pos 1–6 top pick</div>
+      <div class="info-row">
+        <span class="badge" style="background:#1e0a3c;color:#c084fc;border:1px solid #c084fc55">Avg matches: ${{D.avgMatches.toFixed(3)}} / draw</span>
+        <span class="badge" style="background:#1e293b;color:#64748b;border:1px solid #33415533">Random baseline: ${{D.randExpected.toFixed(3)}}</span>
+        <span class="badge ${{D.avgMatches>D.randExpected?'bg':'ba'}}">${{(D.avgMatches/D.randExpected).toFixed(3)}}x lift</span>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Prediction for Draw #${{D.latestSerial+1}}</div>
+      <div class="combo-row" id="comboNow"></div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Match Count Distribution — last ${{D.comboTotal}} draws</div>
+      <div class="match-bars" id="matchBars"></div>
+      <div style="display:flex;gap:6px;justify-content:center;margin-bottom:4px">
+        ${{[0,1,2,3,4,5,6].map(k=>`<div style="flex:1;text-align:center;font-size:.7rem;color:#64748b">${{k}} match</div>`).join('')}}
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Backtest Stats</div>
+      <div class="stats-row" id="comboStats"></div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Recent Draws</div>
+      <div class="bt-wrap"><table class="bt-tbl">
+        <thead><tr><th>Draw</th><th>Date</th><th>Predicted</th><th>Actual</th><th>Matches</th></tr></thead>
+        <tbody id="comboBt"></tbody>
+      </table></div>
+    </div>`;
+  panelsEl.appendChild(panel);
+
+  // Render combo now balls
+  document.getElementById('comboNow').innerHTML=D.comboNow.map((n,i)=>{{
+    const col=PC[i]||'#6366f1';
+    return `<div style="text-align:center">
+      <div class="c-ball" style="background:${{hx(col,.8)}}">${{n}}</div>
+      <div class="c-ball-lbl">P${{i+1}}</div></div>`;
+  }}).join('');
+
+  // Match distribution bars
+  const maxCnt=Math.max(...D.matchDist,1);
+  document.getElementById('matchBars').innerHTML=D.matchDist.map((cnt,k)=>{{
+    const pct=(cnt/D.comboTotal*100);
+    const ht=Math.max(4,Math.round((cnt/maxCnt)*108));
+    const col=k===0?'#334155':k===1?'#1e3a5f':k===2?'#0c2e1f':k===3?'#14532d':k>=4?'#166534':'#134e4a';
+    const tcol=k>=2?'#4ade80':'#64748b';
+    return `<div class="match-bar-col">
+      <div class="match-bar-cnt" style="color:${{tcol}}">${{cnt}}</div>
+      <div class="match-bar" style="height:${{ht}}px;background:${{col}}"></div>
+      <div class="match-bar-lbl">${{pct.toFixed(1)}}%</div>
+    </div>`;
+  }}).join('');
+
+  // Stats
+  const at2=D.matchDist.slice(2).reduce((a,b)=>a+b,0);
+  const at3=D.matchDist.slice(3).reduce((a,b)=>a+b,0);
+  document.getElementById('comboStats').innerHTML=`
+    <div class="stat-box"><div class="sv" style="color:#c084fc">${{D.avgMatches.toFixed(3)}}</div><div class="sl">Avg matches/draw</div></div>
+    <div class="stat-box"><div class="sv" style="color:#64748b">${{D.randExpected.toFixed(3)}}</div><div class="sl">Random baseline</div></div>
+    <div class="stat-box"><div class="sv" style="color:#f1f5f9">${{(D.avgMatches/D.randExpected).toFixed(3)}}×</div><div class="sl">Lift</div></div>
+    <div class="stat-box"><div class="sv" style="color:#4ade80">${{at2}} / ${{D.comboTotal}}</div><div class="sl">≥2 matches</div></div>
+    <div class="stat-box"><div class="sv" style="color:#22c55e">${{at3}} / ${{D.comboTotal}}</div><div class="sl">≥3 matches</div></div>`;
+
+  // BT rows
+  const tbody=document.getElementById('comboBt');
+  D.comboBt.forEach(e=>{{
+    const hitSet=new Set(e.actual.filter(n=>e.combo.includes(n)));
+    const mc=e.matches;
+    const tr=document.createElement('tr');
+    const mcol=mc===0?'#64748b':mc===1?'#38bdf8':mc===2?'#f59e0b':mc>=3?'#22c55e':'#64748b';
+    const predBalls=e.combo.map((n,i)=>{{
+      const isHit=e.actual.includes(n);
+      return `<span class="pred-ball ${{isHit?'hit':'miss'}}" style="${{isHit?'':'opacity:.5'}}">${{n}}</span>`;
+    }}).join(' ');
+    const actBalls=e.actual.map(n=>{{
+      const isHit=e.combo.includes(n);
+      return `<span class="act-ball ${{isHit?'hit':'miss'}}">${{n}}</span>`;
+    }}).join(' ');
+    tr.innerHTML=`<td>#${{e.s}}</td><td>${{e.d}}</td><td>${{predBalls}}</td><td>${{actBalls}}</td>
+      <td><span class="match-badge" style="background:${{hx(mcol,.15)}};color:${{mcol}}">${{mc}} hit${{mc!==1?'s':''}}</span></td>`;
+    tbody.appendChild(tr);
+  }});
+}})();
 </script>
 </body>
 </html>"""
