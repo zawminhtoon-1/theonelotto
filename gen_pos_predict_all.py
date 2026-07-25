@@ -248,43 +248,48 @@ def compute_detail(pos_idx, best_key):
 
 POS_DATA = [compute_detail(pi, best_strategy[pi]) for pi in range(6)]
 
-# ── Combined 6-number backtest ─────────────────────────────────────────────────
-print("\nBuilding combined combo backtest...")
+# ── Combined backtest — all K picks per position ───────────────────────────────
+# Pos1,2,5,6 → K=2 picks each; Pos3,4 → K=3 picks each  = 14 candidates total
+print("\nBuilding combined combo backtest (all-K per position)...")
 combo_bt    = []
-match_dist  = [0] * 7   # index = number of matched numbers (0-6)
+match_dist  = [0] * 7   # 0..6 matches
 
 for i in range(test_start, T):
     actual = draws[i]["n"]
     train  = draws[:i]
     if len(train) < 5:
         continue
-    combo = []
+    combo_by_pos = []
     for pos_idx in range(6):
         bk    = best_strategy[pos_idx]
         d_val = final_drifts[pos_idx] if bk == "adb" else 0.0
         pred  = predict(bk, train, pos_idx, d_val)
-        combo.append(pred[0])   # top-1 from each position
-    matches = len(set(combo) & set(actual))
-    match_dist[matches] += 1
+        combo_by_pos.append(pred)   # all K picks
+    all_picks = list(dict.fromkeys(n for picks in combo_by_pos for n in picks))  # flat, deduped
+    matches = len(set(all_picks) & set(actual))
+    match_dist[min(matches, 6)] += 1
     combo_bt.append({"s": draws[i]["s"], "d": draws[i]["d"],
-                     "actual": actual, "combo": sorted(combo), "matches": matches})
+                     "actual": actual, "byPos": combo_by_pos,
+                     "picks": all_picks, "matches": matches})
 
-# Current prediction combo (top-1 from each position, using all draws)
-combo_now = []
+# Current prediction — all K per position, using all draws
+combo_now_by_pos = []
 for pos_idx in range(6):
     bk    = best_strategy[pos_idx]
     d_val = final_drifts[pos_idx] if bk == "adb" else 0.0
     pred  = predict(bk, draws, pos_idx, d_val)
-    combo_now.append(pred[0])
-combo_now = sorted(combo_now)
+    combo_now_by_pos.append(pred)
+combo_now_flat = list(dict.fromkeys(n for picks in combo_now_by_pos for n in picks))
 
-total_combo  = len(combo_bt)
-avg_matches  = sum(k * match_dist[k] for k in range(7)) / total_combo if total_combo else 0
-rand_expected = 6 * 6 / 43   # expected matches picking 6 from 43 vs lottery 6
+total_combo   = len(combo_bt)
+avg_matches   = sum(k * match_dist[k] for k in range(7)) / total_combo if total_combo else 0
+n_picks       = sum(len(p) for p in combo_now_by_pos)
+rand_expected = n_picks * 6 / 43   # expected for picking n_picks from 43 vs lottery 6
 
+print(f"  Picks per ticket: {n_picks}  (unique: {len(combo_now_flat)})")
 print(f"  Avg matches: {avg_matches:.3f}  (random baseline: {rand_expected:.3f})")
 print(f"  Match dist: {match_dist}")
-print(f"  Combo now: {combo_now}")
+print(f"  Combo now by pos: {combo_now_by_pos}")
 
 # ── Serialize ──────────────────────────────────────────────────────────────────
 DATA = {
@@ -299,12 +304,14 @@ DATA = {
     "cmpWindow":     CMP_WINDOW,
     "latestSerial":  draws[-1]["s"],
     "latestDate":    draws[-1]["d"],
-    "comboNow":      combo_now,
+    "comboNowByPos": combo_now_by_pos,
+    "comboNowFlat":  combo_now_flat,
     "comboBt":       list(reversed(combo_bt))[:200],
     "matchDist":     match_dist,
     "avgMatches":    round(avg_matches, 4),
     "randExpected":  round(rand_expected, 4),
     "comboTotal":    total_combo,
+    "nPicks":        n_picks,
 }
 DATA_JSON = json.dumps(DATA, separators=(",",":"))
 print(f"\nJSON size: {len(DATA_JSON):,} bytes")
@@ -685,30 +692,25 @@ function renderPos(pi){{
 
 // ── Combined tab ──────────────────────────────────────────────────────────────
 (function(){{
-  // Tab button
   const tab=document.createElement('div');
   tab.className='pos-tab'; tab.textContent='Combined';
-  tab.style.borderTopColor='#a855f7'; tab.style.color='';
   tab.onclick=()=>activatePos(6); tabsEl.appendChild(tab);
-
-  // Colours per position for the combo balls
   const PC=D.posMeta.map(m=>m.color);
 
-  // Panel
   const panel=document.createElement('div');
   panel.className='pos-panel';
   panel.innerHTML=`
     <div class="sec">
-      <div class="sec-title" style="color:#a855f7">Combined Ticket — Pos 1–6 top pick</div>
+      <div class="sec-title" style="color:#a855f7">Combined — all K picks per position (${{D.nPicks}} candidates)</div>
       <div class="info-row">
         <span class="badge" style="background:#1e0a3c;color:#c084fc;border:1px solid #c084fc55">Avg matches: ${{D.avgMatches.toFixed(3)}} / draw</span>
-        <span class="badge" style="background:#1e293b;color:#64748b;border:1px solid #33415533">Random baseline: ${{D.randExpected.toFixed(3)}}</span>
+        <span class="badge" style="background:#1e293b;color:#64748b;border:1px solid #33415533">Random (${{D.nPicks}} picks): ${{D.randExpected.toFixed(3)}}</span>
         <span class="badge ${{D.avgMatches>D.randExpected?'bg':'ba'}}">${{(D.avgMatches/D.randExpected).toFixed(3)}}x lift</span>
       </div>
     </div>
     <div class="sec">
-      <div class="sec-title">Prediction for Draw #${{D.latestSerial+1}}</div>
-      <div class="combo-row" id="comboNow"></div>
+      <div class="sec-title">Candidates for Draw #${{D.latestSerial+1}}</div>
+      <div id="comboNow"></div>
     </div>
     <div class="sec">
       <div class="sec-title">Match Count Distribution — last ${{D.comboTotal}} draws</div>
@@ -724,19 +726,21 @@ function renderPos(pi){{
     <div class="sec">
       <div class="sec-title">Recent Draws</div>
       <div class="bt-wrap"><table class="bt-tbl">
-        <thead><tr><th>Draw</th><th>Date</th><th>Predicted</th><th>Actual</th><th>Matches</th></tr></thead>
+        <thead><tr><th>Draw</th><th>Date</th><th>Candidates (by pos)</th><th>Actual</th><th>Matches</th></tr></thead>
         <tbody id="comboBt"></tbody>
       </table></div>
     </div>`;
   panelsEl.appendChild(panel);
 
-  // Render combo now balls
-  document.getElementById('comboNow').innerHTML=D.comboNow.map((n,i)=>{{
-    const col=PC[i]||'#6366f1';
-    return `<div style="text-align:center">
-      <div class="c-ball" style="background:${{hx(col,.8)}}">${{n}}</div>
-      <div class="c-ball-lbl">P${{i+1}}</div></div>`;
-  }}).join('');
+  // Candidates grouped by position
+  const nowEl=document.getElementById('comboNow');
+  D.comboNowByPos.forEach((picks,pi)=>{{
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:6px';
+    row.innerHTML=`<span style="font-size:.75rem;color:#64748b;width:38px;flex-shrink:0">P${{pi+1}}</span>`+
+      picks.map(n=>`<span class="pred-ball hit" style="background:${{hx(PC[pi],.7)}};border:none;width:28px;height:28px">${{n}}</span>`).join('');
+    nowEl.appendChild(row);
+  }});
 
   // Match distribution bars
   const maxCnt=Math.max(...D.matchDist,1);
@@ -757,27 +761,30 @@ function renderPos(pi){{
   const at3=D.matchDist.slice(3).reduce((a,b)=>a+b,0);
   document.getElementById('comboStats').innerHTML=`
     <div class="stat-box"><div class="sv" style="color:#c084fc">${{D.avgMatches.toFixed(3)}}</div><div class="sl">Avg matches/draw</div></div>
-    <div class="stat-box"><div class="sv" style="color:#64748b">${{D.randExpected.toFixed(3)}}</div><div class="sl">Random baseline</div></div>
-    <div class="stat-box"><div class="sv" style="color:#f1f5f9">${{(D.avgMatches/D.randExpected).toFixed(3)}}×</div><div class="sl">Lift</div></div>
+    <div class="stat-box"><div class="sv" style="color:#64748b">${{D.randExpected.toFixed(3)}}</div><div class="sl">Random (${{D.nPicks}} picks)</div></div>
+    <div class="stat-box"><div class="sv" style="color:#f1f5f9">${{(D.avgMatches/D.randExpected).toFixed(3)}}x</div><div class="sl">Lift</div></div>
     <div class="stat-box"><div class="sv" style="color:#4ade80">${{at2}} / ${{D.comboTotal}}</div><div class="sl">≥2 matches</div></div>
     <div class="stat-box"><div class="sv" style="color:#22c55e">${{at3}} / ${{D.comboTotal}}</div><div class="sl">≥3 matches</div></div>`;
 
   // BT rows
   const tbody=document.getElementById('comboBt');
   D.comboBt.forEach(e=>{{
-    const hitSet=new Set(e.actual.filter(n=>e.combo.includes(n)));
     const mc=e.matches;
     const tr=document.createElement('tr');
     const mcol=mc===0?'#64748b':mc===1?'#38bdf8':mc===2?'#f59e0b':mc>=3?'#22c55e':'#64748b';
-    const predBalls=e.combo.map((n,i)=>{{
-      const isHit=e.actual.includes(n);
-      return `<span class="pred-ball ${{isHit?'hit':'miss'}}" style="${{isHit?'':'opacity:.5'}}">${{n}}</span>`;
-    }}).join(' ');
+    // Show by-position candidates
+    const predCols=(e.byPos||[e.picks]).map((picks,pi)=>{{
+      const col=PC[pi]||'#6366f1';
+      return picks.map(n=>{{
+        const isHit=e.actual.includes(n);
+        return `<span class="pred-ball" style="background:${{hx(col,isHit?.8:.3)}};border:none;width:22px;height:22px;font-size:.68rem;${{isHit?'':'opacity:.45'}}">${{n}}</span>`;
+      }}).join('');
+    }}).join('<span style="color:#334155;padding:0 2px">|</span>');
     const actBalls=e.actual.map(n=>{{
-      const isHit=e.combo.includes(n);
+      const isHit=(e.picks||e.combo||[]).includes(n);
       return `<span class="act-ball ${{isHit?'hit':'miss'}}">${{n}}</span>`;
     }}).join(' ');
-    tr.innerHTML=`<td>#${{e.s}}</td><td>${{e.d}}</td><td>${{predBalls}}</td><td>${{actBalls}}</td>
+    tr.innerHTML=`<td>#${{e.s}}</td><td>${{e.d}}</td><td style="white-space:nowrap">${{predCols}}</td><td>${{actBalls}}</td>
       <td><span class="match-badge" style="background:${{hx(mcol,.15)}};color:${{mcol}}">${{mc}} hit${{mc!==1?'s':''}}</span></td>`;
     tbody.appendChild(tr);
   }});
