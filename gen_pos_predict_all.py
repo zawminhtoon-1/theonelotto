@@ -601,6 +601,17 @@ D.posMeta.forEach((pm,pi)=>{{
       <div style="font-size:.72rem;color:#64748b;margin-top:4px">Highlighted = current prediction</div>
     </div>
     <div class="sec">
+      <div class="sec-title">Top-1 Prediction Distance from Actual — last 200 draws</div>
+      <div id="dc-${{pi}}" style="width:100%;overflow:hidden;margin-bottom:6px"></div>
+      <div style="display:flex;gap:12px;font-size:.7rem;margin-bottom:6px">
+        <span style="color:#22c55e">■ Exact</span>
+        <span style="color:#38bdf8">■ ±1–2</span>
+        <span style="color:#f59e0b">■ ±3–5</span>
+        <span style="color:#ef4444">■ &gt;5</span>
+      </div>
+      <div class="stats-row" id="dcs-${{pi}}"></div>
+    </div>
+    <div class="sec">
       <div class="sec-title">Backtest Stats</div>
       <div class="stats-row" id="st-${{pi}}"></div>
     </div>
@@ -662,6 +673,43 @@ function renderPos(pi){{
     const ht=Math.round(6+((x.v-nv)/rng)*40),col=ps.has(x.v)?pm.color:'#334155';
     return `<div class="spark-bar" style="height:${{ht}}px;background:${{col}}" title="#${{x.s}}: ${{x.v}}"></div>`;
   }}).join('');
+
+  // Distance chart — top-1 pick distance from actual over time
+  (function(){{
+    const bte=(pd.bt||[]).slice(0,200).reverse(); // chronological order
+    if(!bte.length) return;
+    const dists=bte.map(e=>Math.abs(((e.pr||[])[0]||0)-e.v));
+    const W=1000,H=80,maxD=Math.max(...dists,5);
+    const colFn=d=>d===0?'#22c55e':d<=2?'#38bdf8':d<=5?'#f59e0b':'#ef4444';
+    const n=dists.length;
+    const px=(i,d)=>`${{Math.round(i/(n-1||1)*W)}},${{Math.round(H-(d/maxD)*H)}}`;
+    let segs='';
+    for(let i=1;i<n;i++){{
+      const x1=Math.round((i-1)/(n-1||1)*W),y1=Math.round(H-(dists[i-1]/maxD)*H);
+      const x2=Math.round(i/(n-1||1)*W),y2=Math.round(H-(dists[i]/maxD)*H);
+      segs+=`<line x1="${{x1}}" y1="${{y1}}" x2="${{x2}}" y2="${{y2}}" stroke="${{colFn(dists[i])}}" stroke-width="1.5" stroke-linecap="round"/>`;
+    }}
+    // dots at exact hits
+    const dots=dists.map((d,i)=>d===0?`<circle cx="${{Math.round(i/(n-1||1)*W)}}" cy="${{H}}" r="3" fill="#22c55e"/>`:``).join('');
+    document.getElementById(`dc-${{pi}}`).innerHTML=
+      `<svg viewBox="0 0 ${{W}} ${{H+4}}" width="100%" height="90px" preserveAspectRatio="none" style="display:block">
+        <line x1="0" y1="${{H}}" x2="${{W}}" y2="${{H}}" stroke="#22c55e22" stroke-width="1"/>
+        <line x1="0" y1="${{Math.round(H-(2/maxD)*H)}}" x2="${{W}}" y2="${{Math.round(H-(2/maxD)*H)}}" stroke="#38bdf811" stroke-width="1" stroke-dasharray="4,4"/>
+        ${{segs}}${{dots}}
+      </svg>`;
+    // distance stats
+    const avgD=(dists.reduce((a,b)=>a+b,0)/n);
+    const medD=([...dists].sort((a,b)=>a-b))[Math.floor(n/2)];
+    const ex=dists.filter(d=>d===0).length;
+    const w2=dists.filter(d=>d<=2).length;
+    const w5=dists.filter(d=>d<=5).length;
+    document.getElementById(`dcs-${{pi}}`).innerHTML=`
+      <div class="stat-box"><div class="sv" style="color:#f1f5f9">${{avgD.toFixed(1)}}</div><div class="sl">Avg distance</div></div>
+      <div class="stat-box"><div class="sv" style="color:#f1f5f9">${{medD}}</div><div class="sl">Median distance</div></div>
+      <div class="stat-box"><div class="sv" style="color:#22c55e">${{ex}} / ${{n}}</div><div class="sl">Exact (dist=0)</div></div>
+      <div class="stat-box"><div class="sv" style="color:#38bdf8">${{w2}} / ${{n}}</div><div class="sl">Within ±2</div></div>
+      <div class="stat-box"><div class="sv" style="color:#f59e0b">${{w5}} / ${{n}}</div><div class="sl">Within ±5</div></div>`;
+  }})();
 
   // Stats
   document.getElementById(`st-${{pi}}`).innerHTML=`
