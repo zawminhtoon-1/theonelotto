@@ -545,7 +545,12 @@ D.posMeta.forEach((pm,pi)=>{{
 // Tabs
 const tabsEl=document.getElementById('posTabs'), panelsEl=document.getElementById('posPanels');
 function activatePos(pi){{
-  document.querySelectorAll('.pos-tab').forEach((t,i)=>{{t.classList.toggle('active',i===pi);t.style.borderTopColor=i===pi?D.posMeta[i].color:'transparent';t.style.color=i===pi?D.posMeta[i].color:'';}});
+  document.querySelectorAll('.pos-tab').forEach((t,i)=>{{
+    t.classList.toggle('active',i===pi);
+    const col=(D.posMeta[i]||{{color:'#a855f7'}}).color;
+    t.style.borderTopColor=i===pi?col:'transparent';
+    t.style.color=i===pi?col:'';
+  }});
   document.querySelectorAll('.pos-panel').forEach((p,i)=>p.classList.toggle('active',i===pi));
 }}
 
