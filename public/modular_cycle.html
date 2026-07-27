@@ -3,14 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Modular Cycle Predict — Loto 6</title>
+<title>Multi-K Cycle Predict — Loto 6</title>
 <style>
-/* ====== SHARED FIXED NAV (dropdown) ====== */
+/* ====== SHARED FIXED NAV ====== */
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh;padding-top:60px}
 .site-nav{position:fixed;top:0;left:0;right:0;height:52px;background:#0a0f1e;
   border-bottom:1px solid #1e293b;display:flex;align-items:center;padding:0 20px;
   gap:0;z-index:9999;box-shadow:0 2px 16px rgba(0,0,0,.6)}
 .site-nav .nav-logo{font-size:1rem;font-weight:800;color:#f1f5f9;text-decoration:none;
-  white-space:nowrap;margin-right:24px;flex-shrink:0;letter-spacing:-.01em}
+  white-space:nowrap;margin-right:24px;flex-shrink:0}
 .site-nav .nav-logo span{color:#38bdf8}
 .nav-groups{display:flex;gap:4px;align-items:center}
 .nav-group{position:relative}
@@ -22,19 +24,16 @@
 .nav-group:hover .nav-group-btn .arrow{transform:rotate(180deg)}
 .nav-dropdown{display:none;position:absolute;top:calc(100% + 6px);left:0;
   background:#0d1526;border:1px solid #1e293b;border-radius:10px;
-  min-width:170px;padding:6px;box-shadow:0 12px 32px rgba(0,0,0,.7);z-index:10000}
+  min-width:175px;padding:6px;box-shadow:0 12px 32px rgba(0,0,0,.7);z-index:10000}
 .nav-group:hover .nav-dropdown{display:block}
 .nav-dropdown a{display:flex;align-items:center;gap:8px;padding:8px 12px;
   border-radius:6px;color:#94a3b8;text-decoration:none;font-size:.82rem;
   white-space:nowrap;transition:.12s}
-.nav-dropdown a:hover{color:#f1f5f9;background:#1e293b}
-.nav-dropdown a.active{color:#38bdf8;background:#0c2340}
+.nav-dropdown a:hover,.nav-dropdown a.active{color:#f1f5f9;background:#1e293b}
 .nav-dd-label{font-size:.68rem;font-weight:700;color:#475569;padding:6px 12px 2px;
   text-transform:uppercase;letter-spacing:.06em}
 .nav-divider{height:1px;background:#1e293b;margin:4px 0}
-/* ========================================= */
-
-
+/* ====== PAGE STYLES ====== */
 main{max-width:1100px;margin:0 auto;padding:24px 20px}
 h1{font-size:1.4rem;font-weight:800;color:#f1f5f9;margin-bottom:4px}
 .subtitle{font-size:.85rem;color:#64748b;margin-bottom:24px}
@@ -86,59 +85,50 @@ h1{font-size:1.4rem;font-weight:800;color:#f1f5f9;margin-bottom:4px}
 </style>
 </head>
 <body>
-
 <nav class="site-nav">
-  <a class="nav-logo" href="/">🎱 The<span>One</span>Lotto</a>
+  <a class="nav-logo" href="/">Loto<span>6</span></a>
   <div class="nav-groups">
-
-    <!-- Data -->
     <div class="nav-group">
-      <div class="nav-group-btn">Data <span class="arrow">▼</span></div>
+      <div class="nav-group-btn">Data <span class="arrow">&#9660;</span></div>
       <div class="nav-dropdown">
         <div class="nav-dd-label">Results</div>
-        <a href="/">🏠 Latest Draw</a>
-        <a href="/history">📋 History</a>
-        <a href="/numbers">🔢 Numbers</a>
+        <a href="/">&#127968; Latest Draw</a>
+        <a href="/history">&#128203; History</a>
+        <a href="/numbers">&#128290; Numbers</a>
       </div>
     </div>
-
-    <!-- Predict -->
     <div class="nav-group">
-      <div class="nav-group-btn">Predict <span class="arrow">▼</span></div>
+      <div class="nav-group-btn">Predict <span class="arrow">&#9660;</span></div>
       <div class="nav-dropdown">
         <div class="nav-dd-label">Prediction Tools</div>
-        <a href="/predictions">🎯 Predictions</a>
-        <a href="/backtest.html">📊 Backtest</a>
-        <a href="/combo_evo.html">🧬 Combo Evo</a>
+        <a href="/predictions">&#127919; Predictions</a>
+        <a href="/backtest.html">&#128202; Backtest</a>
+        <a href="/combo_evo.html">&#129516; Combo Evo</a>
         <div class="nav-divider"></div>
         <div class="nav-dd-label">Strategy</div>
-        <a href="/overdue.html">⏳ Overdue</a>
-        <a href="/miss_analysis.html">❌ Miss Analysis</a>
-        <a href="/state_machine.html">🔄 State Machine</a>
-        <a href="/modular_cycle.html">🔁 Modular Cycle</a>
+        <a href="/overdue.html">&#9203; Overdue</a>
+        <a href="/miss_analysis.html">&#10060; Miss Analysis</a>
+        <a href="/state_machine.html">&#128260; State Machine</a>
+        <a href="/modular_cycle.html" class="active">&#128260; Modular Cycle</a>
       </div>
     </div>
-
-    <!-- Analyze -->
     <div class="nav-group">
-      <div class="nav-group-btn">Analyze <span class="arrow">▼</span></div>
+      <div class="nav-group-btn">Analyze <span class="arrow">&#9660;</span></div>
       <div class="nav-dropdown">
         <div class="nav-dd-label">Pattern Analysis</div>
-        <a href="/special.html">⭐ Special</a>
-        <a href="/consecutive.html">🔗 Consecutive</a>
+        <a href="/special.html">&#11088; Special</a>
+        <a href="/consecutive.html">&#128279; Consecutive</a>
         <div class="nav-divider"></div>
         <div class="nav-dd-label">Position</div>
-        <a href="/position.html">📍 Position Freq</a>
-        <a href="/pos_predict.html">📊 Pos 1–6 Predict</a>
+        <a href="/position.html">&#128205; Position Freq</a>
+        <a href="/pos_predict.html">&#128202; Pos 1&#8211;6 Predict</a>
       </div>
     </div>
-
   </div>
 </nav>
 
-
 <main>
-  <h1>&#128260; Modular Cycle Predict</h1>
+  <h1>&#128260; Multi-K Cycle Predict</h1>
   <p class="subtitle" id="sub"></p>
 
   <div class="sec">
@@ -153,7 +143,7 @@ h1{font-size:1.4rem;font-weight:800;color:#f1f5f9;margin-bottom:4px}
   </div>
 
   <div class="sec">
-    <div class="sec-title">Source Draws (K=28, 56, 84, 112 draws back from draw #<span id="latS"></span>)</div>
+    <div class="sec-title">Source Draws (K=23, 10, 5, 1 draws back from draw #<span id="latS"></span>)</div>
     <div class="src-grid" id="srcGrid"></div>
   </div>
 
@@ -169,12 +159,12 @@ h1{font-size:1.4rem;font-weight:800;color:#f1f5f9;margin-bottom:4px}
 </main>
 
 <script>
-const D = {"K": 28, "cycles": 4, "nPicks": 28, "latestSerial": 2122, "latestDate": "2026-07-23", "nextSerial": 2123, "prediction": [42, 4, 12, 15, 22, 30, 2, 3, 13, 14, 18, 20, 23, 24, 25, 27, 28, 29, 31, 32, 38], "cycleMap": {"42": 2, "4": 2, "12": 2, "15": 2, "22": 1, "30": 1, "2": 3, "3": 2, "13": 1, "14": 4, "18": 4, "20": 1, "23": 1, "24": 4, "25": 3, "27": 3, "28": 1, "29": 1, "31": 2, "32": 2, "38": 3}, "freqMap": {"42": 3, "4": 2, "12": 2, "15": 2, "22": 2, "30": 2, "2": 1, "3": 1, "13": 1, "14": 1, "18": 1, "20": 1, "23": 1, "24": 1, "25": 1, "27": 1, "28": 1, "29": 1, "31": 1, "32": 1, "38": 1}, "btDraws": 200, "avgMatches": 3.585, "randBaseline": 4.5581, "liftPct": -21.35, "hit1plus": 100.0, "hit4plus": 51.5, "hit5plus": 21.5, "hit6plus": 6.0, "matchDist": [0, 8, 27, 62, 60, 31, 10, 2, 0, 0], "btResults": [{"s": 2122, "d": "2026-07-23", "actual": [12, 15, 18, 21, 26, 32, 41], "hitNums": [15, 32, 41], "matches": 3}, {"s": 2121, "d": "2026-07-20", "actual": [1, 3, 10, 17, 25, 26, 36], "hitNums": [3, 10, 17, 26, 36], "matches": 5}, {"s": 2120, "d": "2026-07-16", "actual": [3, 8, 13, 14, 16, 26, 43], "hitNums": [3, 8, 13, 26, 43], "matches": 5}, {"s": 2119, "d": "2026-07-13", "actual": [15, 18, 20, 22, 30, 38, 42], "hitNums": [15, 18, 30, 38, 42], "matches": 5}, {"s": 2118, "d": "2026-07-09", "actual": [1, 5, 8, 24, 35, 36, 37], "hitNums": [1, 5, 8, 24, 35, 36, 37], "matches": 7}, {"s": 2117, "d": "2026-07-06", "actual": [4, 7, 26, 27, 34, 35, 41], "hitNums": [7, 26, 27, 34, 35], "matches": 5}, {"s": 2116, "d": "2026-07-02", "actual": [2, 6, 10, 13, 14, 20, 42], "hitNums": [10, 42], "matches": 2}, {"s": 2115, "d": "2026-06-29", "actual": [1, 3, 11, 23, 34, 35, 42], "hitNums": [1, 3, 23, 35], "matches": 4}, {"s": 2114, "d": "2026-06-25", "actual": [2, 16, 20, 21, 23, 33, 43], "hitNums": [16, 23], "matches": 2}, {"s": 2113, "d": "2026-06-22", "actual": [2, 5, 14, 32, 36, 38, 42], "hitNums": [5, 14, 36, 38], "matches": 4}, {"s": 2112, "d": "2026-06-18", "actual": [3, 7, 8, 18, 27, 31, 40], "hitNums": [3, 7, 8, 18], "matches": 4}, {"s": 2111, "d": "2026-06-15", "actual": [1, 5, 8, 12, 36, 37, 43], "hitNums": [5, 8, 12, 36, 43], "matches": 5}, {"s": 2110, "d": "2026-06-11", "actual": [3, 9, 18, 29, 35, 36, 40], "hitNums": [9, 40], "matches": 2}, {"s": 2109, "d": "2026-06-08", "actual": [3, 6, 11, 19, 31, 38, 41], "hitNums": [31, 41], "matches": 2}, {"s": 2108, "d": "2026-06-04", "actual": [2, 5, 10, 15, 27, 28, 43], "hitNums": [10, 28], "matches": 2}, {"s": 2107, "d": "2026-06-01", "actual": [5, 8, 27, 32, 36, 38, 39], "hitNums": [5, 8, 27, 39], "matches": 4}, {"s": 2106, "d": "2026-05-28", "actual": [1, 6, 17, 24, 27, 34, 43], "hitNums": [1, 6, 24], "matches": 3}, {"s": 2105, "d": "2026-05-25", "actual": [5, 26, 28, 30, 32, 36, 40], "hitNums": [26, 30, 40], "matches": 3}, {"s": 2104, "d": "2026-05-21", "actual": [4, 18, 19, 21, 25, 28, 34], "hitNums": [18, 21, 28, 34], "matches": 4}, {"s": 2103, "d": "2026-05-18", "actual": [1, 2, 4, 5, 8, 38, 39], "hitNums": [1, 4, 5, 39], "matches": 4}, {"s": 2102, "d": "2026-05-14", "actual": [8, 18, 21, 25, 28, 30, 43], "hitNums": [21, 25, 30], "matches": 3}, {"s": 2101, "d": "2026-05-11", "actual": [1, 17, 21, 29, 33, 40, 42], "hitNums": [1, 17, 29], "matches": 3}, {"s": 2100, "d": "2026-05-07", "actual": [8, 17, 24, 28, 32, 35, 41], "hitNums": [8, 24, 35], "matches": 3}, {"s": 2099, "d": "2026-05-04", "actual": [19, 21, 34, 36, 39, 42, 43], "hitNums": [19, 34, 42], "matches": 3}, {"s": 2098, "d": "2026-04-30", "actual": [1, 6, 15, 18, 19, 24, 42], "hitNums": [6, 24, 42], "matches": 3}, {"s": 2097, "d": "2026-04-27", "actual": [3, 20, 24, 27, 34, 37, 42], "hitNums": [24, 27, 37, 42], "matches": 4}, {"s": 2096, "d": "2026-04-23", "actual": [8, 15, 18, 21, 33, 38, 43], "hitNums": [15, 33, 38], "matches": 3}, {"s": 2095, "d": "2026-04-20", "actual": [13, 20, 22, 23, 28, 29, 30], "hitNums": [22, 23, 30], "matches": 3}, {"s": 2094, "d": "2026-04-16", "actual": [3, 4, 7, 11, 16, 24, 30], "hitNums": [24, 30], "matches": 2}, {"s": 2093, "d": "2026-04-13", "actual": [2, 10, 12, 21, 26, 29, 38], "hitNums": [10, 12, 21, 29], "matches": 4}, {"s": 2092, "d": "2026-04-09", "actual": [3, 8, 13, 27, 36, 37, 43], "hitNums": [3, 8, 13, 36, 37], "matches": 5}, {"s": 2091, "d": "2026-04-06", "actual": [6, 9, 16, 21, 25, 28, 43], "hitNums": [6, 9, 21, 28], "matches": 4}, {"s": 2090, "d": "2026-04-02", "actual": [2, 3, 5, 6, 9, 24, 36], "hitNums": [2, 9, 24], "matches": 3}, {"s": 2089, "d": "2026-03-30", "actual": [9, 13, 16, 18, 32, 37, 43], "hitNums": [13, 16, 18], "matches": 3}, {"s": 2088, "d": "2026-03-26", "actual": [8, 16, 18, 27, 29, 37, 39], "hitNums": [8, 16, 18, 27, 37, 39], "matches": 6}, {"s": 2087, "d": "2026-03-23", "actual": [7, 10, 13, 15, 18, 26, 39], "hitNums": [10, 13, 15, 26, 39], "matches": 5}, {"s": 2086, "d": "2026-03-19", "actual": [4, 6, 11, 19, 28, 39, 40], "hitNums": [6, 19, 28], "matches": 3}, {"s": 2085, "d": "2026-03-16", "actual": [6, 8, 13, 14, 26, 35, 43], "hitNums": [13, 14, 26, 43], "matches": 4}, {"s": 2084, "d": "2026-03-12", "actual": [8, 9, 17, 18, 19, 30, 39], "hitNums": [17, 19, 30], "matches": 3}, {"s": 2083, "d": "2026-03-09", "actual": [8, 10, 13, 17, 26, 29, 43], "hitNums": [13, 17, 26], "matches": 3}, {"s": 2082, "d": "2026-03-05", "actual": [5, 11, 14, 17, 19, 25, 40], "hitNums": [5, 11, 14], "matches": 3}, {"s": 2081, "d": "2026-03-02", "actual": [14, 22, 31, 32, 37, 41, 42], "hitNums": [14, 31, 37, 41], "matches": 4}, {"s": 2080, "d": "2026-02-26", "actual": [6, 8, 12, 30, 36, 37, 38], "hitNums": [6, 30, 37], "matches": 3}, {"s": 2079, "d": "2026-02-23", "actual": [5, 11, 15, 17, 24, 31, 39], "hitNums": [5, 15, 31, 39], "matches": 4}, {"s": 2078, "d": "2026-02-19", "actual": [1, 10, 20, 24, 30, 35, 41], "hitNums": [10, 24, 30], "matches": 3}, {"s": 2077, "d": "2026-02-16", "actual": [10, 17, 18, 23, 24, 26, 43], "hitNums": [10, 17, 18, 23, 24, 43], "matches": 6}, {"s": 2076, "d": "2026-02-12", "actual": [1, 9, 20, 22, 28, 30, 41], "hitNums": [9, 28], "matches": 2}, {"s": 2075, "d": "2026-02-09", "actual": [7, 10, 11, 14, 16, 35, 37], "hitNums": [7, 10, 11, 14, 16, 35, 37], "matches": 7}, {"s": 2074, "d": "2026-02-05", "actual": [5, 6, 11, 16, 26, 27, 36], "hitNums": [5, 6, 26], "matches": 3}, {"s": 2073, "d": "2026-02-02", "actual": [2, 8, 12, 14, 24, 26, 29], "hitNums": [2, 8, 12, 24, 29], "matches": 5}], "sourceDraws": [{"cycle": 1, "idx": 2094, "serial": 2095, "date": "2026-04-20", "nums": [13, 20, 22, 23, 28, 30], "bonus": 29}, {"cycle": 2, "idx": 2066, "serial": 2067, "date": "2026-01-12", "nums": [3, 4, 12, 15, 32, 42], "bonus": 31}, {"cycle": 3, "idx": 2038, "serial": 2039, "date": "2025-10-02", "nums": [2, 15, 25, 27, 38, 42], "bonus": 22}, {"cycle": 4, "idx": 2010, "serial": 2011, "date": "2025-06-26", "nums": [12, 14, 18, 24, 30, 42], "bonus": 4}]};
+const D = {"kValues": [23, 10, 5, 1], "nPicks": 28, "latestSerial": 2122, "latestDate": "2026-07-23", "nextSerial": 2123, "prediction": [32, 5, 8, 24, 35, 36, 41, 1, 2, 12, 14, 15, 17, 18, 21, 26, 28, 37, 38, 42], "kMap": {"32": 0, "5": 1, "8": 0, "24": 0, "35": 0, "36": 1, "41": 0, "1": 2, "2": 1, "12": 3, "14": 1, "15": 3, "17": 0, "18": 3, "21": 3, "26": 3, "28": 0, "37": 2, "38": 1, "42": 1}, "freqMap": {"32": 3, "5": 2, "8": 2, "24": 2, "35": 2, "36": 2, "41": 2, "1": 1, "2": 1, "12": 1, "14": 1, "15": 1, "17": 1, "18": 1, "21": 1, "26": 1, "28": 1, "37": 1, "38": 1, "42": 1}, "btDraws": 1000, "avgMatches": 3.621, "randBaseline": 4.5581, "liftPct": -20.56, "hit1plus": 99.4, "hit4plus": 54.8, "hit5plus": 23.9, "hit6plus": 5.9, "matchDist": [6, 33, 148, 265, 309, 180, 52, 7, 0, 0], "btResults": [{"s": 2122, "d": "2026-07-23", "actual": [12, 15, 18, 21, 26, 32, 41], "hitNums": [18, 21, 26, 41], "matches": 4}, {"s": 2121, "d": "2026-07-20", "actual": [1, 3, 10, 17, 25, 26, 36], "hitNums": [1, 3, 10, 26, 36], "matches": 5}, {"s": 2120, "d": "2026-07-16", "actual": [3, 8, 13, 14, 16, 26, 43], "hitNums": [3], "matches": 1}, {"s": 2119, "d": "2026-07-13", "actual": [15, 18, 20, 22, 30, 38, 42], "hitNums": [15, 18, 20, 38], "matches": 4}, {"s": 2118, "d": "2026-07-09", "actual": [1, 5, 8, 24, 35, 36, 37], "hitNums": [5, 35, 36], "matches": 3}, {"s": 2117, "d": "2026-07-06", "actual": [4, 7, 26, 27, 34, 35, 41], "hitNums": [4, 7, 27], "matches": 3}, {"s": 2116, "d": "2026-07-02", "actual": [2, 6, 10, 13, 14, 20, 42], "hitNums": [2, 6, 10, 42], "matches": 4}, {"s": 2115, "d": "2026-06-29", "actual": [1, 3, 11, 23, 34, 35, 42], "hitNums": [3, 23, 35], "matches": 3}, {"s": 2114, "d": "2026-06-25", "actual": [2, 16, 20, 21, 23, 33, 43], "hitNums": [2, 16, 21, 43], "matches": 4}, {"s": 2113, "d": "2026-06-22", "actual": [2, 5, 14, 32, 36, 38, 42], "hitNums": [2, 5, 36, 38], "matches": 4}, {"s": 2112, "d": "2026-06-18", "actual": [3, 7, 8, 18, 27, 31, 40], "hitNums": [8, 18, 27], "matches": 3}, {"s": 2111, "d": "2026-06-15", "actual": [1, 5, 8, 12, 36, 37, 43], "hitNums": [1, 8, 36, 37, 43], "matches": 5}, {"s": 2110, "d": "2026-06-11", "actual": [3, 9, 18, 29, 35, 36, 40], "hitNums": [3, 18, 35, 36, 40], "matches": 5}, {"s": 2109, "d": "2026-06-08", "actual": [3, 6, 11, 19, 31, 38, 41], "hitNums": [6, 11, 19], "matches": 3}, {"s": 2108, "d": "2026-06-04", "actual": [2, 5, 10, 15, 27, 28, 43], "hitNums": [2, 5, 15, 27, 43], "matches": 5}, {"s": 2107, "d": "2026-06-01", "actual": [5, 8, 27, 32, 36, 38, 39], "hitNums": [8, 27, 39], "matches": 3}, {"s": 2106, "d": "2026-05-28", "actual": [1, 6, 17, 24, 27, 34, 43], "hitNums": [1, 17, 43], "matches": 3}, {"s": 2105, "d": "2026-05-25", "actual": [5, 26, 28, 30, 32, 36, 40], "hitNums": [5, 28, 30, 32, 40], "matches": 5}, {"s": 2104, "d": "2026-05-21", "actual": [4, 18, 19, 21, 25, 28, 34], "hitNums": [4, 19, 21, 34], "matches": 4}, {"s": 2103, "d": "2026-05-18", "actual": [1, 2, 4, 5, 8, 38, 39], "hitNums": [1, 2, 8, 38], "matches": 4}, {"s": 2102, "d": "2026-05-14", "actual": [8, 18, 21, 25, 28, 30, 43], "hitNums": [8, 21, 43], "matches": 3}, {"s": 2101, "d": "2026-05-11", "actual": [1, 17, 21, 29, 33, 40, 42], "hitNums": [1, 17, 21, 33], "matches": 4}, {"s": 2100, "d": "2026-05-07", "actual": [8, 17, 24, 28, 32, 35, 41], "hitNums": [17, 24, 28], "matches": 3}, {"s": 2099, "d": "2026-05-04", "actual": [19, 21, 34, 36, 39, 42, 43], "hitNums": [19, 42, 43], "matches": 3}, {"s": 2098, "d": "2026-04-30", "actual": [1, 6, 15, 18, 19, 24, 42], "hitNums": [18, 24, 42], "matches": 3}, {"s": 2097, "d": "2026-04-27", "actual": [3, 20, 24, 27, 34, 37, 42], "hitNums": [3, 27, 37], "matches": 3}, {"s": 2096, "d": "2026-04-23", "actual": [8, 15, 18, 21, 33, 38, 43], "hitNums": [8, 21, 43], "matches": 3}, {"s": 2095, "d": "2026-04-20", "actual": [13, 20, 22, 23, 28, 29, 30], "hitNums": [13, 30], "matches": 2}, {"s": 2094, "d": "2026-04-16", "actual": [3, 4, 7, 11, 16, 24, 30], "hitNums": [16, 24, 30], "matches": 3}, {"s": 2093, "d": "2026-04-13", "actual": [2, 10, 12, 21, 26, 29, 38], "hitNums": [10, 12, 26, 29], "matches": 4}, {"s": 2092, "d": "2026-04-09", "actual": [3, 8, 13, 27, 36, 37, 43], "hitNums": [13, 27, 43], "matches": 3}, {"s": 2091, "d": "2026-04-06", "actual": [6, 9, 16, 21, 25, 28, 43], "hitNums": [6, 9, 28], "matches": 3}, {"s": 2090, "d": "2026-04-02", "actual": [2, 3, 5, 6, 9, 24, 36], "hitNums": [3, 6, 9, 36], "matches": 4}, {"s": 2089, "d": "2026-03-30", "actual": [9, 13, 16, 18, 32, 37, 43], "hitNums": [9, 16, 18, 32, 37], "matches": 5}, {"s": 2088, "d": "2026-03-26", "actual": [8, 16, 18, 27, 29, 37, 39], "hitNums": [8, 18, 29, 37, 39], "matches": 5}, {"s": 2087, "d": "2026-03-23", "actual": [7, 10, 13, 15, 18, 26, 39], "hitNums": [7, 10, 18, 26, 39], "matches": 5}, {"s": 2086, "d": "2026-03-19", "actual": [4, 6, 11, 19, 28, 39, 40], "hitNums": [4, 6, 28], "matches": 3}, {"s": 2085, "d": "2026-03-16", "actual": [6, 8, 13, 14, 26, 35, 43], "hitNums": [6, 8, 14, 35], "matches": 4}, {"s": 2084, "d": "2026-03-12", "actual": [8, 9, 17, 18, 19, 30, 39], "hitNums": [8, 17, 39], "matches": 3}, {"s": 2083, "d": "2026-03-09", "actual": [8, 10, 13, 17, 26, 29, 43], "hitNums": [8, 10, 17, 26, 29], "matches": 5}, {"s": 2082, "d": "2026-03-05", "actual": [5, 11, 14, 17, 19, 25, 40], "hitNums": [14, 17, 40], "matches": 3}, {"s": 2081, "d": "2026-03-02", "actual": [14, 22, 31, 32, 37, 41, 42], "hitNums": [14, 22, 32, 37, 41, 42], "matches": 6}, {"s": 2080, "d": "2026-02-26", "actual": [6, 8, 12, 30, 36, 37, 38], "hitNums": [6, 12, 30, 36, 37, 38], "matches": 6}, {"s": 2079, "d": "2026-02-23", "actual": [5, 11, 15, 17, 24, 31, 39], "hitNums": [5, 11, 15, 17, 24], "matches": 5}, {"s": 2078, "d": "2026-02-19", "actual": [1, 10, 20, 24, 30, 35, 41], "hitNums": [10, 24], "matches": 2}, {"s": 2077, "d": "2026-02-16", "actual": [10, 17, 18, 23, 24, 26, 43], "hitNums": [18, 23, 24, 43], "matches": 4}, {"s": 2076, "d": "2026-02-12", "actual": [1, 9, 20, 22, 28, 30, 41], "hitNums": [20, 28, 30, 41], "matches": 4}, {"s": 2075, "d": "2026-02-09", "actual": [7, 10, 11, 14, 16, 35, 37], "hitNums": [10, 11, 16, 37], "matches": 4}, {"s": 2074, "d": "2026-02-05", "actual": [5, 6, 11, 16, 26, 27, 36], "hitNums": [6, 26, 27], "matches": 3}, {"s": 2073, "d": "2026-02-02", "actual": [2, 8, 12, 14, 24, 26, 29], "hitNums": [2, 8, 14, 24, 29], "matches": 5}, {"s": 2072, "d": "2026-01-29", "actual": [8, 18, 24, 36, 40, 42, 43], "hitNums": [8, 18, 24, 40, 42], "matches": 5}, {"s": 2071, "d": "2026-01-26", "actual": [14, 15, 24, 29, 32, 33, 35], "hitNums": [32, 33], "matches": 2}, {"s": 2070, "d": "2026-01-22", "actual": [6, 10, 12, 25, 30, 34, 36], "hitNums": [6, 10], "matches": 2}, {"s": 2069, "d": "2026-01-19", "actual": [4, 6, 17, 23, 27, 33, 35], "hitNums": [33], "matches": 1}, {"s": 2068, "d": "2026-01-15", "actual": [2, 10, 13, 14, 29, 32, 33], "hitNums": [14, 29, 32], "matches": 3}, {"s": 2067, "d": "2026-01-12", "actual": [3, 4, 12, 15, 31, 32, 42], "hitNums": [32, 42], "matches": 2}, {"s": 2066, "d": "2026-01-08", "actual": [5, 8, 28, 30, 32, 37, 38], "hitNums": [5, 30, 37, 38], "matches": 4}, {"s": 2065, "d": "2026-01-05", "actual": [3, 6, 18, 21, 31, 37, 40], "hitNums": [3, 21, 37, 40], "matches": 4}, {"s": 2064, "d": "2025-12-29", "actual": [2, 3, 7, 24, 37, 39, 41], "hitNums": [2, 3, 24, 37], "matches": 4}, {"s": 2063, "d": "2025-12-25", "actual": [4, 15, 28, 29, 30, 38, 42], "hitNums": [15, 28, 30, 42], "matches": 4}, {"s": 2062, "d": "2025-12-22", "actual": [1, 8, 9, 18, 24, 35, 42], "hitNums": [1, 18, 24, 42], "matches": 4}, {"s": 2061, "d": "2025-12-18", "actual": [5, 6, 13, 21, 33, 34, 40], "hitNums": [5, 33, 40], "matches": 3}, {"s": 2060, "d": "2025-12-15", "actual": [8, 10, 16, 22, 40, 41, 42], "hitNums": [10], "matches": 1}, {"s": 2059, "d": "2025-12-11", "actual": [2, 3, 13, 26, 28, 38, 43], "hitNums": [26], "matches": 1}, {"s": 2058, "d": "2025-12-08", "actual": [9, 12, 14, 16, 18, 19, 42], "hitNums": [9, 12, 18], "matches": 3}, {"s": 2057, "d": "2025-12-04", "actual": [5, 7, 21, 22, 24, 38, 41], "hitNums": [7, 22, 38], "matches": 3}, {"s": 2056, "d": "2025-12-01", "actual": [3, 7, 15, 17, 19, 30, 38], "hitNums": [3, 15, 17, 38], "matches": 4}, {"s": 2055, "d": "2025-11-27", "actual": [2, 11, 12, 14, 17, 21, 26], "hitNums": [11, 12, 14, 21], "matches": 4}, {"s": 2054, "d": "2025-11-24", "actual": [1, 14, 23, 27, 30, 33, 37], "hitNums": [1, 14, 23, 27, 33, 37], "matches": 6}, {"s": 2053, "d": "2025-11-20", "actual": [13, 20, 28, 31, 35, 37, 41], "hitNums": [13, 28, 31, 37], "matches": 4}, {"s": 2052, "d": "2025-11-17", "actual": [1, 3, 10, 18, 25, 30, 34], "hitNums": [3, 10], "matches": 2}, {"s": 2051, "d": "2025-11-13", "actual": [3, 15, 20, 27, 28, 31, 39], "hitNums": [15], "matches": 1}, {"s": 2050, "d": "2025-11-10", "actual": [5, 6, 11, 15, 21, 25, 32], "hitNums": [5, 15, 25, 32], "matches": 4}, {"s": 2049, "d": "2025-11-06", "actual": [10, 19, 24, 25, 39, 40, 42], "hitNums": [25, 40, 42], "matches": 3}, {"s": 2048, "d": "2025-11-03", "actual": [8, 13, 18, 27, 32, 37, 43], "hitNums": [18, 27, 37, 43], "matches": 4}, {"s": 2047, "d": "2025-10-30", "actual": [10, 11, 16, 19, 27, 37, 39], "hitNums": [10, 16, 27], "matches": 3}, {"s": 2046, "d": "2025-10-27", "actual": [2, 5, 10, 14, 22, 25, 38], "hitNums": [5, 10, 22, 38], "matches": 4}, {"s": 2045, "d": "2025-10-23", "actual": [1, 4, 7, 12, 16, 19, 28], "hitNums": [1, 7, 12], "matches": 3}, {"s": 2044, "d": "2025-10-20", "actual": [1, 6, 11, 14, 26, 33, 40], "hitNums": [11, 40], "matches": 2}, {"s": 2043, "d": "2025-10-16", "actual": [11, 19, 22, 31, 34, 40, 42], "hitNums": [22, 31, 42], "matches": 3}, {"s": 2042, "d": "2025-10-13", "actual": [9, 12, 14, 29, 38, 41, 43], "hitNums": [9, 12, 14, 29, 38], "matches": 5}, {"s": 2041, "d": "2025-10-09", "actual": [4, 11, 19, 22, 24, 32, 38], "hitNums": [22, 24, 32], "matches": 3}, {"s": 2040, "d": "2025-10-06", "actual": [7, 12, 14, 15, 24, 30, 32], "hitNums": [7, 12, 15, 24, 32], "matches": 5}, {"s": 2039, "d": "2025-10-02", "actual": [2, 15, 22, 25, 27, 38, 42], "hitNums": [2, 22, 25, 27, 42], "matches": 5}, {"s": 2038, "d": "2025-09-29", "actual": [5, 31, 33, 37, 39, 41, 42], "hitNums": [5, 33, 42], "matches": 3}, {"s": 2037, "d": "2025-09-25", "actual": [7, 10, 12, 20, 23, 27, 29], "hitNums": [7, 10, 12, 23, 27, 29], "matches": 6}, {"s": 2036, "d": "2025-09-22", "actual": [7, 10, 17, 26, 33, 35, 42], "hitNums": [7, 10, 17, 26, 35, 42], "matches": 6}, {"s": 2035, "d": "2025-09-18", "actual": [5, 9, 10, 12, 17, 21, 35], "hitNums": [12, 17, 35], "matches": 3}, {"s": 2034, "d": "2025-09-15", "actual": [2, 13, 17, 22, 25, 35, 37], "hitNums": [13, 22, 35], "matches": 3}, {"s": 2033, "d": "2025-09-11", "actual": [5, 16, 21, 22, 26, 33, 35], "hitNums": [5, 16, 21, 33], "matches": 4}, {"s": 2032, "d": "2025-09-08", "actual": [8, 15, 27, 31, 33, 37, 39], "hitNums": [8, 27, 31, 33, 39], "matches": 5}, {"s": 2031, "d": "2025-09-04", "actual": [2, 3, 16, 20, 23, 27, 29], "hitNums": [2, 3, 20, 29], "matches": 4}, {"s": 2030, "d": "2025-09-01", "actual": [3, 7, 13, 28, 29, 32, 36], "hitNums": [7, 28, 32, 36], "matches": 4}, {"s": 2029, "d": "2025-08-28", "actual": [7, 21, 31, 36, 40, 41, 43], "hitNums": [7, 21], "matches": 2}, {"s": 2028, "d": "2025-08-25", "actual": [6, 10, 12, 16, 19, 21, 42], "hitNums": [6, 12, 21], "matches": 3}, {"s": 2027, "d": "2025-08-21", "actual": [5, 12, 13, 18, 23, 34, 39], "hitNums": [5, 18], "matches": 2}, {"s": 2026, "d": "2025-08-18", "actual": [2, 5, 8, 11, 20, 26, 28], "hitNums": [2, 5, 26, 28], "matches": 4}, {"s": 2025, "d": "2025-08-14", "actual": [12, 18, 26, 28, 35, 41, 43], "hitNums": [26, 28], "matches": 2}, {"s": 2024, "d": "2025-08-11", "actual": [10, 13, 16, 21, 29, 34, 42], "hitNums": [13, 21, 29, 34, 42], "matches": 5}, {"s": 2023, "d": "2025-08-07", "actual": [1, 5, 20, 28, 29, 31, 43], "hitNums": [1, 31, 43], "matches": 3}], "sourceDraws": [{"ki": 0, "k": 23, "idx": 2099, "serial": 2100, "date": "2026-05-07", "nums": [8, 17, 24, 32, 35, 41], "bonus": 28}, {"ki": 1, "k": 10, "idx": 2112, "serial": 2113, "date": "2026-06-22", "nums": [2, 5, 32, 36, 38, 42], "bonus": 14}, {"ki": 2, "k": 5, "idx": 2117, "serial": 2118, "date": "2026-07-09", "nums": [1, 5, 8, 35, 36, 37], "bonus": 24}, {"ki": 3, "k": 1, "idx": 2121, "serial": 2122, "date": "2026-07-23", "nums": [12, 15, 18, 21, 26, 32], "bonus": 41}]};
 const CYCLE_COLORS = ["#38bdf8", "#a78bfa", "#34d399", "#fb923c"];
-const CYCLE_LABELS = ["K=28", "K=56", "K=84", "K=112"];
+const CYCLE_LABELS = ["K=23", "K=10", "K=5", "K=1"];
 
 document.getElementById('sub').textContent =
-  `K=${D.K} · Predict ${D.nPicks} numbers from ${D.cycles} cycle depths (${CYCLE_LABELS.join(', ')} draws back) · ${D.btDraws}-draw backtest`;
+  `Predict ${D.nPicks} numbers using 4 best K values (${CYCLE_LABELS.join(', ')} draws back) · ${D.btDraws}-draw backtest`;
 document.getElementById('btN').textContent = D.btDraws;
 document.getElementById('nextS').textContent = D.nextSerial;
 document.getElementById('latS').textContent = D.latestSerial;
@@ -211,20 +201,21 @@ leg.innerHTML += `<div class="legend-item">
 // Balls
 const ballGrid = document.getElementById('balls');
 D.prediction.forEach(n => {
-  const cycle = D.cycleMap[String(n)] || 1;
+  const ki = D.kMap[String(n)] !== undefined ? D.kMap[String(n)] : 0;
   const freq = D.freqMap[String(n)] || 1;
-  const color = freq > 1 ? '#475569' : CYCLE_COLORS[(cycle-1) % CYCLE_COLORS.length];
-  ballGrid.innerHTML += `<div class="ball" style="background:${color}" title="Appears ${freq}x across cycles">
+  const color = freq > 1 ? '#475569' : CYCLE_COLORS[ki % CYCLE_COLORS.length];
+  const kLabel = D.kValues[ki];
+  ballGrid.innerHTML += `<div class="ball" style="background:${color}" title="K=${kLabel}, appears ${freq}x">
     ${n}
-    <div class="cyc" style="background:${CYCLE_COLORS[(cycle-1)%CYCLE_COLORS.length]};color:#fff">${cycle}</div>
+    <div class="cyc" style="background:${CYCLE_COLORS[ki%CYCLE_COLORS.length]};color:#fff">${kLabel}</div>
   </div>`;
 });
 
 // Source draws
 const srcGrid = document.getElementById('srcGrid');
 D.sourceDraws.forEach((sd,i) => {
-  const color = CYCLE_COLORS[i % CYCLE_COLORS.length];
-  const label = CYCLE_LABELS[i];
+  const color = CYCLE_COLORS[sd.ki % CYCLE_COLORS.length];
+  const label = `K=${sd.k}`;
   const allNums = [...sd.nums, sd.bonus];
   const ballsHtml = allNums.map((n,j) => {
     const isBonus = j === allNums.length - 1;
@@ -260,22 +251,5 @@ D.btResults.forEach(r => {
   </tr>`;
 });
 </script>
-
-<script>
-(function(){
-  var path = window.location.pathname + window.location.hash;
-  document.querySelectorAll('.nav-dropdown a').forEach(function(a){
-    var href = a.getAttribute('href');
-    if(!href) return;
-    var hPath = href.split('#')[0];
-    var hHash = href.includes('#') ? href : '';
-    if(href === path) { a.classList.add('active'); return; }
-    if(hPath && hPath !== '/' && path.startsWith(hPath) && !href.includes('#')) {
-      a.classList.add('active');
-    }
-  });
-})();
-</script>
-
 </body>
 </html>

@@ -1,8 +1,8 @@
 """
 gen_modular_cycle.py
 Generates public/modular_cycle.html
-Modular cycle prediction: K=28, predict 28 numbers by pooling
-numbers from draws at K, 2K, 3K, 4K draws back.
+Multi-K prediction: pool 28 numbers from the 4 best-performing
+K distances (K=23, K=10, K=5, K=1) — 7 numbers each.
 """
 import psycopg2, json, os, statistics
 from math import comb
@@ -12,10 +12,10 @@ DB_URL = os.environ.get(
     "postgresql://neondb_owner:npg_QbHpRZW8of3C@ep-hidden-wind-a1q0el7s-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
 )
 
-K = 28
+# Best individual K values from backtest (K=23 best avg, K=10 best hit rate)
+K_VALUES = [23, 10, 5, 1]
 N_PICKS = 28
-BT_DRAWS = 200   # backtest window for display
-CYCLES = 4       # look back K, 2K, 3K, 4K
+BT_DRAWS = 1000  # backtest window
 
 conn = psycopg2.connect(DB_URL)
 cur = conn.cursor()
@@ -41,33 +41,32 @@ N = len(draws)
 latest = draws[-1]
 next_serial = latest["s"] + 1
 
-def predict_cycle(idx, k, cycles, n_picks):
-    """Return list of up to n_picks numbers from draws at k, 2k, 3k... ago."""
+def predict_multi_k(idx, k_values, n_picks):
+    """Pool numbers from draws at each K distance. Returns top n_picks by frequency."""
     freq = {}
-    cycle_map = {}  # number -> which cycle it came from (lowest cycle wins)
-    for c in range(1, cycles + 1):
-        back = idx - c * k
+    k_map = {}  # number -> which K index contributed it first
+    for ki, k in enumerate(k_values):
+        back = idx - k
         if back < 0:
             continue
         d = draws[back]
         for num in d["all"]:  # 7 numbers: 6 main + bonus
             if num not in freq:
                 freq[num] = 0
-                cycle_map[num] = c
+                k_map[num] = ki
             freq[num] += 1
-    # Sort by frequency desc, then by number asc
     ranked = sorted(freq.keys(), key=lambda x: (-freq[x], x))
-    return ranked[:n_picks], freq, cycle_map
+    return ranked[:n_picks], freq, k_map
 
 # --- Prediction for next draw ---
-next_pred, next_freq, next_cycle_map = predict_cycle(N, K, CYCLES, N_PICKS)
+next_pred, next_freq, next_k_map = predict_multi_k(N, K_VALUES, N_PICKS)
 
 # --- Backtest: last BT_DRAWS draws ---
 bt_results = []
 match_counts = []
 for i in range(max(0, N - BT_DRAWS), N):
     d = draws[i]
-    pred, freq, cmap = predict_cycle(i, K, CYCLES, N_PICKS)
+    pred, freq, kmap = predict_multi_k(i, K_VALUES, N_PICKS)
     pred_set = set(pred)
     matches = len(pred_set & d["all"])
     match_counts.append(matches)
@@ -91,14 +90,13 @@ hit_6plus = sum(1 for m in match_counts if m >= 6) / len(match_counts) * 100
 
 # Build data payload
 DATA = {
-    "K": K,
-    "cycles": CYCLES,
+    "kValues": K_VALUES,
     "nPicks": N_PICKS,
     "latestSerial": latest["s"],
     "latestDate": latest["d"],
     "nextSerial": next_serial,
     "prediction": next_pred,
-    "cycleMap": {str(n): next_cycle_map.get(n, 0) for n in next_pred},
+    "kMap": {str(n): next_k_map.get(n, 0) for n in next_pred},
     "freqMap": {str(n): next_freq.get(n, 0) for n in next_pred},
     "btDraws": BT_DRAWS,
     "avgMatches": round(avg_matches, 4),
@@ -116,34 +114,35 @@ DATA = {
             "hitNums": r["hit_nums"],
             "matches": r["matches"]
         }
-        for r in reversed(bt_results[-50:])  # last 50, newest first
+        for r in reversed(bt_results[-100:])  # last 100, newest first
     ],
     # Source draws for next prediction
     "sourceDraws": [
         {
-            "cycle": c,
-            "idx": N - c * K,
-            "serial": draws[N - c * K]["s"] if N - c * K >= 0 else None,
-            "date": draws[N - c * K]["d"] if N - c * K >= 0 else "",
-            "nums": draws[N - c * K]["n"] if N - c * K >= 0 else [],
-            "bonus": draws[N - c * K]["b"] if N - c * K >= 0 else None
+            "ki": ki,
+            "k": k,
+            "idx": N - k,
+            "serial": draws[N - k]["s"] if N - k >= 0 else None,
+            "date": draws[N - k]["d"] if N - k >= 0 else "",
+            "nums": draws[N - k]["n"] if N - k >= 0 else [],
+            "bonus": draws[N - k]["b"] if N - k >= 0 else None
         }
-        for c in range(1, CYCLES + 1) if N - c * K >= 0
+        for ki, k in enumerate(K_VALUES) if N - k >= 0
     ]
 }
 
 data_json = json.dumps(DATA, ensure_ascii=False)
 
-# Cycle colors
+# K colors and labels
 CYCLE_COLORS = ["#38bdf8", "#a78bfa", "#34d399", "#fb923c"]
-CYCLE_LABELS = [f"K={K}", f"K={K*2}", f"K={K*3}", f"K={K*4}"]
+CYCLE_LABELS = [f"K={k}" for k in K_VALUES]
 
 HTML = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Modular Cycle Predict — Loto 6</title>
+<title>Multi-K Cycle Predict — Loto 6</title>
 <style>
 /* ====== SHARED FIXED NAV ====== */
 *{{box-sizing:border-box;margin:0;padding:0}}
@@ -268,7 +267,7 @@ h1{{font-size:1.4rem;font-weight:800;color:#f1f5f9;margin-bottom:4px}}
 </nav>
 
 <main>
-  <h1>&#128260; Modular Cycle Predict</h1>
+  <h1>&#128260; Multi-K Cycle Predict</h1>
   <p class="subtitle" id="sub"></p>
 
   <div class="sec">
@@ -283,7 +282,7 @@ h1{{font-size:1.4rem;font-weight:800;color:#f1f5f9;margin-bottom:4px}}
   </div>
 
   <div class="sec">
-    <div class="sec-title">Source Draws (K=28, 56, 84, 112 draws back from draw #<span id="latS"></span>)</div>
+    <div class="sec-title">Source Draws (K=23, 10, 5, 1 draws back from draw #<span id="latS"></span>)</div>
     <div class="src-grid" id="srcGrid"></div>
   </div>
 
@@ -304,7 +303,7 @@ const CYCLE_COLORS = {json.dumps(CYCLE_COLORS)};
 const CYCLE_LABELS = {json.dumps(CYCLE_LABELS)};
 
 document.getElementById('sub').textContent =
-  `K=${{D.K}} · Predict ${{D.nPicks}} numbers from ${{D.cycles}} cycle depths (${{CYCLE_LABELS.join(', ')}} draws back) · ${{D.btDraws}}-draw backtest`;
+  `Predict ${{D.nPicks}} numbers using 4 best K values (${{CYCLE_LABELS.join(', ')}} draws back) · ${{D.btDraws}}-draw backtest`;
 document.getElementById('btN').textContent = D.btDraws;
 document.getElementById('nextS').textContent = D.nextSerial;
 document.getElementById('latS').textContent = D.latestSerial;
@@ -341,20 +340,21 @@ leg.innerHTML += `<div class="legend-item">
 // Balls
 const ballGrid = document.getElementById('balls');
 D.prediction.forEach(n => {{
-  const cycle = D.cycleMap[String(n)] || 1;
+  const ki = D.kMap[String(n)] !== undefined ? D.kMap[String(n)] : 0;
   const freq = D.freqMap[String(n)] || 1;
-  const color = freq > 1 ? '#475569' : CYCLE_COLORS[(cycle-1) % CYCLE_COLORS.length];
-  ballGrid.innerHTML += `<div class="ball" style="background:${{color}}" title="Appears ${{freq}}x across cycles">
+  const color = freq > 1 ? '#475569' : CYCLE_COLORS[ki % CYCLE_COLORS.length];
+  const kLabel = D.kValues[ki];
+  ballGrid.innerHTML += `<div class="ball" style="background:${{color}}" title="K=${{kLabel}}, appears ${{freq}}x">
     ${{n}}
-    <div class="cyc" style="background:${{CYCLE_COLORS[(cycle-1)%CYCLE_COLORS.length]}};color:#fff">${{cycle}}</div>
+    <div class="cyc" style="background:${{CYCLE_COLORS[ki%CYCLE_COLORS.length]}};color:#fff">${{kLabel}}</div>
   </div>`;
 }});
 
 // Source draws
 const srcGrid = document.getElementById('srcGrid');
 D.sourceDraws.forEach((sd,i) => {{
-  const color = CYCLE_COLORS[i % CYCLE_COLORS.length];
-  const label = CYCLE_LABELS[i];
+  const color = CYCLE_COLORS[sd.ki % CYCLE_COLORS.length];
+  const label = `K=${{sd.k}}`;
   const allNums = [...sd.nums, sd.bonus];
   const ballsHtml = allNums.map((n,j) => {{
     const isBonus = j === allNums.length - 1;
@@ -397,5 +397,5 @@ out_path = os.path.join(os.path.dirname(__file__), "public", "modular_cycle.html
 with open(out_path, "w", encoding="utf-8") as f:
     f.write(HTML)
 print(f"Written: {out_path} ({len(HTML):,} bytes)")
-print(f"K={K}, N_PICKS={N_PICKS}, avg_matches={avg_matches:.4f}, rand_baseline={rand_baseline:.4f}")
+print(f"K_VALUES={K_VALUES}, N_PICKS={N_PICKS}, avg_matches={avg_matches:.4f}, rand_baseline={rand_baseline:.4f}")
 print(f"Lift: {(avg_matches/rand_baseline-1)*100:+.2f}%  >=4hits: {hit_4plus:.1f}%  >=6hits: {hit_6plus:.1f}%")
