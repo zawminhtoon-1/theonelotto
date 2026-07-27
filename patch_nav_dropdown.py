@@ -70,6 +70,8 @@ NAV_HTML = """
 
         <a href="/state_machine.html">🔄 State Machine</a>
         <a href="/modular_cycle.html">🔁 Modular Cycle</a>
+        <a href="/next_relation.html">🔗 Next Relation</a>
+        <a href="/lstm_predict.html">🧠 LSTM Neural Net</a>
       </div>
     </div>
 
@@ -120,6 +122,8 @@ HTML_FILES = [
     "special.html",
     "state_machine.html",
     "pos_predict.html",
+    "next_relation.html",
+    "lstm_predict.html",
 ]
 
 for fname in HTML_FILES:
