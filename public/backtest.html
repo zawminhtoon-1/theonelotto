@@ -107,6 +107,8 @@
 
 
 
+
+
   :root {
     --bg: #0f172a; --surface: #1e293b; --border: #334155;
     --text: #f1f5f9; --muted: #94a3b8; --accent: #38bdf8;
@@ -219,6 +221,7 @@
 
 
 
+
 <nav class="site-nav">
   <a class="nav-logo" href="/">🎱 The<span>One</span>Lotto</a>
   <div class="nav-groups">
@@ -254,6 +257,9 @@
         <a href="/custom_avg.html">➕ 2-Draw Avg</a>
         <a href="/custom_avg3.html">➕ 3-Draw Avg</a>
         <a href="/avg_hub.html">⬡ All N-Draw Avg (2–43)</a>
+        <div class="nav-divider"></div>
+        <div class="nav-dd-label">N-Draw Avg Shift</div>
+        <a href="/avg_shift_hub.html">⇄ All N-Shift Avg (2–43)</a>
       </div></div>
     </div>
 
@@ -273,6 +279,7 @@
 
   </div>
 </nav>
+
 
 
 
@@ -951,6 +958,23 @@ function buildZeroCombo() {
 
 
 </script>
+
+<script>
+(function(){
+  var path = window.location.pathname + window.location.hash;
+  document.querySelectorAll('.nav-dropdown a').forEach(function(a){
+    var href = a.getAttribute('href');
+    if(!href) return;
+    var hPath = href.split('#')[0];
+    var hHash = href.includes('#') ? href : '';
+    if(href === path) { a.classList.add('active'); return; }
+    if(hPath && hPath !== '/' && path.startsWith(hPath) && !href.includes('#')) {
+      a.classList.add('active');
+    }
+  });
+})();
+</script>
+
 
 <script>
 (function(){
