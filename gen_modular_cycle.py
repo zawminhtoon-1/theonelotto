@@ -12,8 +12,8 @@ DB_URL = os.environ.get(
     "postgresql://neondb_owner:npg_QbHpRZW8of3C@ep-hidden-wind-a1q0el7s-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
 )
 
-# Best individual K values from backtest (K=23 best avg, K=10 best hit rate)
-K_VALUES = [23, 10, 5, 1]
+# Best K combo for >=6 hit rate (found by find_best_k_combo.py)
+K_VALUES = [23, 40, 38, 33]
 N_PICKS = 28
 BT_DRAWS = 1000  # backtest window
 
@@ -282,7 +282,7 @@ h1{{font-size:1.4rem;font-weight:800;color:#f1f5f9;margin-bottom:4px}}
   </div>
 
   <div class="sec">
-    <div class="sec-title">Source Draws (K=23, 10, 5, 1 draws back from draw #<span id="latS"></span>)</div>
+    <div class="sec-title">Source Draws (K=23, 40, 38, 33 draws back from draw #<span id="latS"></span>)</div>
     <div class="src-grid" id="srcGrid"></div>
   </div>
 
@@ -310,10 +310,10 @@ document.getElementById('latS').textContent = D.latestSerial;
 
 // Stats
 const statsData = [
+  {{label:'>=6 hits/draw', val:D.hit6plus+'%', sub:'primary target metric', color: D.hit6plus > 6 ? '#4ade80' : '#fbbf24'}},
+  {{label:'>=5 hits/draw', val:D.hit5plus+'%', sub:`>=4: ${{D.hit4plus}}%`, color:'#a78bfa'}},
   {{label:'Avg matches/draw', val:D.avgMatches.toFixed(3), sub:`Random: ${{D.randBaseline.toFixed(3)}}`, color: D.avgMatches > D.randBaseline ? '#4ade80' : '#fb923c'}},
-  {{label:'Lift vs random', val:(D.liftPct>0?'+':'')+D.liftPct+'%', sub:'modular vs random', color: D.liftPct>0?'#4ade80':'#fb923c'}},
-  {{label:'>=4 hits/draw', val:D.hit4plus+'%', sub:`>=5: ${{D.hit5plus}}%`, color:'#a78bfa'}},
-  {{label:'>=6 hits/draw', val:D.hit6plus+'%', sub:'all 6 main hit', color:'#fbbf24'}},
+  {{label:'Lift vs random', val:(D.liftPct>0?'+':'')+D.liftPct+'%', sub:'avg match lift', color: D.liftPct>0?'#4ade80':'#fb923c'}},
 ];
 const strip = document.getElementById('statsStrip');
 statsData.forEach(s => {{
