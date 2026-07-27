@@ -1,9 +1,8 @@
 """
 gen_modular_cycle.py
-Generates public/modular_cycle.html
-Serial Cycle Predict: group draws by (draw_serial % 43).
-For draw S, pool all past draws where serial % 43 == S % 43.
-Rank by frequency, predict top 28 numbers.
+Generates public/modular_cycle.html with two tabs:
+  Tab A: Serial Cycle — draw_serial % 43 grouping, top 28 by frequency
+  Tab B: Filtered Serial Cycle — same, but numbers from the 10 worst-K draws removed
 """
 import psycopg2, json, os, statistics
 from collections import Counter, defaultdict
@@ -15,6 +14,7 @@ DB_URL = os.environ.get(
 
 N_PICKS = 28
 BT_DRAWS = 1000
+WORST_K_COUNT = 10  # number of worst-performing K values to filter out
 
 conn = psycopg2.connect(DB_URL)
 cur = conn.cursor()
@@ -46,97 +46,190 @@ mod_groups = defaultdict(list)
 for i, d in enumerate(draws):
     mod_groups[d["s"] % 43].append(i)
 
-def predict_serial_mod(idx, n_picks):
-    """Pool numbers from all past draws with same serial%43. Rank by freq."""
+# ── Step 1: Score each K value (individual) for >=6 hit rate over last BT_DRAWS ──
+print("Scoring 43 K values...")
+k_scores = {}
+test_start = max(0, N - BT_DRAWS)
+for k in range(1, 44):
+    hits6 = 0
+    valid = 0
+    for i in range(test_start, N):
+        back = i - k
+        if back < 0:
+            continue
+        valid += 1
+        matches = len(draws[back]["all"] & draws[i]["all"])
+        if matches >= 6:
+            hits6 += 1
+    k_scores[k] = (hits6 / valid * 100) if valid > 0 else 0.0
+
+sorted_k = sorted(k_scores.keys(), key=lambda k: k_scores[k])
+worst_ks = sorted_k[:WORST_K_COUNT]   # 10 worst
+best_ks  = sorted_k[-WORST_K_COUNT:]  # 10 best (for reference)
+print(f"Worst {WORST_K_COUNT} K values: {worst_ks}  (lowest >=6 hit rates)")
+print(f"Best  {WORST_K_COUNT} K values: {best_ks}")
+
+# ── Serial mod 43 prediction helpers ──
+def get_freq(idx):
+    """Return Counter of number frequencies from past same-mod draws."""
     s = draws[idx]["s"]
     target_mod = s % 43
     past = [j for j in mod_groups[target_mod] if j < idx]
     if not past:
-        return [], Counter(), []
+        return Counter(), []
     freq = Counter()
     for j in past:
         for n in draws[j]["all"]:
             freq[n] += 1
-    top = [n for n, _ in freq.most_common(n_picks)]
-    return top, freq, past
+    return freq, past
 
-# --- Prediction for next draw ---
-next_past = [j for j in mod_groups[next_mod]]  # includes latest draw
+def predict_base(idx, n_picks):
+    freq, past = get_freq(idx)
+    if not freq:
+        return [], freq
+    ranked = sorted(freq.keys(), key=lambda x: (-freq[x], x))
+    return ranked[:n_picks], freq
+
+def predict_filtered(idx, n_picks, worst_k_list):
+    """Serial mod 43, but exclude numbers from worst-K draws."""
+    freq, past = get_freq(idx)
+    if not freq:
+        return [], freq, set()
+    # Bad numbers: appear in the worst-K source draws
+    bad = set()
+    for k in worst_k_list:
+        back = idx - k
+        if back >= 0:
+            bad |= draws[back]["all"]
+    ranked = sorted(freq.keys(), key=lambda x: (-freq[x], x))
+    filtered = [n for n in ranked if n not in bad]
+    # Fallback: if not enough, pull from bad (sorted by freq)
+    if len(filtered) < n_picks:
+        filtered += [n for n in ranked if n in bad]
+    return filtered[:n_picks], freq, bad
+
+# ── Backtest Tab A: Base serial mod 43 ──
+print("Backtesting Tab A (serial mod 43)...")
+bt_a, mc_a = [], []
+for i in range(test_start, N):
+    d = draws[i]
+    pred, freq = predict_base(i, N_PICKS)
+    if not pred:
+        mc_a.append(0)
+        bt_a.append({"s": d["s"], "d": d["d"], "actual": sorted(d["all"]), "hitNums": [], "matches": 0})
+        continue
+    hits = set(pred) & d["all"]
+    mc_a.append(len(hits))
+    bt_a.append({"s": d["s"], "d": d["d"], "actual": sorted(d["all"]),
+                 "hitNums": sorted(hits), "matches": len(hits)})
+
+# ── Backtest Tab B: Filtered (remove worst-K numbers) ──
+print("Backtesting Tab B (filtered)...")
+bt_b, mc_b = [], []
+for i in range(test_start, N):
+    d = draws[i]
+    pred, freq, bad = predict_filtered(i, N_PICKS, worst_ks)
+    if not pred:
+        mc_b.append(0)
+        bt_b.append({"s": d["s"], "d": d["d"], "actual": sorted(d["all"]), "hitNums": [], "matches": 0})
+        continue
+    hits = set(pred) & d["all"]
+    mc_b.append(len(hits))
+    bt_b.append({"s": d["s"], "d": d["d"], "actual": sorted(d["all"]),
+                 "hitNums": sorted(hits), "matches": len(hits)})
+
+def stats(mc):
+    avg = statistics.mean(mc)
+    rand = N_PICKS * 7 / 43
+    return {
+        "avg": round(avg, 2),
+        "rand": round(rand, 2),
+        "lift": round((avg / rand - 1) * 100, 1),
+        "c4": sum(1 for m in mc if m >= 4),
+        "c5": sum(1 for m in mc if m >= 5),
+        "c6": sum(1 for m in mc if m >= 6),
+        "c7": sum(1 for m in mc if m >= 7),
+    }
+
+sa = stats(mc_a)
+sb = stats(mc_b)
+print(f"Tab A: 6+ hits {sa['c6']}/1000  avg {sa['avg']}")
+print(f"Tab B: 6+ hits {sb['c6']}/1000  avg {sb['avg']}")
+
+# ── Next draw prediction ──
+# Tab A
 freq_next = Counter()
-for j in next_past:
+for j in mod_groups[next_mod]:
     for n in draws[j]["all"]:
         freq_next[n] += 1
-next_pred = [n for n, _ in freq_next.most_common(N_PICKS)]
-next_source_count = len(next_past)
+next_pred_a = [n for n, _ in freq_next.most_common(N_PICKS)]
+next_src_count = len(mod_groups[next_mod])
 
-# --- Backtest ---
-bt_results = []
-match_counts = []
-for i in range(max(0, N - BT_DRAWS), N):
-    d = draws[i]
-    pred, freq, past = predict_serial_mod(i, N_PICKS)
-    if not pred:
-        match_counts.append(0)
-        bt_results.append({"s": d["s"], "d": d["d"], "actual": sorted(d["all"]),
-                           "hitNums": [], "matches": 0})
-        continue
-    pred_set = set(pred)
-    hits = pred_set & d["all"]
-    matches = len(hits)
-    match_counts.append(matches)
-    bt_results.append({
-        "s": d["s"], "d": d["d"],
-        "actual": sorted(d["all"]),
-        "hitNums": sorted(hits),
-        "matches": matches
-    })
+# Tab B
+bad_next = set()
+for k in worst_ks:
+    back = N - 1 - k + 1  # draws[-1] is latest, next is index N (not yet in DB)
+    back = (N - 1) - k + 1  # index for draw that would be k steps before next
+    back = N - k  # next serial index is N (after all N draws), so k back = N - k
+    if 0 <= back < N:
+        bad_next |= draws[back]["all"]
+ranked_next = sorted(freq_next.keys(), key=lambda x: (-freq_next[x], x))
+next_pred_b = [n for n in ranked_next if n not in bad_next]
+if len(next_pred_b) < N_PICKS:
+    next_pred_b += [n for n in ranked_next if n in bad_next]
+next_pred_b = next_pred_b[:N_PICKS]
 
-avg_matches = statistics.mean(match_counts)
-rand_baseline = N_PICKS * 7 / 43
-cnt_4plus = sum(1 for m in match_counts if m >= 4)
-cnt_5plus = sum(1 for m in match_counts if m >= 5)
-cnt_6plus = sum(1 for m in match_counts if m >= 6)
-cnt_7plus = sum(1 for m in match_counts if m >= 7)
-dist = [match_counts.count(i) for i in range(N_PICKS + 1)]
+# Frequency tiers for coloring
+def freq_tiers(pred, fq):
+    max_f = max(fq.values()) if fq else 1
+    def tier(n):
+        f = fq.get(n, 0)
+        if f >= max_f * 0.7: return 2
+        if f >= max_f * 0.4: return 1
+        return 0
+    return {str(n): tier(n) for n in pred}
 
-# Frequency color: divide into 3 tiers
-max_freq = max(freq_next.values()) if freq_next else 1
-def freq_tier(n):
-    f = freq_next.get(n, 0)
-    if f >= max_freq * 0.7: return 2
-    if f >= max_freq * 0.4: return 1
-    return 0
+def build_data(pred, fq, bt_rows, st, src_count, tab_bad_next=None):
+    return {
+        "nPicks": N_PICKS,
+        "nextSerial": next_serial,
+        "nextMod": next_mod,
+        "sourceCount": src_count,
+        "prediction": pred,
+        "freqMap": {str(n): fq.get(n, 0) for n in pred},
+        "freqTier": freq_tiers(pred, fq),
+        "badNums": sorted(tab_bad_next) if tab_bad_next else [],
+        "btDraws": BT_DRAWS,
+        "avgMatches": st["avg"],
+        "randBaseline": st["rand"],
+        "liftPct": st["lift"],
+        "cnt4plus": st["c4"],
+        "cnt5plus": st["c5"],
+        "cnt6plus": st["c6"],
+        "cnt7plus": st["c7"],
+        "btResults": [
+            {"s": r["s"], "d": r["d"], "actual": r["actual"],
+             "hitNums": r["hitNums"], "matches": r["matches"]}
+            for r in reversed(bt_rows[-100:])
+        ]
+    }
 
-DATA = {
-    "modVal": next_mod,
-    "nPicks": N_PICKS,
+DA = build_data(next_pred_a, freq_next, bt_a, sa, next_src_count)
+DB_data = build_data(next_pred_b, freq_next, bt_b, sb, next_src_count, bad_next)
+
+WORST_K_SCORES = {k: round(k_scores[k], 2) for k in worst_ks}
+
+PAGE_DATA = {
+    "tabA": DA,
+    "tabB": DB_data,
+    "worstKs": sorted(worst_ks),
+    "worstKScores": WORST_K_SCORES,
     "latestSerial": latest["s"],
     "latestDate": latest["d"],
-    "nextSerial": next_serial,
-    "nextMod": next_mod,
-    "sourceCount": next_source_count,
-    "prediction": next_pred,
-    "freqMap": {str(n): freq_next.get(n, 0) for n in next_pred},
-    "freqTier": {str(n): freq_tier(n) for n in next_pred},
-    "btDraws": BT_DRAWS,
-    "avgMatches": round(avg_matches, 2),
-    "randBaseline": round(rand_baseline, 2),
-    "liftPct": round((avg_matches / rand_baseline - 1) * 100, 1),
-    "cnt4plus": cnt_4plus,
-    "cnt5plus": cnt_5plus,
-    "cnt6plus": cnt_6plus,
-    "cnt7plus": cnt_7plus,
-    "matchDist": dist[:9],
-    "btResults": [
-        {"s": r["s"], "d": r["d"], "actual": r["actual"],
-         "hitNums": r["hitNums"], "matches": r["matches"]}
-        for r in reversed(bt_results[-100:])
-    ]
 }
 
-data_json = json.dumps(DATA, ensure_ascii=False)
-
-TIER_COLORS = ["#38bdf8", "#a78bfa", "#fbbf24"]  # low, mid, high freq
+data_json = json.dumps(PAGE_DATA, ensure_ascii=False)
+TIER_COLORS = ["#38bdf8", "#a78bfa", "#fbbf24"]
 TIER_LABELS = ["Lower freq", "Mid freq", "High freq"]
 
 HTML = f"""<!DOCTYPE html>
@@ -148,6 +241,7 @@ HTML = f"""<!DOCTYPE html>
 <style>
 *{{box-sizing:border-box;margin:0;padding:0}}
 body{{font-family:system-ui,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh;padding-top:60px}}
+/* ── NAV ── */
 .site-nav{{position:fixed;top:0;left:0;right:0;height:52px;background:#0a0f1e;
   border-bottom:1px solid #1e293b;display:flex;align-items:center;padding:0 20px;
   gap:0;z-index:9999;box-shadow:0 2px 16px rgba(0,0,0,.6)}}
@@ -173,9 +267,20 @@ body{{font-family:system-ui,sans-serif;background:#0f172a;color:#e2e8f0;min-heig
 .nav-dd-label{{font-size:.68rem;font-weight:700;color:#475569;padding:6px 12px 2px;
   text-transform:uppercase;letter-spacing:.06em}}
 .nav-divider{{height:1px;background:#1e293b;margin:4px 0}}
+/* ── LAYOUT ── */
 main{{max-width:1100px;margin:0 auto;padding:24px 20px}}
 h1{{font-size:1.4rem;font-weight:800;color:#f1f5f9;margin-bottom:4px}}
-.subtitle{{font-size:.85rem;color:#64748b;margin-bottom:24px}}
+.subtitle{{font-size:.85rem;color:#64748b;margin-bottom:20px}}
+/* ── TABS ── */
+.tabs{{display:flex;gap:4px;margin-bottom:24px;border-bottom:1px solid #1e293b;padding-bottom:0}}
+.tab-btn{{padding:10px 20px;border-radius:8px 8px 0 0;font-size:.85rem;font-weight:600;
+  cursor:pointer;color:#64748b;background:transparent;border:1px solid transparent;
+  border-bottom:none;transition:.15s;margin-bottom:-1px}}
+.tab-btn:hover{{color:#94a3b8;background:#1e293b}}
+.tab-btn.active{{color:#f1f5f9;background:#1e293b;border-color:#334155;border-bottom:1px solid #1e293b}}
+.tab-pane{{display:none}}
+.tab-pane.active{{display:block}}
+/* ── CARDS ── */
 .sec{{margin-bottom:28px}}
 .sec-title{{font-size:.78rem;font-weight:700;color:#94a3b8;text-transform:uppercase;
   letter-spacing:.06em;margin-bottom:12px}}
@@ -184,19 +289,27 @@ h1{{font-size:1.4rem;font-weight:800;color:#f1f5f9;margin-bottom:4px}}
 .stat-card .sv{{font-size:1.6rem;font-weight:800}}
 .stat-card .sl{{font-size:.72rem;color:#64748b;margin-top:2px}}
 .stat-card .sd{{font-size:.78rem;margin-top:4px;color:#64748b}}
-.legend{{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px}}
+.method-card{{background:#1e293b;border-radius:12px;padding:16px 20px;margin-bottom:20px}}
+.method-card.a{{border-left:4px solid #38bdf8}}
+.method-card.b{{border-left:4px solid #f59e0b}}
+.method-card .mc-title{{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}}
+.method-card.a .mc-title{{color:#38bdf8}}
+.method-card.b .mc-title{{color:#f59e0b}}
+.method-card .mc-body{{font-size:.85rem;color:#94a3b8;line-height:1.6}}
+/* ── K TAGS ── */
+.k-tags{{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}}
+.k-tag{{padding:3px 10px;border-radius:6px;font-size:.75rem;font-weight:700;background:#1a2744;color:#f87171}}
+/* ── BALLS ── */
+.legend{{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px}}
 .legend-item{{display:flex;align-items:center;gap:6px;font-size:.78rem;color:#94a3b8}}
 .legend-dot{{width:12px;height:12px;border-radius:50%}}
 .ball-grid{{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}}
 .ball{{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;
-  justify-content:center;font-size:.9rem;font-weight:800;color:#fff;position:relative;
-  border:2px solid rgba(255,255,255,.15);cursor:default}}
+  justify-content:center;font-size:.9rem;font-weight:800;color:#fff;
+  border:2px solid rgba(255,255,255,.15);cursor:default;transition:.12s}}
 .ball:hover{{transform:scale(1.08)}}
-.method-card{{background:#1e293b;border-radius:12px;padding:16px 20px;margin-bottom:20px;
-  border-left:4px solid #38bdf8}}
-.method-card .mc-title{{font-size:.78rem;font-weight:700;color:#38bdf8;text-transform:uppercase;
-  letter-spacing:.06em;margin-bottom:8px}}
-.method-card .mc-body{{font-size:.85rem;color:#94a3b8;line-height:1.6}}
+.ball.filtered-out{{opacity:.25;border-style:dashed}}
+/* ── TABLE ── */
 .bt-table{{width:100%;border-collapse:collapse;font-size:.78rem}}
 .bt-table th{{background:#0f172a;color:#64748b;padding:7px 10px;text-align:left;
   border-bottom:2px solid #1e293b;font-weight:600}}
@@ -210,6 +323,12 @@ h1{{font-size:1.4rem;font-weight:800;color:#f1f5f9;margin-bottom:4px}}
 .m-max{{background:#78350f;color:#fbbf24}}
 .hit-ball{{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;
   justify-content:center;font-size:.72rem;font-weight:800;margin:1px}}
+/* ── COMPARE BANNER ── */
+.compare-banner{{display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap}}
+.cmp-box{{flex:1;min-width:140px;background:#1e293b;border-radius:10px;padding:14px 16px;text-align:center}}
+.cmp-box .cv{{font-size:1.5rem;font-weight:800}}
+.cmp-box .cl{{font-size:.72rem;color:#64748b;margin-top:2px}}
+.cmp-arrow{{display:flex;align-items:center;font-size:1.4rem;color:#64748b;padding:0 4px}}
 </style>
 </head>
 <body>
@@ -257,107 +376,193 @@ h1{{font-size:1.4rem;font-weight:800;color:#f1f5f9;margin-bottom:4px}}
 
 <main>
   <h1>&#128260; Serial Cycle Predict</h1>
-  <p class="subtitle" id="sub"></p>
+  <p class="subtitle">Draw serial % 43 grouping &middot; <span id="srcCount"></span> source draws &middot; predict {N_PICKS} numbers</p>
 
-  <div class="method-card">
-    <div class="mc-title">Method</div>
-    <div class="mc-body" id="methodDesc"></div>
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('a',this)">&#128308; Serial Cycle</button>
+    <button class="tab-btn" onclick="switchTab('b',this)">&#128993; Filtered &minus; Worst {WORST_K_COUNT}K</button>
   </div>
 
-  <div class="sec">
-    <div class="sec-title">Backtest Performance (last <span id="btN"></span> draws)</div>
-    <div class="stats-strip" id="statsStrip"></div>
+  <!-- ── TAB A ── -->
+  <div class="tab-pane active" id="pane-a">
+    <div class="method-card a">
+      <div class="mc-title">Method: Serial Cycle</div>
+      <div class="mc-body" id="descA"></div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">Backtest Performance &mdash; last {BT_DRAWS} draws</div>
+      <div class="stats-strip" id="statsA"></div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">Predicted {N_PICKS} Numbers for Draw #<span id="nextSA"></span></div>
+      <div class="legend" id="legA"></div>
+      <div class="ball-grid" id="ballsA"></div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">Backtest &mdash; Last 100 Draws (newest first)</div>
+      <table class="bt-table"><thead><tr>
+        <th>Draw</th><th>Date</th><th>Actual Numbers</th><th>Hits</th><th></th>
+      </tr></thead><tbody id="btA"></tbody></table>
+    </div>
   </div>
 
-  <div class="sec">
-    <div class="sec-title">Predicted <span id="npicks"></span> Numbers for Draw #<span id="nextS"></span></div>
-    <div class="legend" id="legend"></div>
-    <div class="ball-grid" id="balls"></div>
-  </div>
+  <!-- ── TAB B ── -->
+  <div class="tab-pane" id="pane-b">
+    <div class="method-card b">
+      <div class="mc-title">Method: Filtered &minus; Worst {WORST_K_COUNT}K Removed</div>
+      <div class="mc-body" id="descB"></div>
+      <div class="k-tags" id="worstKTags"></div>
+    </div>
 
-  <div class="sec">
-    <div class="sec-title">Backtest — Last 100 Draws (newest first)</div>
-    <table class="bt-table">
-      <thead><tr>
-        <th>Draw</th><th>Date</th><th>Actual Numbers</th><th>Hits</th><th>&#8203;</th>
-      </tr></thead>
-      <tbody id="btBody"></tbody>
-    </table>
+    <!-- Compare banner -->
+    <div class="compare-banner">
+      <div class="cmp-box">
+        <div class="cv" style="color:#38bdf8" id="cmpA6"></div>
+        <div class="cl">Serial Cycle 6+ hits</div>
+      </div>
+      <div class="cmp-arrow">&#8594;</div>
+      <div class="cmp-box">
+        <div class="cv" id="cmpB6"></div>
+        <div class="cl">Filtered 6+ hits</div>
+      </div>
+      <div class="cmp-box" style="border-left:3px solid #64748b">
+        <div class="cv" id="cmpDiff"></div>
+        <div class="cl">Change</div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">Backtest Performance &mdash; last {BT_DRAWS} draws</div>
+      <div class="stats-strip" id="statsB"></div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">Predicted {N_PICKS} Numbers for Draw #<span id="nextSB"></span></div>
+      <p style="font-size:.78rem;color:#64748b;margin-bottom:10px">
+        Dimmed numbers were excluded (appear in worst-K source draws) but added back as fill if needed.
+      </p>
+      <div class="legend" id="legB"></div>
+      <div class="ball-grid" id="ballsB"></div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">Backtest &mdash; Last 100 Draws (newest first)</div>
+      <table class="bt-table"><thead><tr>
+        <th>Draw</th><th>Date</th><th>Actual Numbers</th><th>Hits</th><th></th>
+      </tr></thead><tbody id="btB"></tbody></table>
+    </div>
   </div>
 </main>
 
 <script>
-const D = {data_json};
+const PD = {data_json};
+const DA = PD.tabA, DB = PD.tabB;
 const TIER_COLORS = {json.dumps(TIER_COLORS)};
 const TIER_LABELS = {json.dumps(TIER_LABELS)};
 
-document.getElementById('sub').textContent =
-  `Draw serial % 43 = ${{D.nextMod}} · ${{D.sourceCount}} source draws · predict ${{D.nPicks}} numbers · ${{D.btDraws}}-draw backtest`;
-document.getElementById('methodDesc').textContent =
-  `Next draw is #${{D.nextSerial}}. ${{D.nextSerial}} ÷ 43 has remainder ${{D.nextMod}}. ` +
-  `We find all ${{D.sourceCount}} past draws with the same remainder, count number frequency across them, ` +
-  `and predict the top ${{D.nPicks}} most frequent numbers.`;
-document.getElementById('btN').textContent = D.btDraws;
-document.getElementById('nextS').textContent = D.nextSerial;
-document.getElementById('npicks').textContent = D.nPicks;
+// ── Tab switching ──
+function switchTab(t, btn) {{
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('pane-'+t).classList.add('active');
+}}
 
-// Stats
-const statsData = [
-  {{label:'6+ hit draws', val:D.cnt6plus, sub:`out of ${{D.btDraws}} draws`, color:'#fbbf24'}},
-  {{label:'5+ hit draws', val:D.cnt5plus, sub:`4+ hits: ${{D.cnt4plus}}`, color:'#a78bfa'}},
-  {{label:'7-hit draws', val:D.cnt7plus, sub:'all 7 matched', color:'#34d399'}},
-  {{label:'Avg matches/draw', val:D.avgMatches.toFixed(2), sub:`Random: ${{D.randBaseline.toFixed(2)}}`, color: D.avgMatches >= D.randBaseline ? '#4ade80' : '#fb923c'}},
-];
-const strip = document.getElementById('statsStrip');
-statsData.forEach(s => {{
-  strip.innerHTML += `<div class="stat-card">
-    <div class="sv" style="color:${{s.color}}">${{s.val}}</div>
-    <div class="sl">${{s.label}}</div>
-    <div class="sd">${{s.sub}}</div>
-  </div>`;
+// ── Shared helpers ──
+function renderStats(containerId, D, accentColor) {{
+  const strip = document.getElementById(containerId);
+  [
+    {{label:'6+ hit draws', val:D.cnt6plus, sub:`out of ${{D.btDraws}} draws`, color:accentColor}},
+    {{label:'5+ hit draws', val:D.cnt5plus, sub:`4+ hits: ${{D.cnt4plus}}`, color:'#a78bfa'}},
+    {{label:'7-hit draws',  val:D.cnt7plus, sub:'all 7 matched', color:'#34d399'}},
+    {{label:'Avg matches',  val:D.avgMatches.toFixed(2), sub:`Random: ${{D.randBaseline.toFixed(2)}}`,
+      color: D.avgMatches >= D.randBaseline ? '#4ade80' : '#fb923c'}},
+  ].forEach(s => {{
+    strip.innerHTML += `<div class="stat-card">
+      <div class="sv" style="color:${{s.color}}">${{s.val}}</div>
+      <div class="sl">${{s.label}}</div><div class="sd">${{s.sub}}</div></div>`;
+  }});
+}}
+
+function renderLegend(id) {{
+  const el = document.getElementById(id);
+  TIER_LABELS.forEach((lbl,i) => {{
+    el.innerHTML += `<div class="legend-item">
+      <div class="legend-dot" style="background:${{TIER_COLORS[i]}}"></div>${{lbl}}</div>`;
+  }});
+}}
+
+function renderBalls(id, D, badSet) {{
+  const el = document.getElementById(id);
+  D.prediction.forEach(n => {{
+    const tier = D.freqTier[String(n)] || 0;
+    const color = TIER_COLORS[tier];
+    const isBad = badSet && badSet.has(n);
+    el.innerHTML += `<div class="ball${{isBad?' filtered-out':''}}"
+      style="background:${{color}}" title="${{isBad?'⚠ from worst-K draw — filtered':'Freq: '}}${{D.freqMap[String(n)]||0}}">${{n}}</div>`;
+  }});
+}}
+
+function renderTable(id, D) {{
+  const el = document.getElementById(id);
+  D.btResults.forEach(r => {{
+    const m = r.matches;
+    const cls = m>=7?'m-max':m>=6?'m-high':m>=5?'m-mid':'m-low';
+    const hitSet = new Set(r.hitNums);
+    const actual = r.actual.map(n => {{
+      const isHit = hitSet.has(n);
+      const bg = isHit ? '#4ade80' : '#1e293b';
+      const col = isHit ? '#000' : '#94a3b8';
+      return `<span class="hit-ball" style="background:${{bg}};color:${{col}}">${{n}}</span>`;
+    }}).join('');
+    el.innerHTML += `<tr>
+      <td style="color:#64748b">#${{r.s}}</td>
+      <td style="color:#475569">${{r.d}}</td>
+      <td>${{actual}}</td>
+      <td>${{r.hitNums.join(', ')||'-'}}</td>
+      <td><span class="match-badge ${{cls}}">${{m}}</span></td></tr>`;
+  }});
+}}
+
+// ── Tab A ──
+document.getElementById('srcCount').textContent = DA.sourceCount;
+document.getElementById('nextSA').textContent = DA.nextSerial;
+document.getElementById('descA').textContent =
+  `Next draw is #${{DA.nextSerial}} (serial % 43 = ${{DA.nextMod}}). Pool from ${{DA.sourceCount}} past draws with same remainder. Rank by frequency, pick top ${{DA.nPicks}}.`;
+renderStats('statsA', DA, '#38bdf8');
+renderLegend('legA');
+renderBalls('ballsA', DA, null);
+renderTable('btA', DA);
+
+// ── Tab B ──
+document.getElementById('nextSB').textContent = DB.nextSerial;
+document.getElementById('descB').textContent =
+  `Same as Serial Cycle, but numbers that appear in draws at the ${{PD.worstKs.length}} worst-performing K distances are removed first. This avoids picking numbers that historically come from low-hit-rate positions.`;
+
+// Worst K tags
+const wkEl = document.getElementById('worstKTags');
+PD.worstKs.forEach(k => {{
+  const rate = PD.worstKScores[String(k)];
+  wkEl.innerHTML += `<span class="k-tag">K=${{k}} (${{rate.toFixed(1)}}%)</span>`;
 }});
 
-// Legend
-const leg = document.getElementById('legend');
-TIER_LABELS.forEach((lbl, i) => {{
-  leg.innerHTML += `<div class="legend-item">
-    <div class="legend-dot" style="background:${{TIER_COLORS[i]}}"></div>
-    ${{lbl}}
-  </div>`;
-}});
+// Compare banner
+const diff = DB.cnt6plus - DA.cnt6plus;
+document.getElementById('cmpA6').textContent = DA.cnt6plus;
+document.getElementById('cmpB6').textContent = DB.cnt6plus;
+document.getElementById('cmpB6').style.color = diff > 0 ? '#4ade80' : diff < 0 ? '#f87171' : '#94a3b8';
+document.getElementById('cmpDiff').textContent = (diff > 0 ? '+' : '') + diff;
+document.getElementById('cmpDiff').style.color = diff > 0 ? '#4ade80' : diff < 0 ? '#f87171' : '#94a3b8';
 
-// Balls
-const ballGrid = document.getElementById('balls');
-D.prediction.forEach(n => {{
-  const tier = D.freqTier[String(n)] || 0;
-  const freq = D.freqMap[String(n)] || 0;
-  const color = TIER_COLORS[tier];
-  ballGrid.innerHTML += `<div class="ball" style="background:${{color}}" title="Appears ${{freq}}x in source draws">
-    ${{n}}
-  </div>`;
-}});
-
-// Backtest table
-const tbody = document.getElementById('btBody');
-D.btResults.forEach(r => {{
-  const m = r.matches;
-  const cls = m >= 7 ? 'm-max' : m >= 6 ? 'm-high' : m >= 5 ? 'm-mid' : 'm-low';
-  const hitSet = new Set(r.hitNums);
-  const actualHtml = r.actual.map(n => {{
-    const isHit = hitSet.has(n);
-    const isBonus = r.actual.indexOf(n) === 6;
-    const bg = isHit ? (isBonus ? '#f59e0b' : '#4ade80') : '#1e293b';
-    const color = isHit ? '#000' : '#94a3b8';
-    return `<span class="hit-ball" style="background:${{bg}};color:${{color}}">${{n}}</span>`;
-  }}).join('');
-  tbody.innerHTML += `<tr>
-    <td style="color:#64748b">#${{r.s}}</td>
-    <td style="color:#475569">${{r.d}}</td>
-    <td>${{actualHtml}}</td>
-    <td>${{r.hitNums.join(', ')||'-'}}</td>
-    <td><span class="match-badge ${{cls}}">${{m}}</span></td>
-  </tr>`;
-}});
+renderStats('statsB', DB, '#f59e0b');
+renderLegend('legB');
+const badSet = new Set(DB.badNums);
+renderBalls('ballsB', DB, badSet);
+renderTable('btB', DB);
 </script>
 </body>
 </html>"""
@@ -366,5 +571,6 @@ out_path = os.path.join(os.path.dirname(__file__), "public", "modular_cycle.html
 with open(out_path, "w", encoding="utf-8") as f:
     f.write(HTML)
 print(f"Written: {out_path} ({len(HTML):,} bytes)")
-print(f"N_PICKS={N_PICKS}, avg_matches={avg_matches:.4f}, rand_baseline={rand_baseline:.4f}")
-print(f"6+ hits: {cnt_6plus}/1000  5+ hits: {cnt_5plus}/1000  4+: {cnt_4plus}/1000")
+print(f"Tab A: 6+ hits {sa['c6']}/1000  avg {sa['avg']}")
+print(f"Tab B: 6+ hits {sb['c6']}/1000  avg {sb['avg']}")
+print(f"Worst K values: {sorted(worst_ks)}")
