@@ -42,46 +42,59 @@ test_start = max(2, N - BT_DRAWS)  # need 2 prior draws
 def avg_predict(draw_a, draw_b):
     """
     draw_a = older draw, draw_b = more recent draw.
-    Sort both sets of 7, pair by position, average, round.
-    Clamp to 1-43 and deduplicate by nudging duplicates upward.
+    Sort both sets of 7, pair by position, average.
+    - Whole number result  → 1 number
+    - .5 result            → 2 numbers (floor AND ceiling)
+    Clamp to 1-43, deduplicate.
+    Returns (sorted_picks, raw_avgs_with_expansion_flag)
     """
-    a = draw_a["all"]   # already sorted 7 numbers
-    b = draw_b["all"]   # already sorted 7 numbers
-    raw = [round((ai + bi) / 2) for ai, bi in zip(a, b)]
-    # Clamp to 1-43
-    raw = [max(1, min(43, v)) for v in raw]
-    # Deduplicate: nudge duplicates +1 (wrapping at 43)
-    used = set()
+    a = draw_a["all"]
+    b = draw_b["all"]
+    preds = []
+    raw_info = []  # list of dicts for display
+    for ai, bi in zip(a, b):
+        raw = (ai + bi) / 2
+        if raw % 1 == 0.5:
+            lo = int(raw)
+            hi = lo + 1
+            preds.extend([max(1, min(43, lo)), max(1, min(43, hi))])
+            raw_info.append({"raw": raw, "expanded": True,  "nums": [max(1,min(43,lo)), max(1,min(43,hi))]})
+        else:
+            v = round(raw)
+            preds.append(max(1, min(43, v)))
+            raw_info.append({"raw": raw, "expanded": False, "nums": [max(1,min(43,v))]})
+    # Deduplicate (keep order, sorted)
+    seen = set()
     result = []
-    for v in raw:
-        while v in used:
-            v = (v % 43) + 1
-        used.add(v)
-        result.append(v)
-    return sorted(result)
+    for v in sorted(preds):
+        if v not in seen:
+            seen.add(v)
+            result.append(v)
+    return result, raw_info
 
 # Backtest
-bt_results  = []
+bt_results   = []
 match_counts = []
-print(f"Backtesting last {BT_DRAWS} draws, N_PICKS={N_PICKS}")
+pick_counts  = []
+print(f"Backtesting last {BT_DRAWS} draws")
 
 for i in range(test_start, N):
-    pred = avg_predict(draws[i-2], draws[i-1])
+    pred, _ = avg_predict(draws[i-2], draws[i-1])
     hits = set(pred) & set(draws[i]["all"])
     mc   = len(hits)
     match_counts.append(mc)
+    pick_counts.append(len(pred))
     bt_results.append({
         "s": draws[i]["s"], "d": draws[i]["d"],
         "actual": draws[i]["all"],
         "hitNums": sorted(hits), "matches": mc,
         "pred": pred,
-        "src_a": draws[i-2]["all"],  # older draw used
-        "src_b": draws[i-1]["all"],  # recent draw used
     })
 
-avg     = statistics.mean(match_counts)
-rand    = N_PICKS * 7 / 43
-lift    = round((avg / rand - 1) * 100, 1)
+avg_picks = statistics.mean(pick_counts)
+avg       = statistics.mean(match_counts)
+rand      = avg_picks * 7 / 43          # baseline uses actual avg pick count
+lift      = round((avg / rand - 1) * 100, 1)
 c3 = sum(1 for m in match_counts if m >= 3)
 c4 = sum(1 for m in match_counts if m >= 4)
 c5 = sum(1 for m in match_counts if m >= 5)
@@ -92,16 +105,14 @@ print(f"Avg: {avg:.4f}  rand: {rand:.4f}  lift: {lift:+.1f}%")
 print(f"5+: {c5}  4+: {c4}  3+: {c3}  7: {c7}")
 
 # Next draw prediction
-next_serial = draws[-1]["s"] + 1
-next_pred   = avg_predict(draws[-2], draws[-1])
+next_serial        = draws[-1]["s"] + 1
+next_pred, raw_info = avg_predict(draws[-2], draws[-1])
 src_a_nums  = draws[-2]["all"]
 src_b_nums  = draws[-1]["all"]
 
-# Show the raw averages alongside final picks for the method card
-raw_avgs = [round((ai + bi) / 2, 1) for ai, bi in zip(src_a_nums, src_b_nums)]
-
 PAGE_DATA = {
-    "nPicks": N_PICKS,
+    "nPicks": len(next_pred),
+    "avgPicks": round(avg_picks, 1),
     "latestSerial": draws[-1]["s"],
     "latestDate": draws[-1]["d"],
     "prevSerial": draws[-2]["s"],
@@ -110,7 +121,7 @@ PAGE_DATA = {
     "prediction": next_pred,
     "srcA": src_a_nums,
     "srcB": src_b_nums,
-    "rawAvgs": raw_avgs,
+    "rawInfo": raw_info,   # [{raw, expanded, nums}, ...]
     "btDraws": BT_DRAWS,
     "avgMatches": round(avg, 2),
     "randBaseline": round(rand, 2),
@@ -259,7 +270,7 @@ h1{{font-size:1.4rem;font-weight:800;color:#f1f5f9;margin-bottom:4px}}
 </nav>
 <main>
   <h1>&#10133; Two-Draw Average Predict</h1>
-  <p class="subtitle">( Draw N-2 + Draw N-1 ) &divide; 2 &rarr; 7 picks &middot; {BT_DRAWS}-draw backtest</p>
+  <p class="subtitle">( Draw N-2 + Draw N-1 ) &divide; 2 &rarr; <span id="nPicksSub"></span> picks (avg <span id="avgPicksSub"></span>) &middot; {BT_DRAWS}-draw backtest</p>
 
   <div class="method-card">
     <div class="mc-title">Method &mdash; How the 7 numbers are calculated</div>
@@ -277,7 +288,7 @@ h1{{font-size:1.4rem;font-weight:800;color:#f1f5f9;margin-bottom:4px}}
   </div>
 
   <div class="sec">
-    <div class="sec-title">Predicted 7 Numbers for Draw #<span id="nextS"></span></div>
+    <div class="sec-title">Predicted <span id="nPicksTitle"></span> Numbers for Draw #<span id="nextS"></span></div>
     <div class="ball-grid" id="balls"></div>
   </div>
 
@@ -295,21 +306,30 @@ h1{{font-size:1.4rem;font-weight:800;color:#f1f5f9;margin-bottom:4px}}
 const D = {data_json};
 
 document.getElementById('nextS').textContent = D.nextSerial;
+document.getElementById('nPicksSub').textContent = D.nPicks;
+document.getElementById('avgPicksSub').textContent = D.avgPicks;
+document.getElementById('nPicksTitle').textContent = D.nPicks;
 
 // Method table
 const tbl = document.getElementById('avgTable');
 let hdr = '<tr><th>Draw #'+D.prevSerial+' (older)</th><th></th><th>Draw #'+D.latestSerial+' (latest)</th><th></th><th>Average</th><th>&#8594; Predict</th></tr>';
 tbl.innerHTML = hdr;
-for (let i = 0; i < 7; i++) {{
+D.rawInfo.forEach((row, i) => {{
+  const predCell = row.expanded
+    ? `<span class="avg-num an-pred" style="background:#f59e0b;color:#000">${{row.nums[0]}}</span>
+       <span style="font-size:.7rem;color:#f59e0b;margin:0 2px">+</span>
+       <span class="avg-num an-pred" style="background:#f59e0b;color:#000">${{row.nums[1]}}</span>`
+    : `<span class="avg-num an-pred">${{row.nums[0]}}</span>`;
+  const avgStyle = row.expanded ? 'color:#f59e0b;font-weight:800' : '';
   tbl.innerHTML += `<tr>
     <td><span class="avg-num an-a">${{D.srcA[i]}}</span></td>
     <td class="arrow-cell">+</td>
     <td><span class="avg-num an-b">${{D.srcB[i]}}</span></td>
     <td class="arrow-cell">&divide;2</td>
-    <td><span class="avg-num an-avg">${{D.rawAvgs[i]}}</span></td>
-    <td><span class="avg-num an-pred">${{D.prediction[i]}}</span></td>
+    <td><span class="avg-num an-avg" style="${{avgStyle}}">${{row.raw}}</span></td>
+    <td style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">${{predCell}}</td>
   </tr>`;
-}}
+}})
 
 // Stats
 [
@@ -370,7 +390,8 @@ with open(out, "w", encoding="utf-8") as f:
 print(f"Written: {out} ({len(HTML):,} bytes)")
 print(f"Avg: {avg:.4f}  rand: {rand:.4f}  lift: {lift:+.1f}%")
 print(f"5+: {c5}  4+: {c4}  3+: {c3}")
-print(f"Next draw #{next_serial} prediction: {next_pred}")
+print(f"Next draw #{next_serial} prediction ({len(next_pred)} picks): {next_pred}")
 print(f"  Src A (#{draws[-2]['s']}): {src_a_nums}")
 print(f"  Src B (#{draws[-1]['s']}): {src_b_nums}")
-print(f"  Raw avgs: {raw_avgs}")
+dots = [(r['raw'], '-> '+str(r['nums'])) for r in raw_info]
+print(f"  Raw avgs + expansion: {dots}")
