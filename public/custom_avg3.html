@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Three-Draw Average Predict -- Loto 6</title>
+<style>
+/* ====== SHARED FIXED NAV (dropdown) ====== */
+.site-nav{position:fixed;top:0;left:0;right:0;height:52px;background:#0a0f1e;
+  border-bottom:1px solid #1e293b;display:flex;align-items:center;padding:0 20px;
+  gap:0;z-index:9999;box-shadow:0 2px 16px rgba(0,0,0,.6)}
+.site-nav .nav-logo{font-size:1rem;font-weight:800;color:#f1f5f9;text-decoration:none;
+  white-space:nowrap;margin-right:24px;flex-shrink:0;letter-spacing:-.01em}
+.site-nav .nav-logo span{color:#38bdf8}
+.nav-groups{display:flex;gap:4px;align-items:center}
+.nav-group{position:relative}
+.nav-group-btn{display:flex;align-items:center;gap:5px;padding:7px 14px;border-radius:7px;
+  cursor:pointer;font-size:.82rem;font-weight:600;color:#94a3b8;
+  border:1px solid transparent;transition:.15s;white-space:nowrap;user-select:none}
+.nav-group-btn:hover,.nav-group:hover .nav-group-btn{color:#f1f5f9;background:#1e293b;border-color:#334155}
+.nav-group-btn .arrow{font-size:.6rem;opacity:.6;transition:transform .2s}
+.nav-group:hover .nav-group-btn .arrow{transform:rotate(180deg)}
+.nav-dropdown{display:none;position:absolute;top:100%;left:0;
+  background:transparent;padding-top:6px;z-index:10000;min-width:170px}
+.nav-dropdown-inner{background:#0d1526;border:1px solid #1e293b;border-radius:10px;
+  padding:6px;box-shadow:0 12px 32px rgba(0,0,0,.7)}
+.nav-group:hover .nav-dropdown{display:block}
+.nav-dropdown a{display:flex;align-items:center;gap:8px;padding:8px 12px;
+  border-radius:6px;color:#94a3b8;text-decoration:none;font-size:.82rem;
+  white-space:nowrap;transition:.12s}
+.nav-dropdown a:hover{color:#f1f5f9;background:#1e293b}
+.nav-dropdown a.active{color:#38bdf8;background:#0c2340}
+.nav-dd-label{font-size:.68rem;font-weight:700;color:#475569;padding:6px 12px 2px;
+  text-transform:uppercase;letter-spacing:.06em}
+.nav-divider{height:1px;background:#1e293b;margin:4px 0}
+
+/* ========================================= */
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh;padding-top:60px}
+.site-nav{position:fixed;top:0;left:0;right:0;height:52px;background:#0a0f1e;
+  border-bottom:1px solid #1e293b;display:flex;align-items:center;padding:0 20px;
+  gap:0;z-index:9999;box-shadow:0 2px 16px rgba(0,0,0,.6)}
+.site-nav .nav-logo{font-size:1rem;font-weight:800;color:#f1f5f9;text-decoration:none;
+  white-space:nowrap;margin-right:24px;flex-shrink:0}
+.site-nav .nav-logo span{color:#38bdf8}
+.nav-groups{display:flex;gap:4px;align-items:center}
+.nav-group{position:relative}
+.nav-group-btn{display:flex;align-items:center;gap:5px;padding:7px 14px;border-radius:7px;
+  cursor:pointer;font-size:.82rem;font-weight:600;color:#94a3b8;
+  border:1px solid transparent;transition:.15s;white-space:nowrap;user-select:none}
+.nav-group-btn:hover,.nav-group:hover .nav-group-btn{color:#f1f5f9;background:#1e293b;border-color:#334155}
+.nav-group-btn .arrow{font-size:.6rem;opacity:.6;transition:transform .2s}
+.nav-group:hover .nav-group-btn .arrow{transform:rotate(180deg)}
+.nav-dropdown{display:none;position:absolute;top:100%;left:0;
+  background:transparent;padding-top:6px;z-index:10000;min-width:175px}
+.nav-dropdown-inner{background:#0d1526;border:1px solid #1e293b;border-radius:10px;
+  padding:6px;box-shadow:0 12px 32px rgba(0,0,0,.7)}
+.nav-group:hover .nav-dropdown{display:block}
+.nav-dropdown a{display:flex;align-items:center;gap:8px;padding:8px 12px;
+  border-radius:6px;color:#94a3b8;text-decoration:none;font-size:.82rem;
+  white-space:nowrap;transition:.12s}
+.nav-dropdown a:hover,.nav-dropdown a.active{color:#f1f5f9;background:#1e293b}
+.nav-dd-label{font-size:.68rem;font-weight:700;color:#475569;padding:6px 12px 2px;
+  text-transform:uppercase;letter-spacing:.06em}
+.nav-divider{height:1px;background:#1e293b;margin:4px 0}
+main{max-width:1100px;margin:0 auto;padding:24px 20px}
+h1{font-size:1.4rem;font-weight:800;color:#f1f5f9;margin-bottom:4px}
+.subtitle{font-size:.85rem;color:#64748b;margin-bottom:20px}
+.sec{margin-bottom:28px}
+.sec-title{font-size:.78rem;font-weight:700;color:#94a3b8;text-transform:uppercase;
+  letter-spacing:.06em;margin-bottom:12px}
+.method-card{background:#1e293b;border-radius:12px;padding:16px 20px;margin-bottom:20px;
+  border-left:4px solid #a78bfa}
+.method-card .mc-title{font-size:.78rem;font-weight:700;color:#a78bfa;
+  text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.method-card .mc-body{font-size:.85rem;color:#94a3b8;line-height:1.6;margin-bottom:12px}
+.avg-table{width:100%;border-collapse:collapse;font-size:.8rem;margin-top:10px}
+.avg-table th{color:#475569;font-size:.68rem;text-transform:uppercase;
+  letter-spacing:.06em;padding:4px 8px;text-align:center;border-bottom:1px solid #334155}
+.avg-table td{padding:6px 8px;text-align:center;border-bottom:1px solid #1e293b}
+.avg-num{display:inline-flex;align-items:center;justify-content:center;
+  width:30px;height:30px;border-radius:50%;font-weight:700;font-size:.78rem}
+.an-a{background:#1e3a5f;color:#60a5fa}
+.an-b{background:#1a4731;color:#4ade80}
+.an-c{background:#3b1f4f;color:#c4b5fd}
+.an-avg{background:#334155;color:#f1f5f9}
+.an-pred{background:#a78bfa;color:#0f172a}
+.arrow-cell{color:#475569;font-size:1rem}
+.stats-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:24px}
+.stat-card{background:#1e293b;border-radius:10px;padding:14px 16px;text-align:center}
+.stat-card .sv{font-size:1.6rem;font-weight:800}
+.stat-card .sl{font-size:.72rem;color:#64748b;margin-top:2px}
+.stat-card .sd{font-size:.78rem;margin-top:4px;color:#64748b}
+.ball-grid{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px}
+.ball{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:1.1rem;font-weight:800;color:#f1f5f9;
+  background:#7c3aed;border:3px solid #a78bfa;cursor:default;transition:.12s}
+.ball:hover{transform:scale(1.08)}
+.bt-table{width:100%;border-collapse:collapse;font-size:.78rem}
+.bt-table th{background:#0f172a;color:#64748b;padding:7px 10px;text-align:left;
+  border-bottom:2px solid #1e293b;font-weight:600}
+.bt-table td{padding:6px 10px;border-bottom:1px solid #1a2744}
+.bt-table tr:hover td{background:#1a2234}
+.match-badge{display:inline-flex;align-items:center;justify-content:center;
+  width:24px;height:24px;border-radius:6px;font-weight:700;font-size:.8rem}
+.m-low{background:#1e3a5f;color:#60a5fa}
+.m-mid{background:#1a4731;color:#4ade80}
+.m-high{background:#4a1d96;color:#c4b5fd}
+.m-max{background:#78350f;color:#fbbf24}
+.hit-ball{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;
+  justify-content:center;font-size:.72rem;font-weight:800;margin:1px}
+.pred-mini{width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;
+  justify-content:center;font-size:.68rem;font-weight:700;margin:1px;flex-shrink:0}
+.pm-hit{background:#dc2626;color:#fff;box-shadow:0 0 0 2px #f87171}
+.pm-selected{background:#e2e8f0;color:#0f172a}
+.pred-row td{background:#0c1420;border-bottom:2px solid #1e293b}
+</style>
+</head>
+<body>
+
+<nav class="site-nav">
+  <a class="nav-logo" href="/">🎱 The<span>One</span>Lotto</a>
+  <div class="nav-groups">
+
+    <!-- Data -->
+    <div class="nav-group">
+      <div class="nav-group-btn">Data <span class="arrow">▼</span></div>
+      <div class="nav-dropdown"><div class="nav-dropdown-inner">
+        <div class="nav-dd-label">Results</div>
+        <a href="/">🏠 Latest Draw</a>
+        <a href="/history">📋 History</a>
+        <a href="/numbers">🔢 Numbers</a>
+      </div></div>
+    </div>
+
+    <!-- Predict -->
+    <div class="nav-group">
+      <div class="nav-group-btn">Predict <span class="arrow">▼</span></div>
+      <div class="nav-dropdown"><div class="nav-dropdown-inner">
+        <div class="nav-dd-label">Prediction Tools</div>
+        <a href="/predictions">🎯 Predictions</a>
+        <a href="/backtest.html">📊 Backtest</a>
+        <a href="/combo_evo.html">🧬 Combo Evo</a>
+        <div class="nav-divider"></div>
+        <div class="nav-dd-label">Strategy</div>
+        <a href="/overdue.html">⏳ Overdue</a>
+        <a href="/state_machine.html">🔄 State Machine</a>
+        <a href="/modular_cycle.html">🔁 Modular Cycle</a>
+        <a href="/next_relation.html">🔗 Next Relation</a>
+        <a href="/lstm_predict.html">🧠 LSTM Neural Net</a>
+        <a href="/custom_avg.html">➕ Two-Draw Avg</a>
+        <a href="/custom_avg3.html">➕ Three-Draw Avg</a>
+      </div></div>
+    </div>
+
+    <!-- Analyze -->
+    <div class="nav-group">
+      <div class="nav-group-btn">Analyze <span class="arrow">▼</span></div>
+      <div class="nav-dropdown"><div class="nav-dropdown-inner">
+        <div class="nav-dd-label">Pattern Analysis</div>
+        <a href="/special.html">⭐ Special</a>
+        <a href="/consecutive.html">🔗 Consecutive</a>
+        <div class="nav-divider"></div>
+        <div class="nav-dd-label">Position</div>
+        <a href="/position.html">📍 Position Freq</a>
+        <a href="/pos_predict.html">📊 Pos 1–6 Predict</a>
+      </div></div>
+    </div>
+
+  </div>
+</nav>
+
+<main>
+  <h1>&#10133; Three-Draw Average Predict</h1>
+  <p class="subtitle">( Draw N-3 + Draw N-2 + Draw N-1 ) &divide; 3 &rarr; <span id="nPicksSub"></span> picks &middot; 1000-draw backtest</p>
+
+  <div class="method-card">
+    <div class="mc-title">Method &mdash; How the numbers are calculated</div>
+    <div class="mc-body">
+      Sort all 7 numbers (6 main + bonus) from each of the three most recent draws.
+      Average each position across the three draws. Round to nearest integer, clamp to 1&ndash;43,
+      and resolve any duplicates.
+    </div>
+    <table class="avg-table" id="avgTable"></table>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Backtest Performance &mdash; last 1000 draws</div>
+    <div class="stats-strip" id="statsStrip"></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Predicted <span id="nPicksTitle"></span> Numbers for Draw #<span id="nextS"></span></div>
+    <div class="ball-grid" id="balls"></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Backtest &mdash; Last 100 Draws (newest first)</div>
+    <table class="bt-table">
+      <thead><tr>
+        <th>Draw</th><th>Date</th><th>Actual Numbers</th><th>Hits</th><th></th>
+      </tr></thead>
+      <tbody id="btBody"></tbody>
+    </table>
+  </div>
+</main>
+<script>
+const D = {"nPicks": 7, "avgPicks": 7, "latestSerial": 2122, "latestDate": "2026-07-23", "prevSerial": 2121, "prevDate": "2026-07-20", "prev2Serial": 2120, "prev2Date": "2026-07-16", "nextSerial": 2123, "prediction": [5, 9, 14, 17, 22, 28, 40], "srcA": [3, 8, 13, 14, 16, 26, 43], "srcB": [1, 3, 10, 17, 25, 26, 36], "srcC": [12, 15, 18, 21, 26, 32, 41], "rawInfo": [{"raw": 5.333, "nums": [5], "a": 3, "b": 1, "c": 12}, {"raw": 8.667, "nums": [9], "a": 8, "b": 3, "c": 15}, {"raw": 13.667, "nums": [14], "a": 13, "b": 10, "c": 18}, {"raw": 17.333, "nums": [17], "a": 14, "b": 17, "c": 21}, {"raw": 22.333, "nums": [22], "a": 16, "b": 25, "c": 26}, {"raw": 28.0, "nums": [28], "a": 26, "b": 26, "c": 32}, {"raw": 40.0, "nums": [40], "a": 43, "b": 36, "c": 41}], "btDraws": 1000, "avgMatches": 1.14, "randBaseline": 1.14, "liftPct": -0.4, "cnt0": 267, "cnt3plus": 69, "cnt4plus": 12, "cnt5plus": 1, "cnt6plus": 0, "cnt7plus": 0, "btResults": [{"s": 2122, "d": "2026-07-23", "actual": [12, 15, 18, 21, 26, 32, 41], "hitNums": [18], "matches": 1, "pred": [6, 10, 14, 18, 24, 30, 40]}, {"s": 2121, "d": "2026-07-20", "actual": [1, 3, 10, 17, 25, 26, 36], "hitNums": [10], "matches": 1, "pred": [6, 10, 14, 20, 27, 33, 41]}, {"s": 2120, "d": "2026-07-16", "actual": [3, 8, 13, 14, 16, 26, 43], "hitNums": [], "matches": 0, "pred": [7, 10, 18, 24, 33, 36, 40]}, {"s": 2119, "d": "2026-07-13", "actual": [15, 18, 20, 22, 30, 38, 42], "hitNums": [15, 30], "matches": 2, "pred": [2, 6, 15, 21, 28, 30, 40]}, {"s": 2118, "d": "2026-07-09", "actual": [1, 5, 8, 24, 35, 36, 37], "hitNums": [5], "matches": 1, "pred": [2, 5, 16, 21, 27, 30, 42]}, {"s": 2117, "d": "2026-07-06", "actual": [4, 7, 26, 27, 34, 35, 41], "hitNums": [], "matches": 0, "pred": [2, 8, 14, 19, 24, 29, 42]}, {"s": 2116, "d": "2026-07-02", "actual": [2, 6, 10, 13, 14, 20, 42], "hitNums": [2, 42], "matches": 2, "pred": [2, 8, 15, 25, 31, 35, 42]}, {"s": 2115, "d": "2026-06-29", "actual": [1, 3, 11, 23, 34, 35, 42], "hitNums": [34, 42], "matches": 2, "pred": [2, 9, 14, 24, 29, 34, 42]}, {"s": 2114, "d": "2026-06-25", "actual": [2, 16, 20, 21, 23, 33, 43], "hitNums": [2, 21, 33], "matches": 3, "pred": [2, 6, 10, 21, 33, 35, 42]}, {"s": 2113, "d": "2026-06-22", "actual": [2, 5, 14, 32, 36, 38, 42], "hitNums": [2], "matches": 1, "pred": [2, 7, 11, 20, 33, 35, 41]}, {"s": 2112, "d": "2026-06-18", "actual": [3, 7, 8, 18, 27, 31, 40], "hitNums": [7], "matches": 1, "pred": [2, 7, 12, 20, 34, 37, 41]}, {"s": 2111, "d": "2026-06-15", "actual": [1, 5, 8, 12, 36, 37, 43], "hitNums": [], "matches": 0, "pred": [3, 7, 13, 21, 31, 34, 41]}, {"s": 2110, "d": "2026-06-11", "actual": [3, 9, 18, 29, 35, 36, 40], "hitNums": [3, 35], "matches": 2, "pred": [3, 6, 16, 22, 31, 35, 41]}, {"s": 2109, "d": "2026-06-08", "actual": [3, 6, 11, 19, 31, 38, 41], "hitNums": [3, 6], "matches": 2, "pred": [3, 6, 18, 24, 30, 33, 42]}, {"s": 2108, "d": "2026-06-04", "actual": [2, 5, 10, 15, 27, 28, 43], "hitNums": [], "matches": 0, "pred": [4, 13, 24, 29, 32, 36, 41]}, {"s": 2107, "d": "2026-06-01", "actual": [5, 8, 27, 32, 36, 38, 39], "hitNums": [39], "matches": 1, "pred": [3, 17, 21, 25, 28, 33, 39]}, {"s": 2106, "d": "2026-05-28", "actual": [1, 6, 17, 24, 27, 34, 43], "hitNums": [17, 34], "matches": 2, "pred": [3, 15, 17, 19, 22, 34, 38]}, {"s": 2105, "d": "2026-05-25", "actual": [5, 26, 28, 30, 32, 36, 40], "hitNums": [32], "matches": 1, "pred": [4, 13, 15, 17, 20, 32, 39]}, {"s": 2104, "d": "2026-05-21", "actual": [4, 18, 19, 21, 25, 28, 34], "hitNums": [], "matches": 0, "pred": [3, 12, 15, 20, 23, 36, 41]}, {"s": 2103, "d": "2026-05-18", "actual": [1, 2, 4, 5, 8, 38, 39], "hitNums": [], "matches": 0, "pred": [6, 17, 22, 27, 31, 35, 42]}, {"s": 2102, "d": "2026-05-14", "actual": [8, 18, 21, 25, 28, 30, 43], "hitNums": [18], "matches": 1, "pred": [9, 18, 26, 31, 35, 39, 42]}, {"s": 2101, "d": "2026-05-11", "actual": [1, 17, 21, 29, 33, 40, 42], "hitNums": [42], "matches": 1, "pred": [9, 15, 24, 27, 30, 34, 42]}, {"s": 2100, "d": "2026-05-07", "actual": [8, 17, 24, 28, 32, 35, 41], "hitNums": [8, 24], "matches": 2, "pred": [8, 16, 24, 27, 31, 34, 42]}, {"s": 2099, "d": "2026-05-04", "actual": [19, 21, 34, 36, 39, 42, 43], "hitNums": [19, 42], "matches": 2, "pred": [4, 14, 19, 22, 29, 33, 42]}, {"s": 2098, "d": "2026-04-30", "actual": [1, 6, 15, 18, 19, 24, 42], "hitNums": [18, 24], "matches": 2, "pred": [8, 18, 21, 24, 32, 35, 38]}, {"s": 2097, "d": "2026-04-27", "actual": [3, 20, 24, 27, 34, 37, 42], "hitNums": [34], "matches": 1, "pred": [8, 13, 16, 18, 26, 30, 34]}, {"s": 2096, "d": "2026-04-23", "actual": [8, 15, 18, 21, 33, 38, 43], "hitNums": [18, 33], "matches": 2, "pred": [6, 11, 14, 18, 23, 27, 33]}, {"s": 2095, "d": "2026-04-20", "actual": [13, 20, 22, 23, 28, 29, 30], "hitNums": [20, 30], "matches": 2, "pred": [3, 7, 11, 20, 26, 30, 37]}, {"s": 2094, "d": "2026-04-16", "actual": [3, 4, 7, 11, 16, 24, 30], "hitNums": [4], "matches": 1, "pred": [4, 9, 14, 23, 29, 31, 41]}, {"s": 2093, "d": "2026-04-13", "actual": [2, 10, 12, 21, 26, 29, 38], "hitNums": [], "matches": 0, "pred": [4, 7, 11, 18, 23, 30, 41]}, {"s": 2092, "d": "2026-04-09", "actual": [3, 8, 13, 27, 36, 37, 43], "hitNums": [8], "matches": 1, "pred": [6, 8, 12, 15, 22, 30, 41]}, {"s": 2091, "d": "2026-04-06", "actual": [6, 9, 16, 21, 25, 28, 43], "hitNums": [6], "matches": 1, "pred": [6, 11, 13, 17, 23, 33, 39]}, {"s": 2090, "d": "2026-04-02", "actual": [2, 3, 5, 6, 9, 24, 36], "hitNums": [], "matches": 0, "pred": [8, 13, 16, 20, 26, 33, 40]}, {"s": 2089, "d": "2026-03-30", "actual": [9, 13, 16, 18, 32, 37, 43], "hitNums": [], "matches": 0, "pred": [6, 11, 14, 20, 25, 34, 39]}, {"s": 2088, "d": "2026-03-26", "actual": [8, 16, 18, 27, 29, 37, 39], "hitNums": [8, 16], "matches": 2, "pred": [6, 8, 12, 16, 24, 33, 41]}, {"s": 2087, "d": "2026-03-23", "actual": [7, 10, 13, 15, 18, 26, 39], "hitNums": [], "matches": 0, "pred": [6, 8, 14, 17, 24, 35, 41]}, {"s": 2086, "d": "2026-03-19", "actual": [4, 6, 11, 19, 28, 39, 40], "hitNums": [], "matches": 0, "pred": [7, 9, 14, 16, 24, 31, 42]}, {"s": 2085, "d": "2026-03-16", "actual": [6, 8, 13, 14, 26, 35, 43], "hitNums": [], "matches": 0, "pred": [7, 10, 15, 17, 21, 28, 41]}, {"s": 2084, "d": "2026-03-12", "actual": [8, 9, 17, 18, 19, 30, 39], "hitNums": [9, 19], "matches": 2, "pred": [9, 14, 19, 22, 27, 32, 42]}, {"s": 2083, "d": "2026-03-09", "actual": [8, 10, 13, 17, 26, 29, 43], "hitNums": [8, 26], "matches": 2, "pred": [8, 14, 19, 26, 31, 34, 40]}, {"s": 2082, "d": "2026-03-05", "actual": [5, 11, 14, 17, 19, 25, 40], "hitNums": [14, 19, 40], "matches": 3, "pred": [8, 14, 19, 26, 32, 36, 40]}, {"s": 2081, "d": "2026-03-02", "actual": [14, 22, 31, 32, 37, 41, 42], "hitNums": [], "matches": 0, "pred": [4, 10, 16, 24, 30, 34, 39]}, {"s": 2080, "d": "2026-02-26", "actual": [6, 8, 12, 30, 36, 37, 38], "hitNums": [], "matches": 0, "pred": [5, 13, 18, 21, 26, 31, 41]}, {"s": 2079, "d": "2026-02-23", "actual": [5, 11, 15, 17, 24, 31, 39], "hitNums": [], "matches": 0, "pred": [4, 12, 19, 23, 27, 30, 42]}, {"s": 2078, "d": "2026-02-19", "actual": [1, 10, 20, 24, 30, 35, 41], "hitNums": [20, 30], "matches": 2, "pred": [6, 12, 16, 20, 23, 30, 40]}, {"s": 2077, "d": "2026-02-16", "actual": [10, 17, 18, 23, 24, 26, 43], "hitNums": [17, 23], "matches": 2, "pred": [4, 8, 14, 17, 23, 31, 38]}, {"s": 2076, "d": "2026-02-12", "actual": [1, 9, 20, 22, 28, 30, 41], "hitNums": [22], "matches": 1, "pred": [5, 8, 11, 15, 22, 29, 34]}, {"s": 2075, "d": "2026-02-09", "actual": [7, 10, 11, 14, 16, 35, 37], "hitNums": [11, 16], "matches": 2, "pred": [5, 11, 16, 22, 30, 32, 36]}, {"s": 2074, "d": "2026-02-05", "actual": [5, 6, 11, 16, 26, 27, 36], "hitNums": [26, 36], "matches": 2, "pred": [8, 14, 20, 26, 32, 34, 36]}, {"s": 2073, "d": "2026-02-02", "actual": [2, 8, 12, 14, 24, 26, 29], "hitNums": [14], "matches": 1, "pred": [9, 14, 20, 30, 34, 36, 38]}, {"s": 2072, "d": "2026-01-29", "actual": [8, 18, 24, 36, 40, 42, 43], "hitNums": [8, 18], "matches": 2, "pred": [8, 10, 18, 26, 30, 33, 35]}, {"s": 2071, "d": "2026-01-26", "actual": [14, 15, 24, 29, 32, 33, 35], "hitNums": [14, 29, 33, 35], "matches": 4, "pred": [4, 9, 14, 21, 29, 33, 35]}, {"s": 2070, "d": "2026-01-22", "actual": [6, 10, 12, 25, 30, 34, 36], "hitNums": [], "matches": 0, "pred": [3, 7, 14, 17, 29, 32, 37]}, {"s": 2069, "d": "2026-01-19", "actual": [4, 6, 17, 23, 27, 33, 35], "hitNums": [], "matches": 0, "pred": [3, 7, 18, 20, 31, 34, 38]}, {"s": 2068, "d": "2026-01-15", "actual": [2, 10, 13, 14, 29, 32, 33], "hitNums": [], "matches": 0, "pred": [4, 6, 19, 22, 31, 35, 40]}, {"s": 2067, "d": "2026-01-12", "actual": [3, 4, 12, 15, 31, 32, 42], "hitNums": [3], "matches": 1, "pred": [3, 6, 18, 25, 33, 38, 40]}, {"s": 2066, "d": "2026-01-08", "actual": [5, 8, 28, 30, 32, 37, 38], "hitNums": [8, 38], "matches": 2, "pred": [3, 8, 18, 25, 33, 38, 41]}, {"s": 2065, "d": "2026-01-05", "actual": [3, 6, 18, 21, 31, 37, 40], "hitNums": [37], "matches": 1, "pred": [2, 9, 15, 24, 30, 37, 42]}, {"s": 2064, "d": "2025-12-29", "actual": [2, 3, 7, 24, 37, 39, 41], "hitNums": [3, 41], "matches": 2, "pred": [3, 10, 17, 23, 29, 36, 41]}, {"s": 2063, "d": "2025-12-25", "actual": [4, 15, 28, 29, 30, 38, 42], "hitNums": [], "matches": 0, "pred": [5, 8, 13, 20, 32, 37, 41]}, {"s": 2062, "d": "2025-12-22", "actual": [1, 8, 9, 18, 24, 35, 42], "hitNums": [42], "matches": 1, "pred": [5, 6, 14, 23, 34, 38, 42]}, {"s": 2061, "d": "2025-12-18", "actual": [5, 6, 13, 21, 33, 34, 40], "hitNums": [6, 21, 33], "matches": 3, "pred": [6, 8, 14, 21, 29, 33, 42]}, {"s": 2060, "d": "2025-12-15", "actual": [8, 10, 16, 22, 40, 41, 42], "hitNums": [16, 42], "matches": 2, "pred": [5, 7, 16, 21, 23, 32, 42]}, {"s": 2059, "d": "2025-12-11", "actual": [2, 3, 13, 26, 28, 38, 43], "hitNums": [], "matches": 0, "pred": [6, 9, 17, 18, 20, 29, 40]}, {"s": 2058, "d": "2025-12-08", "actual": [9, 12, 14, 16, 18, 19, 42], "hitNums": [16, 18], "matches": 2, "pred": [3, 8, 16, 18, 20, 30, 35]}, {"s": 2057, "d": "2025-12-04", "actual": [5, 7, 21, 22, 24, 38, 41], "hitNums": [22], "matches": 1, "pred": [2, 11, 17, 19, 22, 28, 34]}, {"s": 2056, "d": "2025-12-01", "actual": [3, 7, 15, 17, 19, 30, 38], "hitNums": [15, 30], "matches": 2, "pred": [5, 15, 21, 24, 27, 30, 35]}, {"s": 2055, "d": "2025-11-27", "actual": [2, 11, 12, 14, 17, 21, 26], "hitNums": [12], "matches": 1, "pred": [5, 12, 20, 25, 30, 33, 37]}, {"s": 2054, "d": "2025-11-24", "actual": [1, 14, 23, 27, 30, 33, 37], "hitNums": [33], "matches": 1, "pred": [6, 13, 19, 25, 29, 33, 38]}, {"s": 2053, "d": "2025-11-20", "actual": [13, 20, 28, 31, 35, 37, 41], "hitNums": [20, 35], "matches": 2, "pred": [3, 8, 14, 20, 25, 29, 35]}, {"s": 2052, "d": "2025-11-17", "actual": [1, 3, 10, 18, 25, 30, 34], "hitNums": [18], "matches": 1, "pred": [6, 13, 18, 22, 29, 32, 38]}, {"s": 2051, "d": "2025-11-13", "actual": [3, 15, 20, 27, 28, 31, 39], "hitNums": [31, 39], "matches": 2, "pred": [8, 13, 18, 22, 31, 34, 39]}, {"s": 2050, "d": "2025-11-10", "actual": [5, 6, 11, 15, 21, 25, 32], "hitNums": [], "matches": 0, "pred": [9, 14, 19, 24, 33, 38, 41]}, {"s": 2049, "d": "2025-11-06", "actual": [10, 19, 24, 25, 39, 40, 42], "hitNums": [10, 40], "matches": 2, "pred": [7, 10, 15, 20, 27, 33, 40]}, {"s": 2048, "d": "2025-11-03", "actual": [8, 13, 18, 27, 32, 37, 43], "hitNums": [27], "matches": 1, "pred": [4, 7, 11, 15, 22, 27, 35]}, {"s": 2047, "d": "2025-10-30", "actual": [10, 11, 16, 19, 27, 37, 39], "hitNums": [], "matches": 0, "pred": [1, 5, 9, 13, 21, 26, 35]}, {"s": 2046, "d": "2025-10-27", "actual": [2, 5, 10, 14, 22, 25, 38], "hitNums": [10, 25], "matches": 2, "pred": [4, 10, 13, 19, 25, 31, 37]}, {"s": 2045, "d": "2025-10-23", "actual": [1, 4, 7, 12, 16, 19, 28], "hitNums": [7, 12, 16], "matches": 3, "pred": [7, 12, 16, 25, 33, 38, 42]}, {"s": 2044, "d": "2025-10-20", "actual": [1, 6, 11, 14, 26, 33, 40], "hitNums": [14], "matches": 1, "pred": [8, 14, 18, 27, 32, 38, 41]}, {"s": 2043, "d": "2025-10-16", "actual": [11, 19, 22, 31, 34, 40, 42], "hitNums": [22, 34], "matches": 2, "pred": [7, 12, 16, 22, 29, 34, 38]}, {"s": 2042, "d": "2025-10-13", "actual": [9, 12, 14, 29, 38, 41, 43], "hitNums": [], "matches": 0, "pred": [4, 13, 18, 21, 25, 33, 37]}, {"s": 2041, "d": "2025-10-09", "actual": [4, 11, 19, 22, 24, 32, 38], "hitNums": [19], "matches": 1, "pred": [5, 19, 23, 26, 30, 36, 39]}, {"s": 2040, "d": "2025-10-06", "actual": [7, 12, 14, 15, 24, 30, 32], "hitNums": [30], "matches": 1, "pred": [5, 19, 22, 27, 30, 35, 38]}, {"s": 2039, "d": "2025-10-02", "actual": [2, 15, 22, 25, 27, 38, 42], "hitNums": [38], "matches": 1, "pred": [6, 17, 21, 28, 32, 34, 38]}, {"s": 2038, "d": "2025-09-29", "actual": [5, 31, 33, 37, 39, 41, 42], "hitNums": [], "matches": 0, "pred": [6, 10, 13, 19, 24, 28, 35]}, {"s": 2037, "d": "2025-09-25", "actual": [7, 10, 12, 20, 23, 27, 29], "hitNums": [20], "matches": 1, "pred": [5, 11, 15, 20, 25, 30, 38]}, {"s": 2036, "d": "2025-09-22", "actual": [7, 10, 17, 26, 33, 35, 42], "hitNums": [], "matches": 0, "pred": [4, 13, 16, 19, 23, 30, 36]}, {"s": 2035, "d": "2025-09-18", "actual": [5, 9, 10, 12, 17, 21, 35], "hitNums": [5, 35], "matches": 2, "pred": [5, 15, 22, 25, 28, 35, 37]}, {"s": 2034, "d": "2025-09-15", "actual": [2, 13, 17, 22, 25, 35, 37], "hitNums": [], "matches": 0, "pred": [5, 11, 21, 24, 27, 32, 34]}, {"s": 2033, "d": "2025-09-11", "actual": [5, 16, 21, 22, 26, 33, 35], "hitNums": [26, 35], "matches": 2, "pred": [4, 8, 19, 26, 28, 32, 35]}, {"s": 2032, "d": "2025-09-08", "actual": [8, 15, 27, 31, 33, 37, 39], "hitNums": [31, 33], "matches": 2, "pred": [4, 10, 20, 28, 31, 33, 36]}, {"s": 2031, "d": "2025-09-04", "actual": [2, 3, 16, 20, 23, 27, 29], "hitNums": [27, 29], "matches": 2, "pred": [5, 13, 19, 27, 29, 31, 40]}, {"s": 2030, "d": "2025-09-01", "actual": [3, 7, 13, 28, 29, 32, 36], "hitNums": [32], "matches": 1, "pred": [6, 14, 19, 23, 27, 32, 41]}, {"s": 2029, "d": "2025-08-28", "actual": [7, 21, 31, 36, 40, 41, 43], "hitNums": [21, 36], "matches": 2, "pred": [4, 9, 11, 15, 21, 27, 36]}, {"s": 2028, "d": "2025-08-25", "actual": [6, 10, 12, 16, 19, 21, 42], "hitNums": [6, 12, 16, 19], "matches": 4, "pred": [6, 12, 16, 19, 26, 34, 37]}, {"s": 2027, "d": "2025-08-21", "actual": [5, 12, 13, 18, 23, 34, 39], "hitNums": [12, 34], "matches": 2, "pred": [8, 12, 17, 20, 28, 34, 38]}, {"s": 2026, "d": "2025-08-18", "actual": [2, 5, 8, 11, 20, 26, 28], "hitNums": [8, 26], "matches": 2, "pred": [8, 12, 21, 26, 31, 35, 43]}, {"s": 2025, "d": "2025-08-14", "actual": [12, 18, 26, 28, 35, 41, 43], "hitNums": [18], "matches": 1, "pred": [4, 7, 18, 25, 29, 32, 39]}, {"s": 2024, "d": "2025-08-11", "actual": [10, 13, 16, 21, 29, 34, 42], "hitNums": [], "matches": 0, "pred": [2, 8, 20, 28, 30, 31, 40]}, {"s": 2023, "d": "2025-08-07", "actual": [1, 5, 20, 28, 29, 31, 43], "hitNums": [28, 31], "matches": 2, "pred": [3, 14, 21, 28, 31, 33, 38]}]};
+
+document.getElementById('nextS').textContent = D.nextSerial;
+document.getElementById('nPicksSub').textContent = D.nPicks;
+document.getElementById('nPicksTitle').textContent = D.nPicks;
+
+// Method table
+const tbl = document.getElementById('avgTable');
+let hdr = '<tr><th>Draw #'+D.prev2Serial+' (N-3)</th><th></th><th>Draw #'+D.prevSerial+' (N-2)</th><th></th><th>Draw #'+D.latestSerial+' (N-1)</th><th></th><th>Average</th><th>&#8594; Predict</th></tr>';
+tbl.innerHTML = hdr;
+D.rawInfo.forEach((row, i) => {
+  tbl.innerHTML += `<tr>
+    <td><span class="avg-num an-a">${D.srcA[i]}</span></td>
+    <td class="arrow-cell">+</td>
+    <td><span class="avg-num an-b">${D.srcB[i]}</span></td>
+    <td class="arrow-cell">+</td>
+    <td><span class="avg-num an-c">${D.srcC[i]}</span></td>
+    <td class="arrow-cell">&divide;3</td>
+    <td><span class="avg-num an-avg">${row.raw}</span></td>
+    <td><span class="avg-num an-pred">${row.nums[0]}</span></td>
+  </tr>`;
+});
+
+// Stats
+[
+  {label:'6+ hit draws', val:D.cnt6plus, sub:`5+: ${D.cnt5plus}  4+: ${D.cnt4plus}`, color:'#fbbf24'},
+  {label:'0 hit draws',  val:D.cnt0, sub:`out of ${D.btDraws}`, color:'#fb923c'},
+  {label:'Avg matches',  val:D.avgMatches.toFixed(2), sub:`Random: ${D.randBaseline.toFixed(2)}`,
+    color: D.avgMatches >= D.randBaseline ? '#4ade80' : '#fb923c'},
+  {label:'Lift vs random', val:(D.liftPct>=0?'+':'')+D.liftPct+'%', sub:'vs baseline',
+    color: D.liftPct>=0?'#4ade80':'#fb923c'},
+].forEach(s => {
+  document.getElementById('statsStrip').innerHTML +=
+    `<div class="stat-card"><div class="sv" style="color:${s.color}">${s.val}</div>
+     <div class="sl">${s.label}</div><div class="sd">${s.sub}</div></div>`;
+});
+
+// Predicted balls
+D.prediction.forEach(n => {
+  document.getElementById('balls').innerHTML +=
+    `<div class="ball">${n}</div>`;
+});
+
+// Backtest table
+const tbody = document.getElementById('btBody');
+D.btResults.forEach(r => {
+  const m   = r.matches;
+  const cls = m>=7?'m-max':m>=6?'m-high':m>=5?'m-mid':'m-low';
+  const hitSet = new Set(r.hitNums);
+  const actual = r.actual.map(n => {
+    const h = hitSet.has(n);
+    return `<span class="hit-ball" style="background:${h?'#4ade80':'#1e293b'};color:${h?'#000':'#94a3b8'}">${n}</span>`;
+  }).join('');
+  const predBalls = (r.pred||[]).map(n => {
+    const h = hitSet.has(n);
+    return `<span class="pred-mini ${h?'pm-hit':'pm-selected'}">${n}</span>`;
+  }).join('');
+  tbody.innerHTML += `
+    <tr>
+      <td style="color:#64748b">#${r.s}</td>
+      <td style="color:#475569">${r.d}</td>
+      <td>${actual}</td>
+      <td>${r.hitNums.join(', ')||'-'}</td>
+      <td><span class="match-badge ${cls}">${m}</span></td>
+    </tr>
+    <tr class="pred-row">
+      <td colspan="5" style="padding:4px 10px 10px">
+        <div style="font-size:.65rem;color:#475569;margin-bottom:3px">Predicted:</div>
+        <div style="display:flex;flex-wrap:wrap;gap:3px">${predBalls}</div>
+      </td>
+    </tr>`;
+});
+</script>
+
+<script>
+(function(){
+  var path = window.location.pathname + window.location.hash;
+  document.querySelectorAll('.nav-dropdown a').forEach(function(a){
+    var href = a.getAttribute('href');
+    if(!href) return;
+    var hPath = href.split('#')[0];
+    var hHash = href.includes('#') ? href : '';
+    if(href === path) { a.classList.add('active'); return; }
+    if(hPath && hPath !== '/' && path.startsWith(hPath) && !href.includes('#')) {
+      a.classList.add('active');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>
