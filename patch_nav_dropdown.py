@@ -67,7 +67,7 @@ NAV_HTML = """
         <div class="nav-divider"></div>
         <div class="nav-dd-label">Strategy</div>
         <a href="/overdue.html">⏳ Overdue</a>
-        <a href="/miss_analysis.html">❌ Miss Analysis</a>
+
         <a href="/state_machine.html">🔄 State Machine</a>
         <a href="/modular_cycle.html">🔁 Modular Cycle</a>
       </div>
@@ -113,7 +113,7 @@ HTML_FILES = [
     "backtest.html",
     "combo_evo.html",
     "consecutive.html",
-    "miss_analysis.html",
+
     "modular_cycle.html",
     "overdue.html",
     "position.html",
