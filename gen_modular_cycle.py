@@ -116,12 +116,13 @@ for i in range(test_start, N):
     pred, freq = predict_base(i, N_PICKS)
     if not pred:
         mc_a.append(0)
-        bt_a.append({"s": d["s"], "d": d["d"], "actual": sorted(d["all"]), "hitNums": [], "matches": 0})
+        bt_a.append({"s": d["s"], "d": d["d"], "actual": sorted(d["all"]),
+                     "hitNums": [], "matches": 0, "pred": []})
         continue
     hits = set(pred) & d["all"]
     mc_a.append(len(hits))
     bt_a.append({"s": d["s"], "d": d["d"], "actual": sorted(d["all"]),
-                 "hitNums": sorted(hits), "matches": len(hits)})
+                 "hitNums": sorted(hits), "matches": len(hits), "pred": pred})
 
 # ── Backtest Tab B: Filtered (remove worst-K numbers) ──
 print("Backtesting Tab B (filtered)...")
@@ -131,12 +132,14 @@ for i in range(test_start, N):
     pred, freq, bad = predict_filtered(i, N_PICKS, worst_ks)
     if not pred:
         mc_b.append(0)
-        bt_b.append({"s": d["s"], "d": d["d"], "actual": sorted(d["all"]), "hitNums": [], "matches": 0})
+        bt_b.append({"s": d["s"], "d": d["d"], "actual": sorted(d["all"]),
+                     "hitNums": [], "matches": 0, "pred": [], "bad": []})
         continue
     hits = set(pred) & d["all"]
     mc_b.append(len(hits))
     bt_b.append({"s": d["s"], "d": d["d"], "actual": sorted(d["all"]),
-                 "hitNums": sorted(hits), "matches": len(hits)})
+                 "hitNums": sorted(hits), "matches": len(hits),
+                 "pred": pred, "bad": sorted(bad)})
 
 def stats(mc):
     avg = statistics.mean(mc)
@@ -189,7 +192,7 @@ def freq_tiers(pred, fq):
         return 0
     return {str(n): tier(n) for n in pred}
 
-def build_data(pred, fq, bt_rows, st, src_count, tab_bad_next=None):
+def build_data(pred, fq, bt_rows, st, src_count, tab_bad_next=None, include_bad=False):
     return {
         "nPicks": N_PICKS,
         "nextSerial": next_serial,
@@ -209,13 +212,15 @@ def build_data(pred, fq, bt_rows, st, src_count, tab_bad_next=None):
         "cnt7plus": st["c7"],
         "btResults": [
             {"s": r["s"], "d": r["d"], "actual": r["actual"],
-             "hitNums": r["hitNums"], "matches": r["matches"]}
+             "hitNums": r["hitNums"], "matches": r["matches"],
+             "pred": r.get("pred", []),
+             **({"bad": r.get("bad", [])} if include_bad else {})}
             for r in reversed(bt_rows[-100:])
         ]
     }
 
 DA = build_data(next_pred_a, freq_next, bt_a, sa, next_src_count)
-DB_data = build_data(next_pred_b, freq_next, bt_b, sb, next_src_count, bad_next)
+DB_data = build_data(next_pred_b, freq_next, bt_b, sb, next_src_count, bad_next, include_bad=True)
 
 WORST_K_SCORES = {k: round(k_scores[k], 2) for k in worst_ks}
 
@@ -323,6 +328,9 @@ h1{{font-size:1.4rem;font-weight:800;color:#f1f5f9;margin-bottom:4px}}
 .m-max{{background:#78350f;color:#fbbf24}}
 .hit-ball{{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;
   justify-content:center;font-size:.72rem;font-weight:800;margin:1px}}
+.pred-mini{{width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;
+  justify-content:center;font-size:.68rem;font-weight:700;margin:1px;flex-shrink:0}}
+.pred-row td{{background:#0c1420;border-bottom:2px solid #1e293b}}
 /* ── COMPARE BANNER ── */
 .compare-banner{{display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap}}
 .cmp-box{{flex:1;min-width:140px;background:#1e293b;border-radius:10px;padding:14px 16px;text-align:center}}
@@ -512,19 +520,39 @@ function renderTable(id, D) {{
   D.btResults.forEach(r => {{
     const m = r.matches;
     const cls = m>=7?'m-max':m>=6?'m-high':m>=5?'m-mid':'m-low';
-    const hitSet = new Set(r.hitNums);
-    const actual = r.actual.map(n => {{
+    const hitSet  = new Set(r.hitNums);
+    const badSet  = new Set(r.bad || []);
+    const actual  = r.actual.map(n => {{
       const isHit = hitSet.has(n);
       const bg = isHit ? '#4ade80' : '#1e293b';
       const col = isHit ? '#000' : '#94a3b8';
       return `<span class="hit-ball" style="background:${{bg}};color:${{col}}">${{n}}</span>`;
     }}).join('');
-    el.innerHTML += `<tr>
-      <td style="color:#64748b">#${{r.s}}</td>
-      <td style="color:#475569">${{r.d}}</td>
-      <td>${{actual}}</td>
-      <td>${{r.hitNums.join(', ')||'-'}}</td>
-      <td><span class="match-badge ${{cls}}">${{m}}</span></td></tr>`;
+    // Predicted sub-row balls
+    const predBalls = (r.pred||[]).map(n => {{
+      const isHit = hitSet.has(n);
+      const isBad = badSet.has(n);
+      const tier  = (D.freqTier && D.freqTier[String(n)]) || 0;
+      let bg, col, opacity='1', border='none';
+      if (isHit) {{ bg='#4ade80'; col='#000'; }}
+      else {{ bg=TIER_COLORS[tier]; col='#fff'; }}
+      if (isBad) {{ opacity='0.3'; border='2px dashed #f87171'; }}
+      return `<span class="pred-mini" style="background:${{bg}};color:${{col}};opacity:${{opacity}};outline:${{border}}">${{n}}</span>`;
+    }}).join('');
+    el.innerHTML += `
+      <tr>
+        <td style="color:#64748b">#${{r.s}}</td>
+        <td style="color:#475569">${{r.d}}</td>
+        <td>${{actual}}</td>
+        <td>${{r.hitNums.join(', ')||'-'}}</td>
+        <td><span class="match-badge ${{cls}}">${{m}}</span></td>
+      </tr>
+      <tr class="pred-row">
+        <td colspan="5" style="padding:4px 10px 10px">
+          <div style="font-size:.65rem;color:#475569;margin-bottom:3px">Predicted 28:</div>
+          <div style="display:flex;flex-wrap:wrap;gap:3px">${{predBalls}}</div>
+        </td>
+      </tr>`;
   }});
 }}
 
