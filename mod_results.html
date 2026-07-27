@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>Mod Analysis Results</title>
+<style>
+body{font-family:sans-serif;max-width:700px;margin:40px auto;padding:0 20px;background:#fafafa;color:#111}
+h2{font-size:18px;font-weight:500;margin-bottom:4px}
+.subtitle{color:#777;font-size:13px;margin-bottom:24px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:24px}
+.card{background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:14px}
+.card.winner{border-color:#2a78d6;border-width:2px}
+.card .method{font-size:11px;color:#888;margin-bottom:4px}
+.card .rate{font-size:22px;font-weight:600;color:#111}
+.card .detail{font-size:12px;color:#1baf7a;margin-top:2px}
+.card .note{font-size:11px;color:#2a78d6;font-weight:500}
+table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:20px}
+th{text-align:left;border-bottom:2px solid #e0e0e0;padding:6px 8px;color:#555;font-weight:500}
+td{padding:5px 8px;border-bottom:1px solid #f0f0f0}
+.pos{color:#1baf7a}.neg{color:#e34948}
+.warn{background:#fffbe6;border:1px solid #ffe58f;border-radius:6px;padding:12px 16px;font-size:13px;color:#7a5800;margin-bottom:20px}
+</style>
+</head>
+<body>
+<h2>Mod 1–43 Hit Rate Analysis</h2>
+<p class="subtitle">4 base values × 43 moduli — tested against 7 drawn numbers (6 main + bonus) — last 1000 draws — baseline 16.3% (7/43)</p>
+
+<div class="grid">
+  <div class="card winner">
+    <div class="method">(prev_bonus + draw_serial) mod m</div>
+    <div class="rate">19.9%</div>
+    <div class="detail">199/1000 hits at m=2 · +3.6pp</div>
+    <div class="note">← Overall best</div>
+  </div>
+  <div class="card">
+    <div class="method">prev_bonus mod m</div>
+    <div class="rate">19.3%</div>
+    <div class="detail">193/1000 hits at m=10 · +3.0pp</div>
+  </div>
+  <div class="card">
+    <div class="method">draw_serial mod m</div>
+    <div class="rate">19.1%</div>
+    <div class="detail">191/1000 hits at m=6 · +2.8pp</div>
+  </div>
+  <div class="card">
+    <div class="method">prev_draw_sum mod m</div>
+    <div class="rate">19.1%</div>
+    <div class="detail">191/1000 hits at m=6 · +2.8pp</div>
+  </div>
+</div>
+
+<div class="warn">
+  ⚠ None of these are actionable — the best signal is only 3.6pp above chance. The m=2 winner just checks parity (odd vs even), which is a trivial pattern. Frequency and ABD strategies remain far stronger for actual number prediction.
+</div>
+
+<h3 style="font-size:15px;font-weight:500;margin-bottom:8px">Top 10 by hit rate — (bonus+serial) mod m</h3>
+<table>
+<tr><th>m</th><th>Hits</th><th>Hit Rate</th><th>vs Baseline</th></tr>
+<tr><td>2</td><td>199</td><td>19.9%</td><td class="pos">+3.6pp</td></tr>
+<tr><td>7</td><td>190</td><td>19.0%</td><td class="pos">+2.7pp</td></tr>
+<tr><td>4</td><td>184</td><td>18.4%</td><td class="pos">+2.1pp</td></tr>
+<tr><td>5</td><td>180</td><td>18.0%</td><td class="pos">+1.7pp</td></tr>
+<tr><td>14</td><td>180</td><td>18.0%</td><td class="pos">+1.7pp</td></tr>
+<tr><td>3</td><td>179</td><td>17.9%</td><td class="pos">+1.6pp</td></tr>
+<tr><td>1</td><td>178</td><td>17.8%</td><td class="pos">+1.5pp</td></tr>
+<tr><td>6</td><td>178</td><td>17.8%</td><td class="pos">+1.5pp</td></tr>
+<tr><td>18</td><td>178</td><td>17.8%</td><td class="pos">+1.5pp</td></tr>
+<tr><td>22</td><td>178</td><td>17.8%</td><td class="pos">+1.5pp</td></tr>
+</table>
+
+<h3 style="font-size:15px;font-weight:500;margin-bottom:8px">Top 10 — prev_bonus mod m</h3>
+<table>
+<tr><th>m</th><th>Hits</th><th>Hit Rate</th><th>vs Baseline</th></tr>
+<tr><td>10</td><td>193</td><td>19.3%</td><td class="pos">+3.0pp</td></tr>
+<tr><td>5</td><td>190</td><td>19.0%</td><td class="pos">+2.7pp</td></tr>
+<tr><td>30</td><td>185</td><td>18.5%</td><td class="pos">+2.2pp</td></tr>
+<tr><td>37</td><td>182</td><td>18.2%</td><td class="pos">+1.9pp</td></tr>
+<tr><td>20</td><td>180</td><td>18.0%</td><td class="pos">+1.7pp</td></tr>
+<tr><td>31</td><td>180</td><td>18.0%</td><td class="pos">+1.7pp</td></tr>
+<tr><td>35</td><td>180</td><td>18.0%</td><td class="pos">+1.7pp</td></tr>
+<tr><td>38</td><td>180</td><td>18.0%</td><td class="pos">+1.7pp</td></tr>
+<tr><td>1</td><td>178</td><td>17.8%</td><td class="pos">+1.5pp</td></tr>
+<tr><td>15</td><td>178</td><td>17.8%</td><td class="pos">+1.5pp</td></tr>
+</table>
+</body>
+</html>

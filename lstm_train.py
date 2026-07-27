@@ -16,7 +16,7 @@ SEQ    = 10
 H      = 16
 IN     = 43
 OUT    = 43
-N_PICKS = 28
+N_PICKS = 7
 BT_DRAWS = 1000
 
 def sigmoid(x):

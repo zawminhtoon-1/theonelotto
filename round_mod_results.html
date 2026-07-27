@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Round Moduli Results</title>
+<style>
+body{font-family:sans-serif;max-width:750px;margin:30px auto;padding:0 20px;background:#f9f9f9;color:#111}
+h2{font-size:17px;margin-bottom:4px}
+.sub{color:#666;font-size:13px;margin-bottom:20px}
+table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:20px}
+th{padding:7px 8px;text-align:center;background:#f0f0f0;border:1px solid #ddd;font-weight:500}
+th.left{text-align:left}
+td{padding:6px 8px;text-align:center;border:1px solid #eee}
+td.left{text-align:left}
+.best{background:#e8f4ff;color:#0060c0;font-weight:600}
+.above{color:#1a7a40}
+.below{color:#999}
+.base{background:#fafafa;font-size:12px}
+.warn{background:#fff8e1;border:1px solid #ffd;border-radius:6px;padding:10px 14px;font-size:13px;color:#7a5800;margin-bottom:16px}
+.pred{background:#fff;border:1px solid #e0e0e0;border-radius:6px;padding:14px;margin-bottom:20px}
+.pred h3{font-size:14px;margin:0 0 10px;font-weight:500}
+.pred table td{border-color:#f0f0f0}
+.num{font-size:20px;font-weight:600;color:#0060c0}
+</style></head><body>
+<h2>Round Number Moduli — Hit Rate Analysis</h2>
+<p class="sub">m = 5, 10, 15, 20, 25, 30, 35, 40, 43 | Hits out of last 1000 draws | 7 numbers per draw (6 main + bonus) | Baseline: 163/1000 (16.3%)</p>
+
+<table>
+<tr><th class="left">Base value</th><th>m=5</th><th>m=10</th><th>m=15</th><th>m=20</th><th>m=25</th><th>m=30</th><th>m=35</th><th>m=40</th><th>m=43</th></tr>
+<tr class="base">
+  <td class="left">serial mod m</td>
+  <td class="above">173</td><td class="above">174</td><td class="below">157</td><td class="below">161</td>
+  <td class="above">165</td><td class="above">164</td><td class="below">152</td><td class="best">175★</td><td class="above">170</td>
+</tr>
+<tr class="base">
+  <td class="left">bonus mod m</td>
+  <td class="above">190</td><td class="best">193★</td><td class="above">178</td><td class="above">180</td>
+  <td class="above">172</td><td class="above">185</td><td class="above">180</td><td class="above">177</td><td class="above">171</td>
+</tr>
+<tr class="base">
+  <td class="left">sum mod m</td>
+  <td class="above">173</td><td class="above">165</td><td class="below">162</td><td class="above">178</td>
+  <td class="below">157</td><td class="below">160</td><td class="below">157</td><td class="best">186★</td><td class="above">165</td>
+</tr>
+<tr class="base">
+  <td class="left">(bonus+serial) mod m</td>
+  <td class="best">180★</td><td class="above">167</td><td class="below">159</td><td class="below">160</td>
+  <td class="below">157</td><td class="below">149</td><td class="below">158</td><td class="above">166</td><td class="below">157</td>
+</tr>
+</table>
+
+<div class="warn">⚠ All within noise. Best is bonus mod 10 at 19.3% (+3.0pp). Not strong enough for practical use.</div>
+
+<div class="pred">
+<h3>Predicted number for next draw (draw #2123 | last bonus = 41 | last sum = 124)</h3>
+<table>
+<tr><th class="left">Base</th><th>m=5</th><th>m=10</th><th>m=15</th><th>m=20</th><th>m=25</th><th>m=30</th><th>m=35</th><th>m=40</th><th>m=43</th></tr>
+<tr><td class="left">serial mod m</td><td>2</td><td>2</td><td>7</td><td>2</td><td>22</td><td>22</td><td>22</td><td>2</td><td>15</td></tr>
+<tr><td class="left">bonus mod m</td><td>1</td><td>1</td><td>11</td><td>1</td><td>16</td><td>11</td><td>6</td><td>1</td><td>41</td></tr>
+<tr><td class="left">sum mod m</td><td>4</td><td>4</td><td>4</td><td>4</td><td>24</td><td>4</td><td>19</td><td>4</td><td>38</td></tr>
+<tr><td class="left">(bonus+serial) mod m</td><td>3</td><td>3</td><td>3</td><td>3</td><td>13</td><td>3</td><td>28</td><td>3</td><td>13</td></tr>
+</table>
+</div>
+<p style="font-size:12px;color:#999">★ = best for that base | Blue = above baseline | Gray = at or below baseline</p>
+</body></html>

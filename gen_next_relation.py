@@ -14,7 +14,7 @@ DB_URL = os.environ.get(
     "postgresql://neondb_owner:npg_QbHpRZW8of3C@ep-hidden-wind-a1q0el7s-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
 )
 
-N_PICKS = 28
+N_PICKS = 7
 BT_DRAWS = 1000
 
 conn = psycopg2.connect(DB_URL)
@@ -99,6 +99,7 @@ score_pct = {str(n): round(next_scores[n-1] / max_score * 100) for n in next_pre
 
 rand_baseline = N_PICKS * 7 / 43
 avg = statistics.mean(match_counts)
+c3  = sum(1 for m in match_counts if m >= 3)
 c4  = sum(1 for m in match_counts if m >= 4)
 c5  = sum(1 for m in match_counts if m >= 5)
 c6  = sum(1 for m in match_counts if m >= 6)
@@ -127,7 +128,7 @@ PAGE_DATA = {
     "avgMatches": round(avg, 2),
     "randBaseline": round(rand_baseline, 2),
     "liftPct": round((avg / rand_baseline - 1) * 100, 1),
-    "cnt4plus": c4, "cnt5plus": c5, "cnt6plus": c6, "cnt7plus": c7,
+    "cnt3plus": c3, "cnt4plus": c4, "cnt5plus": c5, "cnt6plus": c6, "cnt7plus": c7,
     "btResults": [
         {"s": r["s"], "d": r["d"], "actual": r["actual"],
          "hitNums": r["hitNums"], "matches": r["matches"], "pred": r["pred"]}
@@ -314,12 +315,13 @@ D.srcNums.forEach(n => {{
 }});
 
 const statsData = [
-  {{label:'6+ hit draws', val:D.cnt6plus, sub:`out of ${{D.btDraws}} draws`, color:'#fbbf24'}},
-  {{label:'5+ hit draws', val:D.cnt5plus, sub:`4+ hits: ${{D.cnt4plus}}`, color:'#a78bfa'}},
-  {{label:'7-hit draws',  val:D.cnt7plus, sub:'all 7 matched', color:'#34d399'}},
+  {{label:'5+ hit draws', val:D.cnt5plus, sub:`6+: ${{D.cnt6plus}}  7: ${{D.cnt7plus}}`, color:'#fbbf24'}},
+  {{label:'4+ hit draws', val:D.cnt4plus, sub:`3+ hits: ${{D.cnt3plus}}`, color:'#a78bfa'}},
   {{label:'Avg matches',  val:D.avgMatches.toFixed(2),
     sub:`Random: ${{D.randBaseline.toFixed(2)}}`,
     color: D.avgMatches >= D.randBaseline ? '#4ade80' : '#fb923c'}},
+  {{label:'Lift vs random', val:(D.liftPct>=0?'+':'')+D.liftPct+'%', sub:'vs baseline',
+    color: D.liftPct>=0?'#4ade80':'#fb923c'}},
 ];
 const strip = document.getElementById('statsStrip');
 statsData.forEach(s => {{

@@ -26,6 +26,7 @@ next_scores = next_data["scores"]
 mc = [r["matches"] for r in results]
 avg = statistics.mean(mc)
 rand_baseline = N_PICKS * 7 / 43
+c3 = sum(1 for m in mc if m >= 3)
 c4 = sum(1 for m in mc if m >= 4)
 c5 = sum(1 for m in mc if m >= 5)
 c6 = sum(1 for m in mc if m >= 6)
@@ -52,7 +53,7 @@ PAGE_DATA = {
     "avgMatches": round(avg, 2),
     "randBaseline": round(rand_baseline, 2),
     "liftPct": round((avg / rand_baseline - 1) * 100, 1),
-    "cnt4plus": c4, "cnt5plus": c5, "cnt6plus": c6, "cnt7plus": c7,
+    "cnt3plus": c3, "cnt4plus": c4, "cnt5plus": c5, "cnt6plus": c6, "cnt7plus": c7,
     "btResults": [
         {"s": r["serial"], "d": r["date"],
          "actual": r["actual"], "hitNums": r["hitNums"],
@@ -240,12 +241,13 @@ const TIER_LABELS = {json.dumps(TIER_LABELS)};
 document.getElementById('nextS').textContent = D.nextSerial;
 
 const statsData = [
-  {{label:'6+ hit draws', val:D.cnt6plus, sub:`out of ${{D.btDraws}} draws`, color:'#fbbf24'}},
-  {{label:'5+ hit draws', val:D.cnt5plus, sub:`4+ hits: ${{D.cnt4plus}}`, color:'#a78bfa'}},
-  {{label:'7-hit draws',  val:D.cnt7plus, sub:'all 7 matched', color:'#34d399'}},
+  {{label:'5+ hit draws', val:D.cnt5plus, sub:`6+: ${{D.cnt6plus}}  7: ${{D.cnt7plus}}`, color:'#fbbf24'}},
+  {{label:'4+ hit draws', val:D.cnt4plus, sub:`3+ hits: ${{D.cnt3plus}}`, color:'#a78bfa'}},
   {{label:'Avg matches',  val:D.avgMatches.toFixed(2),
     sub:`Random: ${{D.randBaseline.toFixed(2)}}`,
     color: D.avgMatches >= D.randBaseline ? '#4ade80' : '#fb923c'}},
+  {{label:'Lift vs random', val:(D.liftPct>=0?'+':'')+D.liftPct+'%', sub:'vs baseline',
+    color: D.liftPct>=0?'#4ade80':'#fb923c'}},
 ];
 const strip = document.getElementById('statsStrip');
 statsData.forEach(s => {{

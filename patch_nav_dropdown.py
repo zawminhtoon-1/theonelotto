@@ -25,9 +25,10 @@ NAV_CSS = """
 .nav-group-btn:hover,.nav-group:hover .nav-group-btn{color:#f1f5f9;background:#1e293b;border-color:#334155}
 .nav-group-btn .arrow{font-size:.6rem;opacity:.6;transition:transform .2s}
 .nav-group:hover .nav-group-btn .arrow{transform:rotate(180deg)}
-.nav-dropdown{display:none;position:absolute;top:calc(100% + 6px);left:0;
-  background:#0d1526;border:1px solid #1e293b;border-radius:10px;
-  min-width:170px;padding:6px;box-shadow:0 12px 32px rgba(0,0,0,.7);z-index:10000}
+.nav-dropdown{display:none;position:absolute;top:100%;left:0;
+  background:transparent;padding-top:6px;z-index:10000;min-width:170px}
+.nav-dropdown-inner{background:#0d1526;border:1px solid #1e293b;border-radius:10px;
+  padding:6px;box-shadow:0 12px 32px rgba(0,0,0,.7)}
 .nav-group:hover .nav-dropdown{display:block}
 .nav-dropdown a{display:flex;align-items:center;gap:8px;padding:8px 12px;
   border-radius:6px;color:#94a3b8;text-decoration:none;font-size:.82rem;
@@ -37,6 +38,7 @@ NAV_CSS = """
 .nav-dd-label{font-size:.68rem;font-weight:700;color:#475569;padding:6px 12px 2px;
   text-transform:uppercase;letter-spacing:.06em}
 .nav-divider{height:1px;background:#1e293b;margin:4px 0}
+
 /* ========================================= */
 """
 
@@ -48,18 +50,18 @@ NAV_HTML = """
     <!-- Data -->
     <div class="nav-group">
       <div class="nav-group-btn">Data <span class="arrow">▼</span></div>
-      <div class="nav-dropdown">
+      <div class="nav-dropdown"><div class="nav-dropdown-inner">
         <div class="nav-dd-label">Results</div>
         <a href="/">🏠 Latest Draw</a>
         <a href="/history">📋 History</a>
         <a href="/numbers">🔢 Numbers</a>
-      </div>
+      </div></div>
     </div>
 
     <!-- Predict -->
     <div class="nav-group">
       <div class="nav-group-btn">Predict <span class="arrow">▼</span></div>
-      <div class="nav-dropdown">
+      <div class="nav-dropdown"><div class="nav-dropdown-inner">
         <div class="nav-dd-label">Prediction Tools</div>
         <a href="/predictions">🎯 Predictions</a>
         <a href="/backtest.html">📊 Backtest</a>
@@ -67,18 +69,17 @@ NAV_HTML = """
         <div class="nav-divider"></div>
         <div class="nav-dd-label">Strategy</div>
         <a href="/overdue.html">⏳ Overdue</a>
-
         <a href="/state_machine.html">🔄 State Machine</a>
         <a href="/modular_cycle.html">🔁 Modular Cycle</a>
         <a href="/next_relation.html">🔗 Next Relation</a>
         <a href="/lstm_predict.html">🧠 LSTM Neural Net</a>
-      </div>
+      </div></div>
     </div>
 
     <!-- Analyze -->
     <div class="nav-group">
       <div class="nav-group-btn">Analyze <span class="arrow">▼</span></div>
-      <div class="nav-dropdown">
+      <div class="nav-dropdown"><div class="nav-dropdown-inner">
         <div class="nav-dd-label">Pattern Analysis</div>
         <a href="/special.html">⭐ Special</a>
         <a href="/consecutive.html">🔗 Consecutive</a>
@@ -86,7 +87,7 @@ NAV_HTML = """
         <div class="nav-dd-label">Position</div>
         <a href="/position.html">📍 Position Freq</a>
         <a href="/pos_predict.html">📊 Pos 1–6 Predict</a>
-      </div>
+      </div></div>
     </div>
 
   </div>
