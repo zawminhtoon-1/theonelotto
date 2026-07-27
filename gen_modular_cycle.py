@@ -83,10 +83,17 @@ avg_matches = statistics.mean(match_counts)
 # Random baseline: E[matches] = 28 * 7 / 43 = 4.558...
 rand_baseline = N_PICKS * 7 / 43
 dist = [match_counts.count(i) for i in range(N_PICKS + 1)]
-hit_1plus = sum(1 for m in match_counts if m >= 1) / len(match_counts) * 100
-hit_4plus = sum(1 for m in match_counts if m >= 4) / len(match_counts) * 100
-hit_5plus = sum(1 for m in match_counts if m >= 5) / len(match_counts) * 100
-hit_6plus = sum(1 for m in match_counts if m >= 6) / len(match_counts) * 100
+# Counts (raw)
+cnt_1plus = sum(1 for m in match_counts if m >= 1)
+cnt_4plus = sum(1 for m in match_counts if m >= 4)
+cnt_5plus = sum(1 for m in match_counts if m >= 5)
+cnt_6plus = sum(1 for m in match_counts if m >= 6)
+cnt_7plus = sum(1 for m in match_counts if m >= 7)
+# Percentages (for reference)
+hit_1plus = cnt_1plus / len(match_counts) * 100
+hit_4plus = cnt_4plus / len(match_counts) * 100
+hit_5plus = cnt_5plus / len(match_counts) * 100
+hit_6plus = cnt_6plus / len(match_counts) * 100
 
 # Build data payload
 DATA = {
@@ -99,9 +106,14 @@ DATA = {
     "kMap": {str(n): next_k_map.get(n, 0) for n in next_pred},
     "freqMap": {str(n): next_freq.get(n, 0) for n in next_pred},
     "btDraws": BT_DRAWS,
-    "avgMatches": round(avg_matches, 4),
-    "randBaseline": round(rand_baseline, 4),
-    "liftPct": round((avg_matches / rand_baseline - 1) * 100, 2),
+    "avgMatches": round(avg_matches, 2),
+    "randBaseline": round(rand_baseline, 2),
+    "liftPct": round((avg_matches / rand_baseline - 1) * 100, 1),
+    "cnt1plus": cnt_1plus,
+    "cnt4plus": cnt_4plus,
+    "cnt5plus": cnt_5plus,
+    "cnt6plus": cnt_6plus,
+    "cnt7plus": cnt_7plus,
     "hit1plus": round(hit_1plus, 1),
     "hit4plus": round(hit_4plus, 1),
     "hit5plus": round(hit_5plus, 1),
@@ -310,10 +322,10 @@ document.getElementById('latS').textContent = D.latestSerial;
 
 // Stats
 const statsData = [
-  {{label:'>=6 hits/draw', val:D.hit6plus+'%', sub:'primary target metric', color: D.hit6plus > 6 ? '#4ade80' : '#fbbf24'}},
-  {{label:'>=5 hits/draw', val:D.hit5plus+'%', sub:`>=4: ${{D.hit4plus}}%`, color:'#a78bfa'}},
-  {{label:'Avg matches/draw', val:D.avgMatches.toFixed(3), sub:`Random: ${{D.randBaseline.toFixed(3)}}`, color: D.avgMatches > D.randBaseline ? '#4ade80' : '#fb923c'}},
-  {{label:'Lift vs random', val:(D.liftPct>0?'+':'')+D.liftPct+'%', sub:'avg match lift', color: D.liftPct>0?'#4ade80':'#fb923c'}},
+  {{label:'6+ hit draws', val:D.cnt6plus, sub:`out of ${{D.btDraws}} draws`, color:'#fbbf24'}},
+  {{label:'5+ hit draws', val:D.cnt5plus, sub:`4+ hits: ${{D.cnt4plus}}`, color:'#a78bfa'}},
+  {{label:'7-hit draws', val:D.cnt7plus, sub:'all 7 matched', color:'#34d399'}},
+  {{label:'Avg matches/draw', val:D.avgMatches.toFixed(2), sub:`Random: ${{D.randBaseline.toFixed(2)}}`, color: D.avgMatches > D.randBaseline ? '#4ade80' : '#fb923c'}},
 ];
 const strip = document.getElementById('statsStrip');
 statsData.forEach(s => {{
