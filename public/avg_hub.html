@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>N-Draw Average Comparison -- Loto 6</title>
+<style>
+/* ====== SHARED FIXED NAV (dropdown) ====== */
+.site-nav{position:fixed;top:0;left:0;right:0;height:52px;background:#0a0f1e;
+  border-bottom:1px solid #1e293b;display:flex;align-items:center;padding:0 20px;
+  gap:0;z-index:9999;box-shadow:0 2px 16px rgba(0,0,0,.6)}
+.site-nav .nav-logo{font-size:1rem;font-weight:800;color:#f1f5f9;text-decoration:none;
+  white-space:nowrap;margin-right:24px;flex-shrink:0;letter-spacing:-.01em}
+.site-nav .nav-logo span{color:#38bdf8}
+.nav-groups{display:flex;gap:4px;align-items:center}
+.nav-group{position:relative}
+.nav-group-btn{display:flex;align-items:center;gap:5px;padding:7px 14px;border-radius:7px;
+  cursor:pointer;font-size:.82rem;font-weight:600;color:#94a3b8;
+  border:1px solid transparent;transition:.15s;white-space:nowrap;user-select:none}
+.nav-group-btn:hover,.nav-group:hover .nav-group-btn{color:#f1f5f9;background:#1e293b;border-color:#334155}
+.nav-group-btn .arrow{font-size:.6rem;opacity:.6;transition:transform .2s}
+.nav-group:hover .nav-group-btn .arrow{transform:rotate(180deg)}
+.nav-dropdown{display:none;position:absolute;top:100%;left:0;
+  background:transparent;padding-top:6px;z-index:10000;min-width:170px}
+.nav-dropdown-inner{background:#0d1526;border:1px solid #1e293b;border-radius:10px;
+  padding:6px;box-shadow:0 12px 32px rgba(0,0,0,.7)}
+.nav-group:hover .nav-dropdown{display:block}
+.nav-dropdown a{display:flex;align-items:center;gap:8px;padding:8px 12px;
+  border-radius:6px;color:#94a3b8;text-decoration:none;font-size:.82rem;
+  white-space:nowrap;transition:.12s}
+.nav-dropdown a:hover{color:#f1f5f9;background:#1e293b}
+.nav-dropdown a.active{color:#38bdf8;background:#0c2340}
+.nav-dd-label{font-size:.68rem;font-weight:700;color:#475569;padding:6px 12px 2px;
+  text-transform:uppercase;letter-spacing:.06em}
+.nav-divider{height:1px;background:#1e293b;margin:4px 0}
+
+/* ========================================= */
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh;padding-top:60px}
+.site-nav{position:fixed;top:0;left:0;right:0;height:52px;background:#0a0f1e;
+  border-bottom:1px solid #1e293b;display:flex;align-items:center;padding:0 20px;
+  gap:0;z-index:9999;box-shadow:0 2px 16px rgba(0,0,0,.6)}
+.site-nav .nav-logo{font-size:1rem;font-weight:800;color:#f1f5f9;text-decoration:none;
+  white-space:nowrap;margin-right:24px;flex-shrink:0}
+.site-nav .nav-logo span{color:#38bdf8}
+.nav-groups{display:flex;gap:4px;align-items:center}
+.nav-group{position:relative}
+.nav-group-btn{display:flex;align-items:center;gap:5px;padding:7px 14px;border-radius:7px;
+  cursor:pointer;font-size:.82rem;font-weight:600;color:#94a3b8;
+  border:1px solid transparent;transition:.15s;white-space:nowrap;user-select:none}
+.nav-group-btn:hover,.nav-group:hover .nav-group-btn{color:#f1f5f9;background:#1e293b;border-color:#334155}
+.nav-group-btn .arrow{font-size:.6rem;opacity:.6;transition:transform .2s}
+.nav-group:hover .nav-group-btn .arrow{transform:rotate(180deg)}
+.nav-dropdown{display:none;position:absolute;top:100%;left:0;
+  background:transparent;padding-top:6px;z-index:10000;min-width:175px}
+.nav-dropdown-inner{background:#0d1526;border:1px solid #1e293b;border-radius:10px;
+  padding:6px;box-shadow:0 12px 32px rgba(0,0,0,.7);max-height:70vh;overflow-y:auto}
+.nav-group:hover .nav-dropdown{display:block}
+.nav-dropdown a{display:flex;align-items:center;gap:8px;padding:8px 12px;
+  border-radius:6px;color:#94a3b8;text-decoration:none;font-size:.82rem;
+  white-space:nowrap;transition:.12s}
+.nav-dropdown a:hover,.nav-dropdown a.active{color:#f1f5f9;background:#1e293b}
+.nav-dd-label{font-size:.68rem;font-weight:700;color:#475569;padding:6px 12px 2px;
+  text-transform:uppercase;letter-spacing:.06em}
+.nav-divider{height:1px;background:#1e293b;margin:4px 0}
+main{max-width:1200px;margin:0 auto;padding:24px 20px}
+h1{font-size:1.4rem;font-weight:800;color:#f1f5f9;margin-bottom:4px}
+.subtitle{font-size:.85rem;color:#64748b;margin-bottom:20px}
+.sort-hint{font-size:.75rem;color:#475569;margin-bottom:12px}
+.hub-table{width:100%;border-collapse:collapse;font-size:.8rem}
+.hub-table th{background:#0c1420;color:#64748b;padding:8px 12px;text-align:right;
+  border-bottom:2px solid #1e293b;font-weight:600;cursor:pointer;user-select:none;
+  white-space:nowrap}
+.hub-table th:first-child,.hub-table th:nth-child(2){text-align:left}
+.hub-table th:hover{color:#f1f5f9;background:#1e293b}
+.hub-table th.sorted{color:#a78bfa}
+.hub-table td{padding:7px 12px;border-bottom:1px solid #1a2744;text-align:right}
+.hub-table td:first-child,.hub-table td:nth-child(2){text-align:left}
+.hub-table tr:hover td{background:#1a2234}
+.n-link{font-weight:700;color:#a78bfa;text-decoration:none;font-size:.9rem}
+.n-link:hover{text-decoration:underline}
+.pred-pill{display:inline-block;background:#1e293b;border-radius:6px;
+  padding:2px 6px;font-size:.7rem;color:#94a3b8;margin:1px 0}
+.lift-pos{color:#4ade80}
+.lift-neg{color:#fb923c}
+.lift-zero{color:#64748b}
+.badge-6{background:#78350f;color:#fbbf24;border-radius:5px;padding:2px 7px;font-weight:700}
+.badge-5{background:#4a1d96;color:#c4b5fd;border-radius:5px;padding:2px 7px;font-weight:700}
+.sort-arrow{margin-left:4px;opacity:.5;font-size:.65rem}
+</style>
+</head>
+<body>
+
+<nav class="site-nav">
+  <a class="nav-logo" href="/">🎱 The<span>One</span>Lotto</a>
+  <div class="nav-groups">
+
+    <!-- Data -->
+    <div class="nav-group">
+      <div class="nav-group-btn">Data <span class="arrow">▼</span></div>
+      <div class="nav-dropdown"><div class="nav-dropdown-inner">
+        <div class="nav-dd-label">Results</div>
+        <a href="/">🏠 Latest Draw</a>
+        <a href="/history">📋 History</a>
+        <a href="/numbers">🔢 Numbers</a>
+      </div></div>
+    </div>
+
+    <!-- Predict -->
+    <div class="nav-group">
+      <div class="nav-group-btn">Predict <span class="arrow">▼</span></div>
+      <div class="nav-dropdown"><div class="nav-dropdown-inner">
+        <div class="nav-dd-label">Prediction Tools</div>
+        <a href="/predictions">🎯 Predictions</a>
+        <a href="/backtest.html">📊 Backtest</a>
+        <a href="/combo_evo.html">🧬 Combo Evo</a>
+        <div class="nav-divider"></div>
+        <div class="nav-dd-label">Strategy</div>
+        <a href="/overdue.html">⏳ Overdue</a>
+        <a href="/state_machine.html">🔄 State Machine</a>
+        <a href="/modular_cycle.html">🔁 Modular Cycle</a>
+        <a href="/next_relation.html">🔗 Next Relation</a>
+        <a href="/lstm_predict.html">🧠 LSTM Neural Net</a>
+        <div class="nav-divider"></div>
+        <div class="nav-dd-label">N-Draw Avg</div>
+        <a href="/custom_avg.html">➕ 2-Draw Avg</a>
+        <a href="/custom_avg3.html">➕ 3-Draw Avg</a>
+        <a href="/avg_hub.html">⬡ All N-Draw Avg (2–43)</a>
+      </div></div>
+    </div>
+
+    <!-- Analyze -->
+    <div class="nav-group">
+      <div class="nav-group-btn">Analyze <span class="arrow">▼</span></div>
+      <div class="nav-dropdown"><div class="nav-dropdown-inner">
+        <div class="nav-dd-label">Pattern Analysis</div>
+        <a href="/special.html">⭐ Special</a>
+        <a href="/consecutive.html">🔗 Consecutive</a>
+        <div class="nav-divider"></div>
+        <div class="nav-dd-label">Position</div>
+        <a href="/position.html">📍 Position Freq</a>
+        <a href="/pos_predict.html">📊 Pos 1–6 Predict</a>
+      </div></div>
+    </div>
+
+  </div>
+</nav>
+
+<main>
+  <h1>&#11835; N-Draw Average Comparison</h1>
+  <p class="subtitle">Comparing all N-draw average strategies (N = 2 to 43) for Draw #<span id="nextS"></span></p>
+  <div class="sort-hint">Click any column header to sort &uarr;&darr;</div>
+
+  <div style="overflow-x:auto">
+    <table class="hub-table" id="hubTable">
+      <thead>
+        <tr>
+          <th data-col="n">N <span class="sort-arrow">&#8597;</span></th>
+          <th data-col="pred">Prediction</th>
+          <th data-col="nPicks">Picks <span class="sort-arrow">&#8597;</span></th>
+          <th data-col="cnt6plus">6+ hits <span class="sort-arrow">&#8597;</span></th>
+          <th data-col="cnt5plus">5+ hits <span class="sort-arrow">&#8597;</span></th>
+          <th data-col="cnt4plus">4+ hits <span class="sort-arrow">&#8597;</span></th>
+          <th data-col="cnt0">0-hit <span class="sort-arrow">&#8597;</span></th>
+          <th data-col="avgMatches">Avg matches <span class="sort-arrow">&#8597;</span></th>
+          <th data-col="liftPct">Lift% <span class="sort-arrow">&#8597;</span></th>
+        </tr>
+      </thead>
+      <tbody id="hubBody"></tbody>
+    </table>
+  </div>
+</main>
+<script>
+var H = {"rows": [{"n": 2, "pred": [6, 7, 9, 14, 19, 25, 26, 29, 38, 39], "nPicks": 10, "cnt6plus": 1, "cnt5plus": 5, "cnt4plus": 49, "cnt0": 123, "avgMatches": 1.67, "randBaseline": 1.69, "liftPct": -1.5, "btDraws": 1000}, {"n": 3, "pred": [5, 9, 14, 17, 22, 28, 40], "nPicks": 7, "cnt6plus": 0, "cnt5plus": 1, "cnt4plus": 12, "cnt0": 267, "avgMatches": 1.14, "randBaseline": 1.14, "liftPct": -0.4, "btDraws": 1000}, {"n": 4, "pred": [8, 11, 15, 18, 19, 24, 30, 31, 40, 41], "nPicks": 10, "cnt6plus": 0, "cnt5plus": 4, "cnt4plus": 21, "cnt0": 175, "avgMatches": 1.45, "randBaseline": 1.44, "liftPct": 0.6, "btDraws": 1000}, {"n": 5, "pred": [6, 10, 14, 20, 26, 32, 40], "nPicks": 7, "cnt6plus": 0, "cnt5plus": 0, "cnt4plus": 9, "cnt0": 248, "avgMatches": 1.15, "randBaseline": 1.14, "liftPct": 0.5, "btDraws": 1000}, {"n": 6, "pred": [6, 9, 16, 21, 28, 32, 40], "nPicks": 7, "cnt6plus": 0, "cnt5plus": 0, "cnt4plus": 15, "cnt0": 205, "avgMatches": 1.28, "randBaseline": 1.33, "liftPct": -3.4, "btDraws": 1000}, {"n": 7, "pred": [5, 9, 15, 20, 26, 30, 40], "nPicks": 7, "cnt6plus": 0, "cnt5plus": 1, "cnt4plus": 11, "cnt0": 274, "avgMatches": 1.11, "randBaseline": 1.14, "liftPct": -2.7, "btDraws": 1000}, {"n": 8, "pred": [5, 8, 14, 15, 20, 27, 31, 40, 41], "nPicks": 9, "cnt6plus": 0, "cnt5plus": 1, "cnt4plus": 13, "cnt0": 234, "avgMatches": 1.21, "randBaseline": 1.28, "liftPct": -5.6, "btDraws": 1000}, {"n": 9, "pred": [5, 9, 15, 20, 26, 31, 41], "nPicks": 7, "cnt6plus": 0, "cnt5plus": 2, "cnt4plus": 4, "cnt0": 284, "avgMatches": 1.11, "randBaseline": 1.14, "liftPct": -2.6, "btDraws": 1000}, {"n": 10, "pred": [4, 9, 15, 21, 27, 32, 41], "nPicks": 7, "cnt6plus": 0, "cnt5plus": 0, "cnt4plus": 10, "cnt0": 231, "avgMatches": 1.22, "randBaseline": 1.25, "liftPct": -2.9, "btDraws": 1000}, {"n": 11, "pred": [4, 8, 14, 21, 27, 32, 41], "nPicks": 7, "cnt6plus": 0, "cnt5plus": 0, "cnt4plus": 4, "cnt0": 262, "avgMatches": 1.11, "randBaseline": 1.14, "liftPct": -2.2, "btDraws": 1000}, {"n": 12, "pred": [4, 8, 14, 20, 28, 32, 41], "nPicks": 7, "cnt6plus": 0, "cnt5plus": 0, "cnt4plus": 9, "cnt0": 233, "avgMatches": 1.22, "randBaseline": 1.24, "liftPct": -1.3, "btDraws": 1000}, {"n": 13, "pred": [4, 8, 14, 21, 29, 33, 41], "nPicks": 7, "cnt6plus": 0, "cnt5plus": 1, "cnt4plus": 4, "cnt0": 278, "avgMatches": 1.11, "randBaseline": 1.14, "liftPct": -2.5, "btDraws": 1000}, {"n": 14, "pred": [4, 8, 14, 21, 29, 33, 41], "nPicks": 7, "cnt6plus": 0, "cnt5plus": 1, "cnt4plus": 11, "cnt0": 245, "avgMatches": 1.21, "randBaseline": 1.22, "liftPct": -1.3, "btDraws": 1000}, {"n": 15, "pred": [4, 8, 14, 20, 29, 33, 41], "nPicks": 7, "cnt6plus": 0, "cnt5plus": 1, "cnt4plus": 11, "cnt0": 288, "avgMatches": 1.1, "randBaseline": 1.14, "liftPct": -3.2, "btDraws": 1000}, {"n": 16, "pred": [4, 8, 14, 15, 21, 29, 33, 41], "nPicks": 8, "cnt6plus": 0, "cnt5plus": 0, "cnt4plus": 12, "cnt0": 245, "avgMatches": 1.19, "randBaseline": 1.21, "liftPct": -1.4, "btDraws": 1000}, {"n": 17, "pred": [4, 8, 15, 21, 29, 33, 41], "nPicks": 7, "cnt6plus": 0, "cnt5plus": 2, "cnt4plus": 12, "cnt0": 281, "avgMatches": 1.08, "randBaseline": 1.14, "liftPct": -5.4, "btDraws": 1000}, {"n": 18, "pred": [4, 9, 15, 22, 29, 33, 41], "nPicks": 7, "cnt6plus": 0, "cnt5plus": 2, "cnt4plus": 9, "cnt0": 263, "avgMatches": 1.16, "randBaseline": 1.2, "liftPct": -3.7, "btDraws": 1000}, {"n": 19, "pred": [4, 9, 16, 22, 29, 33, 41], "nPicks": 7, "cnt6plus": 0, "cnt5plus": 0, "cnt4plus": 8, "cnt0": 288, "avgMatches": 1.11, "randBaseline": 1.14, "liftPct": -2.7, "btDraws": 1000}, {"n": 20, "pred": [4, 9, 15, 21, 28, 33, 41], "nPicks": 7, "cnt6plus": 0, "cnt5plus": 1, "cnt4plus": 14, "cnt0": 246, "avgMatches": 1.19, "randBaseline": 1.2, "liftPct": -0.9, "btDraws": 1000}, {"n": 21, "pred": [4, 9, 15, 21, 28, 33, 41], "nPicks": 7, "cnt6plus": 0, "cnt5plus": 1, "cnt4plus": 7, "cnt0": 246, "avgMatches": 1.14, "randBaseline": 1.14, "liftPct": -0.2, "btDraws": 1000}, {"n": 22, "pred": [4, 10, 16, 21, 22, 28, 33, 41], "nPicks": 8, "cnt6plus": 0, "cnt5plus": 3, "cnt4plus": 10, "cnt0": 240, "avgMatches": 1.19, "randBaseline": 1.19, "liftPct": 0.1, "btDraws": 1000}, {"n": 23, "pred": [4, 10, 16, 22, 28, 33, 41], "nPicks": 7, "cnt6plus": 0, "cnt5plus": 1, "cnt4plus": 10, "cnt0": 257, "avgMatches": 1.14, "randBaseline": 1.14, "liftPct": 0.4, "btDraws": 1000}, {"n": 24, "pred": [4, 10, 17, 22, 29, 34, 41], "nPicks": 7, "cnt6plus": 0, "cnt5plus": 2, "cnt4plus": 6, "cnt0": 245, "avgMatches": 1.19, "randBaseline": 1.19, "liftPct": 0.1, "btDraws": 1000}, {"n": 25, "pred": [4, 10, 17, 22, 28, 33, 41], "nPicks": 7, "cnt6plus": 0, "cnt5plus": 0, "cnt4plus": 9, "cnt0": 256, "avgMatches": 1.15, "randBaseline": 1.14, "liftPct": 0.6, "btDraws": 1000}, {"n": 26, "pred": [4, 11, 17, 22, 29, 33, 34, 41], "nPicks": 8, "cnt6plus": 0, "cnt5plus": 1, "cnt4plus": 10, "cnt0": 250, "avgMatches": 1.15, "randBaseline": 1.18, "liftPct": -2.4, "btDraws": 1000}, {"n": 27, "pred": [4, 11, 17, 22, 29, 34, 41], "nPicks": 7, "cnt6plus": 0, "cnt5plus": 0, "cnt4plus": 4, "cnt0": 264, "avgMatches": 1.14, "randBaseline": 1.14, "liftPct": 0.2, "btDraws": 1000}, {"n": 28, "pred": [5, 11, 17, 22, 29, 33, 34, 41], "nPicks": 8, "cnt6plus": 0, "cnt5plus": 1, "cnt4plus": 9, "cnt0": 254, "avgMatches": 1.17, "randBaseline": 1.18, "liftPct": -1.2, "btDraws": 1000}, {"n": 29, "pred": [5, 11, 17, 22, 28, 33, 40], "nPicks": 7, "cnt6plus": 0, "cnt5plus": 0, "cnt4plus": 8, "cnt0": 269, "avgMatches": 1.1, "randBaseline": 1.14, "liftPct": -3.3, "btDraws": 1000}, {"n": 30, "pred": [5, 11, 17, 22, 28, 33, 40], "nPicks": 7, "cnt6plus": 0, "cnt5plus": 0, "cnt4plus": 8, "cnt0": 246, "avgMatches": 1.17, "randBaseline": 1.18, "liftPct": -1.2, "btDraws": 1000}, {"n": 31, "pred": [5, 11, 16, 22, 28, 33, 40], "nPicks": 7, "cnt6plus": 0, "cnt5plus": 0, "cnt4plus": 6, "cnt0": 259, "avgMatches": 1.13, "randBaseline": 1.14, "liftPct": -0.7, "btDraws": 1000}, {"n": 32, "pred": [5, 11, 16, 22, 28, 33, 40], "nPicks": 7, "cnt6plus": 0, "cnt5plus": 0, "cnt4plus": 7, "cnt0": 245, "avgMatches": 1.19, "randBaseline": 1.18, "liftPct": 0.9, "btDraws": 1000}, {"n": 33, "pred": [4, 10, 16, 22, 28, 33, 40], "nPicks": 7, "cnt6plus": 0, "cnt5plus": 0, "cnt4plus": 8, "cnt0": 264, "avgMatches": 1.14, "randBaseline": 1.14, "liftPct": -0.2, "btDraws": 1000}, {"n": 34, "pred": [5, 11, 16, 21, 28, 33, 40], "nPicks": 7, "cnt6plus": 0, "cnt5plus": 0, "cnt4plus": 8, "cnt0": 253, "avgMatches": 1.19, "randBaseline": 1.17, "liftPct": 1.3, "btDraws": 1000}, {"n": 35, "pred": [5, 11, 16, 22, 28, 33, 40], "nPicks": 7, "cnt6plus": 0, "cnt5plus": 0, "cnt4plus": 7, "cnt0": 270, "avgMatches": 1.13, "randBaseline": 1.14, "liftPct": -0.7, "btDraws": 1000}, {"n": 36, "pred": [5, 11, 16, 21, 28, 33, 40], "nPicks": 7, "cnt6plus": 0, "cnt5plus": 0, "cnt4plus": 10, "cnt0": 257, "avgMatches": 1.17, "randBaseline": 1.17, "liftPct": -0.5, "btDraws": 1000}, {"n": 37, "pred": [5, 11, 16, 21, 28, 33, 40], "nPicks": 7, "cnt6plus": 0, "cnt5plus": 1, "cnt4plus": 5, "cnt0": 266, "avgMatches": 1.15, "randBaseline": 1.14, "liftPct": 0.7, "btDraws": 1000}, {"n": 38, "pred": [5, 10, 11, 16, 21, 28, 33, 40], "nPicks": 8, "cnt6plus": 0, "cnt5plus": 1, "cnt4plus": 10, "cnt0": 238, "avgMatches": 1.22, "randBaseline": 1.17, "liftPct": 3.7, "btDraws": 1000}, {"n": 39, "pred": [5, 10, 16, 21, 27, 33, 40], "nPicks": 7, "cnt6plus": 0, "cnt5plus": 1, "cnt4plus": 9, "cnt0": 258, "avgMatches": 1.16, "randBaseline": 1.14, "liftPct": 2.1, "btDraws": 1000}, {"n": 40, "pred": [5, 10, 16, 21, 27, 33, 40], "nPicks": 7, "cnt6plus": 0, "cnt5plus": 0, "cnt4plus": 13, "cnt0": 249, "avgMatches": 1.19, "randBaseline": 1.17, "liftPct": 1.7, "btDraws": 1000}, {"n": 41, "pred": [5, 10, 16, 21, 27, 33, 40], "nPicks": 7, "cnt6plus": 0, "cnt5plus": 0, "cnt4plus": 7, "cnt0": 251, "avgMatches": 1.17, "randBaseline": 1.14, "liftPct": 2.3, "btDraws": 1000}, {"n": 42, "pred": [5, 11, 16, 21, 27, 33, 40], "nPicks": 7, "cnt6plus": 0, "cnt5plus": 0, "cnt4plus": 5, "cnt0": 244, "avgMatches": 1.18, "randBaseline": 1.17, "liftPct": 0.7, "btDraws": 1000}, {"n": 43, "pred": [5, 11, 16, 21, 28, 33, 40], "nPicks": 7, "cnt6plus": 0, "cnt5plus": 0, "cnt4plus": 7, "cnt0": 255, "avgMatches": 1.15, "randBaseline": 1.14, "liftPct": 1.1, "btDraws": 1000}], "nextSerial": 2123, "latestDate": "2026-07-23"};
+var rows  = H.rows;
+var sortCol = 'n', sortAsc = true;
+document.getElementById('nextS').textContent = H.nextSerial;
+
+function pageUrl(n) {
+  if (n === 2) return '/custom_avg.html';
+  if (n === 3) return '/custom_avg3.html';
+  return '/custom_avg' + n + '.html';
+}
+
+function render() {
+  var sorted = rows.slice().sort(function(a, b) {
+    var av = a[sortCol], bv = b[sortCol];
+    return sortAsc ? (av < bv ? -1 : av > bv ? 1 : 0)
+                   : (av > bv ? -1 : av < bv ? 1 : 0);
+  });
+  var tb = document.getElementById('hubBody');
+  tb.innerHTML = '';
+  sorted.forEach(function(r) {
+    var liftCls = r.liftPct > 0 ? 'lift-pos' : r.liftPct < 0 ? 'lift-neg' : 'lift-zero';
+    var predStr = r.pred.join(', ');
+    tb.innerHTML +=
+      '<tr>' +
+      '<td><a class="n-link" href="' + pageUrl(r.n) + '">' + r.n + '-Draw</a></td>' +
+      '<td><span class="pred-pill">' + predStr + '</span></td>' +
+      '<td>' + r.nPicks + '</td>' +
+      '<td><span class="badge-6">' + r.cnt6plus + '</span></td>' +
+      '<td><span class="badge-5">' + r.cnt5plus + '</span></td>' +
+      '<td>' + r.cnt4plus + '</td>' +
+      '<td>' + r.cnt0 + '</td>' +
+      '<td>' + r.avgMatches.toFixed(2) + '</td>' +
+      '<td class="' + liftCls + '">' + (r.liftPct >= 0 ? '+' : '') + r.liftPct + '%</td>' +
+      '</tr>';
+  });
+  document.querySelectorAll('.hub-table th').forEach(function(th) {
+    th.classList.remove('sorted');
+    if (th.dataset.col === sortCol) th.classList.add('sorted');
+  });
+}
+
+document.querySelectorAll('.hub-table th[data-col]').forEach(function(th) {
+  th.addEventListener('click', function() {
+    var col = th.dataset.col;
+    if (sortCol === col) sortAsc = !sortAsc;
+    else { sortCol = col; sortAsc = col === 'n'; }
+    render();
+  });
+});
+
+render();
+</script>
+
+<script>
+(function(){
+  var path = window.location.pathname + window.location.hash;
+  document.querySelectorAll('.nav-dropdown a').forEach(function(a){
+    var href = a.getAttribute('href');
+    if(!href) return;
+    var hPath = href.split('#')[0];
+    var hHash = href.includes('#') ? href : '';
+    if(href === path) { a.classList.add('active'); return; }
+    if(hPath && hPath !== '/' && path.startsWith(hPath) && !href.includes('#')) {
+      a.classList.add('active');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

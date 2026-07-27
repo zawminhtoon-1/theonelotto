@@ -73,8 +73,11 @@ NAV_HTML = """
         <a href="/modular_cycle.html">🔁 Modular Cycle</a>
         <a href="/next_relation.html">🔗 Next Relation</a>
         <a href="/lstm_predict.html">🧠 LSTM Neural Net</a>
-        <a href="/custom_avg.html">➕ Two-Draw Avg</a>
-        <a href="/custom_avg3.html">➕ Three-Draw Avg</a>
+        <div class="nav-divider"></div>
+        <div class="nav-dd-label">N-Draw Avg</div>
+        <a href="/custom_avg.html">➕ 2-Draw Avg</a>
+        <a href="/custom_avg3.html">➕ 3-Draw Avg</a>
+        <a href="/avg_hub.html">⬡ All N-Draw Avg (2–43)</a>
       </div></div>
     </div>
 
@@ -129,7 +132,8 @@ HTML_FILES = [
     "lstm_predict.html",
     "custom_avg.html",
     "custom_avg3.html",
-]
+    "avg_hub.html",
+] + [f"custom_avg{n}.html" for n in range(4, 44)]
 
 for fname in HTML_FILES:
     fpath = os.path.join(PUBLIC, fname)
