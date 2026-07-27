@@ -95,6 +95,7 @@ avg_picks = statistics.mean(pick_counts)
 avg       = statistics.mean(match_counts)
 rand      = avg_picks * 7 / 43          # baseline uses actual avg pick count
 lift      = round((avg / rand - 1) * 100, 1)
+c0 = sum(1 for m in match_counts if m == 0)
 c3 = sum(1 for m in match_counts if m >= 3)
 c4 = sum(1 for m in match_counts if m >= 4)
 c5 = sum(1 for m in match_counts if m >= 5)
@@ -126,6 +127,7 @@ PAGE_DATA = {
     "avgMatches": round(avg, 2),
     "randBaseline": round(rand, 2),
     "liftPct": lift,
+    "cnt0": c0,
     "cnt3plus": c3, "cnt4plus": c4, "cnt5plus": c5, "cnt6plus": c6, "cnt7plus": c7,
     "btResults": [
         {"s": r["s"], "d": r["d"], "actual": r["actual"],
@@ -333,8 +335,8 @@ D.rawInfo.forEach((row, i) => {{
 
 // Stats
 [
-  {{label:'5+ hit draws', val:D.cnt5plus, sub:`6+: ${{D.cnt6plus}}  7: ${{D.cnt7plus}}`, color:'#fbbf24'}},
-  {{label:'4+ hit draws', val:D.cnt4plus, sub:`3+ hits: ${{D.cnt3plus}}`, color:'#a78bfa'}},
+  {{label:'6+ hit draws', val:D.cnt6plus, sub:`5+: ${{D.cnt5plus}}  4+: ${{D.cnt4plus}}`, color:'#fbbf24'}},
+  {{label:'0 hit draws',  val:D.cnt0, sub:`out of ${{D.btDraws}}`, color:'#fb923c'}},
   {{label:'Avg matches',  val:D.avgMatches.toFixed(2), sub:`Random: ${{D.randBaseline.toFixed(2)}}`,
     color: D.avgMatches >= D.randBaseline ? '#4ade80' : '#fb923c'}},
   {{label:'Lift vs random', val:(D.liftPct>=0?'+':'')+D.liftPct+'%', sub:'vs baseline',

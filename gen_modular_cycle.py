@@ -148,6 +148,7 @@ def stats(mc):
         "avg": round(avg, 2),
         "rand": round(rand, 2),
         "lift": round((avg / rand - 1) * 100, 1),
+        "c0": sum(1 for m in mc if m == 0),
         "c3": sum(1 for m in mc if m >= 3),
         "c4": sum(1 for m in mc if m >= 4),
         "c5": sum(1 for m in mc if m >= 5),
@@ -207,6 +208,7 @@ def build_data(pred, fq, bt_rows, st, src_count, tab_bad_next=None, include_bad=
         "avgMatches": st["avg"],
         "randBaseline": st["rand"],
         "liftPct": st["lift"],
+        "cnt0": st["c0"],
         "cnt3plus": st["c3"],
         "cnt4plus": st["c4"],
         "cnt5plus": st["c5"],
@@ -490,8 +492,8 @@ function switchTab(t, btn) {{
 function renderStats(containerId, D, accentColor) {{
   const strip = document.getElementById(containerId);
   [
-    {{label:'5+ hit draws', val:D.cnt5plus, sub:`6+: ${{D.cnt6plus}}  7: ${{D.cnt7plus}}`, color:accentColor}},
-    {{label:'4+ hit draws', val:D.cnt4plus, sub:`3+ hits: ${{D.cnt3plus}}`, color:'#a78bfa'}},
+    {{label:'6+ hit draws', val:D.cnt6plus, sub:`5+: ${{D.cnt5plus}}  7: ${{D.cnt7plus}}`, color:accentColor}},
+    {{label:'0 hit draws',  val:D.cnt0, sub:`out of ${{D.btDraws}}`, color:'#fb923c'}},
     {{label:'Avg matches',  val:D.avgMatches.toFixed(2), sub:`Random: ${{D.randBaseline.toFixed(2)}}`,
       color: D.avgMatches >= D.randBaseline ? '#4ade80' : '#fb923c'}},
     {{label:'Lift vs random', val:(D.liftPct>0?'+':'')+D.liftPct+'%', sub:`vs baseline`, color: D.liftPct>=0?'#4ade80':'#fb923c'}},
