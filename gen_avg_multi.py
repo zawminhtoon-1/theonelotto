@@ -40,32 +40,41 @@ PUBLIC   = os.path.join(BASE_DIR, "public")
 def avg_predict_n(draw_list):
     """
     Average N draws positionally. draw_list[0]=oldest, draw_list[-1]=newest.
-    .5 expansion applies only when N is even (sum of N integers / N can be X.5).
+    Always rounds to nearest integer (no .5 expansion).
+    Collisions resolved by trying adjacent values, so result is always 7 picks.
     """
     n        = len(draw_list)
     all_vals = [d["all"] for d in draw_list]
+    used     = set()
     preds    = []
     raw_info = []
+
     for pos in range(7):
         vals = [all_vals[i][pos] for i in range(n)]
         raw  = sum(vals) / n
-        frac = raw % 1
-        if abs(frac - 0.5) < 1e-9:          # exactly .5
-            v1   = max(1, min(43, int(raw)))
-            v2   = max(1, min(43, int(raw) + 1))
-            nums = sorted(set([v1, v2]))
+        v    = max(1, min(43, round(raw)))
+
+        if v not in used:
+            used.add(v)
+            preds.append(v)
+            raw_info.append({"raw": round(raw), "nums": [v], "vals": vals})
         else:
-            v    = max(1, min(43, round(raw)))
-            nums = [v]
-        preds.extend(nums)
-        raw_info.append({"raw": round(raw, 3), "nums": nums, "vals": vals})
-    seen   = set()
-    result = []
-    for v in sorted(preds):
-        if v not in seen:
-            seen.add(v)
-            result.append(v)
-    return result, raw_info
+            # Collision: try floor/ceil then expand outward
+            floor_v = max(1, min(43, int(raw)))
+            ceil_v  = max(1, min(43, int(raw) + 1))
+            alt = None
+            for c in [floor_v, ceil_v, floor_v - 1, ceil_v + 1,
+                      floor_v - 2, ceil_v + 2, floor_v - 3, ceil_v + 3]:
+                c = max(1, min(43, c))
+                if c not in used:
+                    alt = c
+                    break
+            if alt is not None:
+                used.add(alt)
+                preds.append(alt)
+                raw_info.append({"raw": round(raw), "nums": [alt], "vals": vals})
+
+    return sorted(preds), raw_info
 
 
 hub_rows     = []
@@ -143,7 +152,7 @@ for N in range(2, 44):
         ]
     }
     data_json    = json.dumps(PAGE_DATA, ensure_ascii=False)
-    expand_note  = "  Exactly-half averages expand to 2 picks (even N)." if N % 2 == 0 else ""
+    expand_note  = ""
 
     HTML = f"""<!DOCTYPE html>
 <html lang="en">

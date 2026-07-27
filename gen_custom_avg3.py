@@ -57,7 +57,7 @@ def avg_predict(draw_a, draw_b, draw_c):
         v = round(raw)
         v = max(1, min(43, v))
         preds.append(v)
-        raw_info.append({"raw": round(raw, 3), "nums": [v], "a": ai, "b": bi, "c": ci})
+        raw_info.append({"raw": round(raw), "nums": [v], "a": ai, "b": bi, "c": ci})
     seen = set()
     result = []
     for v in sorted(preds):

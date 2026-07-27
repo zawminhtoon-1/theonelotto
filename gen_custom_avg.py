@@ -42,35 +42,42 @@ test_start = max(2, N - BT_DRAWS)  # need 2 prior draws
 def avg_predict(draw_a, draw_b):
     """
     draw_a = older draw, draw_b = more recent draw.
-    Sort both sets of 7, pair by position, average.
-    - Whole number result  → 1 number
-    - .5 result            → 2 numbers (floor AND ceiling)
-    Clamp to 1-43, deduplicate.
-    Returns (sorted_picks, raw_avgs_with_expansion_flag)
+    Sort both sets of 7, pair by position, average, round to nearest integer.
+    Always produces exactly 7 picks; collisions are resolved using adjacent values.
+    Clamp to 1-43.
     """
-    a = draw_a["all"]
-    b = draw_b["all"]
-    preds = []
-    raw_info = []  # list of dicts for display
-    for ai, bi in zip(a, b):
-        raw = (ai + bi) / 2
-        if raw % 1 == 0.5:
-            lo = int(raw)
-            hi = lo + 1
-            preds.extend([max(1, min(43, lo)), max(1, min(43, hi))])
-            raw_info.append({"raw": raw, "expanded": True,  "nums": [max(1,min(43,lo)), max(1,min(43,hi))]})
+    a    = draw_a["all"]
+    b    = draw_b["all"]
+    raws = [(ai + bi) / 2 for ai, bi in zip(a, b)]
+
+    used     = set()
+    preds    = []
+    raw_info = []
+
+    for pos, (ai, bi) in enumerate(zip(a, b)):
+        raw = raws[pos]
+        v   = max(1, min(43, round(raw)))
+        if v not in used:
+            used.add(v)
+            preds.append(v)
+            raw_info.append({"raw": round(raw), "nums": [v], "a": ai, "b": bi})
         else:
-            v = round(raw)
-            preds.append(max(1, min(43, v)))
-            raw_info.append({"raw": raw, "expanded": False, "nums": [max(1,min(43,v))]})
-    # Deduplicate (keep order, sorted)
-    seen = set()
-    result = []
-    for v in sorted(preds):
-        if v not in seen:
-            seen.add(v)
-            result.append(v)
-    return result, raw_info
+            # Collision: try floor/ceil then expand outward
+            floor_v = max(1, min(43, int(raw)))
+            ceil_v  = max(1, min(43, int(raw) + 1))
+            alt = None
+            for c in [floor_v, ceil_v, floor_v - 1, ceil_v + 1,
+                      floor_v - 2, ceil_v + 2, floor_v - 3, ceil_v + 3]:
+                c = max(1, min(43, c))
+                if c not in used:
+                    alt = c
+                    break
+            if alt is not None:
+                used.add(alt)
+                preds.append(alt)
+                raw_info.append({"raw": round(raw), "nums": [alt], "a": ai, "b": bi})
+
+    return sorted(preds), raw_info
 
 # Backtest
 bt_results   = []
