@@ -38,19 +38,134 @@ POS_META = [
 ]
 
 STRATEGIES = [
-    {"key": "freq_k2",    "label": "Freq K=2 (baseline)", "k": 2},
-    {"key": "freq_k3",    "label": "Freq K=3",            "k": 3},
-    {"key": "recency_k2", "label": "Recency K=2",         "k": 2},
-    {"key": "recency_k3", "label": "Recency K=3",         "k": 3},
-    {"key": "overdue_k2", "label": "Overdue K=2",         "k": 2},
-    {"key": "overdue_k3", "label": "Overdue K=3",         "k": 3},
-    {"key": "adaptive",   "label": "Adaptive K (rec.)",   "k": None},
-    {"key": "adb",        "label": "ABD (prox+drift)",    "k": None},
+    {"key": "freq_k1",      "label": "Freq K=1",            "k": 1},
+    {"key": "freq_k2",      "label": "Freq K=2 (baseline)", "k": 2},
+    {"key": "freq_k3",      "label": "Freq K=3",            "k": 3},
+    {"key": "recency_k1",   "label": "Recency K=1",         "k": 1},
+    {"key": "recency_k2",   "label": "Recency K=2",         "k": 2},
+    {"key": "recency_k3",   "label": "Recency K=3",         "k": 3},
+    {"key": "overdue_k2",   "label": "Overdue K=2",         "k": 2},
+    {"key": "overdue_k3",   "label": "Overdue K=3",         "k": 3},
+    {"key": "adaptive",     "label": "Adaptive K (rec.)",   "k": None},
+    {"key": "adb",          "label": "ABD (prox+drift)",    "k": None},
+    {"key": "markov2_k1",   "label": "Markov-2 K=1",        "k": 1},
+    {"key": "markov2_k2",   "label": "Markov-2 K=2",        "k": 2},
+    {"key": "markov2_k3",   "label": "Markov-2 K=3",        "k": 3},
+    {"key": "transform_k1", "label": "Transform K=1 (x=43)","k": 1},
+    {"key": "transform_k2", "label": "Transform K=2 (x=43)","k": 2},
+    {"key": "transform_k3", "label": "Transform K=3 (x=43)","k": 3},
 ]
 
-def adaptive_k(pos_idx): return 2 if pos_idx in [0, 5] else 3
+def adaptive_k(pos_idx):
+    if pos_idx in [0, 5]: return 2   # Pos1, Pos6 — concentrated, K=2
+    if pos_idx == 2:       return 1   # Pos3 — single pick
+    return 3                           # Pos2, Pos4, Pos5
 
 # ── Prediction functions ───────────────────────────────────────────────────────
+def _transform_formulas(x=43):
+    """
+    Enumerate candidate formulas of the form f(v) using variable x=43.
+    Returns list of (label, func) where func(v_prev) -> predicted_next.
+    Operations: +, -, *, / with x and its fractions.
+    """
+    F = []
+    # ── Direct x-based ────────────────────────────────────────────────────────
+    F.append(('43-v',        lambda v, x=x: x - v))          # mirror
+    F.append(('v+43',        lambda v, x=x: v + x))
+    F.append(('v-43',        lambda v, x=x: v - x))
+    F.append(('v*2-43',      lambda v, x=x: 2*v - x))
+    F.append(('43*2-v',      lambda v, x=x: 2*x - v))
+    F.append(('(v+43)//2',   lambda v, x=x: (v + x) // 2))
+    F.append(('v+(43-v)//2', lambda v, x=x: v + (x - v) // 2))
+    F.append(('v+(43-v)//3', lambda v, x=x: v + (x - v) // 3))
+    # ── v ± round(43/n) for n = 1..15 ─────────────────────────────────────────
+    for n in range(1, 16):
+        r = round(x / n)
+        if r == 0: continue
+        F.append((f'v+43/{n}', lambda v, r=r: v + r))
+        F.append((f'v-43/{n}', lambda v, r=r: v - r))
+    # ── v ± (43 % n) ──────────────────────────────────────────────────────────
+    for n in range(2, 12):
+        r = x % n
+        if r == 0: continue
+        F.append((f'v+43%{n}', lambda v, r=r: v + r))
+        F.append((f'v-43%{n}', lambda v, r=r: v - r))
+    # ── v * (43/43) family ────────────────────────────────────────────────────
+    F.append(('v*43//v',     lambda v, x=x: x if v != 0 else v))   # always 43
+    F.append(('v//43*43',    lambda v, x=x: (v // x) * x or v))
+    return F
+
+_TRANSFORM_F = _transform_formulas()  # build once at module load
+
+def predict_transform(history, pos_idx, k):
+    """
+    Formula-transform predictor: scores each formula f(v_prev)->v_curr
+    across history, then applies top-weighted formulas to latest value.
+    """
+    if len(history) < 5:
+        return predict_freq(history, pos_idx, k)
+
+    hits = [0] * len(_TRANSFORM_F)
+    for i in range(1, len(history)):
+        v_prev = history[i-1]["n"][pos_idx]
+        v_curr = history[i]["n"][pos_idx]
+        for fi, (_, fn) in enumerate(_TRANSFORM_F):
+            try:
+                if fn(v_prev) == v_curr:
+                    hits[fi] += 1
+            except Exception:
+                pass
+
+    v_last = history[-1]["n"][pos_idx]
+    scores = collections.Counter()
+    for fi, (_, fn) in enumerate(_TRANSFORM_F):
+        if hits[fi] == 0:
+            continue
+        try:
+            candidate = fn(v_last)
+            if 1 <= candidate <= 43:
+                scores[candidate] += hits[fi]
+        except Exception:
+            pass
+
+    if not scores:
+        return predict_freq(history, pos_idx, k)
+    return [n for n, _ in scores.most_common(k)]
+
+def predict_markov2(history, pos_idx, k):
+    """
+    Order-2 Markov chain: predict next value given last two values at pos_idx.
+    Falls back to order-1, then frequency if state unseen.
+    """
+    if len(history) < 3:
+        return predict_freq(history, pos_idx, k)
+
+    # Build order-2 transition table: (v_{t-2}, v_{t-1}) -> Counter(v_t)
+    trans2 = {}
+    trans1 = {}
+    for i in range(1, len(history)):
+        p1 = history[i-1]["n"][pos_idx]
+        c  = history[i]["n"][pos_idx]
+        if p1 not in trans1:
+            trans1[p1] = collections.Counter()
+        trans1[p1][c] += 1
+        if i >= 2:
+            p2 = history[i-2]["n"][pos_idx]
+            key2 = (p2, p1)
+            if key2 not in trans2:
+                trans2[key2] = collections.Counter()
+            trans2[key2][c] += 1
+
+    # Current state
+    prev2 = history[-2]["n"][pos_idx]
+    prev1 = history[-1]["n"][pos_idx]
+    key2  = (prev2, prev1)
+
+    if key2 in trans2 and trans2[key2]:
+        return [n for n, _ in trans2[key2].most_common(k)]
+    if prev1 in trans1 and trans1[prev1]:     # order-1 fallback
+        return [n for n, _ in trans1[prev1].most_common(k)]
+    return predict_freq(history, pos_idx, k)  # frequency fallback
 def predict_freq(history, pos_idx, k):
     freq = collections.Counter(d["n"][pos_idx] for d in history)
     return [n for n, _ in freq.most_common(k)]
@@ -124,26 +239,35 @@ def predict_adb(history, pos_idx, k, drift=0.0):
 def predict(strategy_key, history, pos_idx, drift=0.0):
     if len(history) < 5:
         return predict_freq(history, pos_idx, 2)
-    if   strategy_key == "freq_k2":    return predict_freq(history,    pos_idx, 2)
-    elif strategy_key == "freq_k3":    return predict_freq(history,    pos_idx, 3)
-    elif strategy_key == "recency_k2": return predict_recency(history, pos_idx, 2)
-    elif strategy_key == "recency_k3": return predict_recency(history, pos_idx, 3)
-    elif strategy_key == "overdue_k2": return predict_overdue(history, pos_idx, 2)
-    elif strategy_key == "overdue_k3": return predict_overdue(history, pos_idx, 3)
-    elif strategy_key == "adaptive":   return predict_recency(history, pos_idx, adaptive_k(pos_idx))
-    elif strategy_key == "adb":        return predict_adb(history,     pos_idx, adaptive_k(pos_idx), drift)
+    if   strategy_key == "freq_k1":    return predict_freq(history,     pos_idx, 1)
+    elif strategy_key == "freq_k2":    return predict_freq(history,     pos_idx, 2)
+    elif strategy_key == "freq_k3":    return predict_freq(history,     pos_idx, 3)
+    elif strategy_key == "recency_k1": return predict_recency(history,  pos_idx, 1)
+    elif strategy_key == "recency_k2": return predict_recency(history,  pos_idx, 2)
+    elif strategy_key == "recency_k3": return predict_recency(history,  pos_idx, 3)
+    elif strategy_key == "overdue_k2": return predict_overdue(history,  pos_idx, 2)
+    elif strategy_key == "overdue_k3": return predict_overdue(history,  pos_idx, 3)
+    elif strategy_key == "adaptive":   return predict_recency(history,  pos_idx, adaptive_k(pos_idx))
+    elif strategy_key == "adb":        return predict_adb(history,      pos_idx, adaptive_k(pos_idx), drift)
+    elif strategy_key == "markov2_k1":  return predict_markov2(history,   pos_idx, 1)
+    elif strategy_key == "markov2_k2":  return predict_markov2(history,   pos_idx, 2)
+    elif strategy_key == "markov2_k3":  return predict_markov2(history,   pos_idx, 3)
+    elif strategy_key == "transform_k1":return predict_transform(history, pos_idx, 1)
+    elif strategy_key == "transform_k2":return predict_transform(history, pos_idx, 2)
+    elif strategy_key == "transform_k3":return predict_transform(history, pos_idx, 3)
     return predict_freq(history, pos_idx, 2)
 
 # ── Fetch draws ────────────────────────────────────────────────────────────────
 print("Fetching draws...")
 conn = psycopg2.connect(DB_URL)
 cur  = conn.cursor()
-cur.execute("SELECT draw_serial, draw_date, num1,num2,num3,num4,num5,num6 FROM loto6_results ORDER BY draw_serial")
+cur.execute("SELECT draw_serial, draw_date, num1,num2,num3,num4,num5,num6, bonus FROM loto6_results ORDER BY draw_serial")
 rows = cur.fetchall()
 conn.close()
 
 draws = [{"s": r[0], "d": str(r[1])[:10] if r[1] else "",
-          "n": sorted([r[2],r[3],r[4],r[5],r[6],r[7]])} for r in rows]
+          "n": sorted([r[2],r[3],r[4],r[5],r[6],r[7]]),
+          "b": r[8]} for r in rows]
 T = len(draws)
 test_start = T - BT_DRAWS
 print(f"Total: {T} draws, testing last {BT_DRAWS}")
@@ -291,6 +415,72 @@ print(f"  Avg matches: {avg_matches:.3f}  (random baseline: {rand_expected:.3f})
 print(f"  Match dist: {match_dist}")
 print(f"  Combo now by pos: {combo_now_by_pos}")
 
+# ── Bonus prediction ───────────────────────────────────────────────────────────
+# For each draw i, look at draw[i-1].bonus → track which numbers appeared in draw[i]
+# Given the last bonus number, predict which numbers are most likely next draw
+print("\nBuilding bonus prediction...")
+
+BONUS_K = 6
+
+def predict_bonus(history, bonus_val, k=BONUS_K):
+    """Top-k numbers that appeared most often after bonus_val."""
+    freq = collections.Counter()
+    for i in range(1, len(history)):
+        if history[i-1]["b"] == bonus_val:
+            for n in history[i]["n"]:
+                freq[n] += 1
+    if not freq:
+        # No data for this bonus → fallback to overall frequency
+        for d in history:
+            for n in d["n"]:
+                freq[n] += 1
+    return [n for n, _ in freq.most_common(k)]
+
+# All-time conditional frequency table: bonus_freq_all[b][n] = count
+bonus_freq_all = {}
+for i in range(1, T):
+    b = draws[i-1]["b"]
+    if b not in bonus_freq_all:
+        bonus_freq_all[b] = [0] * 44   # index 0 unused, 1..43 are numbers
+    for n in draws[i]["n"]:
+        bonus_freq_all[b][n] += 1
+
+# Walk-forward backtest
+bonus_bt       = []
+bonus_match_dist = [0] * 7
+for i in range(test_start, T):
+    train       = draws[:i]
+    actual      = draws[i]["n"]
+    last_bonus  = draws[i-1]["b"]
+    if len(train) < 5:
+        continue
+    pred    = predict_bonus(train, last_bonus, BONUS_K)
+    matches = len(set(pred) & set(actual))
+    bonus_match_dist[min(matches, 6)] += 1
+    bonus_bt.append({"s": draws[i]["s"], "d": draws[i]["d"],
+                     "actual": actual, "bonus": last_bonus,
+                     "pred": pred, "matches": matches})
+
+bonus_total = len(bonus_bt)
+bonus_avg   = sum(k * bonus_match_dist[k] for k in range(7)) / bonus_total if bonus_total else 0
+bonus_rand  = BONUS_K * 6 / 43
+
+# Current prediction using the very last bonus
+last_bonus_val      = draws[-1]["b"]
+bonus_current_pred  = predict_bonus(draws, last_bonus_val, BONUS_K)
+
+# Frequency list by bonus for the heatmap display: {b_str: [freq_1..freq_43]}
+bonus_freq_list = {}
+for b in range(1, 44):
+    if b in bonus_freq_all:
+        bonus_freq_list[str(b)] = bonus_freq_all[b][1:]  # drop index-0 placeholder
+    else:
+        bonus_freq_list[str(b)] = [0] * 43
+
+print(f"  Last bonus: {last_bonus_val}  Current pred: {bonus_current_pred}")
+print(f"  Avg matches: {bonus_avg:.3f}  (random baseline: {bonus_rand:.3f})")
+print(f"  Match dist: {bonus_match_dist}")
+
 # ── Serialize ──────────────────────────────────────────────────────────────────
 DATA = {
     "strategies":    STRATEGIES,
@@ -312,6 +502,17 @@ DATA = {
     "randExpected":  round(rand_expected, 4),
     "comboTotal":    total_combo,
     "nPicks":        n_picks,
+    "bonusPred": {
+        "lastBonus":   last_bonus_val,
+        "current":     bonus_current_pred,
+        "bt":          list(reversed(bonus_bt))[:200],
+        "matchDist":   bonus_match_dist,
+        "avgMatches":  round(bonus_avg, 4),
+        "randExpected":round(bonus_rand, 4),
+        "total":       bonus_total,
+        "k":           BONUS_K,
+        "freqByBonus": bonus_freq_list,
+    },
 }
 DATA_JSON = json.dumps(DATA, separators=(",",":"))
 print(f"\nJSON size: {len(DATA_JSON):,} bytes")
@@ -551,10 +752,11 @@ D.posMeta.forEach((pm,pi)=>{{
 
 // Tabs
 const tabsEl=document.getElementById('posTabs'), panelsEl=document.getElementById('posPanels');
+const TAB_COLORS=['#6366f1','#3b82f6','#14b8a6','#22c55e','#f59e0b','#ef4444','#a855f7','#e879f9'];
 function activatePos(pi){{
   document.querySelectorAll('.pos-tab').forEach((t,i)=>{{
     t.classList.toggle('active',i===pi);
-    const col=(D.posMeta[i]||{{color:'#a855f7'}}).color;
+    const col=TAB_COLORS[i]||'#a855f7';
     t.style.borderTopColor=i===pi?col:'transparent';
     t.style.color=i===pi?col:'';
   }});
@@ -850,6 +1052,154 @@ function renderPos(pi){{
       return `<span class="act-ball ${{isHit?'hit':'miss'}}">${{n}}</span>`;
     }}).join(' ');
     tr.innerHTML=`<td>#${{e.s}}</td><td>${{e.d}}</td><td style="white-space:nowrap">${{predCols}}</td><td>${{actBalls}}</td>
+      <td><span class="match-badge" style="background:${{hx(mcol,.15)}};color:${{mcol}}">${{mc}} hit${{mc!==1?'s':''}}</span></td>`;
+    tbody.appendChild(tr);
+  }});
+}})();
+
+// ── Bonus tab ─────────────────────────────────────────────────────────────────
+(function(){{
+  const BP = D.bonusPred;
+  const tab = document.createElement('div');
+  tab.className = 'pos-tab'; tab.textContent = '🎯 Bonus';
+  tab.onclick = () => activatePos(7); tabsEl.appendChild(tab);
+
+  const panel = document.createElement('div');
+  panel.className = 'pos-panel';
+  panel.innerHTML = `
+    <div class="sec">
+      <div class="sec-title" style="color:#e879f9">Bonus → Next Draw Prediction</div>
+      <div class="info-row">
+        <span class="badge" style="background:#2d0a3c;color:#e879f9;border:1px solid #e879f955">
+          Last bonus: <strong>#${{BP.lastBonus}}</strong>
+        </span>
+        <span class="badge ${{BP.avgMatches>BP.randExpected?'bg':'ba'}}">
+          Avg matches: ${{BP.avgMatches.toFixed(3)}} / draw
+        </span>
+        <span class="badge" style="background:#1e293b;color:#64748b;border:1px solid #33415533">
+          Random (${{BP.k}} picks): ${{BP.randExpected.toFixed(3)}}
+        </span>
+        <span class="badge ${{BP.avgMatches>BP.randExpected?'bg':'ba'}}">${{(BP.avgMatches/BP.randExpected).toFixed(3)}}x lift</span>
+      </div>
+      <p style="font-size:.75rem;color:#475569;margin-top:6px">
+        Conditional frequency: numbers that appeared most often in the draw after each bonus value was drawn.
+        Walk-forward backtest predicts top ${{BP.k}} numbers using only history before each draw.
+      </p>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Predicted Numbers for Draw #${{D.latestSerial+1}}</div>
+      <p style="font-size:.75rem;color:#64748b;margin-bottom:10px">
+        Based on last draw's bonus number: <strong style="color:#e879f9">${{BP.lastBonus}}</strong>
+      </p>
+      <div class="picks-row" id="bpPicks"></div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Match Distribution — last ${{BP.total}} draws</div>
+      <div class="match-bars" id="bpMatchBars"></div>
+      <div style="display:flex;gap:6px;justify-content:center;margin-bottom:4px">
+        ${{[0,1,2,3,4,5,6].map(k=>`<div style="flex:1;text-align:center;font-size:.7rem;color:#64748b">${{k}} match</div>`).join('')}}
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Backtest Stats</div>
+      <div class="stats-row" id="bpStats"></div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Frequency Heatmap — numbers after bonus <span id="bpHeatLbl" style="color:#e879f9"></span></div>
+      <p style="font-size:.72rem;color:#64748b;margin-bottom:8px">Click a bonus ball to see which numbers followed it most often.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px" id="bpBonusSel"></div>
+      <div class="freq-grid" id="bpHeatGrid"></div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Recent Draws</div>
+      <div class="bt-wrap"><table class="bt-tbl">
+        <thead><tr><th>Draw</th><th>Date</th><th>Prev Bonus</th><th>Predicted (top ${{BP.k}})</th><th>Actual</th><th>Matches</th></tr></thead>
+        <tbody id="bpBt"></tbody>
+      </table></div>
+    </div>`;
+  panelsEl.appendChild(panel);
+
+  // Current predictions
+  document.getElementById('bpPicks').innerHTML =
+    BP.current.map((n,i) =>
+      `<div style="text-align:center">
+        <div class="pick-ball" style="background:${{hx('#e879f9',.5+i*.08)}}">${{n}}</div>
+        <div class="pick-lbl">Pick ${{i+1}}</div>
+      </div>`
+    ).join('') +
+    `<span style="color:#64748b;font-size:.82rem;margin-left:10px">draw #${{D.latestSerial+1}}<br>Bonus was ${{BP.lastBonus}}</span>`;
+
+  // Match bars
+  const maxBM = Math.max(...BP.matchDist, 1);
+  document.getElementById('bpMatchBars').innerHTML = BP.matchDist.map((cnt,k) => {{
+    const pct = (cnt / BP.total * 100);
+    const ht  = Math.max(4, Math.round((cnt / maxBM) * 108));
+    const col = k===0?'#334155':k===1?'#1e3a5f':k===2?'#0c2e1f':k===3?'#14532d':k>=4?'#166534':'#134e4a';
+    const tcol = k>=2?'#4ade80':'#64748b';
+    return `<div class="match-bar-col">
+      <div class="match-bar-cnt" style="color:${{tcol}}">${{cnt}}</div>
+      <div class="match-bar" style="height:${{ht}}px;background:${{col}}"></div>
+      <div class="match-bar-lbl">${{pct.toFixed(1)}}%</div>
+    </div>`;
+  }}).join('');
+
+  // Stats
+  const at2 = BP.matchDist.slice(2).reduce((a,b)=>a+b,0);
+  const at3 = BP.matchDist.slice(3).reduce((a,b)=>a+b,0);
+  document.getElementById('bpStats').innerHTML = `
+    <div class="stat-box"><div class="sv" style="color:#e879f9">${{BP.avgMatches.toFixed(3)}}</div><div class="sl">Avg matches/draw</div></div>
+    <div class="stat-box"><div class="sv" style="color:#64748b">${{BP.randExpected.toFixed(3)}}</div><div class="sl">Random (${{BP.k}} picks)</div></div>
+    <div class="stat-box"><div class="sv" style="color:#f1f5f9">${{(BP.avgMatches/BP.randExpected).toFixed(3)}}x</div><div class="sl">Lift</div></div>
+    <div class="stat-box"><div class="sv" style="color:#4ade80">${{at2}} / ${{BP.total}}</div><div class="sl">≥2 matches</div></div>
+    <div class="stat-box"><div class="sv" style="color:#22c55e">${{at3}} / ${{BP.total}}</div><div class="sl">≥3 matches</div></div>`;
+
+  // Heatmap
+  function renderHeatmap(b) {{
+    document.getElementById('bpHeatLbl').textContent = '#' + b;
+    const freqs = BP.freqByBonus[String(b)] || Array(43).fill(0);
+    const maxF  = Math.max(...freqs, 1);
+    const curSet = new Set(BP.current);
+    document.getElementById('bpHeatGrid').innerHTML = freqs.map((cnt,i) => {{
+      const n = i + 1;
+      const ip = curSet.has(n) && b === BP.lastBonus;
+      const bg = hx('#e879f9', 0.06 + 0.74 * (cnt / maxF));
+      const bdr = ip ? `border-color:#e879f9;box-shadow:0 0 8px ${{hx('#e879f9',.35)}}` : '';
+      return `<div class="freq-cell${{ip?' pick':''}}" style="background:${{bg}};${{bdr}}" title="#${{n}}: appeared ${{cnt}}x after bonus ${{b}}">
+        <div class="fc-num">${{n}}</div><div class="fc-cnt">${{cnt}}</div></div>`;
+    }}).join('');
+  }}
+
+  // Bonus selector balls
+  const selEl = document.getElementById('bpBonusSel');
+  for (let b = 1; b <= 43; b++) {{
+    const btn = document.createElement('div');
+    btn.className = 'freq-cell' + (b === BP.lastBonus ? ' pick' : '');
+    const isLast = b === BP.lastBonus;
+    btn.style.cssText = `background:${{hx('#e879f9', isLast?0.4:0.1)}};cursor:pointer;width:36px;height:36px;${{isLast?'border-color:#e879f9;box-shadow:0 0 8px '+hx('#e879f9',.4):''}}`;
+    btn.innerHTML = `<div class="fc-num">${{b}}</div>`;
+    btn.title = `Bonus ${{b}}`;
+    btn.onclick = () => renderHeatmap(b);
+    selEl.appendChild(btn);
+  }}
+  renderHeatmap(BP.lastBonus);  // default to last bonus
+
+  // BT rows
+  const tbody = document.getElementById('bpBt');
+  BP.bt.forEach(e => {{
+    const mc  = e.matches;
+    const tr  = document.createElement('tr');
+    const mcol = mc===0?'#64748b':mc===1?'#38bdf8':mc===2?'#f59e0b':mc>=3?'#22c55e':'#64748b';
+    const predBalls = e.pred.map(n => {{
+      const hit = e.actual.includes(n);
+      return `<span class="pred-ball ${{hit?'hit':'miss'}}" style="width:24px;height:24px;font-size:.72rem">${{n}}</span>`;
+    }}).join(' ');
+    const actBalls = e.actual.map(n => {{
+      const hit = e.pred.includes(n);
+      return `<span class="act-ball ${{hit?'hit':'miss'}}">${{n}}</span>`;
+    }}).join(' ');
+    const bBall = `<span class="v-ball" style="background:#2d0a3c;color:#e879f9;border:2px solid #e879f9">${{e.bonus}}</span>`;
+    tr.innerHTML = `<td>#${{e.s}}</td><td>${{e.d}}</td><td>${{bBall}}</td>
+      <td style="white-space:nowrap">${{predBalls}}</td><td style="white-space:nowrap">${{actBalls}}</td>
       <td><span class="match-badge" style="background:${{hx(mcol,.15)}};color:${{mcol}}">${{mc}} hit${{mc!==1?'s':''}}</span></td>`;
     tbody.appendChild(tr);
   }});
