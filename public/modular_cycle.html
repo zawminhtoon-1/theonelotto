@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Modular Cycle Predict — Loto 6</title>
+<style>
+/* ====== SHARED FIXED NAV (dropdown) ====== */
+.site-nav{position:fixed;top:0;left:0;right:0;height:52px;background:#0a0f1e;
+  border-bottom:1px solid #1e293b;display:flex;align-items:center;padding:0 20px;
+  gap:0;z-index:9999;box-shadow:0 2px 16px rgba(0,0,0,.6)}
+.site-nav .nav-logo{font-size:1rem;font-weight:800;color:#f1f5f9;text-decoration:none;
+  white-space:nowrap;margin-right:24px;flex-shrink:0;letter-spacing:-.01em}
+.site-nav .nav-logo span{color:#38bdf8}
+.nav-groups{display:flex;gap:4px;align-items:center}
+.nav-group{position:relative}
+.nav-group-btn{display:flex;align-items:center;gap:5px;padding:7px 14px;border-radius:7px;
+  cursor:pointer;font-size:.82rem;font-weight:600;color:#94a3b8;
+  border:1px solid transparent;transition:.15s;white-space:nowrap;user-select:none}
+.nav-group-btn:hover,.nav-group:hover .nav-group-btn{color:#f1f5f9;background:#1e293b;border-color:#334155}
+.nav-group-btn .arrow{font-size:.6rem;opacity:.6;transition:transform .2s}
+.nav-group:hover .nav-group-btn .arrow{transform:rotate(180deg)}
+.nav-dropdown{display:none;position:absolute;top:calc(100% + 6px);left:0;
+  background:#0d1526;border:1px solid #1e293b;border-radius:10px;
+  min-width:170px;padding:6px;box-shadow:0 12px 32px rgba(0,0,0,.7);z-index:10000}
+.nav-group:hover .nav-dropdown{display:block}
+.nav-dropdown a{display:flex;align-items:center;gap:8px;padding:8px 12px;
+  border-radius:6px;color:#94a3b8;text-decoration:none;font-size:.82rem;
+  white-space:nowrap;transition:.12s}
+.nav-dropdown a:hover{color:#f1f5f9;background:#1e293b}
+.nav-dropdown a.active{color:#38bdf8;background:#0c2340}
+.nav-dd-label{font-size:.68rem;font-weight:700;color:#475569;padding:6px 12px 2px;
+  text-transform:uppercase;letter-spacing:.06em}
+.nav-divider{height:1px;background:#1e293b;margin:4px 0}
+/* ========================================= */
+
+
+main{max-width:1100px;margin:0 auto;padding:24px 20px}
+h1{font-size:1.4rem;font-weight:800;color:#f1f5f9;margin-bottom:4px}
+.subtitle{font-size:.85rem;color:#64748b;margin-bottom:24px}
+.sec{margin-bottom:28px}
+.sec-title{font-size:.78rem;font-weight:700;color:#94a3b8;text-transform:uppercase;
+  letter-spacing:.06em;margin-bottom:12px}
+/* Stats strip */
+.stats-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:24px}
+.stat-card{background:#1e293b;border-radius:10px;padding:14px 16px;text-align:center}
+.stat-card .sv{font-size:1.6rem;font-weight:800;color:#38bdf8}
+.stat-card .sl{font-size:.72rem;color:#64748b;margin-top:2px}
+.stat-card .sd{font-size:.78rem;margin-top:4px}
+.good{color:#4ade80}.warn{color:#fb923c}.muted{color:#64748b}
+/* Ball grid */
+.ball-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.ball{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:.9rem;font-weight:800;color:#fff;position:relative;
+  border:2px solid rgba(255,255,255,.15);transition:.15s;cursor:default}
+.ball:hover{transform:scale(1.08)}
+.ball .cyc{position:absolute;bottom:-2px;right:-2px;width:14px;height:14px;
+  border-radius:50%;font-size:.5rem;display:flex;align-items:center;justify-content:center;
+  font-weight:800;border:1.5px solid #0f172a}
+/* Source draws */
+.src-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:20px}
+.src-card{background:#1e293b;border-radius:10px;padding:14px;border-left:4px solid}
+.src-card .sc-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.src-card .sc-info{font-size:.75rem;color:#64748b;margin-bottom:8px}
+.src-balls{display:flex;flex-wrap:wrap;gap:5px}
+.sm-ball{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:.78rem;font-weight:800;color:#fff}
+/* Legend */
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:.78rem;color:#94a3b8}
+.legend-dot{width:12px;height:12px;border-radius:50%}
+/* Backtest table */
+.bt-table{width:100%;border-collapse:collapse;font-size:.78rem}
+.bt-table th{background:#0f172a;color:#64748b;padding:7px 10px;text-align:left;
+  border-bottom:2px solid #1e293b;font-weight:600}
+.bt-table td{padding:6px 10px;border-bottom:1px solid #1a2744}
+.bt-table tr:hover td{background:#1a2234}
+.match-badge{display:inline-flex;align-items:center;justify-content:center;
+  width:24px;height:24px;border-radius:6px;font-weight:700;font-size:.8rem}
+.m-low{background:#1e3a5f;color:#60a5fa}
+.m-mid{background:#1a4731;color:#4ade80}
+.m-high{background:#4a1d96;color:#c4b5fd}
+.m-max{background:#78350f;color:#fbbf24}
+.hit-ball{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;
+  justify-content:center;font-size:.72rem;font-weight:800;margin:1px}
+</style>
+</head>
+<body>
+
+<nav class="site-nav">
+  <a class="nav-logo" href="/">🎱 The<span>One</span>Lotto</a>
+  <div class="nav-groups">
+
+    <!-- Data -->
+    <div class="nav-group">
+      <div class="nav-group-btn">Data <span class="arrow">▼</span></div>
+      <div class="nav-dropdown">
+        <div class="nav-dd-label">Results</div>
+        <a href="/">🏠 Latest Draw</a>
+        <a href="/history">📋 History</a>
+        <a href="/numbers">🔢 Numbers</a>
+      </div>
+    </div>
+
+    <!-- Predict -->
+    <div class="nav-group">
+      <div class="nav-group-btn">Predict <span class="arrow">▼</span></div>
+      <div class="nav-dropdown">
+        <div class="nav-dd-label">Prediction Tools</div>
+        <a href="/predictions">🎯 Predictions</a>
+        <a href="/backtest.html">📊 Backtest</a>
+        <a href="/combo_evo.html">🧬 Combo Evo</a>
+        <div class="nav-divider"></div>
+        <div class="nav-dd-label">Strategy</div>
+        <a href="/overdue.html">⏳ Overdue</a>
+        <a href="/miss_analysis.html">❌ Miss Analysis</a>
+        <a href="/state_machine.html">🔄 State Machine</a>
+        <a href="/modular_cycle.html">🔁 Modular Cycle</a>
+      </div>
+    </div>
+
+    <!-- Analyze -->
+    <div class="nav-group">
+      <div class="nav-group-btn">Analyze <span class="arrow">▼</span></div>
+      <div class="nav-dropdown">
+        <div class="nav-dd-label">Pattern Analysis</div>
+        <a href="/special.html">⭐ Special</a>
+        <a href="/consecutive.html">🔗 Consecutive</a>
+        <div class="nav-divider"></div>
+        <div class="nav-dd-label">Position</div>
+        <a href="/position.html">📍 Position Freq</a>
+        <a href="/pos_predict.html">📊 Pos 1–6 Predict</a>
+      </div>
+    </div>
+
+  </div>
+</nav>
+
+
+<main>
+  <h1>&#128260; Modular Cycle Predict</h1>
+  <p class="subtitle" id="sub"></p>
+
+  <div class="sec">
+    <div class="sec-title">Performance Stats (last <span id="btN"></span> draws)</div>
+    <div class="stats-strip" id="statsStrip"></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Predicted 28 Numbers for Draw #<span id="nextS"></span></div>
+    <div class="legend" id="legend"></div>
+    <div class="ball-grid" id="balls"></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Source Draws (K=28, 56, 84, 112 draws back from draw #<span id="latS"></span>)</div>
+    <div class="src-grid" id="srcGrid"></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Backtest — Last 50 Draws (newest first)</div>
+    <table class="bt-table">
+      <thead><tr>
+        <th>Draw</th><th>Date</th><th>Actual Numbers</th><th>Hits</th><th>Matches</th>
+      </tr></thead>
+      <tbody id="btBody"></tbody>
+    </table>
+  </div>
+</main>
+
+<script>
+const D = {"K": 28, "cycles": 4, "nPicks": 28, "latestSerial": 2122, "latestDate": "2026-07-23", "nextSerial": 2123, "prediction": [42, 4, 12, 15, 22, 30, 2, 3, 13, 14, 18, 20, 23, 24, 25, 27, 28, 29, 31, 32, 38], "cycleMap": {"42": 2, "4": 2, "12": 2, "15": 2, "22": 1, "30": 1, "2": 3, "3": 2, "13": 1, "14": 4, "18": 4, "20": 1, "23": 1, "24": 4, "25": 3, "27": 3, "28": 1, "29": 1, "31": 2, "32": 2, "38": 3}, "freqMap": {"42": 3, "4": 2, "12": 2, "15": 2, "22": 2, "30": 2, "2": 1, "3": 1, "13": 1, "14": 1, "18": 1, "20": 1, "23": 1, "24": 1, "25": 1, "27": 1, "28": 1, "29": 1, "31": 1, "32": 1, "38": 1}, "btDraws": 200, "avgMatches": 3.585, "randBaseline": 4.5581, "liftPct": -21.35, "hit1plus": 100.0, "hit4plus": 51.5, "hit5plus": 21.5, "hit6plus": 6.0, "matchDist": [0, 8, 27, 62, 60, 31, 10, 2, 0, 0], "btResults": [{"s": 2122, "d": "2026-07-23", "actual": [12, 15, 18, 21, 26, 32, 41], "hitNums": [15, 32, 41], "matches": 3}, {"s": 2121, "d": "2026-07-20", "actual": [1, 3, 10, 17, 25, 26, 36], "hitNums": [3, 10, 17, 26, 36], "matches": 5}, {"s": 2120, "d": "2026-07-16", "actual": [3, 8, 13, 14, 16, 26, 43], "hitNums": [3, 8, 13, 26, 43], "matches": 5}, {"s": 2119, "d": "2026-07-13", "actual": [15, 18, 20, 22, 30, 38, 42], "hitNums": [15, 18, 30, 38, 42], "matches": 5}, {"s": 2118, "d": "2026-07-09", "actual": [1, 5, 8, 24, 35, 36, 37], "hitNums": [1, 5, 8, 24, 35, 36, 37], "matches": 7}, {"s": 2117, "d": "2026-07-06", "actual": [4, 7, 26, 27, 34, 35, 41], "hitNums": [7, 26, 27, 34, 35], "matches": 5}, {"s": 2116, "d": "2026-07-02", "actual": [2, 6, 10, 13, 14, 20, 42], "hitNums": [10, 42], "matches": 2}, {"s": 2115, "d": "2026-06-29", "actual": [1, 3, 11, 23, 34, 35, 42], "hitNums": [1, 3, 23, 35], "matches": 4}, {"s": 2114, "d": "2026-06-25", "actual": [2, 16, 20, 21, 23, 33, 43], "hitNums": [16, 23], "matches": 2}, {"s": 2113, "d": "2026-06-22", "actual": [2, 5, 14, 32, 36, 38, 42], "hitNums": [5, 14, 36, 38], "matches": 4}, {"s": 2112, "d": "2026-06-18", "actual": [3, 7, 8, 18, 27, 31, 40], "hitNums": [3, 7, 8, 18], "matches": 4}, {"s": 2111, "d": "2026-06-15", "actual": [1, 5, 8, 12, 36, 37, 43], "hitNums": [5, 8, 12, 36, 43], "matches": 5}, {"s": 2110, "d": "2026-06-11", "actual": [3, 9, 18, 29, 35, 36, 40], "hitNums": [9, 40], "matches": 2}, {"s": 2109, "d": "2026-06-08", "actual": [3, 6, 11, 19, 31, 38, 41], "hitNums": [31, 41], "matches": 2}, {"s": 2108, "d": "2026-06-04", "actual": [2, 5, 10, 15, 27, 28, 43], "hitNums": [10, 28], "matches": 2}, {"s": 2107, "d": "2026-06-01", "actual": [5, 8, 27, 32, 36, 38, 39], "hitNums": [5, 8, 27, 39], "matches": 4}, {"s": 2106, "d": "2026-05-28", "actual": [1, 6, 17, 24, 27, 34, 43], "hitNums": [1, 6, 24], "matches": 3}, {"s": 2105, "d": "2026-05-25", "actual": [5, 26, 28, 30, 32, 36, 40], "hitNums": [26, 30, 40], "matches": 3}, {"s": 2104, "d": "2026-05-21", "actual": [4, 18, 19, 21, 25, 28, 34], "hitNums": [18, 21, 28, 34], "matches": 4}, {"s": 2103, "d": "2026-05-18", "actual": [1, 2, 4, 5, 8, 38, 39], "hitNums": [1, 4, 5, 39], "matches": 4}, {"s": 2102, "d": "2026-05-14", "actual": [8, 18, 21, 25, 28, 30, 43], "hitNums": [21, 25, 30], "matches": 3}, {"s": 2101, "d": "2026-05-11", "actual": [1, 17, 21, 29, 33, 40, 42], "hitNums": [1, 17, 29], "matches": 3}, {"s": 2100, "d": "2026-05-07", "actual": [8, 17, 24, 28, 32, 35, 41], "hitNums": [8, 24, 35], "matches": 3}, {"s": 2099, "d": "2026-05-04", "actual": [19, 21, 34, 36, 39, 42, 43], "hitNums": [19, 34, 42], "matches": 3}, {"s": 2098, "d": "2026-04-30", "actual": [1, 6, 15, 18, 19, 24, 42], "hitNums": [6, 24, 42], "matches": 3}, {"s": 2097, "d": "2026-04-27", "actual": [3, 20, 24, 27, 34, 37, 42], "hitNums": [24, 27, 37, 42], "matches": 4}, {"s": 2096, "d": "2026-04-23", "actual": [8, 15, 18, 21, 33, 38, 43], "hitNums": [15, 33, 38], "matches": 3}, {"s": 2095, "d": "2026-04-20", "actual": [13, 20, 22, 23, 28, 29, 30], "hitNums": [22, 23, 30], "matches": 3}, {"s": 2094, "d": "2026-04-16", "actual": [3, 4, 7, 11, 16, 24, 30], "hitNums": [24, 30], "matches": 2}, {"s": 2093, "d": "2026-04-13", "actual": [2, 10, 12, 21, 26, 29, 38], "hitNums": [10, 12, 21, 29], "matches": 4}, {"s": 2092, "d": "2026-04-09", "actual": [3, 8, 13, 27, 36, 37, 43], "hitNums": [3, 8, 13, 36, 37], "matches": 5}, {"s": 2091, "d": "2026-04-06", "actual": [6, 9, 16, 21, 25, 28, 43], "hitNums": [6, 9, 21, 28], "matches": 4}, {"s": 2090, "d": "2026-04-02", "actual": [2, 3, 5, 6, 9, 24, 36], "hitNums": [2, 9, 24], "matches": 3}, {"s": 2089, "d": "2026-03-30", "actual": [9, 13, 16, 18, 32, 37, 43], "hitNums": [13, 16, 18], "matches": 3}, {"s": 2088, "d": "2026-03-26", "actual": [8, 16, 18, 27, 29, 37, 39], "hitNums": [8, 16, 18, 27, 37, 39], "matches": 6}, {"s": 2087, "d": "2026-03-23", "actual": [7, 10, 13, 15, 18, 26, 39], "hitNums": [10, 13, 15, 26, 39], "matches": 5}, {"s": 2086, "d": "2026-03-19", "actual": [4, 6, 11, 19, 28, 39, 40], "hitNums": [6, 19, 28], "matches": 3}, {"s": 2085, "d": "2026-03-16", "actual": [6, 8, 13, 14, 26, 35, 43], "hitNums": [13, 14, 26, 43], "matches": 4}, {"s": 2084, "d": "2026-03-12", "actual": [8, 9, 17, 18, 19, 30, 39], "hitNums": [17, 19, 30], "matches": 3}, {"s": 2083, "d": "2026-03-09", "actual": [8, 10, 13, 17, 26, 29, 43], "hitNums": [13, 17, 26], "matches": 3}, {"s": 2082, "d": "2026-03-05", "actual": [5, 11, 14, 17, 19, 25, 40], "hitNums": [5, 11, 14], "matches": 3}, {"s": 2081, "d": "2026-03-02", "actual": [14, 22, 31, 32, 37, 41, 42], "hitNums": [14, 31, 37, 41], "matches": 4}, {"s": 2080, "d": "2026-02-26", "actual": [6, 8, 12, 30, 36, 37, 38], "hitNums": [6, 30, 37], "matches": 3}, {"s": 2079, "d": "2026-02-23", "actual": [5, 11, 15, 17, 24, 31, 39], "hitNums": [5, 15, 31, 39], "matches": 4}, {"s": 2078, "d": "2026-02-19", "actual": [1, 10, 20, 24, 30, 35, 41], "hitNums": [10, 24, 30], "matches": 3}, {"s": 2077, "d": "2026-02-16", "actual": [10, 17, 18, 23, 24, 26, 43], "hitNums": [10, 17, 18, 23, 24, 43], "matches": 6}, {"s": 2076, "d": "2026-02-12", "actual": [1, 9, 20, 22, 28, 30, 41], "hitNums": [9, 28], "matches": 2}, {"s": 2075, "d": "2026-02-09", "actual": [7, 10, 11, 14, 16, 35, 37], "hitNums": [7, 10, 11, 14, 16, 35, 37], "matches": 7}, {"s": 2074, "d": "2026-02-05", "actual": [5, 6, 11, 16, 26, 27, 36], "hitNums": [5, 6, 26], "matches": 3}, {"s": 2073, "d": "2026-02-02", "actual": [2, 8, 12, 14, 24, 26, 29], "hitNums": [2, 8, 12, 24, 29], "matches": 5}], "sourceDraws": [{"cycle": 1, "idx": 2094, "serial": 2095, "date": "2026-04-20", "nums": [13, 20, 22, 23, 28, 30], "bonus": 29}, {"cycle": 2, "idx": 2066, "serial": 2067, "date": "2026-01-12", "nums": [3, 4, 12, 15, 32, 42], "bonus": 31}, {"cycle": 3, "idx": 2038, "serial": 2039, "date": "2025-10-02", "nums": [2, 15, 25, 27, 38, 42], "bonus": 22}, {"cycle": 4, "idx": 2010, "serial": 2011, "date": "2025-06-26", "nums": [12, 14, 18, 24, 30, 42], "bonus": 4}]};
+const CYCLE_COLORS = ["#38bdf8", "#a78bfa", "#34d399", "#fb923c"];
+const CYCLE_LABELS = ["K=28", "K=56", "K=84", "K=112"];
+
+document.getElementById('sub').textContent =
+  `K=${D.K} · Predict ${D.nPicks} numbers from ${D.cycles} cycle depths (${CYCLE_LABELS.join(', ')} draws back) · ${D.btDraws}-draw backtest`;
+document.getElementById('btN').textContent = D.btDraws;
+document.getElementById('nextS').textContent = D.nextSerial;
+document.getElementById('latS').textContent = D.latestSerial;
+
+// Stats
+const statsData = [
+  {label:'Avg matches/draw', val:D.avgMatches.toFixed(3), sub:`Random: ${D.randBaseline.toFixed(3)}`, color: D.avgMatches > D.randBaseline ? '#4ade80' : '#fb923c'},
+  {label:'Lift vs random', val:(D.liftPct>0?'+':'')+D.liftPct+'%', sub:'modular vs random', color: D.liftPct>0?'#4ade80':'#fb923c'},
+  {label:'>=4 hits/draw', val:D.hit4plus+'%', sub:`>=5: ${D.hit5plus}%`, color:'#a78bfa'},
+  {label:'>=6 hits/draw', val:D.hit6plus+'%', sub:'all 6 main hit', color:'#fbbf24'},
+];
+const strip = document.getElementById('statsStrip');
+statsData.forEach(s => {
+  strip.innerHTML += `<div class="stat-card">
+    <div class="sv" style="color:${s.color}">${s.val}</div>
+    <div class="sl">${s.label}</div>
+    <div class="sd muted">${s.sub}</div>
+  </div>`;
+});
+
+// Legend
+const leg = document.getElementById('legend');
+CYCLE_LABELS.forEach((lbl,i) => {
+  leg.innerHTML += `<div class="legend-item">
+    <div class="legend-dot" style="background:${CYCLE_COLORS[i]}"></div>
+    ${lbl} draws back
+  </div>`;
+});
+leg.innerHTML += `<div class="legend-item">
+  <div class="legend-dot" style="background:#475569"></div>
+  Multiple cycles
+</div>`;
+
+// Balls
+const ballGrid = document.getElementById('balls');
+D.prediction.forEach(n => {
+  const cycle = D.cycleMap[String(n)] || 1;
+  const freq = D.freqMap[String(n)] || 1;
+  const color = freq > 1 ? '#475569' : CYCLE_COLORS[(cycle-1) % CYCLE_COLORS.length];
+  ballGrid.innerHTML += `<div class="ball" style="background:${color}" title="Appears ${freq}x across cycles">
+    ${n}
+    <div class="cyc" style="background:${CYCLE_COLORS[(cycle-1)%CYCLE_COLORS.length]};color:#fff">${cycle}</div>
+  </div>`;
+});
+
+// Source draws
+const srcGrid = document.getElementById('srcGrid');
+D.sourceDraws.forEach((sd,i) => {
+  const color = CYCLE_COLORS[i % CYCLE_COLORS.length];
+  const label = CYCLE_LABELS[i];
+  const allNums = [...sd.nums, sd.bonus];
+  const ballsHtml = allNums.map((n,j) => {
+    const isBonus = j === allNums.length - 1;
+    const bg = isBonus ? '#f59e0b' : color;
+    return `<div class="sm-ball" style="background:${bg}">${n}</div>`;
+  }).join('');
+  srcGrid.innerHTML += `<div class="src-card" style="border-color:${color}">
+    <div class="sc-label" style="color:${color}">${label} draws back</div>
+    <div class="sc-info">Draw #${sd.serial} &nbsp;·&nbsp; ${sd.date}</div>
+    <div class="src-balls">${ballsHtml}</div>
+  </div>`;
+});
+
+// Backtest table
+const tbody = document.getElementById('btBody');
+D.btResults.forEach(r => {
+  const m = r.matches;
+  const cls = m >= 6 ? 'm-max' : m >= 5 ? 'm-high' : m >= 4 ? 'm-mid' : 'm-low';
+  const hitSet = new Set(r.hitNums);
+  const actualHtml = r.actual.map(n => {
+    const isHit = hitSet.has(n);
+    const isBonus = r.actual.indexOf(n) === 6;
+    const bg = isHit ? (isBonus ? '#f59e0b' : '#4ade80') : '#1e293b';
+    const color = isHit ? '#000' : '#94a3b8';
+    return `<span class="hit-ball" style="background:${bg};color:${color}">${n}</span>`;
+  }).join('');
+  tbody.innerHTML += `<tr>
+    <td style="color:#64748b">#${r.s}</td>
+    <td style="color:#475569">${r.d}</td>
+    <td>${actualHtml}</td>
+    <td>${r.hitNums.join(', ')||'-'}</td>
+    <td><span class="match-badge ${cls}">${m}</span></td>
+  </tr>`;
+});
+</script>
+
+<script>
+(function(){
+  var path = window.location.pathname + window.location.hash;
+  document.querySelectorAll('.nav-dropdown a').forEach(function(a){
+    var href = a.getAttribute('href');
+    if(!href) return;
+    var hPath = href.split('#')[0];
+    var hHash = href.includes('#') ? href : '';
+    if(href === path) { a.classList.add('active'); return; }
+    if(hPath && hPath !== '/' && path.startsWith(hPath) && !href.includes('#')) {
+      a.classList.add('active');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

@@ -69,6 +69,7 @@ NAV_HTML = """
         <a href="/overdue.html">⏳ Overdue</a>
         <a href="/miss_analysis.html">❌ Miss Analysis</a>
         <a href="/state_machine.html">🔄 State Machine</a>
+        <a href="/modular_cycle.html">🔁 Modular Cycle</a>
       </div>
     </div>
 
@@ -113,6 +114,7 @@ HTML_FILES = [
     "combo_evo.html",
     "consecutive.html",
     "miss_analysis.html",
+    "modular_cycle.html",
     "overdue.html",
     "position.html",
     "special.html",
