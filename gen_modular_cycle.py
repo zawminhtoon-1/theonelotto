@@ -330,6 +330,9 @@ h1{{font-size:1.4rem;font-weight:800;color:#f1f5f9;margin-bottom:4px}}
   justify-content:center;font-size:.72rem;font-weight:800;margin:1px}}
 .pred-mini{{width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;
   justify-content:center;font-size:.68rem;font-weight:700;margin:1px;flex-shrink:0}}
+.pm-hit{{background:#dc2626;color:#fff;box-shadow:0 0 0 2px #f87171}}
+.pm-selected{{background:#e2e8f0;color:#0f172a}}
+.pm-excluded{{background:#1e293b;color:#334155;opacity:.35}}
 .pred-row td{{background:#0c1420;border-bottom:2px solid #1e293b}}
 /* ── COMPARE BANNER ── */
 .compare-banner{{display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap}}
@@ -532,12 +535,11 @@ function renderTable(id, D) {{
     const predBalls = (r.pred||[]).map(n => {{
       const isHit = hitSet.has(n);
       const isBad = badSet.has(n);
-      const tier  = (D.freqTier && D.freqTier[String(n)]) || 0;
-      let bg, col, opacity='1', border='none';
-      if (isHit) {{ bg='#4ade80'; col='#000'; }}
-      else {{ bg=TIER_COLORS[tier]; col='#fff'; }}
-      if (isBad) {{ opacity='0.3'; border='2px dashed #f87171'; }}
-      return `<span class="pred-mini" style="background:${{bg}};color:${{col}};opacity:${{opacity}};outline:${{border}}">${{n}}</span>`;
+      let cls = 'pred-mini';
+      if (isHit)      cls += ' pm-hit';
+      else if (isBad) cls += ' pm-excluded';
+      else            cls += ' pm-selected';
+      return `<span class="${{cls}}">${{n}}</span>`;
     }}).join('');
     el.innerHTML += `
       <tr>
