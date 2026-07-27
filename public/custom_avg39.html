@@ -36,6 +36,8 @@
 
 /* ========================================= */
 
+
+
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh;padding-top:60px}
 .site-nav{position:fixed;top:0;left:0;right:0;height:52px;background:#0a0f1e;
@@ -119,6 +121,7 @@ h1{font-size:1.4rem;font-weight:800;color:#f1f5f9;margin-bottom:4px}
 </head>
 <body>
 
+
 <nav class="site-nav">
   <a class="nav-logo" href="/">🎱 The<span>One</span>Lotto</a>
   <div class="nav-groups">
@@ -173,6 +176,7 @@ h1{font-size:1.4rem;font-weight:800;color:#f1f5f9;margin-bottom:4px}
 
   </div>
 </nav>
+
 
 <main>
   <h1>&#10133; 39-Draw Average Predict</h1>
@@ -295,6 +299,23 @@ D.btResults.forEach(function(r) {
     '</td></tr>';
 });
 </script>
+
+<script>
+(function(){
+  var path = window.location.pathname + window.location.hash;
+  document.querySelectorAll('.nav-dropdown a').forEach(function(a){
+    var href = a.getAttribute('href');
+    if(!href) return;
+    var hPath = href.split('#')[0];
+    var hHash = href.includes('#') ? href : '';
+    if(href === path) { a.classList.add('active'); return; }
+    if(hPath && hPath !== '/' && path.startsWith(hPath) && !href.includes('#')) {
+      a.classList.add('active');
+    }
+  });
+})();
+</script>
+
 
 <script>
 (function(){
