@@ -1,21 +1,20 @@
 """
 gen_modular_cycle.py
 Generates public/modular_cycle.html
-Multi-K prediction: pool 28 numbers from the 4 best-performing
-K distances (K=23, K=10, K=5, K=1) — 7 numbers each.
+Serial Cycle Predict: group draws by (draw_serial % 43).
+For draw S, pool all past draws where serial % 43 == S % 43.
+Rank by frequency, predict top 28 numbers.
 """
 import psycopg2, json, os, statistics
-from math import comb
+from collections import Counter, defaultdict
 
 DB_URL = os.environ.get(
     "DATABASE_URL",
     "postgresql://neondb_owner:npg_QbHpRZW8of3C@ep-hidden-wind-a1q0el7s-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
 )
 
-# Best K combo for >=6 hit rate (found by find_best_k_combo.py)
-K_VALUES = [23, 40, 38, 33]
 N_PICKS = 28
-BT_DRAWS = 1000  # backtest window
+BT_DRAWS = 1000
 
 conn = psycopg2.connect(DB_URL)
 cur = conn.cursor()
@@ -40,123 +39,113 @@ for r in rows:
 N = len(draws)
 latest = draws[-1]
 next_serial = latest["s"] + 1
+next_mod = next_serial % 43
 
-def predict_multi_k(idx, k_values, n_picks):
-    """Pool numbers from draws at each K distance. Returns top n_picks by frequency."""
-    freq = {}
-    k_map = {}  # number -> which K index contributed it first
-    for ki, k in enumerate(k_values):
-        back = idx - k
-        if back < 0:
-            continue
-        d = draws[back]
-        for num in d["all"]:  # 7 numbers: 6 main + bonus
-            if num not in freq:
-                freq[num] = 0
-                k_map[num] = ki
-            freq[num] += 1
-    ranked = sorted(freq.keys(), key=lambda x: (-freq[x], x))
-    return ranked[:n_picks], freq, k_map
+# Group draw indices by serial % 43
+mod_groups = defaultdict(list)
+for i, d in enumerate(draws):
+    mod_groups[d["s"] % 43].append(i)
+
+def predict_serial_mod(idx, n_picks):
+    """Pool numbers from all past draws with same serial%43. Rank by freq."""
+    s = draws[idx]["s"]
+    target_mod = s % 43
+    past = [j for j in mod_groups[target_mod] if j < idx]
+    if not past:
+        return [], Counter(), []
+    freq = Counter()
+    for j in past:
+        for n in draws[j]["all"]:
+            freq[n] += 1
+    top = [n for n, _ in freq.most_common(n_picks)]
+    return top, freq, past
 
 # --- Prediction for next draw ---
-next_pred, next_freq, next_k_map = predict_multi_k(N, K_VALUES, N_PICKS)
+next_past = [j for j in mod_groups[next_mod]]  # includes latest draw
+freq_next = Counter()
+for j in next_past:
+    for n in draws[j]["all"]:
+        freq_next[n] += 1
+next_pred = [n for n, _ in freq_next.most_common(N_PICKS)]
+next_source_count = len(next_past)
 
-# --- Backtest: last BT_DRAWS draws ---
+# --- Backtest ---
 bt_results = []
 match_counts = []
 for i in range(max(0, N - BT_DRAWS), N):
     d = draws[i]
-    pred, freq, kmap = predict_multi_k(i, K_VALUES, N_PICKS)
+    pred, freq, past = predict_serial_mod(i, N_PICKS)
+    if not pred:
+        match_counts.append(0)
+        bt_results.append({"s": d["s"], "d": d["d"], "actual": sorted(d["all"]),
+                           "hitNums": [], "matches": 0})
+        continue
     pred_set = set(pred)
-    matches = len(pred_set & d["all"])
+    hits = pred_set & d["all"]
+    matches = len(hits)
     match_counts.append(matches)
     bt_results.append({
-        "s": d["s"],
-        "d": d["d"],
+        "s": d["s"], "d": d["d"],
         "actual": sorted(d["all"]),
-        "pred_set": sorted(pred_set),
-        "matches": matches,
-        "hit_nums": sorted(pred_set & d["all"])
+        "hitNums": sorted(hits),
+        "matches": matches
     })
 
 avg_matches = statistics.mean(match_counts)
-# Random baseline: E[matches] = 28 * 7 / 43 = 4.558...
 rand_baseline = N_PICKS * 7 / 43
-dist = [match_counts.count(i) for i in range(N_PICKS + 1)]
-# Counts (raw)
-cnt_1plus = sum(1 for m in match_counts if m >= 1)
 cnt_4plus = sum(1 for m in match_counts if m >= 4)
 cnt_5plus = sum(1 for m in match_counts if m >= 5)
 cnt_6plus = sum(1 for m in match_counts if m >= 6)
 cnt_7plus = sum(1 for m in match_counts if m >= 7)
-# Percentages (for reference)
-hit_1plus = cnt_1plus / len(match_counts) * 100
-hit_4plus = cnt_4plus / len(match_counts) * 100
-hit_5plus = cnt_5plus / len(match_counts) * 100
-hit_6plus = cnt_6plus / len(match_counts) * 100
+dist = [match_counts.count(i) for i in range(N_PICKS + 1)]
 
-# Build data payload
+# Frequency color: divide into 3 tiers
+max_freq = max(freq_next.values()) if freq_next else 1
+def freq_tier(n):
+    f = freq_next.get(n, 0)
+    if f >= max_freq * 0.7: return 2
+    if f >= max_freq * 0.4: return 1
+    return 0
+
 DATA = {
-    "kValues": K_VALUES,
+    "modVal": next_mod,
     "nPicks": N_PICKS,
     "latestSerial": latest["s"],
     "latestDate": latest["d"],
     "nextSerial": next_serial,
+    "nextMod": next_mod,
+    "sourceCount": next_source_count,
     "prediction": next_pred,
-    "kMap": {str(n): next_k_map.get(n, 0) for n in next_pred},
-    "freqMap": {str(n): next_freq.get(n, 0) for n in next_pred},
+    "freqMap": {str(n): freq_next.get(n, 0) for n in next_pred},
+    "freqTier": {str(n): freq_tier(n) for n in next_pred},
     "btDraws": BT_DRAWS,
     "avgMatches": round(avg_matches, 2),
     "randBaseline": round(rand_baseline, 2),
     "liftPct": round((avg_matches / rand_baseline - 1) * 100, 1),
-    "cnt1plus": cnt_1plus,
     "cnt4plus": cnt_4plus,
     "cnt5plus": cnt_5plus,
     "cnt6plus": cnt_6plus,
     "cnt7plus": cnt_7plus,
-    "hit1plus": round(hit_1plus, 1),
-    "hit4plus": round(hit_4plus, 1),
-    "hit5plus": round(hit_5plus, 1),
-    "hit6plus": round(hit_6plus, 1),
-    "matchDist": dist[:10],
+    "matchDist": dist[:9],
     "btResults": [
-        {
-            "s": r["s"], "d": r["d"],
-            "actual": r["actual"],
-            "hitNums": r["hit_nums"],
-            "matches": r["matches"]
-        }
-        for r in reversed(bt_results[-100:])  # last 100, newest first
-    ],
-    # Source draws for next prediction
-    "sourceDraws": [
-        {
-            "ki": ki,
-            "k": k,
-            "idx": N - k,
-            "serial": draws[N - k]["s"] if N - k >= 0 else None,
-            "date": draws[N - k]["d"] if N - k >= 0 else "",
-            "nums": draws[N - k]["n"] if N - k >= 0 else [],
-            "bonus": draws[N - k]["b"] if N - k >= 0 else None
-        }
-        for ki, k in enumerate(K_VALUES) if N - k >= 0
+        {"s": r["s"], "d": r["d"], "actual": r["actual"],
+         "hitNums": r["hitNums"], "matches": r["matches"]}
+        for r in reversed(bt_results[-100:])
     ]
 }
 
 data_json = json.dumps(DATA, ensure_ascii=False)
 
-# K colors and labels
-CYCLE_COLORS = ["#38bdf8", "#a78bfa", "#34d399", "#fb923c"]
-CYCLE_LABELS = [f"K={k}" for k in K_VALUES]
+TIER_COLORS = ["#38bdf8", "#a78bfa", "#fbbf24"]  # low, mid, high freq
+TIER_LABELS = ["Lower freq", "Mid freq", "High freq"]
 
 HTML = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Multi-K Cycle Predict — Loto 6</title>
+<title>Serial Cycle Predict — Loto 6</title>
 <style>
-/* ====== SHARED FIXED NAV ====== */
 *{{box-sizing:border-box;margin:0;padding:0}}
 body{{font-family:system-ui,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh;padding-top:60px}}
 .site-nav{{position:fixed;top:0;left:0;right:0;height:52px;background:#0a0f1e;
@@ -184,42 +173,30 @@ body{{font-family:system-ui,sans-serif;background:#0f172a;color:#e2e8f0;min-heig
 .nav-dd-label{{font-size:.68rem;font-weight:700;color:#475569;padding:6px 12px 2px;
   text-transform:uppercase;letter-spacing:.06em}}
 .nav-divider{{height:1px;background:#1e293b;margin:4px 0}}
-/* ====== PAGE STYLES ====== */
 main{{max-width:1100px;margin:0 auto;padding:24px 20px}}
 h1{{font-size:1.4rem;font-weight:800;color:#f1f5f9;margin-bottom:4px}}
 .subtitle{{font-size:.85rem;color:#64748b;margin-bottom:24px}}
 .sec{{margin-bottom:28px}}
 .sec-title{{font-size:.78rem;font-weight:700;color:#94a3b8;text-transform:uppercase;
   letter-spacing:.06em;margin-bottom:12px}}
-/* Stats strip */
 .stats-strip{{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:24px}}
 .stat-card{{background:#1e293b;border-radius:10px;padding:14px 16px;text-align:center}}
-.stat-card .sv{{font-size:1.6rem;font-weight:800;color:#38bdf8}}
+.stat-card .sv{{font-size:1.6rem;font-weight:800}}
 .stat-card .sl{{font-size:.72rem;color:#64748b;margin-top:2px}}
-.stat-card .sd{{font-size:.78rem;margin-top:4px}}
-.good{{color:#4ade80}}.warn{{color:#fb923c}}.muted{{color:#64748b}}
-/* Ball grid */
+.stat-card .sd{{font-size:.78rem;margin-top:4px;color:#64748b}}
+.legend{{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px}}
+.legend-item{{display:flex;align-items:center;gap:6px;font-size:.78rem;color:#94a3b8}}
+.legend-dot{{width:12px;height:12px;border-radius:50%}}
 .ball-grid{{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}}
 .ball{{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;
   justify-content:center;font-size:.9rem;font-weight:800;color:#fff;position:relative;
-  border:2px solid rgba(255,255,255,.15);transition:.15s;cursor:default}}
+  border:2px solid rgba(255,255,255,.15);cursor:default}}
 .ball:hover{{transform:scale(1.08)}}
-.ball .cyc{{position:absolute;bottom:-2px;right:-2px;width:14px;height:14px;
-  border-radius:50%;font-size:.5rem;display:flex;align-items:center;justify-content:center;
-  font-weight:800;border:1.5px solid #0f172a}}
-/* Source draws */
-.src-grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:20px}}
-.src-card{{background:#1e293b;border-radius:10px;padding:14px;border-left:4px solid}}
-.src-card .sc-label{{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}}
-.src-card .sc-info{{font-size:.75rem;color:#64748b;margin-bottom:8px}}
-.src-balls{{display:flex;flex-wrap:wrap;gap:5px}}
-.sm-ball{{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;
-  justify-content:center;font-size:.78rem;font-weight:800;color:#fff}}
-/* Legend */
-.legend{{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px}}
-.legend-item{{display:flex;align-items:center;gap:6px;font-size:.78rem;color:#94a3b8}}
-.legend-dot{{width:12px;height:12px;border-radius:50%}}
-/* Backtest table */
+.method-card{{background:#1e293b;border-radius:12px;padding:16px 20px;margin-bottom:20px;
+  border-left:4px solid #38bdf8}}
+.method-card .mc-title{{font-size:.78rem;font-weight:700;color:#38bdf8;text-transform:uppercase;
+  letter-spacing:.06em;margin-bottom:8px}}
+.method-card .mc-body{{font-size:.85rem;color:#94a3b8;line-height:1.6}}
 .bt-table{{width:100%;border-collapse:collapse;font-size:.78rem}}
 .bt-table th{{background:#0f172a;color:#64748b;padding:7px 10px;text-align:left;
   border-bottom:2px solid #1e293b;font-weight:600}}
@@ -279,30 +256,30 @@ h1{{font-size:1.4rem;font-weight:800;color:#f1f5f9;margin-bottom:4px}}
 </nav>
 
 <main>
-  <h1>&#128260; Multi-K Cycle Predict</h1>
+  <h1>&#128260; Serial Cycle Predict</h1>
   <p class="subtitle" id="sub"></p>
 
+  <div class="method-card">
+    <div class="mc-title">Method</div>
+    <div class="mc-body" id="methodDesc"></div>
+  </div>
+
   <div class="sec">
-    <div class="sec-title">Performance Stats (last <span id="btN"></span> draws)</div>
+    <div class="sec-title">Backtest Performance (last <span id="btN"></span> draws)</div>
     <div class="stats-strip" id="statsStrip"></div>
   </div>
 
   <div class="sec">
-    <div class="sec-title">Predicted 28 Numbers for Draw #<span id="nextS"></span></div>
+    <div class="sec-title">Predicted <span id="npicks"></span> Numbers for Draw #<span id="nextS"></span></div>
     <div class="legend" id="legend"></div>
     <div class="ball-grid" id="balls"></div>
   </div>
 
   <div class="sec">
-    <div class="sec-title">Source Draws (K=23, 40, 38, 33 draws back from draw #<span id="latS"></span>)</div>
-    <div class="src-grid" id="srcGrid"></div>
-  </div>
-
-  <div class="sec">
-    <div class="sec-title">Backtest — Last 50 Draws (newest first)</div>
+    <div class="sec-title">Backtest — Last 100 Draws (newest first)</div>
     <table class="bt-table">
       <thead><tr>
-        <th>Draw</th><th>Date</th><th>Actual Numbers</th><th>Hits</th><th>Matches</th>
+        <th>Draw</th><th>Date</th><th>Actual Numbers</th><th>Hits</th><th>&#8203;</th>
       </tr></thead>
       <tbody id="btBody"></tbody>
     </table>
@@ -311,72 +288,52 @@ h1{{font-size:1.4rem;font-weight:800;color:#f1f5f9;margin-bottom:4px}}
 
 <script>
 const D = {data_json};
-const CYCLE_COLORS = {json.dumps(CYCLE_COLORS)};
-const CYCLE_LABELS = {json.dumps(CYCLE_LABELS)};
+const TIER_COLORS = {json.dumps(TIER_COLORS)};
+const TIER_LABELS = {json.dumps(TIER_LABELS)};
 
 document.getElementById('sub').textContent =
-  `Predict ${{D.nPicks}} numbers using 4 best K values (${{CYCLE_LABELS.join(', ')}} draws back) · ${{D.btDraws}}-draw backtest`;
+  `Draw serial % 43 = ${{D.nextMod}} · ${{D.sourceCount}} source draws · predict ${{D.nPicks}} numbers · ${{D.btDraws}}-draw backtest`;
+document.getElementById('methodDesc').textContent =
+  `Next draw is #${{D.nextSerial}}. ${{D.nextSerial}} ÷ 43 has remainder ${{D.nextMod}}. ` +
+  `We find all ${{D.sourceCount}} past draws with the same remainder, count number frequency across them, ` +
+  `and predict the top ${{D.nPicks}} most frequent numbers.`;
 document.getElementById('btN').textContent = D.btDraws;
 document.getElementById('nextS').textContent = D.nextSerial;
-document.getElementById('latS').textContent = D.latestSerial;
+document.getElementById('npicks').textContent = D.nPicks;
 
 // Stats
 const statsData = [
   {{label:'6+ hit draws', val:D.cnt6plus, sub:`out of ${{D.btDraws}} draws`, color:'#fbbf24'}},
   {{label:'5+ hit draws', val:D.cnt5plus, sub:`4+ hits: ${{D.cnt4plus}}`, color:'#a78bfa'}},
   {{label:'7-hit draws', val:D.cnt7plus, sub:'all 7 matched', color:'#34d399'}},
-  {{label:'Avg matches/draw', val:D.avgMatches.toFixed(2), sub:`Random: ${{D.randBaseline.toFixed(2)}}`, color: D.avgMatches > D.randBaseline ? '#4ade80' : '#fb923c'}},
+  {{label:'Avg matches/draw', val:D.avgMatches.toFixed(2), sub:`Random: ${{D.randBaseline.toFixed(2)}}`, color: D.avgMatches >= D.randBaseline ? '#4ade80' : '#fb923c'}},
 ];
 const strip = document.getElementById('statsStrip');
 statsData.forEach(s => {{
   strip.innerHTML += `<div class="stat-card">
     <div class="sv" style="color:${{s.color}}">${{s.val}}</div>
     <div class="sl">${{s.label}}</div>
-    <div class="sd muted">${{s.sub}}</div>
+    <div class="sd">${{s.sub}}</div>
   </div>`;
 }});
 
 // Legend
 const leg = document.getElementById('legend');
-CYCLE_LABELS.forEach((lbl,i) => {{
+TIER_LABELS.forEach((lbl, i) => {{
   leg.innerHTML += `<div class="legend-item">
-    <div class="legend-dot" style="background:${{CYCLE_COLORS[i]}}"></div>
-    ${{lbl}} draws back
+    <div class="legend-dot" style="background:${{TIER_COLORS[i]}}"></div>
+    ${{lbl}}
   </div>`;
 }});
-leg.innerHTML += `<div class="legend-item">
-  <div class="legend-dot" style="background:#475569"></div>
-  Multiple cycles
-</div>`;
 
 // Balls
 const ballGrid = document.getElementById('balls');
 D.prediction.forEach(n => {{
-  const ki = D.kMap[String(n)] !== undefined ? D.kMap[String(n)] : 0;
-  const freq = D.freqMap[String(n)] || 1;
-  const color = freq > 1 ? '#475569' : CYCLE_COLORS[ki % CYCLE_COLORS.length];
-  const kLabel = D.kValues[ki];
-  ballGrid.innerHTML += `<div class="ball" style="background:${{color}}" title="K=${{kLabel}}, appears ${{freq}}x">
+  const tier = D.freqTier[String(n)] || 0;
+  const freq = D.freqMap[String(n)] || 0;
+  const color = TIER_COLORS[tier];
+  ballGrid.innerHTML += `<div class="ball" style="background:${{color}}" title="Appears ${{freq}}x in source draws">
     ${{n}}
-    <div class="cyc" style="background:${{CYCLE_COLORS[ki%CYCLE_COLORS.length]}};color:#fff">${{kLabel}}</div>
-  </div>`;
-}});
-
-// Source draws
-const srcGrid = document.getElementById('srcGrid');
-D.sourceDraws.forEach((sd,i) => {{
-  const color = CYCLE_COLORS[sd.ki % CYCLE_COLORS.length];
-  const label = `K=${{sd.k}}`;
-  const allNums = [...sd.nums, sd.bonus];
-  const ballsHtml = allNums.map((n,j) => {{
-    const isBonus = j === allNums.length - 1;
-    const bg = isBonus ? '#f59e0b' : color;
-    return `<div class="sm-ball" style="background:${{bg}}">${{n}}</div>`;
-  }}).join('');
-  srcGrid.innerHTML += `<div class="src-card" style="border-color:${{color}}">
-    <div class="sc-label" style="color:${{color}}">${{label}} draws back</div>
-    <div class="sc-info">Draw #${{sd.serial}} &nbsp;·&nbsp; ${{sd.date}}</div>
-    <div class="src-balls">${{ballsHtml}}</div>
   </div>`;
 }});
 
@@ -384,7 +341,7 @@ D.sourceDraws.forEach((sd,i) => {{
 const tbody = document.getElementById('btBody');
 D.btResults.forEach(r => {{
   const m = r.matches;
-  const cls = m >= 6 ? 'm-max' : m >= 5 ? 'm-high' : m >= 4 ? 'm-mid' : 'm-low';
+  const cls = m >= 7 ? 'm-max' : m >= 6 ? 'm-high' : m >= 5 ? 'm-mid' : 'm-low';
   const hitSet = new Set(r.hitNums);
   const actualHtml = r.actual.map(n => {{
     const isHit = hitSet.has(n);
@@ -409,5 +366,5 @@ out_path = os.path.join(os.path.dirname(__file__), "public", "modular_cycle.html
 with open(out_path, "w", encoding="utf-8") as f:
     f.write(HTML)
 print(f"Written: {out_path} ({len(HTML):,} bytes)")
-print(f"K_VALUES={K_VALUES}, N_PICKS={N_PICKS}, avg_matches={avg_matches:.4f}, rand_baseline={rand_baseline:.4f}")
-print(f"Lift: {(avg_matches/rand_baseline-1)*100:+.2f}%  >=4hits: {hit_4plus:.1f}%  >=6hits: {hit_6plus:.1f}%")
+print(f"N_PICKS={N_PICKS}, avg_matches={avg_matches:.4f}, rand_baseline={rand_baseline:.4f}")
+print(f"6+ hits: {cnt_6plus}/1000  5+ hits: {cnt_5plus}/1000  4+: {cnt_4plus}/1000")
