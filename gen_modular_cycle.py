@@ -333,6 +333,7 @@ h1{{font-size:1.4rem;font-weight:800;color:#f1f5f9;margin-bottom:4px}}
 .pm-hit{{background:#dc2626;color:#fff;box-shadow:0 0 0 2px #f87171}}
 .pm-selected{{background:#e2e8f0;color:#0f172a}}
 .pm-excluded{{background:#1e293b;color:#334155;opacity:.35}}
+.pm-hit-excluded{{background:linear-gradient(135deg,#dc2626 50%,#475569 50%);color:#fff;box-shadow:0 0 0 2px #f87171;opacity:.75}}
 .pred-row td{{background:#0c1420;border-bottom:2px solid #1e293b}}
 /* ── COMPARE BANNER ── */
 .compare-banner{{display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap}}
@@ -536,9 +537,10 @@ function renderTable(id, D) {{
       const isHit = hitSet.has(n);
       const isBad = badSet.has(n);
       let cls = 'pred-mini';
-      if (isHit)      cls += ' pm-hit';
-      else if (isBad) cls += ' pm-excluded';
-      else            cls += ' pm-selected';
+      if (isHit && isBad) cls += ' pm-hit-excluded';
+      else if (isHit)     cls += ' pm-hit';
+      else if (isBad)     cls += ' pm-excluded';
+      else                cls += ' pm-selected';
       return `<span class="${{cls}}">${{n}}</span>`;
     }}).join('');
     el.innerHTML += `
