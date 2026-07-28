@@ -427,7 +427,7 @@ function selSeed(seed) {{
   document.getElementById('modalTitle').textContent = 'Seed #' + seed + ' — ' + DRAWS.length + ' draws (K=' + K + ')';
 
   const htmlParts = [];
-  DRAWS.forEach(row => {{
+  [...DRAWS].reverse().forEach(row => {{
     const rngSeed = ((seed * 10000000 + row.s) >>> 0);
     const picks = seededSample(mulberry32(rngSeed), 43, K);
     const actualSet = new Set(row.a);
