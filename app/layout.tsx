@@ -6,33 +6,55 @@ export const metadata: Metadata = {
   description: "Latest Japan Loto 6 draw results and history",
 };
 
-const NAV_GROUPS = [
+type NavItem =
+  | { type?: "link"; href: string; icon: string; label: string }
+  | { type: "divider" }
+  | { type: "label"; label: string };
+
+const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: "Data",
     items: [
-      { href: "/",         icon: "🏠", label: "Latest Draw" },
-      { href: "/history",  icon: "📋", label: "History" },
-      { href: "/numbers",  icon: "🔢", label: "Numbers" },
+      { href: "/",        icon: "🏠", label: "Latest Draw" },
+      { href: "/history", icon: "📋", label: "History" },
+      { href: "/numbers", icon: "🔢", label: "Numbers" },
     ],
   },
   {
     label: "Predict",
     items: [
-      { href: "/predictions",        icon: "🎯", label: "Predictions" },
-      { href: "/backtest.html",      icon: "📊", label: "Backtest" },
-      { href: "/combo_evo.html",     icon: "🧬", label: "Combo Evo" },
-      { href: "/overdue.html",        icon: "⏳", label: "Overdue" },
-      { href: "/miss_analysis.html",  icon: "❌", label: "Miss Analysis" },
-      { href: "/state_machine.html",  icon: "🔄", label: "State Machine" },
+      { type: "label", label: "Prediction Tools" },
+      { href: "/predictions",    icon: "🎯", label: "Predictions" },
+      { href: "/backtest.html",  icon: "📊", label: "Backtest" },
+      { href: "/combo_evo.html", icon: "🧬", label: "Combo Evo" },
+      { type: "divider" },
+      { type: "label", label: "Strategy" },
+      { href: "/overdue.html",         icon: "⏳", label: "Overdue" },
+      { href: "/state_machine.html",   icon: "🔄", label: "State Machine" },
+      { href: "/modular_cycle.html",   icon: "🔁", label: "Modular Cycle" },
+      { href: "/next_relation.html",   icon: "🔗", label: "Next Relation" },
+      { href: "/lstm_predict.html",    icon: "🧠", label: "LSTM Neural Net" },
+      { type: "divider" },
+      { type: "label", label: "N-Draw Avg" },
+      { href: "/avg_hub.html",         icon: "⬡", label: "All N-Draw Avg (2–43)" },
+      { type: "divider" },
+      { type: "label", label: "N-Draw Avg Shift" },
+      { href: "/avg_shift_hub.html",   icon: "⇄", label: "All N-Shift Avg (2–43)" },
+      { type: "divider" },
+      { type: "label", label: "Random Seed" },
+      { href: "/random_seed_backtest.html", icon: "🎲", label: "Random Seed (1–500)" },
     ],
   },
   {
     label: "Analyze",
     items: [
-      { href: "/special.html",          icon: "⭐", label: "Special" },
-      { href: "/consecutive.html",      icon: "🔗", label: "Consecutive" },
-      { href: "/position.html",     icon: "📍", label: "Position Freq" },
-      { href: "/pos_predict.html",  icon: "📊", label: "Pos 1–6 Predict" },
+      { type: "label", label: "Pattern Analysis" },
+      { href: "/special.html",     icon: "⭐", label: "Special" },
+      { href: "/consecutive.html", icon: "🔗", label: "Consecutive" },
+      { type: "divider" },
+      { type: "label", label: "Position" },
+      { href: "/position.html",    icon: "📍", label: "Position Freq" },
+      { href: "/pos_predict.html", icon: "📊", label: "Pos 1–6 Predict" },
     ],
   },
 ];
@@ -64,6 +86,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             border-radius:6px;color:#94a3b8;text-decoration:none;font-size:.82rem;
             white-space:nowrap;transition:.12s}
           .nav-dropdown a:hover{color:#f1f5f9;background:#1e293b}
+          .nav-dd-label{font-size:.68rem;font-weight:700;color:#475569;padding:6px 12px 2px;
+            text-transform:uppercase;letter-spacing:.06em}
+          .nav-divider{height:1px;background:#1e293b;margin:4px 0}
         `}</style>
       </head>
       <body className="min-h-screen bg-gray-950 text-gray-100" style={{ paddingTop: "52px" }}>
@@ -81,11 +106,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   {group.label} <span className="nav-arrow">▼</span>
                 </div>
                 <div className="nav-dropdown">
-                  {group.items.map(item => (
-                    <a key={item.href} href={item.href}>
-                      {item.icon} {item.label}
-                    </a>
-                  ))}
+                  {group.items.map((item, i) => {
+                    if (item.type === "divider") return <div key={i} className="nav-divider" />;
+                    if (item.type === "label") return <div key={i} className="nav-dd-label">{item.label}</div>;
+                    return (
+                      <a key={item.href} href={item.href}>
+                        {item.icon} {item.label}
+                      </a>
+                    );
+                  })}
                 </div>
               </div>
             ))}
