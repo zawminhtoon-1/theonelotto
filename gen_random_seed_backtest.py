@@ -13,7 +13,7 @@ HTML_IN   = BASE + r"\public\backtest.html"
 HTML_OUT  = BASE + r"\public\random_seed_backtest.html"
 K_PICKS   = 13
 N_DRAWS   = 1000   # last N draws from DATA
-SEEDS     = range(1, 501)
+SEEDS     = range(1, 2001)
 LOTO6_MAX = 43
 
 # ── Load backtest DATA ─────────────────────────────────────────────────────────

@@ -42,7 +42,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { href: "/avg_shift_hub.html",   icon: "⇄", label: "All N-Shift Avg (2–43)" },
       { type: "divider" },
       { type: "label", label: "Random Seed" },
-      { href: "/random_seed_backtest.html", icon: "🎲", label: "Random Seed (1–500)" },
+      { href: "/random_seed_backtest.html", icon: "🎲", label: "Random Seed (1–2000)" },
     ],
   },
   {

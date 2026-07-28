@@ -81,7 +81,7 @@ NAV_HTML = """
         <a href="/avg_shift_hub.html">⇄ All N-Shift Avg (2–43)</a>
         <div class="nav-divider"></div>
         <div class="nav-dd-label">Random Seed</div>
-        <a href="/random_seed_backtest.html">🎲 Random Seed (1–500)</a>
+        <a href="/random_seed_backtest.html">🎲 Random Seed (1–2000)</a>
       </div></div>
     </div>
 
