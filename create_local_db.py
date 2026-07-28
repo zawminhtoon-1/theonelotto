@@ -3,10 +3,11 @@ create_local_db.py
 ------------------
 Creates a local SQLite DB with:
   1. loto6_combos  — all C(43,6) = 6,096,454 sorted combinations (master data)
-  2. predict_transactions — per draw: predicted combos + actual result, with OK/NG flag
+  2. predict_transactions — per draw: predicted combos + actual result, with predict1 flag
 
-OK  = this is the actual winning combination for that draw
-NG  = this combo was predicted but did not exactly match (use 'hits' for partial matches)
+predict1 = 1  → this combo was predicted/selected as a candidate for that draw
+                 (NOT a claim that it won — 'hits'/'bonus_hit' show how it
+                 actually performed once the real draw result is known)
 
 Usage:
   python create_local_db.py            # create schema + generate all 6M combos
@@ -44,13 +45,14 @@ CREATE TABLE IF NOT EXISTS predict_transactions (
     method_name  TEXT,
     hits         INTEGER DEFAULT 0,  -- how many of the 6 actual numbers are in this combo
     bonus_hit    INTEGER DEFAULT 0,  -- 1 if bonus number is in this combo
-    flag         TEXT NOT NULL,      -- 'OK' = actual winning combo, 'NG' = predicted but not exact match
+    predict1     INTEGER NOT NULL,   -- 1 = this combo was predicted/is a candidate for the draw
+                                     -- (win/loss is tracked via hits/bonus_hit, not this flag)
     created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-CREATE INDEX IF NOT EXISTS idx_tx_serial ON predict_transactions(draw_serial);
-CREATE INDEX IF NOT EXISTS idx_tx_combo  ON predict_transactions(combo_id);
-CREATE INDEX IF NOT EXISTS idx_tx_flag   ON predict_transactions(flag);
-CREATE INDEX IF NOT EXISTS idx_tx_hits   ON predict_transactions(hits);
+CREATE INDEX IF NOT EXISTS idx_tx_serial   ON predict_transactions(draw_serial);
+CREATE INDEX IF NOT EXISTS idx_tx_combo    ON predict_transactions(combo_id);
+CREATE INDEX IF NOT EXISTS idx_tx_predict1 ON predict_transactions(predict1);
+CREATE INDEX IF NOT EXISTS idx_tx_hits     ON predict_transactions(hits);
 """)
 conn.commit()
 print("Schema ready.")
@@ -157,12 +159,12 @@ for i, row in enumerate(DATA):
     bonus   = row['b']
     actual_set = set(actual6)
 
-    # Insert actual winning combo as OK
+    # Insert actual winning combo as predict1=1
     actual_id = get_combo_id(actual6)
     if actual_id:
-        tx_batch.append((serial, actual_id, 'actual', 6, 1 if bonus in actual6 else 0, 'OK'))
+        tx_batch.append((serial, actual_id, 'actual', 6, 1 if bonus in actual6 else 0, 1))
 
-    # Insert each method's first 6-combo prediction as NG (or OK if exact match)
+    # Insert each method's first 6-combo prediction as predict1=0 (or 1 if exact match)
     for mi, pred in enumerate(row['p']):
         picks = pred[0]  # list of predicted numbers
         method = METHODS[mi] if mi < len(METHODS) else f'M{mi}'
@@ -170,14 +172,14 @@ for i, row in enumerate(DATA):
         combo6 = sorted(picks[:6])
         hits   = len(set(combo6) & actual_set)
         bh     = int(bonus in combo6)
-        flag   = 'OK' if hits == 6 else 'NG'
+        predict1 = 1 if hits == 6 else 0
         cid    = get_combo_id(combo6)
         if cid:
-            tx_batch.append((serial, cid, method, hits, bh, flag))
+            tx_batch.append((serial, cid, method, hits, bh, predict1))
 
         if len(tx_batch) >= BATCH:
             cur.executemany(
-                "INSERT INTO predict_transactions(draw_serial,combo_id,method_name,hits,bonus_hit,flag) VALUES(?,?,?,?,?,?)",
+                "INSERT INTO predict_transactions(draw_serial,combo_id,method_name,hits,bonus_hit,predict1) VALUES(?,?,?,?,?,?)",
                 tx_batch
             )
             conn.commit()
@@ -188,7 +190,7 @@ for i, row in enumerate(DATA):
 
 if tx_batch:
     cur.executemany(
-        "INSERT INTO predict_transactions(draw_serial,combo_id,method_name,hits,bonus_hit,flag) VALUES(?,?,?,?,?,?)",
+        "INSERT INTO predict_transactions(draw_serial,combo_id,method_name,hits,bonus_hit,predict1) VALUES(?,?,?,?,?,?)",
         tx_batch
     )
     conn.commit()
