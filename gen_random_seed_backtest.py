@@ -1,9 +1,9 @@
 """
 gen_random_seed_backtest.py
 ---------------------------
-For each seed 1-100, generate 15 random picks (seeded RNG) for each of
+For each seed 1-3000, generate 13 random picks (seeded RNG) for each of
 the last 1000 draws in backtest.html, compare against actual results.
-Output: public/random_seed_backtest.html — sortable table ranking all 100 seeds.
+Output: public/random_seed_backtest.html — sortable table ranking all 3000 seeds.
 """
 import json, re, random, math
 from collections import defaultdict
@@ -11,9 +11,9 @@ from collections import defaultdict
 BASE      = r"C:\Users\Zaw Min Htoon\source\repos\theonelotto"
 HTML_IN   = BASE + r"\public\backtest.html"
 HTML_OUT  = BASE + r"\public\random_seed_backtest.html"
-K_PICKS   = 17
+K_PICKS   = 13
 N_DRAWS   = 1000   # last N draws from DATA
-SEEDS     = range(1, 2001)
+SEEDS     = range(1, 3001)
 LOTO6_MAX = 43
 
 # ── Load backtest DATA ─────────────────────────────────────────────────────────
@@ -255,7 +255,7 @@ tbody td.tr{{text-align:right}}
         <a href="/avg_shift_hub.html">⇄ All N-Shift Avg (2–43)</a>
         <div class="nav-divider"></div>
         <div class="nav-dd-label">Random Seed</div>
-        <a href="/random_seed_backtest.html" class="active">🎲 Random Seed (1–2000)</a>
+        <a href="/random_seed_backtest.html" class="active">🎲 Random Seed (1–3000)</a>
       </div></div>
     </div>
     <div class="nav-group">
@@ -275,7 +275,7 @@ tbody td.tr{{text-align:right}}
 
 <div class="wrap">
   <h1>🎲 Random Seed Backtest</h1>
-  <p class="subtitle">Seeds 1–500 · {K_PICKS} picks · last {N_DRAWS} draws ({DATA[0]['s']}–{DATA[-1]['s']}) · random baseline ≈ {BASELINE:.3f} avg hits</p>
+  <p class="subtitle">Seeds {SEEDS.start}–{SEEDS.stop - 1} · {K_PICKS} picks · last {N_DRAWS} draws ({DATA[0]['s']}–{DATA[-1]['s']}) · random baseline ≈ {BASELINE:.3f} avg hits</p>
 
   <div class="stats-row">
     <div class="stat-card">
