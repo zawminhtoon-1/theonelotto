@@ -11,7 +11,7 @@ from collections import defaultdict
 BASE      = r"C:\Users\Zaw Min Htoon\source\repos\theonelotto"
 HTML_IN   = BASE + r"\public\backtest.html"
 HTML_OUT  = BASE + r"\public\random_seed_backtest.html"
-K_PICKS   = 15
+K_PICKS   = 7
 N_DRAWS   = 1000   # last N draws from DATA
 SEEDS     = range(1, 501)
 LOTO6_MAX = 43
