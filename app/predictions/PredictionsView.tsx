@@ -22,7 +22,7 @@ export default function PredictionsView({
 }) {
   const [selected, setSelected] = useState("all");
   const [filterInput, setFilterInput] = useState("");
-  const [showK, setShowK] = useState<6 | 8 | 10>(6);
+  const [showK, setShowK] = useState<7 | 13>(7);
 
   const filterNum = (() => {
     const v = parseInt(filterInput, 10);
@@ -43,13 +43,16 @@ export default function PredictionsView({
     : 0;
 
   // Best combo per K (from backtest combination analysis)
+  // K=7: searched all 3/4/5-method combinations of the 16 models against the
+  // last 1000 draws (backtest.html's per-method historical picks). Winner:
+  // Markov chain + Random Forest + Naive Bayes, avg 1.0330 hits (+5.8% vs
+  // baseline 0.9767), 6 draws with 4+ hits.
+  // K=13: no entry — not searched, no panel shown for that pick count.
   const BEST_COMBOS: Record<number, { labels: string[]; name: string }> = {
-    6:  { labels: ["7","10","11","14"], name: "RF + kNN + ModCyc + NaiveBay" },
-    8:  { labels: ["4","5","7","10","11"], name: "FreqAll + Markov + RF + kNN + ModCyc" },
-    10: { labels: ["8","9","10","11"], name: "RL-Q + HMM + kNN + ModCyc" },
+    7: { labels: ["5", "7", "14"], name: "Markov + RF + NaiveBay" },
   };
   const bestComboConfig = BEST_COMBOS[showK];
-  const bestComboCombos = combos.filter(c => bestComboConfig.labels.includes(c.label));
+  const bestComboCombos = bestComboConfig ? combos.filter(c => bestComboConfig.labels.includes(c.label)) : [];
   const bestCount: Record<number, number> = {};
   for (const c of bestComboCombos) {
     for (const n of c.numbers) bestCount[n] = (bestCount[n] ?? 0) + 1;
@@ -57,6 +60,31 @@ export default function PredictionsView({
   const bestComboNums = Object.entries(bestCount)
     .sort((a, b) => +b[1] - +a[1])
     .slice(0, showK)
+    .map(([n]) => +n)
+    .sort((a, b) => a - b);
+
+  // Worst combo — fixed K=15, independent of the pick-count toggle above.
+  // Mirrors backtest.html's BC_ZERO "0-Hit Combo (Anti-Pick)" panel: searched
+  // all 3/4/5-method combinations for the one with the MOST 0-hit draws (not
+  // lowest avg hits) over the last 1000 draws. Winner: MA-43 + Exp-weighted +
+  // Random Forest + kNN + Apriori Assoc Rules — 91 zero-hit draws (9.1%),
+  // avg 2.0330 hits. Always shown regardless of the showK toggle.
+  const WORST_K = 15;
+  const WORST_COMBO = {
+    labels: ["2", "3", "7", "10", "12"],
+    name: "MA43 + ExpW + RF + kNN + Apriori",
+    zeroCount: 91,
+    zeroPct: 9.1,
+    avg: 2.033,
+  };
+  const worstComboCombos = combos.filter(c => WORST_COMBO.labels.includes(c.label));
+  const worstCount: Record<number, number> = {};
+  for (const c of worstComboCombos) {
+    for (const n of c.numbers) worstCount[n] = (worstCount[n] ?? 0) + 1;
+  }
+  const worstComboNums = Object.entries(worstCount)
+    .sort((a, b) => +b[1] - +a[1])
+    .slice(0, WORST_K)
     .map(([n]) => +n)
     .sort((a, b) => a - b);
 
@@ -92,7 +120,7 @@ export default function PredictionsView({
 
         {/* Pick count toggle */}
         <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
-          {([6, 8, 10] as const).map((k) => (
+          {([7, 13] as const).map((k) => (
             <button
               key={k}
               onClick={() => setShowK(k)}
@@ -158,7 +186,7 @@ export default function PredictionsView({
       </div>
 
       {/* Best Combo panel */}
-      {selected === "all" && (
+      {selected === "all" && bestComboConfig && (
         <div className="bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 rounded-2xl border border-yellow-200 dark:border-yellow-700/50 p-5 shadow-sm">
           <div className="flex items-start gap-4">
             <div className="w-8 h-8 rounded-full flex items-center justify-center text-yellow-900 dark:text-yellow-200 font-bold text-sm flex-shrink-0 bg-yellow-400 dark:bg-yellow-600">
@@ -177,6 +205,46 @@ export default function PredictionsView({
                     key={n}
                     className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-sm shadow-sm ring-2 ring-yellow-400/60"
                     style={{ background: ballColor(n) }}
+                  >
+                    {n}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Worst Combo panel — fixed K=15, always shown regardless of showK */}
+      {selected === "all" && (
+        <div className="bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-950/40 dark:to-rose-950/30 rounded-2xl border border-red-200 dark:border-red-800/60 p-5 shadow-sm">
+          <div className="flex items-start gap-4">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center text-red-900 dark:text-red-200 font-bold text-sm flex-shrink-0 bg-red-400 dark:bg-red-700">
+              ⚠
+            </div>
+            <div className="flex-1">
+              <p className="text-xs font-semibold text-red-700 dark:text-red-400 mb-0.5">
+                Worst Combo (Anti-Pick) for {WORST_K} picks · {WORST_COMBO.name}
+              </p>
+              <p className="text-[10px] text-red-600/70 dark:text-red-500/60 mb-3">
+                Most 0-hit draws across last 1,000 backtest draws — avoid these numbers
+              </p>
+              <div className="flex gap-4 flex-wrap mb-3 text-xs">
+                <span className="text-red-700 dark:text-red-400 font-semibold">
+                  {WORST_COMBO.zeroCount} <span className="font-normal text-red-500/70 dark:text-red-500/60">0-hit draws</span>
+                </span>
+                <span className="text-red-700 dark:text-red-400 font-semibold">
+                  {WORST_COMBO.zeroPct}% <span className="font-normal text-red-500/70 dark:text-red-500/60">0-hit rate</span>
+                </span>
+                <span className="text-red-700 dark:text-red-400 font-semibold">
+                  {WORST_COMBO.avg.toFixed(3)} <span className="font-normal text-red-500/70 dark:text-red-500/60">avg hits</span>
+                </span>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {worstComboNums.map(n => (
+                  <div
+                    key={n}
+                    className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shadow-sm ring-2 ring-red-400/60 bg-red-800 text-red-200"
                   >
                     {n}
                   </div>
