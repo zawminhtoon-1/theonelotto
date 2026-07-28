@@ -11,7 +11,7 @@ from collections import defaultdict
 BASE      = r"C:\Users\Zaw Min Htoon\source\repos\theonelotto"
 HTML_IN   = BASE + r"\public\backtest.html"
 HTML_OUT  = BASE + r"\public\random_seed_backtest.html"
-K_PICKS   = 13
+K_PICKS   = 17
 N_DRAWS   = 1000   # last N draws from DATA
 SEEDS     = range(1, 2001)
 LOTO6_MAX = 43
@@ -255,7 +255,7 @@ tbody td.tr{{text-align:right}}
         <a href="/avg_shift_hub.html">⇄ All N-Shift Avg (2–43)</a>
         <div class="nav-divider"></div>
         <div class="nav-dd-label">Random Seed</div>
-        <a href="/random_seed_backtest.html" class="active">🎲 Random Seed (1–500)</a>
+        <a href="/random_seed_backtest.html" class="active">🎲 Random Seed (1–2000)</a>
       </div></div>
     </div>
     <div class="nav-group">
