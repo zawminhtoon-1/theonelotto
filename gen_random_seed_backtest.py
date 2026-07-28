@@ -13,7 +13,7 @@ HTML_IN   = BASE + r"\public\backtest.html"
 HTML_OUT  = BASE + r"\public\random_seed_backtest.html"
 K_PICKS   = 15
 N_DRAWS   = 1000   # last N draws from DATA
-SEEDS     = range(1, 101)
+SEEDS     = range(1, 501)
 LOTO6_MAX = 43
 
 # ── Load backtest DATA ─────────────────────────────────────────────────────────
@@ -242,7 +242,7 @@ tbody td.tr{{text-align:right}}
         <a href="/avg_shift_hub.html">⇄ All N-Shift Avg (2–43)</a>
         <div class="nav-divider"></div>
         <div class="nav-dd-label">Random Seed</div>
-        <a href="/random_seed_backtest.html" class="active">🎲 Random Seed (1–100)</a>
+        <a href="/random_seed_backtest.html" class="active">🎲 Random Seed (1–500)</a>
       </div></div>
     </div>
     <div class="nav-group">
@@ -262,7 +262,7 @@ tbody td.tr{{text-align:right}}
 
 <div class="wrap">
   <h1>🎲 Random Seed Backtest</h1>
-  <p class="subtitle">Seeds 1–100 · {K_PICKS} picks · last {N_DRAWS} draws ({DATA[0]['s']}–{DATA[-1]['s']}) · random baseline ≈ {BASELINE:.3f} avg hits</p>
+  <p class="subtitle">Seeds 1–500 · {K_PICKS} picks · last {N_DRAWS} draws ({DATA[0]['s']}–{DATA[-1]['s']}) · random baseline ≈ {BASELINE:.3f} avg hits</p>
 
   <div class="stats-row">
     <div class="stat-card">
