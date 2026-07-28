@@ -271,8 +271,6 @@ h1{{font-size:1.4rem;font-weight:800;color:#f1f5f9;margin-bottom:4px}}
         <a href="/lstm_predict.html">&#129504; LSTM Neural Net</a>
         <div class="nav-divider"></div>
         <div class="nav-dd-label">N-Draw Avg</div>
-        <a href="/custom_avg.html">&#10133; 2-Draw Avg</a>
-        <a href="/custom_avg3.html">&#10133; 3-Draw Avg</a>
         <a href="/avg_hub.html">&#11835; All N-Draw Avg (2&#8211;43)</a>
       </div></div>
     </div>
@@ -517,8 +515,6 @@ h1{{font-size:1.4rem;font-weight:800;color:#f1f5f9;margin-bottom:4px}}
         <a href="/lstm_predict.html">&#129504; LSTM Neural Net</a>
         <div class="nav-divider"></div>
         <div class="nav-dd-label">N-Draw Avg</div>
-        <a href="/custom_avg.html">&#10133; 2-Draw Avg</a>
-        <a href="/custom_avg3.html">&#10133; 3-Draw Avg</a>
         <a href="/avg_hub.html" class="active">&#11835; All N-Draw Avg (2&#8211;43)</a>
       </div></div>
     </div>
@@ -567,8 +563,7 @@ var sortCol = 'n', sortAsc = true;
 document.getElementById('nextS').textContent = H.nextSerial;
 
 function pageUrl(n) {{
-  if (n === 2) return '/custom_avg.html';
-  if (n === 3) return '/custom_avg3.html';
+  if (n === 2 || n === 3) return null;  // no detail page for N=2/N=3 (removed)
   return '/custom_avg' + n + '.html';
 }}
 
@@ -583,9 +578,12 @@ function render() {{
   sorted.forEach(function(r) {{
     var liftCls = r.liftPct > 0 ? 'lift-pos' : r.liftPct < 0 ? 'lift-neg' : 'lift-zero';
     var predStr = r.pred.join(', ');
+    var url = pageUrl(r.n);
+    var nCell = url ? ('<a class="n-link" href="' + url + '">' + r.n + '-Draw</a>')
+                     : ('<span class="n-link" style="cursor:default;text-decoration:none">' + r.n + '-Draw</span>');
     tb.innerHTML +=
       '<tr>' +
-      '<td><a class="n-link" href="' + pageUrl(r.n) + '">' + r.n + '-Draw</a></td>' +
+      '<td>' + nCell + '</td>' +
       '<td><span class="pred-pill">' + predStr + '</span></td>' +
       '<td>' + r.nPicks + '</td>' +
       '<td><span class="badge-6">' + r.cnt6plus + '</span></td>' +
