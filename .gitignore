@@ -21,3 +21,7 @@ yarn-error.log*
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local SQLite DB
+*.db
+*.sqlite
