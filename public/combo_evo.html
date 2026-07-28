@@ -109,6 +109,10 @@
 
 
 
+
+
+
+
 :root {
   --bg:#0f172a; --surface:#1e293b; --surface2:#293548;
   --border:#334155; --text:#e2e8f0; --muted:#94a3b8;
@@ -249,6 +253,8 @@ tbody td { padding:10px 14px; font-size:.82rem; }
 
 
 
+
+
 <nav class="site-nav">
   <a class="nav-logo" href="/">🎱 The<span>One</span>Lotto</a>
   <div class="nav-groups">
@@ -287,6 +293,9 @@ tbody td { padding:10px 14px; font-size:.82rem; }
         <div class="nav-divider"></div>
         <div class="nav-dd-label">N-Draw Avg Shift</div>
         <a href="/avg_shift_hub.html">⇄ All N-Shift Avg (2–43)</a>
+        <div class="nav-divider"></div>
+        <div class="nav-dd-label">Random Seed</div>
+        <a href="/random_seed_backtest.html">🎲 Random Seed (1–100)</a>
       </div></div>
     </div>
 
@@ -306,6 +315,8 @@ tbody td { padding:10px 14px; font-size:.82rem; }
 
   </div>
 </nav>
+
+
 
 
 
@@ -826,6 +837,40 @@ function rolling(arr, w) {
 
 init();
 </script>
+
+<script>
+(function(){
+  var path = window.location.pathname + window.location.hash;
+  document.querySelectorAll('.nav-dropdown a').forEach(function(a){
+    var href = a.getAttribute('href');
+    if(!href) return;
+    var hPath = href.split('#')[0];
+    var hHash = href.includes('#') ? href : '';
+    if(href === path) { a.classList.add('active'); return; }
+    if(hPath && hPath !== '/' && path.startsWith(hPath) && !href.includes('#')) {
+      a.classList.add('active');
+    }
+  });
+})();
+</script>
+
+
+<script>
+(function(){
+  var path = window.location.pathname + window.location.hash;
+  document.querySelectorAll('.nav-dropdown a').forEach(function(a){
+    var href = a.getAttribute('href');
+    if(!href) return;
+    var hPath = href.split('#')[0];
+    var hHash = href.includes('#') ? href : '';
+    if(href === path) { a.classList.add('active'); return; }
+    if(hPath && hPath !== '/' && path.startsWith(hPath) && !href.includes('#')) {
+      a.classList.add('active');
+    }
+  });
+})();
+</script>
+
 
 <script>
 (function(){

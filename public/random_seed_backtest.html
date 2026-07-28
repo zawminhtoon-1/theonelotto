@@ -1,0 +1,1368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Random Seed Backtest — Loto 6</title>
+<style>
+/* ====== SHARED FIXED NAV (dropdown) ====== */
+.site-nav{position:fixed;top:0;left:0;right:0;height:52px;background:#0a0f1e;
+  border-bottom:1px solid #1e293b;display:flex;align-items:center;padding:0 20px;
+  gap:0;z-index:9999;box-shadow:0 2px 16px rgba(0,0,0,.6)}
+.site-nav .nav-logo{font-size:1rem;font-weight:800;color:#f1f5f9;text-decoration:none;
+  white-space:nowrap;margin-right:24px;flex-shrink:0;letter-spacing:-.01em}
+.site-nav .nav-logo span{color:#38bdf8}
+.nav-groups{display:flex;gap:4px;align-items:center}
+.nav-group{position:relative}
+.nav-group-btn{display:flex;align-items:center;gap:5px;padding:7px 14px;border-radius:7px;
+  cursor:pointer;font-size:.82rem;font-weight:600;color:#94a3b8;
+  border:1px solid transparent;transition:.15s;white-space:nowrap;user-select:none}
+.nav-group-btn:hover,.nav-group:hover .nav-group-btn{color:#f1f5f9;background:#1e293b;border-color:#334155}
+.nav-group-btn .arrow{font-size:.6rem;opacity:.6;transition:transform .2s}
+.nav-group:hover .nav-group-btn .arrow{transform:rotate(180deg)}
+.nav-dropdown{display:none;position:absolute;top:100%;left:0;
+  background:transparent;padding-top:6px;z-index:10000;min-width:170px}
+.nav-dropdown-inner{background:#0d1526;border:1px solid #1e293b;border-radius:10px;
+  padding:6px;box-shadow:0 12px 32px rgba(0,0,0,.7)}
+.nav-group:hover .nav-dropdown{display:block}
+.nav-dropdown a{display:flex;align-items:center;gap:8px;padding:8px 12px;
+  border-radius:6px;color:#94a3b8;text-decoration:none;font-size:.82rem;
+  white-space:nowrap;transition:.12s}
+.nav-dropdown a:hover{color:#f1f5f9;background:#1e293b}
+.nav-dropdown a.active{color:#38bdf8;background:#0c2340}
+.nav-dd-label{font-size:.68rem;font-weight:700;color:#475569;padding:6px 12px 2px;
+  text-transform:uppercase;letter-spacing:.06em}
+.nav-divider{height:1px;background:#1e293b;margin:4px 0}
+
+/* ========================================= */
+
+
+
+
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0f1e;color:#e2e8f0;font-family:system-ui,sans-serif;padding-top:60px;min-height:100vh}
+.wrap{max-width:1100px;margin:0 auto;padding:24px 16px}
+h1{font-size:1.4rem;font-weight:700;color:#f1f5f9;margin-bottom:4px}
+.subtitle{font-size:.85rem;color:#64748b;margin-bottom:20px}
+
+.stats-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px}
+.stat-card{background:#0d1526;border:1px solid #1e293b;border-radius:10px;padding:14px 18px;flex:1;min-width:140px}
+.stat-card .lbl{font-size:.72rem;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.stat-card .val{font-size:1.5rem;font-weight:700;color:#f1f5f9}
+.stat-card .sub{font-size:.78rem;color:#94a3b8;margin-top:2px}
+
+.controls{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.controls input{background:#0d1526;border:1px solid #334155;border-radius:7px;padding:7px 12px;
+  color:#e2e8f0;font-size:.83rem;width:200px}
+.controls select{background:#0d1526;border:1px solid #334155;border-radius:7px;padding:7px 12px;
+  color:#e2e8f0;font-size:.83rem}
+
+.tbl-wrap{overflow-x:auto;border-radius:10px;border:1px solid #1e293b}
+table{width:100%;border-collapse:collapse;font-size:.83rem}
+thead th{background:#0d1526;padding:10px 14px;text-align:right;color:#94a3b8;
+  font-weight:600;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;
+  cursor:pointer;user-select:none;white-space:nowrap;border-bottom:1px solid #1e293b}
+thead th:hover{color:#f1f5f9}
+thead th.tc{text-align:center}
+tbody tr{border-bottom:1px solid #1e293b;cursor:pointer;transition:.12s}
+tbody tr:hover{background:#111827}
+tbody tr.selected{background:#0c2340 !important;outline:1px solid #38bdf8}
+tbody td{padding:9px 14px;text-align:right;color:#cbd5e1}
+tbody td.tc{text-align:center}
+tbody td.tr{text-align:right}
+.rank1 td{color:#fbbf24}
+
+.detail{background:#0d1526;border:1px solid #1e293b;border-radius:10px;padding:18px;margin-top:24px;display:none}
+.detail h2{font-size:1rem;font-weight:600;color:#f1f5f9;margin-bottom:12px}
+.detail table{font-size:.8rem}
+.detail thead th{font-size:.72rem}
+
+.next-pred{background:#0d1526;border:1px solid #f59e0b55;border-radius:10px;padding:16px 18px;margin-top:16px}
+.next-pred .lbl{font-size:.72rem;color:#f59e0b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.balls{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.ball{width:34px;height:34px;border-radius:50%;background:#1e3a5f;display:flex;align-items:center;
+  justify-content:center;font-weight:700;font-size:.85rem;color:#93c5fd;border:1px solid #2563eb55}
+
+.footer{margin-top:28px;font-size:.78rem;color:#475569;padding-bottom:20px}
+</style>
+</head>
+<body>
+
+
+
+<nav class="site-nav">
+  <a class="nav-logo" href="/">🎱 The<span>One</span>Lotto</a>
+  <div class="nav-groups">
+
+    <!-- Data -->
+    <div class="nav-group">
+      <div class="nav-group-btn">Data <span class="arrow">▼</span></div>
+      <div class="nav-dropdown"><div class="nav-dropdown-inner">
+        <div class="nav-dd-label">Results</div>
+        <a href="/">🏠 Latest Draw</a>
+        <a href="/history">📋 History</a>
+        <a href="/numbers">🔢 Numbers</a>
+      </div></div>
+    </div>
+
+    <!-- Predict -->
+    <div class="nav-group">
+      <div class="nav-group-btn">Predict <span class="arrow">▼</span></div>
+      <div class="nav-dropdown"><div class="nav-dropdown-inner">
+        <div class="nav-dd-label">Prediction Tools</div>
+        <a href="/predictions">🎯 Predictions</a>
+        <a href="/backtest.html">📊 Backtest</a>
+        <a href="/combo_evo.html">🧬 Combo Evo</a>
+        <div class="nav-divider"></div>
+        <div class="nav-dd-label">Strategy</div>
+        <a href="/overdue.html">⏳ Overdue</a>
+        <a href="/state_machine.html">🔄 State Machine</a>
+        <a href="/modular_cycle.html">🔁 Modular Cycle</a>
+        <a href="/next_relation.html">🔗 Next Relation</a>
+        <a href="/lstm_predict.html">🧠 LSTM Neural Net</a>
+        <div class="nav-divider"></div>
+        <div class="nav-dd-label">N-Draw Avg</div>
+        <a href="/custom_avg.html">➕ 2-Draw Avg</a>
+        <a href="/custom_avg3.html">➕ 3-Draw Avg</a>
+        <a href="/avg_hub.html">⬡ All N-Draw Avg (2–43)</a>
+        <div class="nav-divider"></div>
+        <div class="nav-dd-label">N-Draw Avg Shift</div>
+        <a href="/avg_shift_hub.html">⇄ All N-Shift Avg (2–43)</a>
+        <div class="nav-divider"></div>
+        <div class="nav-dd-label">Random Seed</div>
+        <a href="/random_seed_backtest.html">🎲 Random Seed (1–100)</a>
+      </div></div>
+    </div>
+
+    <!-- Analyze -->
+    <div class="nav-group">
+      <div class="nav-group-btn">Analyze <span class="arrow">▼</span></div>
+      <div class="nav-dropdown"><div class="nav-dropdown-inner">
+        <div class="nav-dd-label">Pattern Analysis</div>
+        <a href="/special.html">⭐ Special</a>
+        <a href="/consecutive.html">🔗 Consecutive</a>
+        <div class="nav-divider"></div>
+        <div class="nav-dd-label">Position</div>
+        <a href="/position.html">📍 Position Freq</a>
+        <a href="/pos_predict.html">📊 Pos 1–6 Predict</a>
+      </div></div>
+    </div>
+
+  </div>
+</nav>
+
+
+
+<div class="wrap">
+  <h1>🎲 Random Seed Backtest</h1>
+  <p class="subtitle">Seeds 1–100 · 15 picks · last 1000 draws (1124–2123) · random baseline ≈ 2.093 avg hits</p>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="lbl">Best seed</div>
+      <div class="val">#75</div>
+      <div class="sub">avg 2.1670 hits · +3.5% vs baseline</div>
+    </div>
+    <div class="stat-card">
+      <div class="lbl">Best 6-hit draws</div>
+      <div class="val">4</div>
+      <div class="sub">seed #5</div>
+    </div>
+    <div class="stat-card">
+      <div class="lbl">Baseline (pure chance)</div>
+      <div class="val">2.093</div>
+      <div class="sub">15 picks × 6 / 43</div>
+    </div>
+    <div class="stat-card">
+      <div class="lbl">Draws evaluated</div>
+      <div class="val">1000</div>
+      <div class="sub">serials 1124–2123</div>
+    </div>
+  </div>
+
+  <!-- Next-draw prediction from best seed -->
+  <div class="next-pred">
+    <div class="lbl">🏆 Best seed #75 — predicted picks for draw #2124</div>
+    <div class="balls">
+      <div class="ball">3</div><div class="ball">12</div><div class="ball">14</div><div class="ball">16</div><div class="ball">21</div><div class="ball">23</div><div class="ball">25</div><div class="ball">29</div><div class="ball">31</div><div class="ball">32</div><div class="ball">36</div><div class="ball">37</div><div class="ball">38</div><div class="ball">40</div><div class="ball">42</div>
+    </div>
+  </div>
+
+  <div class="controls" style="margin-top:20px">
+    <input id="filterInput" placeholder="Filter by seed number..." oninput="filterTable()">
+    <select id="sortSel" onchange="sortTable(this.value)">
+      <option value="rank">Sort: Rank (avg hits)</option>
+      <option value="seed">Sort: Seed</option>
+      <option value="hit6">Sort: 6-hit draws</option>
+      <option value="hit5">Sort: 5-hit draws</option>
+      <option value="hit4">Sort: 4-hit draws</option>
+      <option value="hit0">Sort: 0-hit draws ↑</option>
+      <option value="lift">Sort: Lift %</option>
+    </select>
+  </div>
+
+  <div class="tbl-wrap">
+    <table id="mainTable">
+      <thead>
+        <tr>
+          <th class="tc" onclick="sortTable('rank')">#</th>
+          <th class="tc" onclick="sortTable('seed')">Seed</th>
+          <th onclick="sortTable('rank')">Avg hits ▼</th>
+          <th onclick="sortTable('lift')">Lift %</th>
+          <th onclick="sortTable('hit6')">6-hits</th>
+          <th onclick="sortTable('hit5')">5-hits</th>
+          <th onclick="sortTable('hit4')">4-hits</th>
+          <th onclick="sortTable('hit0')">0-hits ↑</th>
+          <th onclick="sortTable('bonus')">Bonus hits</th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+<tr class="dr" onclick="selSeed(75)">
+  <td class="tc">1</td>
+  <td class="tc">75 <span style="background:#fef08a;color:#713f12;font-size:10px;padding:2px 6px;border-radius:4px;margin-left:4px;">BEST</span></td>
+  <td class="tr">2.1670</td>
+  <td class="tr" style="color:#22c55e">+3.5%</td>
+  <td class="tr">0</td>
+  <td class="tr">16</td>
+  <td class="tr">93</td>
+  <td class="tr">60</td>
+  <td class="tr">352</td>
+</tr><tr class="dr" onclick="selSeed(59)">
+  <td class="tc">2</td>
+  <td class="tc">59</td>
+  <td class="tr">2.1650</td>
+  <td class="tr" style="color:#22c55e">+3.4%</td>
+  <td class="tr">0</td>
+  <td class="tr">15</td>
+  <td class="tr">99</td>
+  <td class="tr">50</td>
+  <td class="tr">345</td>
+</tr><tr class="dr" onclick="selSeed(36)">
+  <td class="tc">3</td>
+  <td class="tc">36</td>
+  <td class="tr">2.1590</td>
+  <td class="tr" style="color:#22c55e">+3.1%</td>
+  <td class="tr">1</td>
+  <td class="tr">12</td>
+  <td class="tr">94</td>
+  <td class="tr">51</td>
+  <td class="tr">343</td>
+</tr><tr class="dr" onclick="selSeed(35)">
+  <td class="tc">4</td>
+  <td class="tc">35</td>
+  <td class="tr">2.1480</td>
+  <td class="tr" style="color:#22c55e">+2.6%</td>
+  <td class="tr">2</td>
+  <td class="tr">13</td>
+  <td class="tr">90</td>
+  <td class="tr">63</td>
+  <td class="tr">342</td>
+</tr><tr class="dr" onclick="selSeed(71)">
+  <td class="tc">5</td>
+  <td class="tc">71</td>
+  <td class="tr">2.1480</td>
+  <td class="tr" style="color:#22c55e">+2.6%</td>
+  <td class="tr">3</td>
+  <td class="tr">14</td>
+  <td class="tr">105</td>
+  <td class="tr">42</td>
+  <td class="tr">376</td>
+</tr><tr class="dr" onclick="selSeed(55)">
+  <td class="tc">6</td>
+  <td class="tc">55</td>
+  <td class="tr">2.1470</td>
+  <td class="tr" style="color:#22c55e">+2.6%</td>
+  <td class="tr">3</td>
+  <td class="tr">15</td>
+  <td class="tr">89</td>
+  <td class="tr">54</td>
+  <td class="tr">344</td>
+</tr><tr class="dr" onclick="selSeed(28)">
+  <td class="tc">7</td>
+  <td class="tc">28</td>
+  <td class="tr">2.1440</td>
+  <td class="tr" style="color:#22c55e">+2.4%</td>
+  <td class="tr">0</td>
+  <td class="tr">8</td>
+  <td class="tr">101</td>
+  <td class="tr">62</td>
+  <td class="tr">334</td>
+</tr><tr class="dr" onclick="selSeed(92)">
+  <td class="tc">8</td>
+  <td class="tc">92</td>
+  <td class="tr">2.1410</td>
+  <td class="tr" style="color:#22c55e">+2.3%</td>
+  <td class="tr">1</td>
+  <td class="tr">13</td>
+  <td class="tr">89</td>
+  <td class="tr">52</td>
+  <td class="tr">365</td>
+</tr><tr class="dr" onclick="selSeed(88)">
+  <td class="tc">9</td>
+  <td class="tc">88</td>
+  <td class="tr">2.1370</td>
+  <td class="tr" style="color:#22c55e">+2.1%</td>
+  <td class="tr">1</td>
+  <td class="tr">13</td>
+  <td class="tr">102</td>
+  <td class="tr">67</td>
+  <td class="tr">331</td>
+</tr><tr class="dr" onclick="selSeed(80)">
+  <td class="tc">10</td>
+  <td class="tc">80</td>
+  <td class="tr">2.1360</td>
+  <td class="tr" style="color:#22c55e">+2.0%</td>
+  <td class="tr">1</td>
+  <td class="tr">13</td>
+  <td class="tr">101</td>
+  <td class="tr">50</td>
+  <td class="tr">352</td>
+</tr><tr class="dr" onclick="selSeed(96)">
+  <td class="tc">11</td>
+  <td class="tc">96</td>
+  <td class="tr">2.1350</td>
+  <td class="tr" style="color:#22c55e">+2.0%</td>
+  <td class="tr">0</td>
+  <td class="tr">13</td>
+  <td class="tr">95</td>
+  <td class="tr">58</td>
+  <td class="tr">348</td>
+</tr><tr class="dr" onclick="selSeed(78)">
+  <td class="tc">12</td>
+  <td class="tc">78</td>
+  <td class="tr">2.1340</td>
+  <td class="tr" style="color:#22c55e">+2.0%</td>
+  <td class="tr">1</td>
+  <td class="tr">12</td>
+  <td class="tr">88</td>
+  <td class="tr">56</td>
+  <td class="tr">376</td>
+</tr><tr class="dr" onclick="selSeed(86)">
+  <td class="tc">13</td>
+  <td class="tc">86</td>
+  <td class="tr">2.1300</td>
+  <td class="tr" style="color:#22c55e">+1.8%</td>
+  <td class="tr">0</td>
+  <td class="tr">14</td>
+  <td class="tr">93</td>
+  <td class="tr">57</td>
+  <td class="tr">359</td>
+</tr><tr class="dr" onclick="selSeed(3)">
+  <td class="tc">14</td>
+  <td class="tc">3</td>
+  <td class="tr">2.1290</td>
+  <td class="tr" style="color:#22c55e">+1.7%</td>
+  <td class="tr">0</td>
+  <td class="tr">18</td>
+  <td class="tr">103</td>
+  <td class="tr">65</td>
+  <td class="tr">351</td>
+</tr><tr class="dr" onclick="selSeed(26)">
+  <td class="tc">15</td>
+  <td class="tc">26</td>
+  <td class="tr">2.1280</td>
+  <td class="tr" style="color:#22c55e">+1.7%</td>
+  <td class="tr">2</td>
+  <td class="tr">11</td>
+  <td class="tr">93</td>
+  <td class="tr">51</td>
+  <td class="tr">342</td>
+</tr><tr class="dr" onclick="selSeed(9)">
+  <td class="tc">16</td>
+  <td class="tc">9</td>
+  <td class="tr">2.1260</td>
+  <td class="tr" style="color:#22c55e">+1.6%</td>
+  <td class="tr">1</td>
+  <td class="tr">12</td>
+  <td class="tr">91</td>
+  <td class="tr">50</td>
+  <td class="tr">342</td>
+</tr><tr class="dr" onclick="selSeed(100)">
+  <td class="tc">17</td>
+  <td class="tc">100</td>
+  <td class="tr">2.1260</td>
+  <td class="tr" style="color:#22c55e">+1.6%</td>
+  <td class="tr">1</td>
+  <td class="tr">13</td>
+  <td class="tr">92</td>
+  <td class="tr">71</td>
+  <td class="tr">338</td>
+</tr><tr class="dr" onclick="selSeed(49)">
+  <td class="tc">18</td>
+  <td class="tc">49</td>
+  <td class="tr">2.1250</td>
+  <td class="tr" style="color:#22c55e">+1.5%</td>
+  <td class="tr">3</td>
+  <td class="tr">18</td>
+  <td class="tr">82</td>
+  <td class="tr">64</td>
+  <td class="tr">349</td>
+</tr><tr class="dr" onclick="selSeed(41)">
+  <td class="tc">19</td>
+  <td class="tc">41</td>
+  <td class="tr">2.1240</td>
+  <td class="tr" style="color:#22c55e">+1.5%</td>
+  <td class="tr">0</td>
+  <td class="tr">14</td>
+  <td class="tr">93</td>
+  <td class="tr">46</td>
+  <td class="tr">347</td>
+</tr><tr class="dr" onclick="selSeed(70)">
+  <td class="tc">20</td>
+  <td class="tc">70</td>
+  <td class="tr">2.1230</td>
+  <td class="tr" style="color:#22c55e">+1.4%</td>
+  <td class="tr">1</td>
+  <td class="tr">19</td>
+  <td class="tr">89</td>
+  <td class="tr">62</td>
+  <td class="tr">335</td>
+</tr><tr class="dr" onclick="selSeed(21)">
+  <td class="tc">21</td>
+  <td class="tc">21</td>
+  <td class="tr">2.1200</td>
+  <td class="tr" style="color:#22c55e">+1.3%</td>
+  <td class="tr">2</td>
+  <td class="tr">9</td>
+  <td class="tr">88</td>
+  <td class="tr">59</td>
+  <td class="tr">344</td>
+</tr><tr class="dr" onclick="selSeed(66)">
+  <td class="tc">22</td>
+  <td class="tc">66</td>
+  <td class="tr">2.1200</td>
+  <td class="tr" style="color:#22c55e">+1.3%</td>
+  <td class="tr">1</td>
+  <td class="tr">14</td>
+  <td class="tr">99</td>
+  <td class="tr">57</td>
+  <td class="tr">362</td>
+</tr><tr class="dr" onclick="selSeed(2)">
+  <td class="tc">23</td>
+  <td class="tc">2</td>
+  <td class="tr">2.1190</td>
+  <td class="tr" style="color:#22c55e">+1.2%</td>
+  <td class="tr">0</td>
+  <td class="tr">25</td>
+  <td class="tr">76</td>
+  <td class="tr">68</td>
+  <td class="tr">335</td>
+</tr><tr class="dr" onclick="selSeed(61)">
+  <td class="tc">24</td>
+  <td class="tc">61</td>
+  <td class="tr">2.1180</td>
+  <td class="tr" style="color:#22c55e">+1.2%</td>
+  <td class="tr">1</td>
+  <td class="tr">16</td>
+  <td class="tr">87</td>
+  <td class="tr">62</td>
+  <td class="tr">335</td>
+</tr><tr class="dr" onclick="selSeed(20)">
+  <td class="tc">25</td>
+  <td class="tc">20</td>
+  <td class="tr">2.1170</td>
+  <td class="tr" style="color:#22c55e">+1.1%</td>
+  <td class="tr">2</td>
+  <td class="tr">13</td>
+  <td class="tr">98</td>
+  <td class="tr">62</td>
+  <td class="tr">324</td>
+</tr><tr class="dr" onclick="selSeed(94)">
+  <td class="tc">26</td>
+  <td class="tc">94</td>
+  <td class="tr">2.1150</td>
+  <td class="tr" style="color:#22c55e">+1.1%</td>
+  <td class="tr">2</td>
+  <td class="tr">12</td>
+  <td class="tr">87</td>
+  <td class="tr">57</td>
+  <td class="tr">345</td>
+</tr><tr class="dr" onclick="selSeed(8)">
+  <td class="tc">27</td>
+  <td class="tc">8</td>
+  <td class="tr">2.1140</td>
+  <td class="tr" style="color:#22c55e">+1.0%</td>
+  <td class="tr">0</td>
+  <td class="tr">13</td>
+  <td class="tr">90</td>
+  <td class="tr">63</td>
+  <td class="tr">347</td>
+</tr><tr class="dr" onclick="selSeed(13)">
+  <td class="tc">28</td>
+  <td class="tc">13</td>
+  <td class="tr">2.1140</td>
+  <td class="tr" style="color:#22c55e">+1.0%</td>
+  <td class="tr">1</td>
+  <td class="tr">10</td>
+  <td class="tr">76</td>
+  <td class="tr">64</td>
+  <td class="tr">352</td>
+</tr><tr class="dr" onclick="selSeed(53)">
+  <td class="tc">29</td>
+  <td class="tc">53</td>
+  <td class="tr">2.1130</td>
+  <td class="tr" style="color:#22c55e">+0.9%</td>
+  <td class="tr">0</td>
+  <td class="tr">12</td>
+  <td class="tr">88</td>
+  <td class="tr">62</td>
+  <td class="tr">334</td>
+</tr><tr class="dr" onclick="selSeed(51)">
+  <td class="tc">30</td>
+  <td class="tc">51</td>
+  <td class="tr">2.1120</td>
+  <td class="tr" style="color:#22c55e">+0.9%</td>
+  <td class="tr">1</td>
+  <td class="tr">15</td>
+  <td class="tr">94</td>
+  <td class="tr">61</td>
+  <td class="tr">334</td>
+</tr><tr class="dr" onclick="selSeed(72)">
+  <td class="tc">31</td>
+  <td class="tc">72</td>
+  <td class="tr">2.1120</td>
+  <td class="tr" style="color:#22c55e">+0.9%</td>
+  <td class="tr">2</td>
+  <td class="tr">13</td>
+  <td class="tr">91</td>
+  <td class="tr">65</td>
+  <td class="tr">368</td>
+</tr><tr class="dr" onclick="selSeed(7)">
+  <td class="tc">32</td>
+  <td class="tc">7</td>
+  <td class="tr">2.1110</td>
+  <td class="tr" style="color:#22c55e">+0.9%</td>
+  <td class="tr">2</td>
+  <td class="tr">13</td>
+  <td class="tr">77</td>
+  <td class="tr">60</td>
+  <td class="tr">354</td>
+</tr><tr class="dr" onclick="selSeed(54)">
+  <td class="tc">33</td>
+  <td class="tc">54</td>
+  <td class="tr">2.1100</td>
+  <td class="tr" style="color:#22c55e">+0.8%</td>
+  <td class="tr">0</td>
+  <td class="tr">11</td>
+  <td class="tr">94</td>
+  <td class="tr">69</td>
+  <td class="tr">356</td>
+</tr><tr class="dr" onclick="selSeed(91)">
+  <td class="tc">34</td>
+  <td class="tc">91</td>
+  <td class="tr">2.1080</td>
+  <td class="tr" style="color:#22c55e">+0.7%</td>
+  <td class="tr">0</td>
+  <td class="tr">10</td>
+  <td class="tr">79</td>
+  <td class="tr">64</td>
+  <td class="tr">338</td>
+</tr><tr class="dr" onclick="selSeed(98)">
+  <td class="tc">35</td>
+  <td class="tc">98</td>
+  <td class="tr">2.1080</td>
+  <td class="tr" style="color:#22c55e">+0.7%</td>
+  <td class="tr">3</td>
+  <td class="tr">10</td>
+  <td class="tr">81</td>
+  <td class="tr">51</td>
+  <td class="tr">370</td>
+</tr><tr class="dr" onclick="selSeed(11)">
+  <td class="tc">36</td>
+  <td class="tc">11</td>
+  <td class="tr">2.1050</td>
+  <td class="tr" style="color:#22c55e">+0.6%</td>
+  <td class="tr">2</td>
+  <td class="tr">18</td>
+  <td class="tr">77</td>
+  <td class="tr">59</td>
+  <td class="tr">350</td>
+</tr><tr class="dr" onclick="selSeed(50)">
+  <td class="tc">37</td>
+  <td class="tc">50</td>
+  <td class="tr">2.1030</td>
+  <td class="tr" style="color:#22c55e">+0.5%</td>
+  <td class="tr">0</td>
+  <td class="tr">8</td>
+  <td class="tr">79</td>
+  <td class="tr">57</td>
+  <td class="tr">371</td>
+</tr><tr class="dr" onclick="selSeed(5)">
+  <td class="tc">38</td>
+  <td class="tc">5</td>
+  <td class="tr">2.1020</td>
+  <td class="tr" style="color:#22c55e">+0.4%</td>
+  <td class="tr">4</td>
+  <td class="tr">10</td>
+  <td class="tr">89</td>
+  <td class="tr">63</td>
+  <td class="tr">345</td>
+</tr><tr class="dr" onclick="selSeed(65)">
+  <td class="tc">39</td>
+  <td class="tc">65</td>
+  <td class="tr">2.1010</td>
+  <td class="tr" style="color:#22c55e">+0.4%</td>
+  <td class="tr">0</td>
+  <td class="tr">10</td>
+  <td class="tr">81</td>
+  <td class="tr">62</td>
+  <td class="tr">353</td>
+</tr><tr class="dr" onclick="selSeed(81)">
+  <td class="tc">40</td>
+  <td class="tc">81</td>
+  <td class="tr">2.1010</td>
+  <td class="tr" style="color:#22c55e">+0.4%</td>
+  <td class="tr">0</td>
+  <td class="tr">11</td>
+  <td class="tr">80</td>
+  <td class="tr">50</td>
+  <td class="tr">326</td>
+</tr><tr class="dr" onclick="selSeed(23)">
+  <td class="tc">41</td>
+  <td class="tc">23</td>
+  <td class="tr">2.0990</td>
+  <td class="tr" style="color:#22c55e">+0.3%</td>
+  <td class="tr">0</td>
+  <td class="tr">11</td>
+  <td class="tr">84</td>
+  <td class="tr">59</td>
+  <td class="tr">337</td>
+</tr><tr class="dr" onclick="selSeed(69)">
+  <td class="tc">42</td>
+  <td class="tc">69</td>
+  <td class="tr">2.0990</td>
+  <td class="tr" style="color:#22c55e">+0.3%</td>
+  <td class="tr">4</td>
+  <td class="tr">11</td>
+  <td class="tr">96</td>
+  <td class="tr">73</td>
+  <td class="tr">345</td>
+</tr><tr class="dr" onclick="selSeed(14)">
+  <td class="tc">43</td>
+  <td class="tc">14</td>
+  <td class="tr">2.0980</td>
+  <td class="tr" style="color:#22c55e">+0.2%</td>
+  <td class="tr">0</td>
+  <td class="tr">18</td>
+  <td class="tr">77</td>
+  <td class="tr">60</td>
+  <td class="tr">387</td>
+</tr><tr class="dr" onclick="selSeed(18)">
+  <td class="tc">44</td>
+  <td class="tc">18</td>
+  <td class="tr">2.0980</td>
+  <td class="tr" style="color:#22c55e">+0.2%</td>
+  <td class="tr">1</td>
+  <td class="tr">12</td>
+  <td class="tr">98</td>
+  <td class="tr">65</td>
+  <td class="tr">351</td>
+</tr><tr class="dr" onclick="selSeed(47)">
+  <td class="tc">45</td>
+  <td class="tc">47</td>
+  <td class="tr">2.0960</td>
+  <td class="tr" style="color:#22c55e">+0.1%</td>
+  <td class="tr">2</td>
+  <td class="tr">21</td>
+  <td class="tr">83</td>
+  <td class="tr">62</td>
+  <td class="tr">337</td>
+</tr><tr class="dr" onclick="selSeed(79)">
+  <td class="tc">46</td>
+  <td class="tc">79</td>
+  <td class="tr">2.0960</td>
+  <td class="tr" style="color:#22c55e">+0.1%</td>
+  <td class="tr">1</td>
+  <td class="tr">15</td>
+  <td class="tr">78</td>
+  <td class="tr">63</td>
+  <td class="tr">331</td>
+</tr><tr class="dr" onclick="selSeed(25)">
+  <td class="tc">47</td>
+  <td class="tc">25</td>
+  <td class="tr">2.0950</td>
+  <td class="tr" style="color:#22c55e">+0.1%</td>
+  <td class="tr">2</td>
+  <td class="tr">17</td>
+  <td class="tr">78</td>
+  <td class="tr">62</td>
+  <td class="tr">334</td>
+</tr><tr class="dr" onclick="selSeed(29)">
+  <td class="tc">48</td>
+  <td class="tc">29</td>
+  <td class="tr">2.0950</td>
+  <td class="tr" style="color:#22c55e">+0.1%</td>
+  <td class="tr">0</td>
+  <td class="tr">11</td>
+  <td class="tr">95</td>
+  <td class="tr">64</td>
+  <td class="tr">358</td>
+</tr><tr class="dr" onclick="selSeed(32)">
+  <td class="tc">49</td>
+  <td class="tc">32</td>
+  <td class="tr">2.0940</td>
+  <td class="tr" style="color:#22c55e">+0.1%</td>
+  <td class="tr">0</td>
+  <td class="tr">13</td>
+  <td class="tr">88</td>
+  <td class="tr">56</td>
+  <td class="tr">353</td>
+</tr><tr class="dr" onclick="selSeed(76)">
+  <td class="tc">50</td>
+  <td class="tc">76</td>
+  <td class="tr">2.0930</td>
+  <td class="tr" style="color:#ef4444">-0.0%</td>
+  <td class="tr">0</td>
+  <td class="tr">16</td>
+  <td class="tr">76</td>
+  <td class="tr">60</td>
+  <td class="tr">373</td>
+</tr><tr class="dr" onclick="selSeed(37)">
+  <td class="tc">51</td>
+  <td class="tc">37</td>
+  <td class="tr">2.0920</td>
+  <td class="tr" style="color:#ef4444">-0.1%</td>
+  <td class="tr">0</td>
+  <td class="tr">10</td>
+  <td class="tr">87</td>
+  <td class="tr">59</td>
+  <td class="tr">324</td>
+</tr><tr class="dr" onclick="selSeed(93)">
+  <td class="tc">52</td>
+  <td class="tc">93</td>
+  <td class="tr">2.0920</td>
+  <td class="tr" style="color:#ef4444">-0.1%</td>
+  <td class="tr">1</td>
+  <td class="tr">13</td>
+  <td class="tr">83</td>
+  <td class="tr">64</td>
+  <td class="tr">330</td>
+</tr><tr class="dr" onclick="selSeed(12)">
+  <td class="tc">53</td>
+  <td class="tc">12</td>
+  <td class="tr">2.0900</td>
+  <td class="tr" style="color:#ef4444">-0.1%</td>
+  <td class="tr">0</td>
+  <td class="tr">17</td>
+  <td class="tr">80</td>
+  <td class="tr">69</td>
+  <td class="tr">346</td>
+</tr><tr class="dr" onclick="selSeed(77)">
+  <td class="tc">54</td>
+  <td class="tc">77</td>
+  <td class="tr">2.0900</td>
+  <td class="tr" style="color:#ef4444">-0.1%</td>
+  <td class="tr">1</td>
+  <td class="tr">18</td>
+  <td class="tr">76</td>
+  <td class="tr">57</td>
+  <td class="tr">332</td>
+</tr><tr class="dr" onclick="selSeed(73)">
+  <td class="tc">55</td>
+  <td class="tc">73</td>
+  <td class="tr">2.0880</td>
+  <td class="tr" style="color:#ef4444">-0.2%</td>
+  <td class="tr">0</td>
+  <td class="tr">10</td>
+  <td class="tr">90</td>
+  <td class="tr">60</td>
+  <td class="tr">350</td>
+</tr><tr class="dr" onclick="selSeed(56)">
+  <td class="tc">56</td>
+  <td class="tc">56</td>
+  <td class="tr">2.0870</td>
+  <td class="tr" style="color:#ef4444">-0.3%</td>
+  <td class="tr">0</td>
+  <td class="tr">16</td>
+  <td class="tr">94</td>
+  <td class="tr">61</td>
+  <td class="tr">364</td>
+</tr><tr class="dr" onclick="selSeed(84)">
+  <td class="tc">57</td>
+  <td class="tc">84</td>
+  <td class="tr">2.0870</td>
+  <td class="tr" style="color:#ef4444">-0.3%</td>
+  <td class="tr">2</td>
+  <td class="tr">14</td>
+  <td class="tr">75</td>
+  <td class="tr">60</td>
+  <td class="tr">348</td>
+</tr><tr class="dr" onclick="selSeed(87)">
+  <td class="tc">58</td>
+  <td class="tc">87</td>
+  <td class="tr">2.0860</td>
+  <td class="tr" style="color:#ef4444">-0.3%</td>
+  <td class="tr">0</td>
+  <td class="tr">11</td>
+  <td class="tr">89</td>
+  <td class="tr">63</td>
+  <td class="tr">340</td>
+</tr><tr class="dr" onclick="selSeed(64)">
+  <td class="tc">59</td>
+  <td class="tc">64</td>
+  <td class="tr">2.0850</td>
+  <td class="tr" style="color:#ef4444">-0.4%</td>
+  <td class="tr">2</td>
+  <td class="tr">9</td>
+  <td class="tr">85</td>
+  <td class="tr">66</td>
+  <td class="tr">340</td>
+</tr><tr class="dr" onclick="selSeed(45)">
+  <td class="tc">60</td>
+  <td class="tc">45</td>
+  <td class="tr">2.0830</td>
+  <td class="tr" style="color:#ef4444">-0.5%</td>
+  <td class="tr">0</td>
+  <td class="tr">6</td>
+  <td class="tr">84</td>
+  <td class="tr">66</td>
+  <td class="tr">337</td>
+</tr><tr class="dr" onclick="selSeed(4)">
+  <td class="tc">61</td>
+  <td class="tc">4</td>
+  <td class="tr">2.0800</td>
+  <td class="tr" style="color:#ef4444">-0.6%</td>
+  <td class="tr">1</td>
+  <td class="tr">13</td>
+  <td class="tr">83</td>
+  <td class="tr">69</td>
+  <td class="tr">357</td>
+</tr><tr class="dr" onclick="selSeed(68)">
+  <td class="tc">62</td>
+  <td class="tc">68</td>
+  <td class="tr">2.0800</td>
+  <td class="tr" style="color:#ef4444">-0.6%</td>
+  <td class="tr">2</td>
+  <td class="tr">9</td>
+  <td class="tr">81</td>
+  <td class="tr">65</td>
+  <td class="tr">329</td>
+</tr><tr class="dr" onclick="selSeed(6)">
+  <td class="tc">63</td>
+  <td class="tc">6</td>
+  <td class="tr">2.0760</td>
+  <td class="tr" style="color:#ef4444">-0.8%</td>
+  <td class="tr">0</td>
+  <td class="tr">9</td>
+  <td class="tr">87</td>
+  <td class="tr">72</td>
+  <td class="tr">348</td>
+</tr><tr class="dr" onclick="selSeed(22)">
+  <td class="tc">64</td>
+  <td class="tc">22</td>
+  <td class="tr">2.0740</td>
+  <td class="tr" style="color:#ef4444">-0.9%</td>
+  <td class="tr">2</td>
+  <td class="tr">16</td>
+  <td class="tr">58</td>
+  <td class="tr">55</td>
+  <td class="tr">362</td>
+</tr><tr class="dr" onclick="selSeed(19)">
+  <td class="tc">65</td>
+  <td class="tc">19</td>
+  <td class="tr">2.0730</td>
+  <td class="tr" style="color:#ef4444">-1.0%</td>
+  <td class="tr">1</td>
+  <td class="tr">11</td>
+  <td class="tr">70</td>
+  <td class="tr">59</td>
+  <td class="tr">367</td>
+</tr><tr class="dr" onclick="selSeed(52)">
+  <td class="tc">66</td>
+  <td class="tc">52</td>
+  <td class="tr">2.0720</td>
+  <td class="tr" style="color:#ef4444">-1.0%</td>
+  <td class="tr">0</td>
+  <td class="tr">19</td>
+  <td class="tr">72</td>
+  <td class="tr">66</td>
+  <td class="tr">338</td>
+</tr><tr class="dr" onclick="selSeed(67)">
+  <td class="tc">67</td>
+  <td class="tc">67</td>
+  <td class="tr">2.0720</td>
+  <td class="tr" style="color:#ef4444">-1.0%</td>
+  <td class="tr">2</td>
+  <td class="tr">11</td>
+  <td class="tr">76</td>
+  <td class="tr">56</td>
+  <td class="tr">342</td>
+</tr><tr class="dr" onclick="selSeed(40)">
+  <td class="tc">68</td>
+  <td class="tc">40</td>
+  <td class="tr">2.0710</td>
+  <td class="tr" style="color:#ef4444">-1.1%</td>
+  <td class="tr">0</td>
+  <td class="tr">17</td>
+  <td class="tr">81</td>
+  <td class="tr">50</td>
+  <td class="tr">374</td>
+</tr><tr class="dr" onclick="selSeed(62)">
+  <td class="tc">69</td>
+  <td class="tc">62</td>
+  <td class="tr">2.0710</td>
+  <td class="tr" style="color:#ef4444">-1.1%</td>
+  <td class="tr">0</td>
+  <td class="tr">14</td>
+  <td class="tr">94</td>
+  <td class="tr">73</td>
+  <td class="tr">347</td>
+</tr><tr class="dr" onclick="selSeed(15)">
+  <td class="tc">70</td>
+  <td class="tc">15</td>
+  <td class="tr">2.0700</td>
+  <td class="tr" style="color:#ef4444">-1.1%</td>
+  <td class="tr">3</td>
+  <td class="tr">13</td>
+  <td class="tr">76</td>
+  <td class="tr">61</td>
+  <td class="tr">346</td>
+</tr><tr class="dr" onclick="selSeed(16)">
+  <td class="tc">71</td>
+  <td class="tc">16</td>
+  <td class="tr">2.0670</td>
+  <td class="tr" style="color:#ef4444">-1.2%</td>
+  <td class="tr">0</td>
+  <td class="tr">17</td>
+  <td class="tr">76</td>
+  <td class="tr">66</td>
+  <td class="tr">353</td>
+</tr><tr class="dr" onclick="selSeed(60)">
+  <td class="tc">72</td>
+  <td class="tc">60</td>
+  <td class="tr">2.0670</td>
+  <td class="tr" style="color:#ef4444">-1.2%</td>
+  <td class="tr">0</td>
+  <td class="tr">15</td>
+  <td class="tr">106</td>
+  <td class="tr">83</td>
+  <td class="tr">355</td>
+</tr><tr class="dr" onclick="selSeed(89)">
+  <td class="tc">73</td>
+  <td class="tc">89</td>
+  <td class="tr">2.0660</td>
+  <td class="tr" style="color:#ef4444">-1.3%</td>
+  <td class="tr">0</td>
+  <td class="tr">13</td>
+  <td class="tr">90</td>
+  <td class="tr">69</td>
+  <td class="tr">359</td>
+</tr><tr class="dr" onclick="selSeed(43)">
+  <td class="tc">74</td>
+  <td class="tc">43</td>
+  <td class="tr">2.0640</td>
+  <td class="tr" style="color:#ef4444">-1.4%</td>
+  <td class="tr">0</td>
+  <td class="tr">17</td>
+  <td class="tr">68</td>
+  <td class="tr">69</td>
+  <td class="tr">329</td>
+</tr><tr class="dr" onclick="selSeed(34)">
+  <td class="tc">75</td>
+  <td class="tc">34</td>
+  <td class="tr">2.0630</td>
+  <td class="tr" style="color:#ef4444">-1.4%</td>
+  <td class="tr">0</td>
+  <td class="tr">19</td>
+  <td class="tr">67</td>
+  <td class="tr">60</td>
+  <td class="tr">356</td>
+</tr><tr class="dr" onclick="selSeed(44)">
+  <td class="tc">76</td>
+  <td class="tc">44</td>
+  <td class="tr">2.0620</td>
+  <td class="tr" style="color:#ef4444">-1.5%</td>
+  <td class="tr">1</td>
+  <td class="tr">14</td>
+  <td class="tr">89</td>
+  <td class="tr">69</td>
+  <td class="tr">342</td>
+</tr><tr class="dr" onclick="selSeed(83)">
+  <td class="tc">77</td>
+  <td class="tc">83</td>
+  <td class="tr">2.0620</td>
+  <td class="tr" style="color:#ef4444">-1.5%</td>
+  <td class="tr">1</td>
+  <td class="tr">20</td>
+  <td class="tr">75</td>
+  <td class="tr">69</td>
+  <td class="tr">349</td>
+</tr><tr class="dr" onclick="selSeed(17)">
+  <td class="tc">78</td>
+  <td class="tc">17</td>
+  <td class="tr">2.0610</td>
+  <td class="tr" style="color:#ef4444">-1.5%</td>
+  <td class="tr">0</td>
+  <td class="tr">10</td>
+  <td class="tr">74</td>
+  <td class="tr">73</td>
+  <td class="tr">359</td>
+</tr><tr class="dr" onclick="selSeed(42)">
+  <td class="tc">79</td>
+  <td class="tc">42</td>
+  <td class="tr">2.0600</td>
+  <td class="tr" style="color:#ef4444">-1.6%</td>
+  <td class="tr">1</td>
+  <td class="tr">11</td>
+  <td class="tr">78</td>
+  <td class="tr">66</td>
+  <td class="tr">360</td>
+</tr><tr class="dr" onclick="selSeed(58)">
+  <td class="tc">80</td>
+  <td class="tc">58</td>
+  <td class="tr">2.0600</td>
+  <td class="tr" style="color:#ef4444">-1.6%</td>
+  <td class="tr">0</td>
+  <td class="tr">15</td>
+  <td class="tr">79</td>
+  <td class="tr">64</td>
+  <td class="tr">351</td>
+</tr><tr class="dr" onclick="selSeed(1)">
+  <td class="tc">81</td>
+  <td class="tc">1</td>
+  <td class="tr">2.0570</td>
+  <td class="tr" style="color:#ef4444">-1.7%</td>
+  <td class="tr">0</td>
+  <td class="tr">8</td>
+  <td class="tr">85</td>
+  <td class="tr">65</td>
+  <td class="tr">344</td>
+</tr><tr class="dr" onclick="selSeed(99)">
+  <td class="tc">82</td>
+  <td class="tc">99</td>
+  <td class="tr">2.0570</td>
+  <td class="tr" style="color:#ef4444">-1.7%</td>
+  <td class="tr">1</td>
+  <td class="tr">14</td>
+  <td class="tr">78</td>
+  <td class="tr">78</td>
+  <td class="tr">346</td>
+</tr><tr class="dr" onclick="selSeed(57)">
+  <td class="tc">83</td>
+  <td class="tc">57</td>
+  <td class="tr">2.0540</td>
+  <td class="tr" style="color:#ef4444">-1.9%</td>
+  <td class="tr">1</td>
+  <td class="tr">12</td>
+  <td class="tr">78</td>
+  <td class="tr">65</td>
+  <td class="tr">347</td>
+</tr><tr class="dr" onclick="selSeed(95)">
+  <td class="tc">84</td>
+  <td class="tc">95</td>
+  <td class="tr">2.0530</td>
+  <td class="tr" style="color:#ef4444">-1.9%</td>
+  <td class="tr">1</td>
+  <td class="tr">12</td>
+  <td class="tr">90</td>
+  <td class="tr">63</td>
+  <td class="tr">364</td>
+</tr><tr class="dr" onclick="selSeed(63)">
+  <td class="tc">85</td>
+  <td class="tc">63</td>
+  <td class="tr">2.0520</td>
+  <td class="tr" style="color:#ef4444">-2.0%</td>
+  <td class="tr">0</td>
+  <td class="tr">10</td>
+  <td class="tr">62</td>
+  <td class="tr">59</td>
+  <td class="tr">392</td>
+</tr><tr class="dr" onclick="selSeed(24)">
+  <td class="tc">86</td>
+  <td class="tc">24</td>
+  <td class="tr">2.0510</td>
+  <td class="tr" style="color:#ef4444">-2.0%</td>
+  <td class="tr">0</td>
+  <td class="tr">9</td>
+  <td class="tr">83</td>
+  <td class="tr">60</td>
+  <td class="tr">343</td>
+</tr><tr class="dr" onclick="selSeed(27)">
+  <td class="tc">87</td>
+  <td class="tc">27</td>
+  <td class="tr">2.0510</td>
+  <td class="tr" style="color:#ef4444">-2.0%</td>
+  <td class="tr">1</td>
+  <td class="tr">12</td>
+  <td class="tr">72</td>
+  <td class="tr">60</td>
+  <td class="tr">320</td>
+</tr><tr class="dr" onclick="selSeed(82)">
+  <td class="tc">88</td>
+  <td class="tc">82</td>
+  <td class="tr">2.0490</td>
+  <td class="tr" style="color:#ef4444">-2.1%</td>
+  <td class="tr">1</td>
+  <td class="tr">12</td>
+  <td class="tr">82</td>
+  <td class="tr">63</td>
+  <td class="tr">369</td>
+</tr><tr class="dr" onclick="selSeed(10)">
+  <td class="tc">89</td>
+  <td class="tc">10</td>
+  <td class="tr">2.0430</td>
+  <td class="tr" style="color:#ef4444">-2.4%</td>
+  <td class="tr">0</td>
+  <td class="tr">8</td>
+  <td class="tr">79</td>
+  <td class="tr">60</td>
+  <td class="tr">340</td>
+</tr><tr class="dr" onclick="selSeed(33)">
+  <td class="tc">90</td>
+  <td class="tc">33</td>
+  <td class="tr">2.0420</td>
+  <td class="tr" style="color:#ef4444">-2.4%</td>
+  <td class="tr">0</td>
+  <td class="tr">10</td>
+  <td class="tr">80</td>
+  <td class="tr">77</td>
+  <td class="tr">355</td>
+</tr><tr class="dr" onclick="selSeed(48)">
+  <td class="tc">91</td>
+  <td class="tc">48</td>
+  <td class="tr">2.0400</td>
+  <td class="tr" style="color:#ef4444">-2.5%</td>
+  <td class="tr">1</td>
+  <td class="tr">15</td>
+  <td class="tr">74</td>
+  <td class="tr">80</td>
+  <td class="tr">349</td>
+</tr><tr class="dr" onclick="selSeed(31)">
+  <td class="tc">92</td>
+  <td class="tc">31</td>
+  <td class="tr">2.0380</td>
+  <td class="tr" style="color:#ef4444">-2.6%</td>
+  <td class="tr">1</td>
+  <td class="tr">15</td>
+  <td class="tr">82</td>
+  <td class="tr">61</td>
+  <td class="tr">371</td>
+</tr><tr class="dr" onclick="selSeed(38)">
+  <td class="tc">93</td>
+  <td class="tc">38</td>
+  <td class="tr">2.0380</td>
+  <td class="tr" style="color:#ef4444">-2.6%</td>
+  <td class="tr">1</td>
+  <td class="tr">10</td>
+  <td class="tr">74</td>
+  <td class="tr">65</td>
+  <td class="tr">321</td>
+</tr><tr class="dr" onclick="selSeed(46)">
+  <td class="tc">94</td>
+  <td class="tc">46</td>
+  <td class="tr">2.0380</td>
+  <td class="tr" style="color:#ef4444">-2.6%</td>
+  <td class="tr">0</td>
+  <td class="tr">9</td>
+  <td class="tr">82</td>
+  <td class="tr">71</td>
+  <td class="tr">337</td>
+</tr><tr class="dr" onclick="selSeed(39)">
+  <td class="tc">95</td>
+  <td class="tc">39</td>
+  <td class="tr">2.0360</td>
+  <td class="tr" style="color:#ef4444">-2.7%</td>
+  <td class="tr">1</td>
+  <td class="tr">6</td>
+  <td class="tr">81</td>
+  <td class="tr">59</td>
+  <td class="tr">344</td>
+</tr><tr class="dr" onclick="selSeed(30)">
+  <td class="tc">96</td>
+  <td class="tc">30</td>
+  <td class="tr">2.0350</td>
+  <td class="tr" style="color:#ef4444">-2.8%</td>
+  <td class="tr">0</td>
+  <td class="tr">8</td>
+  <td class="tr">84</td>
+  <td class="tr">65</td>
+  <td class="tr">373</td>
+</tr><tr class="dr" onclick="selSeed(97)">
+  <td class="tc">97</td>
+  <td class="tc">97</td>
+  <td class="tr">2.0340</td>
+  <td class="tr" style="color:#ef4444">-2.8%</td>
+  <td class="tr">1</td>
+  <td class="tr">15</td>
+  <td class="tr">85</td>
+  <td class="tr">68</td>
+  <td class="tr">333</td>
+</tr><tr class="dr" onclick="selSeed(85)">
+  <td class="tc">98</td>
+  <td class="tc">85</td>
+  <td class="tr">2.0290</td>
+  <td class="tr" style="color:#ef4444">-3.1%</td>
+  <td class="tr">1</td>
+  <td class="tr">5</td>
+  <td class="tr">81</td>
+  <td class="tr">57</td>
+  <td class="tr">343</td>
+</tr><tr class="dr" onclick="selSeed(90)">
+  <td class="tc">99</td>
+  <td class="tc">90</td>
+  <td class="tr">2.0250</td>
+  <td class="tr" style="color:#ef4444">-3.2%</td>
+  <td class="tr">0</td>
+  <td class="tr">16</td>
+  <td class="tr">79</td>
+  <td class="tr">71</td>
+  <td class="tr">348</td>
+</tr><tr class="dr" onclick="selSeed(74)">
+  <td class="tc">100</td>
+  <td class="tc">74</td>
+  <td class="tr">2.0230</td>
+  <td class="tr" style="color:#ef4444">-3.4%</td>
+  <td class="tr">0</td>
+  <td class="tr">11</td>
+  <td class="tr">78</td>
+  <td class="tr">64</td>
+  <td class="tr">345</td>
+</tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Per-seed detail (last 5 draws) -->
+  <div class="detail" id="detail">
+    <h2 id="detailTitle">Seed detail</h2>
+    <table>
+      <thead><tr>
+        <th class="tc">Draw</th><th>Date</th><th>Actual</th>
+        <th>Picks (seed)</th><th class="tc">Hits</th>
+      </tr></thead>
+      <tbody id="detailTbody"></tbody>
+    </table>
+  </div>
+
+  <p class="footer">
+    Seeded random: picks = random.sample(range(1,44), 15) with seed = k×10⁷ + draw_serial.<br>
+    Each (seed, draw) pair is independent and deterministic. Lift = % above pure-chance baseline (2.093 avg hits).
+  </p>
+</div>
+
+<script>
+const DATA = [{"seed":75,"avg":2.167,"lift":3.53,"dist":[60,218,342,271,93,16,0],"bonus":352,"hit6":0,"hit5":16,"hit4":93,"hit0":60},{"seed":59,"avg":2.165,"lift":3.44,"dist":[50,230,354,252,99,15,0],"bonus":345,"hit6":0,"hit5":15,"hit4":99,"hit0":50},{"seed":36,"avg":2.159,"lift":3.15,"dist":[51,250,309,283,94,12,1],"bonus":343,"hit6":1,"hit5":12,"hit4":94,"hit0":51},{"seed":35,"avg":2.148,"lift":2.63,"dist":[63,223,339,270,90,13,2],"bonus":342,"hit6":2,"hit5":13,"hit4":90,"hit0":63},{"seed":71,"avg":2.148,"lift":2.63,"dist":[42,262,344,230,105,14,3],"bonus":376,"hit6":3,"hit5":14,"hit4":105,"hit0":42},{"seed":55,"avg":2.147,"lift":2.58,"dist":[54,221,377,241,89,15,3],"bonus":344,"hit6":3,"hit5":15,"hit4":89,"hit0":54},{"seed":28,"avg":2.144,"lift":2.44,"dist":[62,211,365,253,101,8,0],"bonus":334,"hit6":0,"hit5":8,"hit4":101,"hit0":62},{"seed":92,"avg":2.141,"lift":2.29,"dist":[52,223,375,247,89,13,1],"bonus":365,"hit6":1,"hit5":13,"hit4":89,"hit0":52},{"seed":88,"avg":2.137,"lift":2.1,"dist":[67,238,317,262,102,13,1],"bonus":331,"hit6":1,"hit5":13,"hit4":102,"hit0":67},{"seed":80,"avg":2.136,"lift":2.05,"dist":[50,250,344,241,101,13,1],"bonus":352,"hit6":1,"hit5":13,"hit4":101,"hit0":50},{"seed":96,"avg":2.135,"lift":2.01,"dist":[58,225,362,247,95,13,0],"bonus":348,"hit6":0,"hit5":13,"hit4":95,"hit0":58},{"seed":78,"avg":2.134,"lift":1.96,"dist":[56,231,351,261,88,12,1],"bonus":376,"hit6":1,"hit5":12,"hit4":88,"hit0":56},{"seed":86,"avg":2.13,"lift":1.77,"dist":[57,224,372,240,93,14,0],"bonus":359,"hit6":0,"hit5":14,"hit4":93,"hit0":57},{"seed":3,"avg":2.129,"lift":1.72,"dist":[65,246,323,245,103,18,0],"bonus":351,"hit6":0,"hit5":18,"hit4":103,"hit0":65},{"seed":26,"avg":2.128,"lift":1.67,"dist":[51,242,356,245,93,11,2],"bonus":342,"hit6":2,"hit5":11,"hit4":93,"hit0":51},{"seed":9,"avg":2.126,"lift":1.58,"dist":[50,244,354,248,91,12,1],"bonus":342,"hit6":1,"hit5":12,"hit4":91,"hit0":50},{"seed":100,"avg":2.126,"lift":1.58,"dist":[71,221,340,262,92,13,1],"bonus":338,"hit6":1,"hit5":13,"hit4":92,"hit0":71},{"seed":49,"avg":2.125,"lift":1.53,"dist":[64,234,342,257,82,18,3],"bonus":349,"hit6":3,"hit5":18,"hit4":82,"hit0":64},{"seed":41,"avg":2.124,"lift":1.48,"dist":[46,239,381,227,93,14,0],"bonus":347,"hit6":0,"hit5":14,"hit4":93,"hit0":46},{"seed":70,"avg":2.123,"lift":1.43,"dist":[62,250,321,258,89,19,1],"bonus":335,"hit6":1,"hit5":19,"hit4":89,"hit0":62},{"seed":21,"avg":2.12,"lift":1.29,"dist":[59,229,357,256,88,9,2],"bonus":344,"hit6":2,"hit5":9,"hit4":88,"hit0":59},{"seed":66,"avg":2.12,"lift":1.29,"dist":[57,247,345,237,99,14,1],"bonus":362,"hit6":1,"hit5":14,"hit4":99,"hit0":57},{"seed":2,"avg":2.119,"lift":1.24,"dist":[68,229,345,257,76,25,0],"bonus":335,"hit6":0,"hit5":25,"hit4":76,"hit0":68},{"seed":61,"avg":2.118,"lift":1.19,"dist":[62,237,344,253,87,16,1],"bonus":335,"hit6":1,"hit5":16,"hit4":87,"hit0":62},{"seed":20,"avg":2.117,"lift":1.15,"dist":[62,240,347,238,98,13,2],"bonus":324,"hit6":2,"hit5":13,"hit4":98,"hit0":62},{"seed":94,"avg":2.115,"lift":1.05,"dist":[57,230,371,241,87,12,2],"bonus":345,"hit6":2,"hit5":12,"hit4":87,"hit0":57},{"seed":8,"avg":2.114,"lift":1.0,"dist":[63,235,343,256,90,13,0],"bonus":347,"hit6":0,"hit5":13,"hit4":90,"hit0":63},{"seed":13,"avg":2.114,"lift":1.0,"dist":[64,218,357,274,76,10,1],"bonus":352,"hit6":1,"hit5":10,"hit4":76,"hit0":64},{"seed":53,"avg":2.113,"lift":0.95,"dist":[62,221,371,246,88,12,0],"bonus":334,"hit6":0,"hit5":12,"hit4":88,"hit0":62},{"seed":51,"avg":2.112,"lift":0.91,"dist":[61,236,360,233,94,15,1],"bonus":334,"hit6":1,"hit5":15,"hit4":94,"hit0":61},{"seed":72,"avg":2.112,"lift":0.91,"dist":[65,235,346,248,91,13,2],"bonus":368,"hit6":2,"hit5":13,"hit4":91,"hit0":65},{"seed":7,"avg":2.111,"lift":0.86,"dist":[60,223,372,253,77,13,2],"bonus":354,"hit6":2,"hit5":13,"hit4":77,"hit0":60},{"seed":54,"avg":2.11,"lift":0.81,"dist":[69,226,347,253,94,11,0],"bonus":356,"hit6":0,"hit5":11,"hit4":94,"hit0":69},{"seed":91,"avg":2.108,"lift":0.72,"dist":[64,223,353,271,79,10,0],"bonus":338,"hit6":0,"hit5":10,"hit4":79,"hit0":64},{"seed":98,"avg":2.108,"lift":0.72,"dist":[51,243,363,249,81,10,3],"bonus":370,"hit6":3,"hit5":10,"hit4":81,"hit0":51},{"seed":11,"avg":2.105,"lift":0.57,"dist":[59,242,353,249,77,18,2],"bonus":350,"hit6":2,"hit5":18,"hit4":77,"hit0":59},{"seed":50,"avg":2.103,"lift":0.48,"dist":[57,225,371,260,79,8,0],"bonus":371,"hit6":0,"hit5":8,"hit4":79,"hit0":57},{"seed":5,"avg":2.102,"lift":0.43,"dist":[63,243,344,247,89,10,4],"bonus":345,"hit6":4,"hit5":10,"hit4":89,"hit0":63},{"seed":65,"avg":2.101,"lift":0.38,"dist":[62,210,394,243,81,10,0],"bonus":353,"hit6":0,"hit5":10,"hit4":81,"hit0":62},{"seed":81,"avg":2.101,"lift":0.38,"dist":[50,241,369,249,80,11,0],"bonus":326,"hit6":0,"hit5":11,"hit4":80,"hit0":50},{"seed":23,"avg":2.099,"lift":0.29,"dist":[59,232,366,248,84,11,0],"bonus":337,"hit6":0,"hit5":11,"hit4":84,"hit0":59},{"seed":69,"avg":2.099,"lift":0.29,"dist":[73,237,338,241,96,11,4],"bonus":345,"hit6":4,"hit5":11,"hit4":96,"hit0":73},{"seed":14,"avg":2.098,"lift":0.24,"dist":[60,237,361,247,77,18,0],"bonus":387,"hit6":0,"hit5":18,"hit4":77,"hit0":60},{"seed":18,"avg":2.098,"lift":0.24,"dist":[65,249,334,241,98,12,1],"bonus":351,"hit6":1,"hit5":12,"hit4":98,"hit0":65},{"seed":47,"avg":2.096,"lift":0.14,"dist":[62,266,317,249,83,21,2],"bonus":337,"hit6":2,"hit5":21,"hit4":83,"hit0":62},{"seed":79,"avg":2.096,"lift":0.14,"dist":[63,250,326,267,78,15,1],"bonus":331,"hit6":1,"hit5":15,"hit4":78,"hit0":63},{"seed":25,"avg":2.095,"lift":0.09,"dist":[62,244,349,248,78,17,2],"bonus":334,"hit6":2,"hit5":17,"hit4":78,"hit0":62},{"seed":29,"avg":2.095,"lift":0.09,"dist":[64,235,360,235,95,11,0],"bonus":358,"hit6":0,"hit5":11,"hit4":95,"hit0":64},{"seed":32,"avg":2.094,"lift":0.05,"dist":[56,247,358,238,88,13,0],"bonus":353,"hit6":0,"hit5":13,"hit4":88,"hit0":56},{"seed":76,"avg":2.093,"lift":-0.0,"dist":[60,234,367,247,76,16,0],"bonus":373,"hit6":0,"hit5":16,"hit4":76,"hit0":60},{"seed":37,"avg":2.092,"lift":-0.05,"dist":[59,234,370,240,87,10,0],"bonus":324,"hit6":0,"hit5":10,"hit4":87,"hit0":59},{"seed":93,"avg":2.092,"lift":-0.05,"dist":[64,242,344,253,83,13,1],"bonus":330,"hit6":1,"hit5":13,"hit4":83,"hit0":64},{"seed":12,"avg":2.09,"lift":-0.14,"dist":[69,234,349,251,80,17,0],"bonus":346,"hit6":0,"hit5":17,"hit4":80,"hit0":69},{"seed":77,"avg":2.09,"lift":-0.14,"dist":[57,258,338,252,76,18,1],"bonus":332,"hit6":1,"hit5":18,"hit4":76,"hit0":57},{"seed":73,"avg":2.088,"lift":-0.24,"dist":[60,241,360,239,90,10,0],"bonus":350,"hit6":0,"hit5":10,"hit4":90,"hit0":60},{"seed":56,"avg":2.087,"lift":-0.29,"dist":[61,236,384,209,94,16,0],"bonus":364,"hit6":0,"hit5":16,"hit4":94,"hit0":61},{"seed":84,"avg":2.087,"lift":-0.29,"dist":[60,238,366,245,75,14,2],"bonus":348,"hit6":2,"hit5":14,"hit4":75,"hit0":60},{"seed":87,"avg":2.086,"lift":-0.34,"dist":[63,247,342,248,89,11,0],"bonus":340,"hit6":0,"hit5":11,"hit4":89,"hit0":63},{"seed":64,"avg":2.085,"lift":-0.38,"dist":[66,246,334,258,85,9,2],"bonus":340,"hit6":2,"hit5":9,"hit4":85,"hit0":66},{"seed":45,"avg":2.083,"lift":-0.48,"dist":[66,228,359,257,84,6,0],"bonus":337,"hit6":0,"hit5":6,"hit4":84,"hit0":66},{"seed":4,"avg":2.08,"lift":-0.62,"dist":[69,237,351,246,83,13,1],"bonus":357,"hit6":1,"hit5":13,"hit4":83,"hit0":69},{"seed":68,"avg":2.08,"lift":-0.62,"dist":[65,237,356,250,81,9,2],"bonus":329,"hit6":2,"hit5":9,"hit4":81,"hit0":65},{"seed":6,"avg":2.076,"lift":-0.81,"dist":[72,230,353,249,87,9,0],"bonus":348,"hit6":0,"hit5":9,"hit4":87,"hit0":72},{"seed":22,"avg":2.074,"lift":-0.91,"dist":[55,241,375,253,58,16,2],"bonus":362,"hit6":2,"hit5":16,"hit4":58,"hit0":55},{"seed":19,"avg":2.073,"lift":-0.96,"dist":[59,239,367,253,70,11,1],"bonus":367,"hit6":1,"hit5":11,"hit4":70,"hit0":59},{"seed":52,"avg":2.072,"lift":-1.0,"dist":[66,239,362,242,72,19,0],"bonus":338,"hit6":0,"hit5":19,"hit4":72,"hit0":66},{"seed":67,"avg":2.072,"lift":-1.0,"dist":[56,253,358,244,76,11,2],"bonus":342,"hit6":2,"hit5":11,"hit4":76,"hit0":56},{"seed":40,"avg":2.071,"lift":-1.05,"dist":[50,266,362,224,81,17,0],"bonus":374,"hit6":0,"hit5":17,"hit4":81,"hit0":50},{"seed":62,"avg":2.071,"lift":-1.05,"dist":[73,241,350,228,94,14,0],"bonus":347,"hit6":0,"hit5":14,"hit4":94,"hit0":73},{"seed":15,"avg":2.07,"lift":-1.1,"dist":[61,249,360,238,76,13,3],"bonus":346,"hit6":3,"hit5":13,"hit4":76,"hit0":61},{"seed":16,"avg":2.067,"lift":-1.24,"dist":[66,227,391,223,76,17,0],"bonus":353,"hit6":0,"hit5":17,"hit4":76,"hit0":66},{"seed":60,"avg":2.067,"lift":-1.24,"dist":[83,249,322,225,106,15,0],"bonus":355,"hit6":0,"hit5":15,"hit4":106,"hit0":83},{"seed":89,"avg":2.066,"lift":-1.29,"dist":[69,252,339,237,90,13,0],"bonus":359,"hit6":0,"hit5":13,"hit4":90,"hit0":69},{"seed":43,"avg":2.064,"lift":-1.39,"dist":[69,229,373,244,68,17,0],"bonus":329,"hit6":0,"hit5":17,"hit4":68,"hit0":69},{"seed":34,"avg":2.063,"lift":-1.43,"dist":[60,263,336,255,67,19,0],"bonus":356,"hit6":0,"hit5":19,"hit4":67,"hit0":60},{"seed":44,"avg":2.062,"lift":-1.48,"dist":[69,249,353,225,89,14,1],"bonus":342,"hit6":1,"hit5":14,"hit4":89,"hit0":69},{"seed":83,"avg":2.062,"lift":-1.48,"dist":[69,243,363,229,75,20,1],"bonus":349,"hit6":1,"hit5":20,"hit4":75,"hit0":69},{"seed":17,"avg":2.061,"lift":-1.53,"dist":[73,229,356,258,74,10,0],"bonus":359,"hit6":0,"hit5":10,"hit4":74,"hit0":73},{"seed":42,"avg":2.06,"lift":-1.58,"dist":[66,237,371,236,78,11,1],"bonus":360,"hit6":1,"hit5":11,"hit4":78,"hit0":66},{"seed":58,"avg":2.06,"lift":-1.58,"dist":[64,245,367,230,79,15,0],"bonus":351,"hit6":0,"hit5":15,"hit4":79,"hit0":64},{"seed":1,"avg":2.057,"lift":-1.72,"dist":[65,254,341,247,85,8,0],"bonus":344,"hit6":0,"hit5":8,"hit4":85,"hit0":65},{"seed":99,"avg":2.057,"lift":-1.72,"dist":[78,241,336,252,78,14,1],"bonus":346,"hit6":1,"hit5":14,"hit4":78,"hit0":78},{"seed":57,"avg":2.054,"lift":-1.86,"dist":[65,239,378,227,78,12,1],"bonus":347,"hit6":1,"hit5":12,"hit4":78,"hit0":65},{"seed":95,"avg":2.053,"lift":-1.91,"dist":[63,256,363,215,90,12,1],"bonus":364,"hit6":1,"hit5":12,"hit4":90,"hit0":63},{"seed":63,"avg":2.052,"lift":-1.96,"dist":[59,236,381,252,62,10,0],"bonus":392,"hit6":0,"hit5":10,"hit4":62,"hit0":59},{"seed":24,"avg":2.051,"lift":-2.01,"dist":[60,261,348,239,83,9,0],"bonus":343,"hit6":0,"hit5":9,"hit4":83,"hit0":60},{"seed":27,"avg":2.051,"lift":-2.01,"dist":[60,244,380,231,72,12,1],"bonus":320,"hit6":1,"hit5":12,"hit4":72,"hit0":60},{"seed":82,"avg":2.049,"lift":-2.1,"dist":[63,249,373,220,82,12,1],"bonus":369,"hit6":1,"hit5":12,"hit4":82,"hit0":63},{"seed":10,"avg":2.043,"lift":-2.39,"dist":[60,263,346,244,79,8,0],"bonus":340,"hit6":0,"hit5":8,"hit4":79,"hit0":60},{"seed":33,"avg":2.042,"lift":-2.44,"dist":[77,236,355,242,80,10,0],"bonus":355,"hit6":0,"hit5":10,"hit4":80,"hit0":77},{"seed":48,"avg":2.04,"lift":-2.53,"dist":[80,246,335,249,74,15,1],"bonus":349,"hit6":1,"hit5":15,"hit4":74,"hit0":80},{"seed":31,"avg":2.038,"lift":-2.63,"dist":[61,268,358,215,82,15,1],"bonus":371,"hit6":1,"hit5":15,"hit4":82,"hit0":61},{"seed":38,"avg":2.038,"lift":-2.63,"dist":[65,254,356,240,74,10,1],"bonus":321,"hit6":1,"hit5":10,"hit4":74,"hit0":65},{"seed":46,"avg":2.038,"lift":-2.63,"dist":[71,247,355,236,82,9,0],"bonus":337,"hit6":0,"hit5":9,"hit4":82,"hit0":71},{"seed":39,"avg":2.036,"lift":-2.72,"dist":[59,254,375,224,81,6,1],"bonus":344,"hit6":1,"hit5":6,"hit4":81,"hit0":59},{"seed":30,"avg":2.035,"lift":-2.77,"dist":[65,262,346,235,84,8,0],"bonus":373,"hit6":0,"hit5":8,"hit4":84,"hit0":65},{"seed":97,"avg":2.034,"lift":-2.82,"dist":[68,256,368,207,85,15,1],"bonus":333,"hit6":1,"hit5":15,"hit4":85,"hit0":68},{"seed":85,"avg":2.029,"lift":-3.06,"dist":[57,258,378,220,81,5,1],"bonus":343,"hit6":1,"hit5":5,"hit4":81,"hit0":57},{"seed":90,"avg":2.025,"lift":-3.25,"dist":[71,259,355,220,79,16,0],"bonus":348,"hit6":0,"hit5":16,"hit4":79,"hit0":71},{"seed":74,"avg":2.023,"lift":-3.35,"dist":[64,264,357,226,78,11,0],"bonus":345,"hit6":0,"hit5":11,"hit4":78,"hit0":64}];
+const DRAWS = [{"s":1124,"d":"2016-11-17","a":[1,16,24,28,40,42],"b":33},{"s":1125,"d":"2016-11-21","a":[2,16,19,20,24,36],"b":27},{"s":1126,"d":"2016-11-24","a":[4,5,26,30,34,42],"b":27},{"s":1127,"d":"2016-11-28","a":[9,15,17,21,23,42],"b":24},{"s":1128,"d":"2016-12-01","a":[3,15,21,29,30,35],"b":39},{"s":1129,"d":"2016-12-05","a":[6,11,19,28,30,43],"b":32},{"s":1130,"d":"2016-12-08","a":[1,11,37,38,39,42],"b":26},{"s":1131,"d":"2016-12-12","a":[6,12,25,36,38,41],"b":18},{"s":1132,"d":"2016-12-15","a":[4,5,24,29,33,35],"b":40},{"s":1133,"d":"2016-12-19","a":[3,18,19,20,37,38],"b":9},{"s":1134,"d":"2016-12-22","a":[5,6,12,14,30,38],"b":29},{"s":1135,"d":"2016-12-26","a":[20,22,28,29,32,41],"b":14},{"s":1136,"d":"2016-12-29","a":[3,4,7,8,22,33],"b":18},{"s":1137,"d":"2017-01-05","a":[1,18,21,31,37,41],"b":20},{"s":1138,"d":"2017-01-09","a":[8,15,21,24,35,38],"b":22},{"s":1139,"d":"2017-01-12","a":[4,6,14,17,23,33],"b":26},{"s":1140,"d":"2017-01-16","a":[11,21,30,31,36,37],"b":23},{"s":1141,"d":"2017-01-19","a":[1,4,10,14,24,26],"b":29},{"s":1142,"d":"2017-01-23","a":[12,13,19,23,28,35],"b":31},{"s":1143,"d":"2017-01-26","a":[19,21,31,39,42,43],"b":29},{"s":1144,"d":"2017-01-30","a":[7,13,14,33,39,43],"b":29},{"s":1145,"d":"2017-02-02","a":[1,4,15,18,25,28],"b":36},{"s":1146,"d":"2017-02-06","a":[1,10,19,23,26,34],"b":27},{"s":1147,"d":"2017-02-09","a":[2,3,10,16,26,27],"b":23},{"s":1148,"d":"2017-02-13","a":[3,5,16,23,31,43],"b":39},{"s":1149,"d":"2017-02-16","a":[2,14,22,23,35,43],"b":31},{"s":1150,"d":"2017-02-20","a":[7,11,17,27,32,40],"b":18},{"s":1151,"d":"2017-02-23","a":[5,23,25,26,29,31],"b":19},{"s":1152,"d":"2017-02-27","a":[6,8,10,33,35,43],"b":22},{"s":1153,"d":"2017-03-02","a":[4,15,20,24,26,30],"b":29},{"s":1154,"d":"2017-03-06","a":[8,12,30,36,41,42],"b":4},{"s":1155,"d":"2017-03-09","a":[14,19,22,23,28,43],"b":25},{"s":1156,"d":"2017-03-13","a":[3,6,19,31,35,40],"b":12},{"s":1157,"d":"2017-03-16","a":[5,17,20,28,39,42],"b":1},{"s":1158,"d":"2017-03-20","a":[22,24,27,30,32,40],"b":23},{"s":1159,"d":"2017-03-23","a":[1,4,15,16,23,30],"b":17},{"s":1160,"d":"2017-03-27","a":[9,22,31,32,34,43],"b":24},{"s":1161,"d":"2017-03-30","a":[1,2,12,16,19,40],"b":18},{"s":1162,"d":"2017-04-03","a":[3,4,8,12,24,37],"b":10},{"s":1163,"d":"2017-04-06","a":[11,17,19,24,33,41],"b":9},{"s":1164,"d":"2017-04-10","a":[4,7,11,33,34,37],"b":24},{"s":1165,"d":"2017-04-13","a":[18,20,21,24,40,42],"b":25},{"s":1166,"d":"2017-04-17","a":[4,8,17,20,29,41],"b":3},{"s":1167,"d":"2017-04-20","a":[6,13,20,25,36,42],"b":28},{"s":1168,"d":"2017-04-24","a":[1,3,8,14,35,39],"b":18},{"s":1169,"d":"2017-04-27","a":[19,24,25,36,37,43],"b":10},{"s":1170,"d":"2017-05-01","a":[1,8,13,19,23,28],"b":39},{"s":1171,"d":"2017-05-04","a":[9,10,13,21,34,36],"b":40},{"s":1172,"d":"2017-05-08","a":[3,10,31,32,38,39],"b":15},{"s":1173,"d":"2017-05-11","a":[5,7,11,16,33,38],"b":25},{"s":1174,"d":"2017-05-15","a":[7,8,9,25,29,31],"b":28},{"s":1175,"d":"2017-05-18","a":[2,4,6,21,27,37],"b":10},{"s":1176,"d":"2017-05-22","a":[2,9,18,23,29,32],"b":34},{"s":1177,"d":"2017-05-25","a":[2,5,21,22,23,38],"b":36},{"s":1178,"d":"2017-05-29","a":[16,17,20,22,29,40],"b":31},{"s":1179,"d":"2017-06-01","a":[5,12,27,36,39,40],"b":37},{"s":1180,"d":"2017-06-05","a":[2,4,5,13,18,21],"b":40},{"s":1181,"d":"2017-06-08","a":[15,16,17,29,31,32],"b":12},{"s":1182,"d":"2017-06-12","a":[5,6,10,13,24,33],"b":40},{"s":1183,"d":"2017-06-15","a":[2,19,22,25,32,36],"b":39},{"s":1184,"d":"2017-06-19","a":[2,6,21,30,31,36],"b":41},{"s":1185,"d":"2017-06-22","a":[6,15,18,26,27,31],"b":38},{"s":1186,"d":"2017-06-26","a":[8,10,20,25,38,43],"b":39},{"s":1187,"d":"2017-06-29","a":[3,13,18,20,24,31],"b":37},{"s":1188,"d":"2017-07-03","a":[3,9,19,20,23,30],"b":14},{"s":1189,"d":"2017-07-06","a":[8,24,28,30,38,41],"b":32},{"s":1190,"d":"2017-07-10","a":[1,3,13,29,38,39],"b":8},{"s":1191,"d":"2017-07-13","a":[3,5,11,20,25,32],"b":30},{"s":1192,"d":"2017-07-17","a":[15,17,18,22,30,39],"b":28},{"s":1193,"d":"2017-07-20","a":[1,2,7,8,10,42],"b":28},{"s":1194,"d":"2017-07-24","a":[12,18,20,23,33,40],"b":1},{"s":1195,"d":"2017-07-27","a":[1,4,17,22,35,42],"b":7},{"s":1196,"d":"2017-07-31","a":[6,7,19,31,39,41],"b":14},{"s":1197,"d":"2017-08-03","a":[3,24,28,36,37,39],"b":27},{"s":1198,"d":"2017-08-07","a":[1,14,20,26,27,34],"b":33},{"s":1199,"d":"2017-08-10","a":[9,10,11,20,28,40],"b":17},{"s":1200,"d":"2017-08-14","a":[2,8,10,12,31,42],"b":21},{"s":1201,"d":"2017-08-17","a":[1,15,19,22,26,28],"b":33},{"s":1202,"d":"2017-08-21","a":[9,12,15,19,26,39],"b":28},{"s":1203,"d":"2017-08-24","a":[2,4,6,37,39,42],"b":41},{"s":1204,"d":"2017-08-28","a":[10,20,21,24,39,43],"b":17},{"s":1205,"d":"2017-08-31","a":[12,25,26,32,35,42],"b":2},{"s":1206,"d":"2017-09-04","a":[11,19,20,26,32,33],"b":22},{"s":1207,"d":"2017-09-07","a":[6,16,17,20,22,43],"b":34},{"s":1208,"d":"2017-09-11","a":[5,14,20,30,38,41],"b":8},{"s":1209,"d":"2017-09-14","a":[11,12,24,32,38,40],"b":7},{"s":1210,"d":"2017-09-18","a":[5,6,12,16,23,36],"b":9},{"s":1211,"d":"2017-09-21","a":[3,8,24,25,26,28],"b":43},{"s":1212,"d":"2017-09-25","a":[2,16,27,35,40,42],"b":25},{"s":1213,"d":"2017-09-28","a":[3,13,22,26,30,39],"b":1},{"s":1214,"d":"2017-10-02","a":[2,19,23,30,33,36],"b":40},{"s":1215,"d":"2017-10-05","a":[3,6,9,15,21,42],"b":7},{"s":1216,"d":"2017-10-09","a":[8,14,25,39,42,43],"b":37},{"s":1217,"d":"2017-10-12","a":[14,16,17,34,36,41],"b":25},{"s":1218,"d":"2017-10-16","a":[5,8,13,20,28,42],"b":35},{"s":1219,"d":"2017-10-19","a":[14,22,24,36,39,42],"b":32},{"s":1220,"d":"2017-10-23","a":[9,15,21,23,32,42],"b":14},{"s":1221,"d":"2017-10-26","a":[3,10,11,31,33,36],"b":21},{"s":1222,"d":"2017-10-30","a":[1,5,7,11,29,39],"b":40},{"s":1223,"d":"2017-11-02","a":[12,22,28,30,36,43],"b":34},{"s":1224,"d":"2017-11-06","a":[5,18,33,38,41,43],"b":6},{"s":1225,"d":"2017-11-09","a":[19,22,25,30,33,34],"b":36},{"s":1226,"d":"2017-11-13","a":[7,8,28,34,37,41],"b":13},{"s":1227,"d":"2017-11-16","a":[1,8,14,28,40,43],"b":6},{"s":1228,"d":"2017-11-20","a":[6,18,19,25,28,40],"b":3},{"s":1229,"d":"2017-11-23","a":[10,28,35,37,39,43],"b":16},{"s":1230,"d":"2017-11-27","a":[1,2,6,9,17,38],"b":34},{"s":1231,"d":"2017-11-30","a":[1,14,16,24,32,36],"b":2},{"s":1232,"d":"2017-12-04","a":[5,10,14,31,35,38],"b":16},{"s":1233,"d":"2017-12-07","a":[2,7,12,21,29,33],"b":16},{"s":1234,"d":"2017-12-11","a":[7,11,16,20,30,40],"b":28},{"s":1235,"d":"2017-12-14","a":[8,17,24,34,36,42],"b":33},{"s":1236,"d":"2017-12-18","a":[1,3,11,26,38,39],"b":34},{"s":1237,"d":"2017-12-21","a":[1,4,6,35,38,40],"b":27},{"s":1238,"d":"2017-12-25","a":[8,14,28,29,33,40],"b":32},{"s":1239,"d":"2017-12-28","a":[2,19,27,28,30,38],"b":22},{"s":1240,"d":"2018-01-04","a":[15,18,22,36,37,39],"b":26},{"s":1241,"d":"2018-01-08","a":[4,7,15,17,23,25],"b":8},{"s":1242,"d":"2018-01-11","a":[12,22,28,34,37,42],"b":33},{"s":1243,"d":"2018-01-15","a":[23,24,32,37,41,42],"b":29},{"s":1244,"d":"2018-01-18","a":[10,15,17,18,20,41],"b":35},{"s":1245,"d":"2018-01-22","a":[13,15,27,30,31,39],"b":8},{"s":1246,"d":"2018-01-25","a":[4,10,11,23,36,37],"b":34},{"s":1247,"d":"2018-01-29","a":[4,7,17,18,26,36],"b":35},{"s":1248,"d":"2018-02-01","a":[2,6,14,28,34,37],"b":3},{"s":1249,"d":"2018-02-05","a":[5,8,15,20,25,27],"b":6},{"s":1250,"d":"2018-02-08","a":[3,10,18,22,23,40],"b":27},{"s":1251,"d":"2018-02-12","a":[21,28,31,33,34,40],"b":23},{"s":1252,"d":"2018-02-15","a":[4,15,18,19,22,29],"b":37},{"s":1253,"d":"2018-02-19","a":[1,12,14,24,33,37],"b":15},{"s":1254,"d":"2018-02-22","a":[7,8,11,15,36,39],"b":37},{"s":1255,"d":"2018-02-26","a":[2,14,15,27,40,43],"b":41},{"s":1256,"d":"2018-03-01","a":[2,5,16,32,35,41],"b":25},{"s":1257,"d":"2018-03-05","a":[1,11,19,23,32,37],"b":14},{"s":1258,"d":"2018-03-08","a":[8,14,20,25,31,41],"b":35},{"s":1259,"d":"2018-03-12","a":[10,16,20,26,33,36],"b":41},{"s":1260,"d":"2018-03-15","a":[3,8,16,19,25,26],"b":32},{"s":1261,"d":"2018-03-19","a":[9,20,26,29,30,34],"b":42},{"s":1262,"d":"2018-03-22","a":[4,11,15,20,24,43],"b":10},{"s":1263,"d":"2018-03-26","a":[3,8,13,14,31,37],"b":6},{"s":1264,"d":"2018-03-29","a":[1,6,27,33,35,43],"b":15},{"s":1265,"d":"2018-04-02","a":[5,20,26,27,28,33],"b":12},{"s":1266,"d":"2018-04-05","a":[3,12,16,23,25,28],"b":17},{"s":1267,"d":"2018-04-09","a":[4,18,31,33,34,41],"b":9},{"s":1268,"d":"2018-04-12","a":[8,11,15,22,35,36],"b":30},{"s":1269,"d":"2018-04-16","a":[9,10,11,33,39,42],"b":25},{"s":1270,"d":"2018-04-19","a":[9,10,24,30,35,40],"b":38},{"s":1271,"d":"2018-04-23","a":[1,11,14,27,39,42],"b":32},{"s":1272,"d":"2018-04-26","a":[4,9,13,32,37,38],"b":42},{"s":1273,"d":"2018-04-30","a":[18,20,22,26,34,37],"b":4},{"s":1274,"d":"2018-05-03","a":[3,15,18,23,31,37],"b":34},{"s":1275,"d":"2018-05-07","a":[7,19,21,28,40,41],"b":3},{"s":1276,"d":"2018-05-10","a":[5,6,9,11,16,35],"b":22},{"s":1277,"d":"2018-05-14","a":[12,16,20,22,31,43],"b":33},{"s":1278,"d":"2018-05-17","a":[3,4,18,28,34,36],"b":6},{"s":1279,"d":"2018-05-21","a":[4,10,16,17,20,24],"b":31},{"s":1280,"d":"2018-05-24","a":[1,9,11,21,29,36],"b":7},{"s":1281,"d":"2018-05-28","a":[3,7,9,15,29,40],"b":17},{"s":1282,"d":"2018-05-31","a":[1,4,10,11,24,28],"b":29},{"s":1283,"d":"2018-06-04","a":[1,26,27,30,37,38],"b":4},{"s":1284,"d":"2018-06-07","a":[4,14,17,21,24,39],"b":7},{"s":1285,"d":"2018-06-11","a":[7,8,13,36,38,42],"b":6},{"s":1286,"d":"2018-06-14","a":[11,32,37,39,41,42],"b":43},{"s":1287,"d":"2018-06-18","a":[9,21,23,34,37,38],"b":40},{"s":1288,"d":"2018-06-21","a":[8,9,19,24,35,43],"b":11},{"s":1289,"d":"2018-06-25","a":[6,9,16,24,29,37],"b":3},{"s":1290,"d":"2018-06-28","a":[18,24,27,32,35,41],"b":10},{"s":1291,"d":"2018-07-02","a":[2,6,8,12,13,17],"b":1},{"s":1292,"d":"2018-07-05","a":[1,18,29,30,31,37],"b":35},{"s":1293,"d":"2018-07-09","a":[2,5,15,27,30,35],"b":11},{"s":1294,"d":"2018-07-12","a":[7,14,18,26,28,39],"b":2},{"s":1295,"d":"2018-07-16","a":[14,23,31,37,39,43],"b":32},{"s":1296,"d":"2018-07-19","a":[5,11,15,16,23,32],"b":4},{"s":1297,"d":"2018-07-23","a":[1,2,7,29,34,42],"b":41},{"s":1298,"d":"2018-07-26","a":[4,6,15,22,30,42],"b":7},{"s":1299,"d":"2018-07-30","a":[3,12,24,28,38,39],"b":10},{"s":1300,"d":"2018-08-02","a":[3,18,25,26,32,33],"b":27},{"s":1301,"d":"2018-08-06","a":[6,7,9,16,30,41],"b":22},{"s":1302,"d":"2018-08-09","a":[4,7,25,30,34,43],"b":38},{"s":1303,"d":"2018-08-13","a":[7,10,24,33,35,42],"b":43},{"s":1304,"d":"2018-08-16","a":[6,25,30,38,40,42],"b":17},{"s":1305,"d":"2018-08-20","a":[4,6,19,36,38,40],"b":28},{"s":1306,"d":"2018-08-23","a":[7,11,23,36,38,41],"b":37},{"s":1307,"d":"2018-08-27","a":[6,25,27,28,30,43],"b":14},{"s":1308,"d":"2018-08-30","a":[6,9,10,15,34,39],"b":3},{"s":1309,"d":"2018-09-03","a":[24,32,34,36,41,43],"b":23},{"s":1310,"d":"2018-09-06","a":[9,24,25,27,34,36],"b":14},{"s":1311,"d":"2018-09-10","a":[12,23,26,29,36,37],"b":15},{"s":1312,"d":"2018-09-13","a":[13,24,25,26,32,39],"b":6},{"s":1313,"d":"2018-09-17","a":[5,12,21,31,36,43],"b":27},{"s":1314,"d":"2018-09-20","a":[3,10,20,21,27,33],"b":39},{"s":1315,"d":"2018-09-24","a":[3,8,23,30,32,40],"b":31},{"s":1316,"d":"2018-09-27","a":[6,16,26,35,36,39],"b":14},{"s":1317,"d":"2018-10-01","a":[6,10,13,19,32,43],"b":22},{"s":1318,"d":"2018-10-04","a":[2,3,7,14,19,41],"b":34},{"s":1319,"d":"2018-10-08","a":[9,10,19,21,28,30],"b":43},{"s":1320,"d":"2018-10-11","a":[4,6,12,16,17,34],"b":28},{"s":1321,"d":"2018-10-15","a":[10,24,31,40,41,43],"b":33},{"s":1322,"d":"2018-10-18","a":[2,3,13,28,32,37],"b":7},{"s":1323,"d":"2018-10-22","a":[5,6,10,24,29,40],"b":26},{"s":1324,"d":"2018-10-25","a":[1,7,8,17,25,42],"b":11},{"s":1325,"d":"2018-10-29","a":[8,18,23,26,33,38],"b":34},{"s":1326,"d":"2018-11-01","a":[2,3,9,12,30,41],"b":21},{"s":1327,"d":"2018-11-05","a":[2,3,13,22,23,30],"b":27},{"s":1328,"d":"2018-11-08","a":[7,9,23,32,37,40],"b":41},{"s":1329,"d":"2018-11-12","a":[11,15,18,22,37,42],"b":31},{"s":1330,"d":"2018-11-15","a":[2,19,24,32,36,43],"b":30},{"s":1331,"d":"2018-11-19","a":[2,14,30,31,38,39],"b":26},{"s":1332,"d":"2018-11-22","a":[5,15,18,22,33,40],"b":6},{"s":1333,"d":"2018-11-26","a":[2,9,15,22,26,35],"b":5},{"s":1334,"d":"2018-11-29","a":[1,2,7,14,29,43],"b":40},{"s":1335,"d":"2018-12-03","a":[10,16,19,34,35,39],"b":4},{"s":1336,"d":"2018-12-06","a":[4,5,11,19,31,34],"b":43},{"s":1337,"d":"2018-12-10","a":[3,6,21,28,29,34],"b":15},{"s":1338,"d":"2018-12-13","a":[2,6,23,25,30,31],"b":35},{"s":1339,"d":"2018-12-17","a":[1,10,15,33,34,42],"b":39},{"s":1340,"d":"2018-12-20","a":[6,15,18,20,26,29],"b":9},{"s":1341,"d":"2018-12-24","a":[9,12,15,16,26,39],"b":34},{"s":1342,"d":"2018-12-27","a":[1,4,9,16,23,31],"b":42},{"s":1343,"d":"2019-01-07","a":[2,8,10,12,19,23],"b":16},{"s":1344,"d":"2019-01-10","a":[8,16,20,28,37,43],"b":29},{"s":1345,"d":"2019-01-14","a":[1,15,26,27,29,33],"b":18},{"s":1346,"d":"2019-01-17","a":[5,10,22,27,38,42],"b":36},{"s":1347,"d":"2019-01-21","a":[8,10,11,18,36,43],"b":7},{"s":1348,"d":"2019-01-24","a":[1,2,14,19,21,33],"b":43},{"s":1349,"d":"2019-01-28","a":[2,16,19,32,34,42],"b":33},{"s":1350,"d":"2019-01-31","a":[7,8,9,10,20,38],"b":16},{"s":1351,"d":"2019-02-04","a":[8,14,18,22,28,29],"b":5},{"s":1352,"d":"2019-02-07","a":[5,6,9,15,19,36],"b":22},{"s":1353,"d":"2019-02-11","a":[2,11,12,19,21,24],"b":36},{"s":1354,"d":"2019-02-14","a":[4,25,27,28,32,41],"b":26},{"s":1355,"d":"2019-02-18","a":[5,15,27,29,34,37],"b":12},{"s":1356,"d":"2019-02-21","a":[4,6,10,16,24,43],"b":12},{"s":1357,"d":"2019-02-25","a":[2,3,8,15,19,28],"b":21},{"s":1358,"d":"2019-02-28","a":[9,15,23,27,29,40],"b":28},{"s":1359,"d":"2019-03-04","a":[6,8,14,18,25,41],"b":9},{"s":1360,"d":"2019-03-07","a":[4,9,10,16,17,42],"b":23},{"s":1361,"d":"2019-03-11","a":[3,4,12,18,28,38],"b":32},{"s":1362,"d":"2019-03-14","a":[8,16,19,28,36,39],"b":1},{"s":1363,"d":"2019-03-18","a":[2,5,23,36,37,41],"b":43},{"s":1364,"d":"2019-03-21","a":[5,13,14,16,25,27],"b":3},{"s":1365,"d":"2019-03-25","a":[4,7,14,20,31,41],"b":32},{"s":1366,"d":"2019-03-28","a":[14,15,17,29,31,39],"b":10},{"s":1367,"d":"2019-04-01","a":[3,8,11,14,22,41],"b":34},{"s":1368,"d":"2019-04-04","a":[6,11,17,20,34,35],"b":10},{"s":1369,"d":"2019-04-08","a":[12,15,25,32,41,43],"b":7},{"s":1370,"d":"2019-04-11","a":[8,22,24,30,40,41],"b":2},{"s":1371,"d":"2019-04-15","a":[4,5,6,7,24,28],"b":30},{"s":1372,"d":"2019-04-18","a":[3,5,10,21,33,39],"b":8},{"s":1373,"d":"2019-04-22","a":[1,10,13,18,20,41],"b":11},{"s":1374,"d":"2019-04-25","a":[1,4,5,19,23,35],"b":36},{"s":1375,"d":"2019-04-29","a":[2,5,21,22,31,38],"b":28},{"s":1376,"d":"2019-05-02","a":[2,5,22,31,32,43],"b":27},{"s":1377,"d":"2019-05-06","a":[1,7,13,24,40,43],"b":20},{"s":1378,"d":"2019-05-09","a":[1,10,15,24,35,43],"b":9},{"s":1379,"d":"2019-05-13","a":[1,2,19,21,24,37],"b":32},{"s":1380,"d":"2019-05-16","a":[1,3,24,26,29,33],"b":42},{"s":1381,"d":"2019-05-20","a":[2,4,5,16,19,38],"b":25},{"s":1382,"d":"2019-05-23","a":[8,9,12,25,26,28],"b":32},{"s":1383,"d":"2019-05-27","a":[2,4,9,15,18,39],"b":24},{"s":1384,"d":"2019-05-30","a":[3,6,13,32,38,43],"b":40},{"s":1385,"d":"2019-06-03","a":[9,20,28,35,41,43],"b":23},{"s":1386,"d":"2019-06-06","a":[4,11,14,15,20,38],"b":35},{"s":1387,"d":"2019-06-10","a":[11,27,29,30,37,38],"b":33},{"s":1388,"d":"2019-06-13","a":[9,10,12,15,29,37],"b":11},{"s":1389,"d":"2019-06-17","a":[6,16,21,23,26,42],"b":43},{"s":1390,"d":"2019-06-20","a":[10,11,13,28,34,39],"b":35},{"s":1391,"d":"2019-06-24","a":[3,12,23,31,36,42],"b":43},{"s":1392,"d":"2019-06-27","a":[6,9,12,19,40,42],"b":7},{"s":1393,"d":"2019-07-01","a":[7,11,26,32,42,43],"b":24},{"s":1394,"d":"2019-07-04","a":[8,9,35,36,42,43],"b":22},{"s":1395,"d":"2019-07-08","a":[5,16,18,27,30,43],"b":25},{"s":1396,"d":"2019-07-11","a":[3,7,11,15,23,41],"b":21},{"s":1397,"d":"2019-07-15","a":[9,18,19,21,25,26],"b":7},{"s":1398,"d":"2019-07-18","a":[23,29,34,35,40,43],"b":42},{"s":1399,"d":"2019-07-22","a":[7,20,21,33,41,43],"b":8},{"s":1400,"d":"2019-07-25","a":[8,10,26,31,34,39],"b":36},{"s":1401,"d":"2019-07-29","a":[2,13,23,24,25,33],"b":36},{"s":1402,"d":"2019-08-01","a":[10,24,26,33,36,42],"b":28},{"s":1403,"d":"2019-08-05","a":[1,3,10,27,34,41],"b":22},{"s":1404,"d":"2019-08-08","a":[2,17,29,37,38,39],"b":5},{"s":1405,"d":"2019-08-12","a":[3,4,6,19,23,24],"b":42},{"s":1406,"d":"2019-08-15","a":[20,24,27,29,34,35],"b":43},{"s":1407,"d":"2019-08-19","a":[10,13,19,28,33,39],"b":15},{"s":1408,"d":"2019-08-22","a":[2,17,24,26,34,43],"b":32},{"s":1409,"d":"2019-08-26","a":[5,6,8,20,22,25],"b":13},{"s":1410,"d":"2019-08-29","a":[8,14,17,25,36,41],"b":23},{"s":1411,"d":"2019-09-02","a":[2,5,7,20,25,28],"b":3},{"s":1412,"d":"2019-09-05","a":[2,19,24,25,32,42],"b":8},{"s":1413,"d":"2019-09-09","a":[7,13,17,21,24,26],"b":12},{"s":1414,"d":"2019-09-12","a":[12,19,21,26,40,41],"b":20},{"s":1415,"d":"2019-09-16","a":[1,3,7,34,39,40],"b":33},{"s":1416,"d":"2019-09-19","a":[2,9,10,15,24,36],"b":13},{"s":1417,"d":"2019-09-23","a":[3,10,25,26,27,31],"b":5},{"s":1418,"d":"2019-09-26","a":[4,21,32,35,42,43],"b":15},{"s":1419,"d":"2019-09-30","a":[5,10,11,12,21,37],"b":41},{"s":1420,"d":"2019-10-03","a":[1,2,14,16,22,28],"b":4},{"s":1421,"d":"2019-10-07","a":[2,14,20,23,37,43],"b":30},{"s":1422,"d":"2019-10-10","a":[12,14,17,20,24,30],"b":39},{"s":1423,"d":"2019-10-14","a":[11,24,29,36,37,42],"b":13},{"s":1424,"d":"2019-10-17","a":[6,7,25,26,33,36],"b":19},{"s":1425,"d":"2019-10-21","a":[1,24,28,33,35,42],"b":27},{"s":1426,"d":"2019-10-24","a":[4,13,17,19,30,43],"b":24},{"s":1427,"d":"2019-10-28","a":[1,7,25,26,38,41],"b":31},{"s":1428,"d":"2019-10-31","a":[16,18,19,34,35,36],"b":6},{"s":1429,"d":"2019-11-04","a":[4,8,13,18,21,23],"b":22},{"s":1430,"d":"2019-11-07","a":[4,7,9,12,20,28],"b":3},{"s":1431,"d":"2019-11-11","a":[2,27,28,33,38,40],"b":30},{"s":1432,"d":"2019-11-14","a":[4,5,15,32,33,43],"b":13},{"s":1433,"d":"2019-11-18","a":[3,5,12,16,38,42],"b":6},{"s":1434,"d":"2019-11-21","a":[2,20,30,38,39,40],"b":4},{"s":1435,"d":"2019-11-25","a":[2,4,16,21,22,40],"b":9},{"s":1436,"d":"2019-11-28","a":[3,7,17,18,30,36],"b":33},{"s":1437,"d":"2019-12-02","a":[3,11,24,25,37,40],"b":14},{"s":1438,"d":"2019-12-05","a":[2,5,6,20,33,38],"b":22},{"s":1439,"d":"2019-12-09","a":[11,17,23,28,34,41],"b":4},{"s":1440,"d":"2019-12-12","a":[1,7,20,31,41,42],"b":28},{"s":1441,"d":"2019-12-16","a":[12,22,24,33,35,42],"b":36},{"s":1442,"d":"2019-12-19","a":[12,21,35,36,40,43],"b":39},{"s":1443,"d":"2019-12-23","a":[2,4,8,10,22,33],"b":28},{"s":1444,"d":"2019-12-26","a":[11,20,24,25,30,37],"b":14},{"s":1445,"d":"2019-12-30","a":[3,14,24,29,30,42],"b":21},{"s":1446,"d":"2020-01-09","a":[2,5,11,20,21,32],"b":13},{"s":1447,"d":"2020-01-13","a":[2,9,12,13,14,22],"b":10},{"s":1448,"d":"2020-01-16","a":[10,12,25,29,32,41],"b":40},{"s":1449,"d":"2020-01-20","a":[6,19,20,26,34,38],"b":4},{"s":1450,"d":"2020-01-23","a":[24,25,26,27,34,36],"b":3},{"s":1451,"d":"2020-01-27","a":[2,6,10,20,24,43],"b":34},{"s":1452,"d":"2020-01-30","a":[17,19,29,31,37,39],"b":35},{"s":1453,"d":"2020-02-03","a":[10,22,26,27,28,41],"b":39},{"s":1454,"d":"2020-02-06","a":[3,15,19,34,37,40],"b":41},{"s":1455,"d":"2020-02-10","a":[1,10,12,22,34,43],"b":23},{"s":1456,"d":"2020-02-13","a":[2,18,19,24,29,31],"b":33},{"s":1457,"d":"2020-02-17","a":[1,3,11,17,20,37],"b":29},{"s":1458,"d":"2020-02-20","a":[4,16,19,22,26,29],"b":6},{"s":1459,"d":"2020-02-24","a":[2,17,19,24,28,29],"b":7},{"s":1460,"d":"2020-02-27","a":[3,6,10,15,29,30],"b":4},{"s":1461,"d":"2020-03-02","a":[5,7,8,18,22,26],"b":24},{"s":1462,"d":"2020-03-05","a":[4,18,19,28,33,36],"b":9},{"s":1463,"d":"2020-03-09","a":[18,29,32,34,35,39],"b":36},{"s":1464,"d":"2020-03-12","a":[8,13,14,18,29,31],"b":23},{"s":1465,"d":"2020-03-16","a":[11,15,16,24,28,38],"b":3},{"s":1466,"d":"2020-03-19","a":[6,10,15,18,32,40],"b":35},{"s":1467,"d":"2020-03-23","a":[3,14,16,25,26,38],"b":7},{"s":1468,"d":"2020-03-26","a":[4,8,15,24,25,31],"b":26},{"s":1469,"d":"2020-03-30","a":[4,9,10,13,24,27],"b":22},{"s":1470,"d":"2020-04-02","a":[4,8,14,16,39,40],"b":23},{"s":1471,"d":"2020-04-06","a":[1,3,8,32,37,43],"b":24},{"s":1472,"d":"2020-04-09","a":[1,6,7,9,23,40],"b":43},{"s":1473,"d":"2020-04-13","a":[1,5,6,27,33,38],"b":11},{"s":1474,"d":"2020-04-16","a":[4,6,8,22,27,32],"b":26},{"s":1475,"d":"2020-04-20","a":[6,7,9,20,21,27],"b":2},{"s":1476,"d":"2020-04-23","a":[6,22,38,40,41,42],"b":35},{"s":1477,"d":"2020-04-27","a":[4,13,14,25,27,32],"b":1},{"s":1478,"d":"2020-04-30","a":[7,12,15,21,40,42],"b":32},{"s":1479,"d":"2020-05-04","a":[1,20,30,32,35,37],"b":33},{"s":1480,"d":"2020-05-07","a":[2,4,5,6,24,34],"b":39},{"s":1481,"d":"2020-05-11","a":[3,9,21,31,41,42],"b":18},{"s":1482,"d":"2020-05-14","a":[8,26,28,32,41,43],"b":14},{"s":1483,"d":"2020-05-18","a":[3,10,20,23,29,43],"b":22},{"s":1484,"d":"2020-05-21","a":[4,12,17,18,23,41],"b":28},{"s":1485,"d":"2020-05-25","a":[9,10,18,27,28,35],"b":37},{"s":1486,"d":"2020-05-28","a":[18,24,29,33,39,42],"b":34},{"s":1487,"d":"2020-06-01","a":[5,7,9,17,24,35],"b":36},{"s":1488,"d":"2020-06-04","a":[4,10,11,17,34,37],"b":38},{"s":1489,"d":"2020-06-08","a":[4,6,11,13,23,32],"b":1},{"s":1490,"d":"2020-06-11","a":[7,19,24,29,39,43],"b":11},{"s":1491,"d":"2020-06-15","a":[8,11,23,31,34,37],"b":1},{"s":1492,"d":"2020-06-18","a":[4,16,18,32,38,42],"b":36},{"s":1493,"d":"2020-06-22","a":[11,18,24,27,37,38],"b":15},{"s":1494,"d":"2020-06-25","a":[8,15,17,24,26,38],"b":27},{"s":1495,"d":"2020-06-29","a":[18,24,32,34,37,41],"b":22},{"s":1496,"d":"2020-07-02","a":[5,9,13,16,17,34],"b":37},{"s":1497,"d":"2020-07-06","a":[6,22,28,30,35,37],"b":8},{"s":1498,"d":"2020-07-09","a":[1,6,7,9,31,37],"b":43},{"s":1499,"d":"2020-07-13","a":[10,11,27,28,29,37],"b":13},{"s":1500,"d":"2020-07-16","a":[19,21,22,28,29,30],"b":4},{"s":1501,"d":"2020-07-20","a":[6,10,13,25,31,38],"b":15},{"s":1502,"d":"2020-07-23","a":[1,17,25,28,32,42],"b":26},{"s":1503,"d":"2020-07-27","a":[1,8,16,35,40,42],"b":20},{"s":1504,"d":"2020-07-30","a":[5,7,9,21,42,43],"b":35},{"s":1505,"d":"2020-08-03","a":[1,2,14,15,21,34],"b":19},{"s":1506,"d":"2020-08-06","a":[10,12,19,28,35,41],"b":39},{"s":1507,"d":"2020-08-10","a":[19,20,22,30,35,43],"b":29},{"s":1508,"d":"2020-08-13","a":[9,13,28,29,32,40],"b":41},{"s":1509,"d":"2020-08-17","a":[6,11,12,34,36,41],"b":43},{"s":1510,"d":"2020-08-20","a":[8,13,17,18,21,38],"b":23},{"s":1511,"d":"2020-08-24","a":[11,16,22,24,38,40],"b":6},{"s":1512,"d":"2020-08-27","a":[1,11,12,24,32,38],"b":39},{"s":1513,"d":"2020-08-31","a":[13,14,18,19,25,42],"b":5},{"s":1514,"d":"2020-09-03","a":[11,16,22,29,37,43],"b":14},{"s":1515,"d":"2020-09-07","a":[5,9,17,21,27,29],"b":30},{"s":1516,"d":"2020-09-10","a":[25,32,34,37,41,42],"b":28},{"s":1517,"d":"2020-09-14","a":[14,25,27,30,39,41],"b":8},{"s":1518,"d":"2020-09-17","a":[6,15,16,22,36,41],"b":20},{"s":1519,"d":"2020-09-21","a":[5,8,20,21,27,43],"b":9},{"s":1520,"d":"2020-09-24","a":[1,6,11,13,30,33],"b":4},{"s":1521,"d":"2020-09-28","a":[17,21,22,40,41,42],"b":13},{"s":1522,"d":"2020-10-01","a":[5,17,21,22,32,35],"b":41},{"s":1523,"d":"2020-10-05","a":[2,15,17,25,34,38],"b":27},{"s":1524,"d":"2020-10-08","a":[2,3,15,24,30,43],"b":39},{"s":1525,"d":"2020-10-12","a":[3,7,20,21,28,32],"b":24},{"s":1526,"d":"2020-10-15","a":[4,17,19,21,39,41],"b":36},{"s":1527,"d":"2020-10-19","a":[2,5,9,11,27,32],"b":33},{"s":1528,"d":"2020-10-22","a":[1,14,17,34,35,37],"b":16},{"s":1529,"d":"2020-10-26","a":[3,19,26,28,33,40],"b":1},{"s":1530,"d":"2020-10-29","a":[2,5,10,34,37,40],"b":7},{"s":1531,"d":"2020-11-02","a":[2,6,7,10,30,33],"b":14},{"s":1532,"d":"2020-11-05","a":[2,9,14,16,17,21],"b":34},{"s":1533,"d":"2020-11-09","a":[15,22,27,37,38,41],"b":5},{"s":1534,"d":"2020-11-12","a":[1,9,18,22,24,43],"b":39},{"s":1535,"d":"2020-11-16","a":[1,9,14,30,35,38],"b":32},{"s":1536,"d":"2020-11-19","a":[2,5,9,30,37,40],"b":28},{"s":1537,"d":"2020-11-23","a":[6,13,14,32,33,37],"b":20},{"s":1538,"d":"2020-11-26","a":[8,14,19,33,35,40],"b":38},{"s":1539,"d":"2020-11-30","a":[13,29,33,37,41,42],"b":43},{"s":1540,"d":"2020-12-03","a":[1,20,25,28,33,37],"b":31},{"s":1541,"d":"2020-12-07","a":[12,26,28,32,33,35],"b":41},{"s":1542,"d":"2020-12-10","a":[11,12,16,17,20,36],"b":18},{"s":1543,"d":"2020-12-14","a":[17,21,26,33,36,38],"b":34},{"s":1544,"d":"2020-12-17","a":[3,11,25,26,39,42],"b":34},{"s":1545,"d":"2020-12-21","a":[8,14,15,26,37,43],"b":12},{"s":1546,"d":"2020-12-24","a":[1,18,19,24,31,40],"b":16},{"s":1547,"d":"2020-12-28","a":[4,11,14,17,22,39],"b":21},{"s":1548,"d":"2021-01-04","a":[18,24,26,35,39,42],"b":32},{"s":1549,"d":"2021-01-07","a":[4,5,27,28,35,41],"b":33},{"s":1550,"d":"2021-01-11","a":[8,11,22,32,37,42],"b":41},{"s":1551,"d":"2021-01-14","a":[3,14,18,24,38,43],"b":23},{"s":1552,"d":"2021-01-18","a":[5,9,15,30,32,39],"b":11},{"s":1553,"d":"2021-01-21","a":[7,8,16,32,41,42],"b":31},{"s":1554,"d":"2021-01-25","a":[6,14,16,27,40,42],"b":26},{"s":1555,"d":"2021-01-28","a":[2,8,17,23,24,27],"b":5},{"s":1556,"d":"2021-02-01","a":[10,19,28,30,38,42],"b":18},{"s":1557,"d":"2021-02-04","a":[5,21,22,23,26,39],"b":31},{"s":1558,"d":"2021-02-08","a":[1,12,25,27,39,42],"b":16},{"s":1559,"d":"2021-02-11","a":[4,15,17,20,26,31],"b":43},{"s":1560,"d":"2021-02-15","a":[7,19,24,32,40,42],"b":22},{"s":1561,"d":"2021-02-18","a":[12,15,26,34,35,38],"b":7},{"s":1562,"d":"2021-02-22","a":[2,4,15,16,26,33],"b":25},{"s":1563,"d":"2021-02-25","a":[1,12,20,26,35,37],"b":2},{"s":1564,"d":"2021-03-01","a":[5,6,18,20,27,37],"b":7},{"s":1565,"d":"2021-03-04","a":[5,9,17,28,30,37],"b":27},{"s":1566,"d":"2021-03-08","a":[12,13,20,24,30,35],"b":34},{"s":1567,"d":"2021-03-11","a":[5,7,19,26,37,40],"b":34},{"s":1568,"d":"2021-03-15","a":[2,5,7,10,16,34],"b":14},{"s":1569,"d":"2021-03-18","a":[2,8,29,31,32,33],"b":16},{"s":1570,"d":"2021-03-22","a":[1,19,22,23,31,36],"b":24},{"s":1571,"d":"2021-03-25","a":[1,2,5,25,40,41],"b":26},{"s":1572,"d":"2021-03-29","a":[4,6,10,19,28,38],"b":40},{"s":1573,"d":"2021-04-01","a":[2,10,16,38,39,43],"b":11},{"s":1574,"d":"2021-04-05","a":[1,2,3,20,31,32],"b":13},{"s":1575,"d":"2021-04-08","a":[2,8,15,24,32,39],"b":9},{"s":1576,"d":"2021-04-12","a":[5,7,10,17,29,32],"b":37},{"s":1577,"d":"2021-04-15","a":[13,14,15,28,37,39],"b":4},{"s":1578,"d":"2021-04-19","a":[3,15,17,19,21,34],"b":4},{"s":1579,"d":"2021-04-22","a":[23,29,32,33,37,42],"b":1},{"s":1580,"d":"2021-04-26","a":[5,7,11,12,24,31],"b":3},{"s":1581,"d":"2021-04-29","a":[6,12,30,31,41,43],"b":1},{"s":1582,"d":"2021-05-03","a":[18,32,35,36,39,41],"b":28},{"s":1583,"d":"2021-05-06","a":[5,7,16,34,39,41],"b":29},{"s":1584,"d":"2021-05-10","a":[13,15,18,30,37,43],"b":9},{"s":1585,"d":"2021-05-13","a":[2,6,10,13,16,32],"b":9},{"s":1586,"d":"2021-05-17","a":[2,13,19,27,40,42],"b":14},{"s":1587,"d":"2021-05-20","a":[16,21,22,27,36,43],"b":37},{"s":1588,"d":"2021-05-24","a":[6,16,27,31,32,34],"b":11},{"s":1589,"d":"2021-05-27","a":[11,21,25,31,36,39],"b":32},{"s":1590,"d":"2021-05-31","a":[10,12,15,29,33,42],"b":17},{"s":1591,"d":"2021-06-03","a":[7,9,18,21,26,43],"b":14},{"s":1592,"d":"2021-06-07","a":[4,16,25,30,36,43],"b":19},{"s":1593,"d":"2021-06-10","a":[6,17,18,35,37,38],"b":16},{"s":1594,"d":"2021-06-14","a":[1,5,6,13,34,36],"b":18},{"s":1595,"d":"2021-06-17","a":[16,21,30,32,40,43],"b":15},{"s":1596,"d":"2021-06-21","a":[10,15,30,35,42,43],"b":26},{"s":1597,"d":"2021-06-24","a":[2,3,8,17,23,32],"b":12},{"s":1598,"d":"2021-06-28","a":[9,11,26,28,39,43],"b":1},{"s":1599,"d":"2021-07-01","a":[1,2,20,22,35,38],"b":4},{"s":1600,"d":"2021-07-05","a":[7,14,22,35,37,39],"b":24},{"s":1601,"d":"2021-07-08","a":[6,13,17,18,21,41],"b":37},{"s":1602,"d":"2021-07-12","a":[1,2,7,14,32,42],"b":33},{"s":1603,"d":"2021-07-15","a":[4,6,32,35,40,42],"b":26},{"s":1604,"d":"2021-07-19","a":[12,21,23,36,37,38],"b":6},{"s":1605,"d":"2021-07-22","a":[2,5,8,20,29,40],"b":6},{"s":1606,"d":"2021-07-26","a":[18,23,25,26,32,34],"b":43},{"s":1607,"d":"2021-07-29","a":[10,13,14,15,17,22],"b":40},{"s":1608,"d":"2021-08-02","a":[10,18,22,23,25,35],"b":19},{"s":1609,"d":"2021-08-05","a":[4,12,16,34,35,41],"b":5},{"s":1610,"d":"2021-08-09","a":[1,8,13,22,41,42],"b":40},{"s":1611,"d":"2021-08-12","a":[3,14,16,24,32,36],"b":34},{"s":1612,"d":"2021-08-16","a":[5,8,12,16,27,38],"b":42},{"s":1613,"d":"2021-08-19","a":[9,17,22,25,30,41],"b":15},{"s":1614,"d":"2021-08-23","a":[4,5,20,29,40,43],"b":24},{"s":1615,"d":"2021-08-26","a":[2,5,6,13,19,29],"b":25},{"s":1616,"d":"2021-08-30","a":[1,4,6,21,34,41],"b":12},{"s":1617,"d":"2021-09-02","a":[2,19,21,24,26,41],"b":23},{"s":1618,"d":"2021-09-06","a":[2,10,14,17,37,43],"b":38},{"s":1619,"d":"2021-09-09","a":[3,5,17,20,24,38],"b":13},{"s":1620,"d":"2021-09-13","a":[7,15,19,24,25,28],"b":11},{"s":1621,"d":"2021-09-16","a":[3,10,22,23,26,39],"b":1},{"s":1622,"d":"2021-09-20","a":[16,29,34,35,40,41],"b":26},{"s":1623,"d":"2021-09-23","a":[7,12,15,17,19,29],"b":22},{"s":1624,"d":"2021-09-27","a":[3,5,17,25,33,39],"b":19},{"s":1625,"d":"2021-09-30","a":[1,4,8,11,30,42],"b":9},{"s":1626,"d":"2021-10-04","a":[9,11,19,23,30,43],"b":27},{"s":1627,"d":"2021-10-07","a":[21,22,23,26,36,38],"b":13},{"s":1628,"d":"2021-10-11","a":[1,3,10,12,26,42],"b":13},{"s":1629,"d":"2021-10-14","a":[19,23,30,31,32,40],"b":13},{"s":1630,"d":"2021-10-18","a":[10,11,24,33,34,36],"b":42},{"s":1631,"d":"2021-10-21","a":[7,15,23,26,30,35],"b":36},{"s":1632,"d":"2021-10-25","a":[1,9,24,28,31,41],"b":2},{"s":1633,"d":"2021-10-28","a":[3,7,9,26,35,36],"b":28},{"s":1634,"d":"2021-11-01","a":[18,19,20,23,29,35],"b":17},{"s":1635,"d":"2021-11-04","a":[4,8,19,32,36,43],"b":30},{"s":1636,"d":"2021-11-08","a":[1,12,24,26,30,36],"b":29},{"s":1637,"d":"2021-11-11","a":[2,3,11,16,27,36],"b":29},{"s":1638,"d":"2021-11-15","a":[21,25,26,35,39,40],"b":18},{"s":1639,"d":"2021-11-18","a":[5,9,13,20,26,32],"b":28},{"s":1640,"d":"2021-11-22","a":[8,9,19,21,27,30],"b":17},{"s":1641,"d":"2021-11-25","a":[2,5,7,12,16,20],"b":33},{"s":1642,"d":"2021-11-29","a":[5,15,16,24,34,39],"b":13},{"s":1643,"d":"2021-12-02","a":[10,11,12,15,16,40],"b":33},{"s":1644,"d":"2021-12-06","a":[1,9,14,28,32,40],"b":15},{"s":1645,"d":"2021-12-09","a":[2,8,13,14,33,40],"b":6},{"s":1646,"d":"2021-12-13","a":[3,19,21,29,39,43],"b":25},{"s":1647,"d":"2021-12-16","a":[3,8,14,15,19,35],"b":12},{"s":1648,"d":"2021-12-20","a":[2,3,22,26,35,42],"b":38},{"s":1649,"d":"2021-12-23","a":[8,16,19,23,29,41],"b":1},{"s":1650,"d":"2021-12-27","a":[1,3,15,33,39,43],"b":30},{"s":1651,"d":"2021-12-30","a":[7,12,15,21,27,32],"b":28},{"s":1652,"d":"2022-01-06","a":[8,15,16,23,38,43],"b":2},{"s":1653,"d":"2022-01-10","a":[2,7,10,12,29,36],"b":6},{"s":1654,"d":"2022-01-13","a":[9,10,14,21,22,33],"b":26},{"s":1655,"d":"2022-01-17","a":[21,23,31,38,42,43],"b":40},{"s":1656,"d":"2022-01-20","a":[11,12,14,28,36,38],"b":37},{"s":1657,"d":"2022-01-24","a":[11,13,16,19,20,38],"b":25},{"s":1658,"d":"2022-01-27","a":[10,11,19,29,30,36],"b":37},{"s":1659,"d":"2022-01-31","a":[4,10,23,25,37,42],"b":6},{"s":1660,"d":"2022-02-03","a":[3,13,29,35,42,43],"b":15},{"s":1661,"d":"2022-02-07","a":[6,14,31,35,38,43],"b":12},{"s":1662,"d":"2022-02-10","a":[4,17,18,25,26,27],"b":32},{"s":1663,"d":"2022-02-14","a":[1,6,19,21,27,39],"b":3},{"s":1664,"d":"2022-02-17","a":[7,10,17,20,21,27],"b":15},{"s":1665,"d":"2022-02-21","a":[19,22,24,29,34,41],"b":9},{"s":1666,"d":"2022-02-24","a":[14,16,26,37,41,43],"b":31},{"s":1667,"d":"2022-02-28","a":[5,8,18,25,40,43],"b":17},{"s":1668,"d":"2022-03-03","a":[5,16,21,24,31,34],"b":29},{"s":1669,"d":"2022-03-07","a":[2,4,13,14,22,29],"b":26},{"s":1670,"d":"2022-03-10","a":[1,16,20,23,32,37],"b":18},{"s":1671,"d":"2022-03-14","a":[16,27,37,38,39,43],"b":10},{"s":1672,"d":"2022-03-17","a":[6,17,22,27,37,42],"b":34},{"s":1673,"d":"2022-03-21","a":[24,33,35,36,41,43],"b":21},{"s":1674,"d":"2022-03-24","a":[14,19,25,29,33,43],"b":31},{"s":1675,"d":"2022-03-28","a":[2,3,17,27,28,34],"b":6},{"s":1676,"d":"2022-03-31","a":[5,13,21,27,31,36],"b":11},{"s":1677,"d":"2022-04-04","a":[11,20,26,31,34,38],"b":32},{"s":1678,"d":"2022-04-07","a":[3,15,17,21,22,23],"b":13},{"s":1679,"d":"2022-04-11","a":[10,12,13,21,31,41],"b":27},{"s":1680,"d":"2022-04-14","a":[4,19,29,32,35,42],"b":25},{"s":1681,"d":"2022-04-18","a":[1,7,11,13,15,42],"b":33},{"s":1682,"d":"2022-04-21","a":[6,9,10,21,33,41],"b":14},{"s":1683,"d":"2022-04-25","a":[6,15,28,30,32,43],"b":21},{"s":1684,"d":"2022-04-28","a":[5,10,26,30,34,40],"b":31},{"s":1685,"d":"2022-05-02","a":[1,26,27,28,33,37],"b":8},{"s":1686,"d":"2022-05-05","a":[7,8,9,23,25,41],"b":11},{"s":1687,"d":"2022-05-09","a":[20,21,23,26,29,35],"b":22},{"s":1688,"d":"2022-05-12","a":[2,4,10,24,34,42],"b":8},{"s":1689,"d":"2022-05-16","a":[4,7,21,22,34,42],"b":31},{"s":1690,"d":"2022-05-19","a":[8,16,21,23,29,37],"b":38},{"s":1691,"d":"2022-05-23","a":[13,16,18,29,33,41],"b":26},{"s":1692,"d":"2022-05-26","a":[4,8,17,31,37,42],"b":14},{"s":1693,"d":"2022-05-30","a":[7,8,21,23,34,36],"b":11},{"s":1694,"d":"2022-06-02","a":[2,12,14,26,32,37],"b":29},{"s":1695,"d":"2022-06-06","a":[3,8,14,18,28,37],"b":39},{"s":1696,"d":"2022-06-09","a":[2,4,13,18,32,35],"b":12},{"s":1697,"d":"2022-06-13","a":[2,3,11,12,22,35],"b":26},{"s":1698,"d":"2022-06-16","a":[6,16,18,33,42,43],"b":11},{"s":1699,"d":"2022-06-20","a":[4,6,16,27,39,42],"b":1},{"s":1700,"d":"2022-06-23","a":[11,19,20,27,31,35],"b":6},{"s":1701,"d":"2022-06-27","a":[5,8,27,30,33,39],"b":10},{"s":1702,"d":"2022-06-30","a":[2,6,7,18,27,38],"b":14},{"s":1703,"d":"2022-07-04","a":[14,22,23,30,33,38],"b":18},{"s":1704,"d":"2022-07-07","a":[1,5,18,26,39,40],"b":31},{"s":1705,"d":"2022-07-11","a":[3,6,9,28,37,41],"b":5},{"s":1706,"d":"2022-07-14","a":[13,15,32,35,37,38],"b":25},{"s":1707,"d":"2022-07-18","a":[14,16,28,34,35,36],"b":26},{"s":1708,"d":"2022-07-21","a":[1,20,29,35,40,41],"b":16},{"s":1709,"d":"2022-07-25","a":[3,4,7,20,22,41],"b":5},{"s":1710,"d":"2022-07-28","a":[1,2,21,27,32,37],"b":14},{"s":1711,"d":"2022-08-01","a":[3,32,33,34,35,40],"b":5},{"s":1712,"d":"2022-08-04","a":[1,5,15,24,25,28],"b":14},{"s":1713,"d":"2022-08-08","a":[6,32,38,39,40,42],"b":37},{"s":1714,"d":"2022-08-11","a":[11,15,20,26,33,42],"b":16},{"s":1715,"d":"2022-08-15","a":[2,6,15,16,32,37],"b":25},{"s":1716,"d":"2022-08-18","a":[2,26,27,32,38,42],"b":9},{"s":1717,"d":"2022-08-22","a":[15,21,23,24,33,36],"b":40},{"s":1718,"d":"2022-08-25","a":[1,6,9,15,18,38],"b":10},{"s":1719,"d":"2022-08-29","a":[4,11,15,16,35,39],"b":36},{"s":1720,"d":"2022-09-01","a":[1,5,18,25,32,38],"b":20},{"s":1721,"d":"2022-09-05","a":[7,8,14,17,22,39],"b":30},{"s":1722,"d":"2022-09-08","a":[2,5,30,33,36,42],"b":28},{"s":1723,"d":"2022-09-12","a":[6,10,15,16,30,38],"b":26},{"s":1724,"d":"2022-09-15","a":[6,9,24,26,33,37],"b":16},{"s":1725,"d":"2022-09-19","a":[2,10,16,17,20,28],"b":1},{"s":1726,"d":"2022-09-22","a":[9,14,16,21,27,43],"b":26},{"s":1727,"d":"2022-09-26","a":[3,13,16,22,33,42],"b":15},{"s":1728,"d":"2022-09-29","a":[4,8,14,18,26,38],"b":3},{"s":1729,"d":"2022-10-03","a":[11,15,24,25,28,31],"b":9},{"s":1730,"d":"2022-10-06","a":[4,8,16,21,22,26],"b":23},{"s":1731,"d":"2022-10-10","a":[3,7,19,21,32,35],"b":6},{"s":1732,"d":"2022-10-13","a":[3,18,19,34,38,42],"b":14},{"s":1733,"d":"2022-10-17","a":[22,24,25,27,29,39],"b":7},{"s":1734,"d":"2022-10-20","a":[5,6,11,19,28,35],"b":42},{"s":1735,"d":"2022-10-24","a":[1,21,24,33,40,41],"b":12},{"s":1736,"d":"2022-10-27","a":[6,9,25,26,27,32],"b":11},{"s":1737,"d":"2022-10-31","a":[12,14,22,24,29,33],"b":3},{"s":1738,"d":"2022-11-03","a":[7,12,20,31,33,43],"b":14},{"s":1739,"d":"2022-11-07","a":[1,7,12,36,37,39],"b":41},{"s":1740,"d":"2022-11-10","a":[14,21,24,27,31,38],"b":5},{"s":1741,"d":"2022-11-14","a":[4,14,17,19,22,42],"b":6},{"s":1742,"d":"2022-11-17","a":[16,20,22,29,33,40],"b":25},{"s":1743,"d":"2022-11-21","a":[3,17,18,19,20,42],"b":9},{"s":1744,"d":"2022-11-24","a":[1,8,21,25,26,35],"b":20},{"s":1745,"d":"2022-11-28","a":[7,9,10,21,39,40],"b":32},{"s":1746,"d":"2022-12-01","a":[3,11,14,22,27,32],"b":31},{"s":1747,"d":"2022-12-05","a":[1,9,11,14,15,40],"b":32},{"s":1748,"d":"2022-12-08","a":[8,11,23,28,36,39],"b":6},{"s":1749,"d":"2022-12-12","a":[1,4,13,17,31,34],"b":18},{"s":1750,"d":"2022-12-15","a":[3,15,18,21,34,40],"b":1},{"s":1751,"d":"2022-12-19","a":[1,12,21,24,29,42],"b":32},{"s":1752,"d":"2022-12-22","a":[2,5,15,20,22,36],"b":8},{"s":1753,"d":"2022-12-26","a":[1,2,4,9,22,25],"b":38},{"s":1754,"d":"2022-12-29","a":[3,6,7,19,35,39],"b":21},{"s":1755,"d":"2023-01-05","a":[4,11,13,26,27,36],"b":15},{"s":1756,"d":"2023-01-09","a":[19,25,29,36,37,41],"b":2},{"s":1757,"d":"2023-01-12","a":[6,12,15,35,36,39],"b":42},{"s":1758,"d":"2023-01-16","a":[7,14,28,32,42,43],"b":17},{"s":1759,"d":"2023-01-19","a":[1,10,25,27,28,33],"b":15},{"s":1760,"d":"2023-01-23","a":[8,14,18,38,39,42],"b":30},{"s":1761,"d":"2023-01-26","a":[5,7,13,21,23,30],"b":42},{"s":1762,"d":"2023-01-30","a":[1,6,7,20,37,40],"b":10},{"s":1763,"d":"2023-02-02","a":[2,6,20,30,31,41],"b":11},{"s":1764,"d":"2023-02-06","a":[16,21,26,31,39,42],"b":41},{"s":1765,"d":"2023-02-09","a":[1,10,15,19,20,32],"b":6},{"s":1766,"d":"2023-02-13","a":[16,19,25,26,35,43],"b":38},{"s":1767,"d":"2023-02-16","a":[7,15,17,21,32,35],"b":43},{"s":1768,"d":"2023-02-20","a":[6,21,30,32,39,40],"b":34},{"s":1769,"d":"2023-02-23","a":[4,11,15,19,28,32],"b":34},{"s":1770,"d":"2023-02-27","a":[1,11,18,24,37,43],"b":28},{"s":1771,"d":"2023-03-02","a":[3,6,12,16,31,42],"b":40},{"s":1772,"d":"2023-03-06","a":[5,21,22,30,32,36],"b":16},{"s":1773,"d":"2023-03-09","a":[12,21,22,27,31,32],"b":20},{"s":1774,"d":"2023-03-13","a":[17,18,26,30,36,40],"b":3},{"s":1775,"d":"2023-03-16","a":[4,5,9,26,27,29],"b":43},{"s":1776,"d":"2023-03-20","a":[5,11,18,25,33,38],"b":32},{"s":1777,"d":"2023-03-23","a":[5,16,19,21,30,35],"b":11},{"s":1778,"d":"2023-03-27","a":[9,19,24,25,26,39],"b":34},{"s":1779,"d":"2023-03-30","a":[11,13,20,33,35,40],"b":34},{"s":1780,"d":"2023-04-03","a":[1,5,19,26,35,37],"b":32},{"s":1781,"d":"2023-04-06","a":[10,18,32,39,41,42],"b":12},{"s":1782,"d":"2023-04-10","a":[7,31,32,36,39,42],"b":34},{"s":1783,"d":"2023-04-13","a":[5,14,19,23,30,42],"b":35},{"s":1784,"d":"2023-04-17","a":[3,19,30,32,36,40],"b":42},{"s":1785,"d":"2023-04-20","a":[4,11,24,35,37,42],"b":7},{"s":1786,"d":"2023-04-24","a":[2,5,6,26,33,35],"b":13},{"s":1787,"d":"2023-04-27","a":[2,13,17,19,41,43],"b":1},{"s":1788,"d":"2023-05-01","a":[3,14,16,19,26,39],"b":9},{"s":1789,"d":"2023-05-04","a":[6,9,16,26,29,34],"b":36},{"s":1790,"d":"2023-05-08","a":[6,14,18,22,29,30],"b":36},{"s":1791,"d":"2023-05-11","a":[8,9,18,19,30,36],"b":17},{"s":1792,"d":"2023-05-15","a":[1,4,16,31,32,41],"b":30},{"s":1793,"d":"2023-05-18","a":[1,6,14,15,23,24],"b":42},{"s":1794,"d":"2023-05-22","a":[24,29,32,35,36,40],"b":39},{"s":1795,"d":"2023-05-25","a":[26,30,31,35,41,43],"b":5},{"s":1796,"d":"2023-05-29","a":[2,5,15,16,23,26],"b":32},{"s":1797,"d":"2023-06-01","a":[15,23,26,34,41,43],"b":32},{"s":1798,"d":"2023-06-05","a":[4,5,19,32,34,37],"b":41},{"s":1799,"d":"2023-06-08","a":[11,18,34,40,41,42],"b":14},{"s":1800,"d":"2023-06-12","a":[6,12,13,15,17,41],"b":27},{"s":1801,"d":"2023-06-15","a":[18,25,26,37,39,43],"b":21},{"s":1802,"d":"2023-06-19","a":[1,9,34,35,39,42],"b":33},{"s":1803,"d":"2023-06-22","a":[9,16,18,19,39,41],"b":3},{"s":1804,"d":"2023-06-26","a":[12,14,18,25,36,42],"b":26},{"s":1805,"d":"2023-06-29","a":[4,22,27,31,32,40],"b":35},{"s":1806,"d":"2023-07-03","a":[11,30,35,38,40,43],"b":12},{"s":1807,"d":"2023-07-06","a":[1,2,8,9,10,20],"b":25},{"s":1808,"d":"2023-07-10","a":[2,10,27,38,40,41],"b":11},{"s":1809,"d":"2023-07-13","a":[2,5,10,22,24,42],"b":7},{"s":1810,"d":"2023-07-17","a":[4,17,26,30,31,43],"b":25},{"s":1811,"d":"2023-07-20","a":[2,4,6,13,20,38],"b":33},{"s":1812,"d":"2023-07-24","a":[10,13,18,28,36,39],"b":7},{"s":1813,"d":"2023-07-27","a":[5,22,26,34,39,42],"b":12},{"s":1814,"d":"2023-07-31","a":[1,2,13,21,23,31],"b":5},{"s":1815,"d":"2023-08-03","a":[3,8,10,25,26,29],"b":32},{"s":1816,"d":"2023-08-07","a":[2,21,25,34,35,40],"b":6},{"s":1817,"d":"2023-08-10","a":[6,24,30,33,37,38],"b":7},{"s":1818,"d":"2023-08-14","a":[2,11,23,25,34,36],"b":1},{"s":1819,"d":"2023-08-17","a":[5,8,18,20,24,34],"b":29},{"s":1820,"d":"2023-08-21","a":[5,10,30,35,36,41],"b":23},{"s":1821,"d":"2023-08-24","a":[9,11,12,14,27,38],"b":34},{"s":1822,"d":"2023-08-28","a":[5,18,21,22,26,42],"b":8},{"s":1823,"d":"2023-08-31","a":[4,10,18,25,34,38],"b":40},{"s":1824,"d":"2023-09-04","a":[6,7,13,18,25,43],"b":33},{"s":1825,"d":"2023-09-07","a":[1,10,13,17,20,41],"b":4},{"s":1826,"d":"2023-09-11","a":[7,14,18,19,22,25],"b":38},{"s":1827,"d":"2023-09-14","a":[1,13,18,23,38,41],"b":36},{"s":1828,"d":"2023-09-18","a":[1,6,9,16,18,22],"b":8},{"s":1829,"d":"2023-09-21","a":[12,15,16,17,28,42],"b":32},{"s":1830,"d":"2023-09-25","a":[4,10,23,29,31,36],"b":6},{"s":1831,"d":"2023-09-28","a":[1,14,17,27,32,43],"b":42},{"s":1832,"d":"2023-10-02","a":[2,7,20,25,35,40],"b":6},{"s":1833,"d":"2023-10-05","a":[7,13,34,37,42,43],"b":38},{"s":1834,"d":"2023-10-09","a":[14,21,30,38,40,42],"b":20},{"s":1835,"d":"2023-10-12","a":[11,20,23,24,31,33],"b":1},{"s":1836,"d":"2023-10-16","a":[13,17,18,22,23,41],"b":26},{"s":1837,"d":"2023-10-19","a":[16,17,27,34,38,42],"b":20},{"s":1838,"d":"2023-10-23","a":[3,13,23,28,30,43],"b":5},{"s":1839,"d":"2023-10-26","a":[2,5,26,32,34,40],"b":21},{"s":1840,"d":"2023-10-30","a":[4,9,15,21,26,33],"b":13},{"s":1841,"d":"2023-11-02","a":[8,11,15,31,33,38],"b":30},{"s":1842,"d":"2023-11-06","a":[4,6,9,24,26,29],"b":35},{"s":1843,"d":"2023-11-09","a":[4,5,10,19,26,37],"b":3},{"s":1844,"d":"2023-11-13","a":[12,15,28,31,34,43],"b":9},{"s":1845,"d":"2023-11-16","a":[10,22,25,30,31,39],"b":28},{"s":1846,"d":"2023-11-20","a":[6,8,15,16,33,37],"b":34},{"s":1847,"d":"2023-11-23","a":[18,22,25,35,36,39],"b":43},{"s":1848,"d":"2023-11-27","a":[3,23,26,27,31,35],"b":10},{"s":1849,"d":"2023-11-30","a":[11,15,17,33,36,41],"b":6},{"s":1850,"d":"2023-12-04","a":[1,8,23,30,36,41],"b":39},{"s":1851,"d":"2023-12-07","a":[8,9,10,16,17,39],"b":4},{"s":1852,"d":"2023-12-11","a":[15,16,24,26,35,43],"b":38},{"s":1853,"d":"2023-12-14","a":[11,13,24,26,28,34],"b":17},{"s":1854,"d":"2023-12-18","a":[7,8,12,25,30,32],"b":40},{"s":1855,"d":"2023-12-21","a":[21,24,26,30,31,38],"b":3},{"s":1856,"d":"2023-12-25","a":[4,10,19,31,34,35],"b":43},{"s":1857,"d":"2023-12-28","a":[11,16,20,23,38,41],"b":33},{"s":1858,"d":"2024-01-04","a":[12,13,17,22,35,40],"b":5},{"s":1859,"d":"2024-01-08","a":[1,4,11,28,37,39],"b":15},{"s":1860,"d":"2024-01-11","a":[8,15,20,21,31,34],"b":28},{"s":1861,"d":"2024-01-15","a":[2,12,13,27,39,40],"b":30},{"s":1862,"d":"2024-01-18","a":[25,27,33,37,38,43],"b":16},{"s":1863,"d":"2024-01-22","a":[15,20,24,37,38,39],"b":27},{"s":1864,"d":"2024-01-25","a":[14,22,28,34,41,42],"b":11},{"s":1865,"d":"2024-01-29","a":[3,5,18,21,26,36],"b":34},{"s":1866,"d":"2024-02-01","a":[8,19,21,29,38,40],"b":12},{"s":1867,"d":"2024-02-05","a":[1,6,17,28,40,42],"b":4},{"s":1868,"d":"2024-02-08","a":[3,7,22,23,24,32],"b":2},{"s":1869,"d":"2024-02-12","a":[7,8,16,28,36,37],"b":29},{"s":1870,"d":"2024-02-15","a":[5,9,13,23,25,40],"b":27},{"s":1871,"d":"2024-02-19","a":[7,13,22,24,38,42],"b":14},{"s":1872,"d":"2024-02-22","a":[3,18,20,25,34,40],"b":31},{"s":1873,"d":"2024-02-26","a":[6,15,26,33,39,41],"b":42},{"s":1874,"d":"2024-02-29","a":[13,31,33,36,41,43],"b":29},{"s":1875,"d":"2024-03-04","a":[11,15,16,24,38,39],"b":29},{"s":1876,"d":"2024-03-07","a":[4,7,17,31,38,43],"b":30},{"s":1877,"d":"2024-03-11","a":[1,11,13,16,21,37],"b":6},{"s":1878,"d":"2024-03-14","a":[6,8,12,18,32,38],"b":39},{"s":1879,"d":"2024-03-18","a":[1,8,14,27,29,37],"b":6},{"s":1880,"d":"2024-03-21","a":[9,14,21,31,33,43],"b":30},{"s":1881,"d":"2024-03-25","a":[2,9,22,31,33,35],"b":30},{"s":1882,"d":"2024-03-28","a":[3,6,11,25,36,43],"b":10},{"s":1883,"d":"2024-04-01","a":[3,11,24,25,28,32],"b":5},{"s":1884,"d":"2024-04-04","a":[20,25,29,36,38,42],"b":19},{"s":1885,"d":"2024-04-08","a":[2,6,7,16,17,41],"b":32},{"s":1886,"d":"2024-04-11","a":[1,6,19,25,33,39],"b":15},{"s":1887,"d":"2024-04-15","a":[5,7,15,18,36,37],"b":20},{"s":1888,"d":"2024-04-18","a":[4,5,6,28,29,39],"b":7},{"s":1889,"d":"2024-04-22","a":[7,15,21,27,28,32],"b":24},{"s":1890,"d":"2024-04-25","a":[17,21,29,34,41,42],"b":2},{"s":1891,"d":"2024-04-29","a":[2,16,23,38,40,43],"b":33},{"s":1892,"d":"2024-05-02","a":[7,8,9,19,22,38],"b":24},{"s":1893,"d":"2024-05-06","a":[25,31,33,35,37,42],"b":16},{"s":1894,"d":"2024-05-09","a":[19,29,36,37,41,42],"b":35},{"s":1895,"d":"2024-05-13","a":[6,18,29,33,35,40],"b":1},{"s":1896,"d":"2024-05-16","a":[5,12,15,16,28,40],"b":1},{"s":1897,"d":"2024-05-20","a":[7,23,27,30,34,36],"b":28},{"s":1898,"d":"2024-05-23","a":[5,19,23,26,31,42],"b":32},{"s":1899,"d":"2024-05-27","a":[2,4,9,19,33,36],"b":3},{"s":1900,"d":"2024-05-30","a":[3,9,29,30,39,42],"b":23},{"s":1901,"d":"2024-06-03","a":[14,15,26,28,33,37],"b":4},{"s":1902,"d":"2024-06-06","a":[4,7,15,18,35,40],"b":12},{"s":1903,"d":"2024-06-10","a":[18,19,23,25,27,32],"b":20},{"s":1904,"d":"2024-06-13","a":[14,21,23,24,28,36],"b":7},{"s":1905,"d":"2024-06-17","a":[4,5,17,20,29,30],"b":40},{"s":1906,"d":"2024-06-20","a":[1,8,21,22,30,42],"b":24},{"s":1907,"d":"2024-06-24","a":[10,14,21,23,24,40],"b":28},{"s":1908,"d":"2024-06-27","a":[3,9,21,25,42,43],"b":36},{"s":1909,"d":"2024-07-01","a":[3,5,7,8,22,27],"b":28},{"s":1910,"d":"2024-07-04","a":[2,8,24,29,30,31],"b":6},{"s":1911,"d":"2024-07-08","a":[4,8,9,14,16,41],"b":15},{"s":1912,"d":"2024-07-11","a":[1,11,24,29,33,34],"b":4},{"s":1913,"d":"2024-07-15","a":[2,5,22,23,29,33],"b":17},{"s":1914,"d":"2024-07-18","a":[4,10,22,24,36,38],"b":8},{"s":1915,"d":"2024-07-22","a":[4,10,14,19,24,40],"b":15},{"s":1916,"d":"2024-07-25","a":[5,13,18,23,30,39],"b":33},{"s":1917,"d":"2024-07-29","a":[3,12,14,29,30,33],"b":21},{"s":1918,"d":"2024-08-01","a":[3,4,5,6,18,20],"b":11},{"s":1919,"d":"2024-08-05","a":[5,17,19,21,38,41],"b":6},{"s":1920,"d":"2024-08-08","a":[6,10,22,23,31,36],"b":37},{"s":1921,"d":"2024-08-12","a":[1,2,13,25,33,41],"b":31},{"s":1922,"d":"2024-08-15","a":[3,11,22,31,33,35],"b":13},{"s":1923,"d":"2024-08-19","a":[6,7,18,30,34,37],"b":3},{"s":1924,"d":"2024-08-22","a":[7,16,18,25,26,27],"b":17},{"s":1925,"d":"2024-08-26","a":[5,9,11,18,34,37],"b":22},{"s":1926,"d":"2024-08-29","a":[10,13,18,24,34,37],"b":1},{"s":1927,"d":"2024-09-02","a":[2,11,18,26,32,36],"b":10},{"s":1928,"d":"2024-09-05","a":[2,18,20,24,26,29],"b":22},{"s":1929,"d":"2024-09-09","a":[7,10,12,20,40,43],"b":4},{"s":1930,"d":"2024-09-12","a":[5,10,19,23,29,37],"b":11},{"s":1931,"d":"2024-09-16","a":[9,23,27,30,33,41],"b":4},{"s":1932,"d":"2024-09-19","a":[1,5,16,20,24,31],"b":29},{"s":1933,"d":"2024-09-23","a":[3,7,9,10,12,30],"b":16},{"s":1934,"d":"2024-09-26","a":[6,13,16,20,27,41],"b":30},{"s":1935,"d":"2024-09-30","a":[3,8,12,14,17,40],"b":2},{"s":1936,"d":"2024-10-03","a":[1,6,19,29,33,35],"b":26},{"s":1937,"d":"2024-10-07","a":[1,9,26,28,31,38],"b":8},{"s":1938,"d":"2024-10-10","a":[5,9,14,32,39,41],"b":24},{"s":1939,"d":"2024-10-14","a":[10,22,26,27,29,37],"b":41},{"s":1940,"d":"2024-10-17","a":[2,14,15,25,26,42],"b":9},{"s":1941,"d":"2024-10-21","a":[2,12,13,21,23,43],"b":39},{"s":1942,"d":"2024-10-24","a":[1,16,18,26,27,35],"b":29},{"s":1943,"d":"2024-10-28","a":[10,11,17,25,34,38],"b":9},{"s":1944,"d":"2024-10-31","a":[6,11,21,33,39,42],"b":18},{"s":1945,"d":"2024-11-04","a":[1,2,4,14,27,43],"b":41},{"s":1946,"d":"2024-11-07","a":[8,9,11,27,36,38],"b":18},{"s":1947,"d":"2024-11-11","a":[10,24,30,36,37,41],"b":5},{"s":1948,"d":"2024-11-14","a":[18,29,30,38,39,43],"b":40},{"s":1949,"d":"2024-11-18","a":[12,13,17,28,37,43],"b":27},{"s":1950,"d":"2024-11-21","a":[9,20,26,28,30,42],"b":6},{"s":1951,"d":"2024-11-25","a":[1,3,6,23,28,35],"b":14},{"s":1952,"d":"2024-11-28","a":[24,25,31,32,34,40],"b":12},{"s":1953,"d":"2024-12-02","a":[19,23,29,33,36,40],"b":27},{"s":1954,"d":"2024-12-05","a":[2,10,15,25,35,37],"b":22},{"s":1955,"d":"2024-12-09","a":[11,19,26,28,29,36],"b":1},{"s":1956,"d":"2024-12-12","a":[2,19,21,24,35,42],"b":17},{"s":1957,"d":"2024-12-16","a":[3,4,5,13,34,42],"b":18},{"s":1958,"d":"2024-12-19","a":[1,15,16,20,21,25],"b":19},{"s":1959,"d":"2024-12-23","a":[19,20,36,40,41,43],"b":22},{"s":1960,"d":"2024-12-26","a":[10,22,27,28,31,32],"b":8},{"s":1961,"d":"2024-12-30","a":[11,12,27,28,38,43],"b":10},{"s":1962,"d":"2025-01-06","a":[4,8,19,22,32,37],"b":26},{"s":1963,"d":"2025-01-09","a":[3,4,20,29,35,38],"b":6},{"s":1964,"d":"2025-01-13","a":[2,5,28,33,35,36],"b":34},{"s":1965,"d":"2025-01-16","a":[17,18,20,23,33,43],"b":19},{"s":1966,"d":"2025-01-20","a":[4,12,25,29,34,36],"b":32},{"s":1967,"d":"2025-01-23","a":[3,4,22,26,29,35],"b":37},{"s":1968,"d":"2025-01-27","a":[6,13,15,22,35,41],"b":37},{"s":1969,"d":"2025-01-30","a":[3,7,12,13,35,38],"b":24},{"s":1970,"d":"2025-02-03","a":[11,26,27,31,36,37],"b":42},{"s":1971,"d":"2025-02-06","a":[2,6,9,26,32,36],"b":23},{"s":1972,"d":"2025-02-10","a":[3,14,27,28,32,36],"b":12},{"s":1973,"d":"2025-02-13","a":[7,10,14,27,28,32],"b":4},{"s":1974,"d":"2025-02-17","a":[2,6,13,21,24,30],"b":43},{"s":1975,"d":"2025-02-20","a":[11,13,15,20,35,42],"b":19},{"s":1976,"d":"2025-02-24","a":[4,6,22,30,33,36],"b":2},{"s":1977,"d":"2025-02-27","a":[4,14,20,28,29,34],"b":30},{"s":1978,"d":"2025-03-03","a":[23,25,26,30,34,35],"b":12},{"s":1979,"d":"2025-03-06","a":[15,18,19,21,37,40],"b":17},{"s":1980,"d":"2025-03-10","a":[1,2,13,19,35,41],"b":3},{"s":1981,"d":"2025-03-13","a":[5,10,15,17,29,41],"b":30},{"s":1982,"d":"2025-03-17","a":[20,21,23,28,32,34],"b":6},{"s":1983,"d":"2025-03-20","a":[3,18,31,36,37,40],"b":23},{"s":1984,"d":"2025-03-24","a":[4,19,28,29,34,40],"b":3},{"s":1985,"d":"2025-03-27","a":[1,30,36,37,41,43],"b":33},{"s":1986,"d":"2025-03-31","a":[14,20,29,31,41,42],"b":24},{"s":1987,"d":"2025-04-03","a":[8,12,25,28,32,42],"b":27},{"s":1988,"d":"2025-04-07","a":[6,20,23,24,33,35],"b":27},{"s":1989,"d":"2025-04-10","a":[15,17,23,29,35,43],"b":8},{"s":1990,"d":"2025-04-14","a":[6,9,15,19,24,40],"b":30},{"s":1991,"d":"2025-04-17","a":[1,5,12,16,17,40],"b":4},{"s":1992,"d":"2025-04-21","a":[9,11,18,21,27,34],"b":13},{"s":1993,"d":"2025-04-24","a":[7,12,13,35,37,42],"b":31},{"s":1994,"d":"2025-04-28","a":[10,11,13,16,24,26],"b":12},{"s":1995,"d":"2025-05-01","a":[2,4,8,26,27,37],"b":19},{"s":1996,"d":"2025-05-05","a":[6,17,26,28,33,34],"b":20},{"s":1997,"d":"2025-05-08","a":[5,16,17,28,36,40],"b":14},{"s":1998,"d":"2025-05-12","a":[1,4,6,9,20,43],"b":21},{"s":1999,"d":"2025-05-15","a":[17,31,34,35,36,38],"b":2},{"s":2000,"d":"2025-05-19","a":[1,2,16,21,25,35],"b":22},{"s":2001,"d":"2025-05-22","a":[13,21,24,26,34,36],"b":20},{"s":2002,"d":"2025-05-26","a":[1,17,19,23,36,42],"b":15},{"s":2003,"d":"2025-05-29","a":[1,5,10,13,35,40],"b":39},{"s":2004,"d":"2025-06-02","a":[16,18,25,27,31,36],"b":7},{"s":2005,"d":"2025-06-05","a":[3,7,18,27,33,34],"b":6},{"s":2006,"d":"2025-06-09","a":[4,7,19,22,26,28],"b":33},{"s":2007,"d":"2025-06-12","a":[6,18,23,24,30,35],"b":38},{"s":2008,"d":"2025-06-16","a":[5,8,9,17,22,36],"b":30},{"s":2009,"d":"2025-06-19","a":[8,17,20,35,36,40],"b":12},{"s":2010,"d":"2025-06-23","a":[9,15,24,29,31,40],"b":13},{"s":2011,"d":"2025-06-26","a":[12,14,18,24,30,42],"b":4},{"s":2012,"d":"2025-06-30","a":[1,14,20,36,38,41],"b":30},{"s":2013,"d":"2025-07-03","a":[7,12,30,31,39,43],"b":42},{"s":2014,"d":"2025-07-07","a":[7,11,21,24,29,34],"b":40},{"s":2015,"d":"2025-07-10","a":[6,8,13,16,20,23],"b":26},{"s":2016,"d":"2025-07-14","a":[10,13,27,31,40,42],"b":1},{"s":2017,"d":"2025-07-17","a":[2,4,11,22,24,35],"b":8},{"s":2018,"d":"2025-07-21","a":[1,2,14,21,22,33],"b":37},{"s":2019,"d":"2025-07-24","a":[7,13,14,21,39,42],"b":9},{"s":2020,"d":"2025-07-28","a":[5,21,23,28,38,39],"b":32},{"s":2021,"d":"2025-07-31","a":[2,17,22,29,30,43],"b":31},{"s":2022,"d":"2025-08-04","a":[2,3,18,26,31,33],"b":30},{"s":2023,"d":"2025-08-07","a":[1,20,28,29,31,43],"b":5},{"s":2024,"d":"2025-08-11","a":[10,13,16,29,34,42],"b":21},{"s":2025,"d":"2025-08-14","a":[12,18,26,28,41,43],"b":35},{"s":2026,"d":"2025-08-18","a":[2,5,8,11,20,26],"b":28},{"s":2027,"d":"2025-08-21","a":[5,12,18,23,34,39],"b":13},{"s":2028,"d":"2025-08-25","a":[6,10,12,19,21,42],"b":16},{"s":2029,"d":"2025-08-28","a":[7,21,31,36,40,43],"b":41},{"s":2030,"d":"2025-09-01","a":[3,7,28,29,32,36],"b":13},{"s":2031,"d":"2025-09-04","a":[2,3,16,20,23,29],"b":27},{"s":2032,"d":"2025-09-08","a":[8,15,27,33,37,39],"b":31},{"s":2033,"d":"2025-09-11","a":[5,16,21,22,33,35],"b":26},{"s":2034,"d":"2025-09-15","a":[2,13,22,25,35,37],"b":17},{"s":2035,"d":"2025-09-18","a":[5,10,12,17,21,35],"b":9},{"s":2036,"d":"2025-09-22","a":[7,10,17,26,35,42],"b":33},{"s":2037,"d":"2025-09-25","a":[7,12,20,23,27,29],"b":10},{"s":2038,"d":"2025-09-29","a":[5,31,37,39,41,42],"b":33},{"s":2039,"d":"2025-10-02","a":[2,15,25,27,38,42],"b":22},{"s":2040,"d":"2025-10-06","a":[7,12,14,15,24,30],"b":32},{"s":2041,"d":"2025-10-09","a":[4,19,22,24,32,38],"b":11},{"s":2042,"d":"2025-10-13","a":[9,14,29,38,41,43],"b":12},{"s":2043,"d":"2025-10-16","a":[11,19,22,34,40,42],"b":31},{"s":2044,"d":"2025-10-20","a":[1,6,11,26,33,40],"b":14},{"s":2045,"d":"2025-10-23","a":[1,4,7,12,16,28],"b":19},{"s":2046,"d":"2025-10-27","a":[2,5,10,22,25,38],"b":14},{"s":2047,"d":"2025-10-30","a":[10,11,16,19,37,39],"b":27},{"s":2048,"d":"2025-11-03","a":[8,13,18,32,37,43],"b":27},{"s":2049,"d":"2025-11-06","a":[10,24,25,39,40,42],"b":19},{"s":2050,"d":"2025-11-10","a":[6,11,15,21,25,32],"b":5},{"s":2051,"d":"2025-11-13","a":[3,15,27,28,31,39],"b":20},{"s":2052,"d":"2025-11-17","a":[1,3,18,25,30,34],"b":10},{"s":2053,"d":"2025-11-20","a":[20,28,31,35,37,41],"b":13},{"s":2054,"d":"2025-11-24","a":[1,14,27,30,33,37],"b":23},{"s":2055,"d":"2025-11-27","a":[11,12,14,17,21,26],"b":2},{"s":2056,"d":"2025-12-01","a":[3,7,15,17,19,30],"b":38},{"s":2057,"d":"2025-12-04","a":[5,7,21,22,38,41],"b":24},{"s":2058,"d":"2025-12-08","a":[9,12,14,16,19,42],"b":18},{"s":2059,"d":"2025-12-11","a":[2,13,26,28,38,43],"b":3},{"s":2060,"d":"2025-12-15","a":[8,16,22,40,41,42],"b":10},{"s":2061,"d":"2025-12-18","a":[5,6,13,21,33,34],"b":40},{"s":2062,"d":"2025-12-22","a":[1,9,18,24,35,42],"b":8},{"s":2063,"d":"2025-12-25","a":[4,28,29,30,38,42],"b":15},{"s":2064,"d":"2025-12-29","a":[2,7,24,37,39,41],"b":3},{"s":2065,"d":"2026-01-05","a":[6,18,21,31,37,40],"b":3},{"s":2066,"d":"2026-01-08","a":[8,28,30,32,37,38],"b":5},{"s":2067,"d":"2026-01-12","a":[3,4,12,15,32,42],"b":31},{"s":2068,"d":"2026-01-15","a":[2,10,13,14,29,33],"b":32},{"s":2069,"d":"2026-01-19","a":[6,17,23,27,33,35],"b":4},{"s":2070,"d":"2026-01-22","a":[6,10,25,30,34,36],"b":12},{"s":2071,"d":"2026-01-26","a":[15,24,29,32,33,35],"b":14},{"s":2072,"d":"2026-01-29","a":[8,18,24,36,40,42],"b":43},{"s":2073,"d":"2026-02-02","a":[2,12,14,24,26,29],"b":8},{"s":2074,"d":"2026-02-05","a":[5,6,16,26,27,36],"b":11},{"s":2075,"d":"2026-02-09","a":[7,10,14,16,35,37],"b":11},{"s":2076,"d":"2026-02-12","a":[1,9,20,22,28,41],"b":30},{"s":2077,"d":"2026-02-16","a":[17,18,23,24,26,43],"b":10},{"s":2078,"d":"2026-02-19","a":[1,10,20,24,30,35],"b":41},{"s":2079,"d":"2026-02-23","a":[5,11,15,17,24,39],"b":31},{"s":2080,"d":"2026-02-26","a":[6,12,30,36,37,38],"b":8},{"s":2081,"d":"2026-03-02","a":[14,31,32,37,41,42],"b":22},{"s":2082,"d":"2026-03-05","a":[5,11,14,19,25,40],"b":17},{"s":2083,"d":"2026-03-09","a":[8,10,13,17,26,29],"b":43},{"s":2084,"d":"2026-03-12","a":[8,17,18,19,30,39],"b":9},{"s":2085,"d":"2026-03-16","a":[6,8,13,26,35,43],"b":14},{"s":2086,"d":"2026-03-19","a":[4,11,19,28,39,40],"b":6},{"s":2087,"d":"2026-03-23","a":[7,10,15,18,26,39],"b":13},{"s":2088,"d":"2026-03-26","a":[8,16,18,27,37,39],"b":29},{"s":2089,"d":"2026-03-30","a":[9,16,18,32,37,43],"b":13},{"s":2090,"d":"2026-04-02","a":[2,3,6,9,24,36],"b":5},{"s":2091,"d":"2026-04-06","a":[6,16,21,25,28,43],"b":9},{"s":2092,"d":"2026-04-09","a":[8,13,27,36,37,43],"b":3},{"s":2093,"d":"2026-04-13","a":[2,10,21,26,29,38],"b":12},{"s":2094,"d":"2026-04-16","a":[3,4,7,11,24,30],"b":16},{"s":2095,"d":"2026-04-20","a":[13,20,22,23,28,30],"b":29},{"s":2096,"d":"2026-04-23","a":[8,15,18,21,33,43],"b":38},{"s":2097,"d":"2026-04-27","a":[3,20,24,27,34,42],"b":37},{"s":2098,"d":"2026-04-30","a":[1,6,15,18,19,42],"b":24},{"s":2099,"d":"2026-05-04","a":[19,21,34,36,39,42],"b":43},{"s":2100,"d":"2026-05-07","a":[8,17,24,32,35,41],"b":28},{"s":2101,"d":"2026-05-11","a":[1,17,29,33,40,42],"b":21},{"s":2102,"d":"2026-05-14","a":[18,21,25,28,30,43],"b":8},{"s":2103,"d":"2026-05-18","a":[1,2,4,5,8,38],"b":39},{"s":2104,"d":"2026-05-21","a":[18,19,21,25,28,34],"b":4},{"s":2105,"d":"2026-05-25","a":[5,26,28,30,36,40],"b":32},{"s":2106,"d":"2026-05-28","a":[1,6,17,27,34,43],"b":24},{"s":2107,"d":"2026-06-01","a":[5,8,27,32,36,39],"b":38},{"s":2108,"d":"2026-06-04","a":[2,5,10,15,28,43],"b":27},{"s":2109,"d":"2026-06-08","a":[6,11,19,31,38,41],"b":3},{"s":2110,"d":"2026-06-11","a":[3,9,18,35,36,40],"b":29},{"s":2111,"d":"2026-06-15","a":[1,5,8,12,37,43],"b":36},{"s":2112,"d":"2026-06-18","a":[3,7,8,27,31,40],"b":18},{"s":2113,"d":"2026-06-22","a":[2,5,32,36,38,42],"b":14},{"s":2114,"d":"2026-06-25","a":[2,16,20,21,23,33],"b":43},{"s":2115,"d":"2026-06-29","a":[1,3,11,34,35,42],"b":23},{"s":2116,"d":"2026-07-02","a":[2,6,13,14,20,42],"b":10},{"s":2117,"d":"2026-07-06","a":[4,7,26,27,35,41],"b":34},{"s":2118,"d":"2026-07-09","a":[1,5,8,35,36,37],"b":24},{"s":2119,"d":"2026-07-13","a":[15,18,20,22,30,38],"b":42},{"s":2120,"d":"2026-07-16","a":[3,8,13,14,16,43],"b":26},{"s":2121,"d":"2026-07-20","a":[1,3,10,17,25,26],"b":36},{"s":2122,"d":"2026-07-23","a":[12,15,18,21,26,32],"b":41},{"s":2123,"d":"2026-07-27","a":[1,2,4,25,37,40],"b":43}];
+const BEST_SEED = 75;
+let selSeedVal = null;
+
+function filterTable() {
+  const q = document.getElementById('filterInput').value.trim();
+  document.querySelectorAll('#tbody tr').forEach(tr => {
+    const seed = tr.cells[1].textContent.trim().split(' ')[0];
+    tr.style.display = (!q || seed.includes(q)) ? '' : 'none';
+  });
+}
+
+let sortKey = 'rank'; let sortAsc = false;
+function sortTable(key) {
+  sortAsc = (key === sortKey) ? !sortAsc : (key === 'hit0' || key === 'seed');
+  sortKey = key;
+  const tbody = document.getElementById('tbody');
+  const rows = [...tbody.querySelectorAll('tr')];
+  const keyMap = {rank: 2, seed: 1, lift: 3, hit6: 4, hit5: 5, hit4: 6, hit0: 7, bonus: 8};
+  const col = keyMap[key] || 2;
+  rows.sort((a, b) => {
+    const av = parseFloat(a.cells[col].textContent) || 0;
+    const bv = parseFloat(b.cells[col].textContent) || 0;
+    return sortAsc ? av - bv : bv - av;
+  });
+  rows.forEach(r => tbody.appendChild(r));
+}
+
+function selSeed(seed) {
+  selSeedVal = seed;
+  document.querySelectorAll('#tbody tr').forEach(tr => tr.classList.remove('selected'));
+  const rows = document.querySelectorAll('#tbody tr');
+  rows.forEach(tr => {
+    if (tr.cells[1].textContent.trim().split(' ')[0] == seed) tr.classList.add('selected');
+  });
+  const det = document.getElementById('detail');
+  det.style.display = 'block';
+  document.getElementById('detailTitle').textContent = 'Seed #' + seed + ' — last 20 draws';
+  const tbody2 = document.getElementById('detailTbody');
+  tbody2.innerHTML = '';
+
+  // Generate picks client-side via seeded PRNG (Mulberry32)
+  function mulberry32(seed) {
+    return function() {
+      seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+      let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function seededSample(rng, n, k) {
+    const arr = Array.from({length: n}, (_, i) => i + 1);
+    for (let i = n - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr.slice(0, k).sort((a, b) => a - b);
+  }
+
+  const last20 = DRAWS.slice(-20);
+  last20.forEach(row => {
+    const rngSeed = (seed * 10_000_000 + row.s) >>> 0;
+    const picks = seededSample(mulberry32(rngSeed), 43, 15);
+    const hits = picks.filter(p => row.a.includes(p)).length;
+    const bh   = picks.includes(row.b);
+    tbody2.innerHTML += '<tr>' +
+      '<td class="tc">' + row.s + '</td>' +
+      '<td>' + row.d + '</td>' +
+      '<td>' + row.a.join(', ') + ' <small>b=' + row.b + '</small></td>' +
+      '<td>' + picks.join(', ') + '</td>' +
+      '<td class="tc" style="color:' + (hits>=4?'#22c55e':hits>=2?'#fbbf24':'#94a3b8') + '">' +
+        hits + (bh ? '+B' : '') + '</td>' +
+    '</tr>';
+  });
+}
+</script>
+<script>
+(function(){
+  var path = window.location.pathname;
+  document.querySelectorAll('.nav-dropdown a').forEach(function(a){
+    var href = a.getAttribute('href');
+    if(!href) return;
+    if(href === path || (href !== '/' && path.startsWith(href.split('#')[0])))
+      a.classList.add('active');
+  });
+})();
+</script>
+
+<script>
+(function(){
+  var path = window.location.pathname + window.location.hash;
+  document.querySelectorAll('.nav-dropdown a').forEach(function(a){
+    var href = a.getAttribute('href');
+    if(!href) return;
+    var hPath = href.split('#')[0];
+    var hHash = href.includes('#') ? href : '';
+    if(href === path) { a.classList.add('active'); return; }
+    if(hPath && hPath !== '/' && path.startsWith(hPath) && !href.includes('#')) {
+      a.classList.add('active');
+    }
+  });
+})();
+</script>
+
+
+<script>
+(function(){
+  var path = window.location.pathname + window.location.hash;
+  document.querySelectorAll('.nav-dropdown a').forEach(function(a){
+    var href = a.getAttribute('href');
+    if(!href) return;
+    var hPath = href.split('#')[0];
+    var hHash = href.includes('#') ? href : '';
+    if(href === path) { a.classList.add('active'); return; }
+    if(hPath && hPath !== '/' && path.startsWith(hPath) && !href.includes('#')) {
+      a.classList.add('active');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

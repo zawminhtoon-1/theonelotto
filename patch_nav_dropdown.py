@@ -81,6 +81,9 @@ NAV_HTML = """
         <div class="nav-divider"></div>
         <div class="nav-dd-label">N-Draw Avg Shift</div>
         <a href="/avg_shift_hub.html">⇄ All N-Shift Avg (2–43)</a>
+        <div class="nav-divider"></div>
+        <div class="nav-dd-label">Random Seed</div>
+        <a href="/random_seed_backtest.html">🎲 Random Seed (1–100)</a>
       </div></div>
     </div>
 
@@ -137,7 +140,8 @@ HTML_FILES = [
     "custom_avg3.html",
     "avg_hub.html",
 ] + [f"custom_avg{n}.html" for n in range(4, 44)] + \
-    ["avg_shift_hub.html"] + [f"avg_shift{n}.html" for n in range(2, 44)]
+    ["avg_shift_hub.html"] + [f"avg_shift{n}.html" for n in range(2, 44)] + \
+    ["random_seed_backtest.html"]
 
 for fname in HTML_FILES:
     fpath = os.path.join(PUBLIC, fname)

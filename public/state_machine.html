@@ -38,6 +38,10 @@
 
 
 
+
+
+
+
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh;padding-top:52px}
 
@@ -174,6 +178,8 @@ h1{font-size:1.4rem;font-weight:800;color:#f1f5f9;margin-bottom:4px}
 <body>
 
 
+
+
 <nav class="site-nav">
   <a class="nav-logo" href="/">🎱 The<span>One</span>Lotto</a>
   <div class="nav-groups">
@@ -212,6 +218,9 @@ h1{font-size:1.4rem;font-weight:800;color:#f1f5f9;margin-bottom:4px}
         <div class="nav-divider"></div>
         <div class="nav-dd-label">N-Draw Avg Shift</div>
         <a href="/avg_shift_hub.html">⇄ All N-Shift Avg (2–43)</a>
+        <div class="nav-divider"></div>
+        <div class="nav-dd-label">Random Seed</div>
+        <a href="/random_seed_backtest.html">🎲 Random Seed (1–100)</a>
       </div></div>
     </div>
 
@@ -231,6 +240,8 @@ h1{font-size:1.4rem;font-weight:800;color:#f1f5f9;margin-bottom:4px}
 
   </div>
 </nav>
+
+
 
 
 <main>
@@ -571,6 +582,40 @@ function top6FromFreq(freq){
   return [...freq.keys()].sort((a,b)=>freq[b]-freq[a]).slice(0,6).map(i=>i+1).sort((a,b)=>a-b);
 }
 </script>
+
+<script>
+(function(){
+  var path = window.location.pathname + window.location.hash;
+  document.querySelectorAll('.nav-dropdown a').forEach(function(a){
+    var href = a.getAttribute('href');
+    if(!href) return;
+    var hPath = href.split('#')[0];
+    var hHash = href.includes('#') ? href : '';
+    if(href === path) { a.classList.add('active'); return; }
+    if(hPath && hPath !== '/' && path.startsWith(hPath) && !href.includes('#')) {
+      a.classList.add('active');
+    }
+  });
+})();
+</script>
+
+
+<script>
+(function(){
+  var path = window.location.pathname + window.location.hash;
+  document.querySelectorAll('.nav-dropdown a').forEach(function(a){
+    var href = a.getAttribute('href');
+    if(!href) return;
+    var hPath = href.split('#')[0];
+    var hHash = href.includes('#') ? href : '';
+    if(href === path) { a.classList.add('active'); return; }
+    if(hPath && hPath !== '/' && path.startsWith(hPath) && !href.includes('#')) {
+      a.classList.add('active');
+    }
+  });
+})();
+</script>
+
 
 <script>
 (function(){
