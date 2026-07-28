@@ -75,8 +75,6 @@ NAV_HTML = """
         <a href="/lstm_predict.html">🧠 LSTM Neural Net</a>
         <div class="nav-divider"></div>
         <div class="nav-dd-label">N-Draw Avg</div>
-        <a href="/custom_avg.html">➕ 2-Draw Avg</a>
-        <a href="/custom_avg3.html">➕ 3-Draw Avg</a>
         <a href="/avg_hub.html">⬡ All N-Draw Avg (2–43)</a>
         <div class="nav-divider"></div>
         <div class="nav-dd-label">N-Draw Avg Shift</div>
@@ -136,8 +134,6 @@ HTML_FILES = [
     "pos_predict.html",
     "next_relation.html",
     "lstm_predict.html",
-    "custom_avg.html",
-    "custom_avg3.html",
     "avg_hub.html",
 ] + [f"custom_avg{n}.html" for n in range(4, 44)] + \
     ["avg_shift_hub.html"] + [f"avg_shift{n}.html" for n in range(2, 44)] + \
