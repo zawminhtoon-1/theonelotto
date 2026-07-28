@@ -190,10 +190,23 @@ tbody td.tc{{text-align:center}}
 tbody td.tr{{text-align:right}}
 .rank1 td{{color:#fbbf24}}
 
-.detail{{background:#0d1526;border:1px solid #1e293b;border-radius:10px;padding:18px;margin-top:24px;display:none}}
-.detail h2{{font-size:1rem;font-weight:600;color:#f1f5f9;margin-bottom:12px}}
-.detail table{{font-size:.8rem}}
-.detail thead th{{font-size:.72rem}}
+/* modal */
+#seedModal{{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.82);z-index:20000;align-items:flex-start;justify-content:center;padding:60px 16px 20px}}
+.modal-box{{background:#0a0f1e;border:1px solid #1e293b;border-radius:12px;width:100%;max-width:1000px;max-height:85vh;display:flex;flex-direction:column}}
+.modal-hdr{{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #1e293b;flex-shrink:0}}
+.modal-hdr h2{{font-size:.95rem;font-weight:700;color:#f1f5f9;margin:0}}
+.modal-close{{background:#1e293b;border:none;color:#94a3b8;padding:5px 14px;border-radius:6px;cursor:pointer;font-size:.83rem}}
+.modal-close:hover{{background:#334155;color:#f1f5f9}}
+.modal-body{{overflow-y:auto;flex:1}}
+.modal-table{{width:100%;border-collapse:collapse;font-size:.78rem}}
+.modal-table thead{{position:sticky;top:0;background:#0a0f1e;z-index:1}}
+.modal-table th{{padding:9px 12px;color:#64748b;text-align:left;border-bottom:1px solid #1e293b;font-weight:600;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}}
+.modal-table td{{padding:6px 10px;border-bottom:1px solid #0f172a;vertical-align:middle}}
+.modal-table tr:hover td{{background:#0f172a}}
+.nb{{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:#1e293b;color:#64748b;font-size:.7rem;font-weight:700;margin:1px}}
+.nm{{background:#14532d;color:#86efac}}
+.nb-b{{background:#451a03;color:#fde68a;border:1px solid #92400e}}
+.nb-bh{{background:#7c2d12;color:#fed7aa}}
 
 .next-pred{{background:#0d1526;border:1px solid #f59e0b55;border-radius:10px;padding:16px 18px;margin-top:16px}}
 .next-pred .lbl{{font-size:.72rem;color:#f59e0b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}}
@@ -329,20 +342,29 @@ tbody td.tr{{text-align:right}}
     </table>
   </div>
 
-  <!-- Per-seed detail (last 5 draws) -->
-  <div class="detail" id="detail">
-    <h2 id="detailTitle">Seed detail</h2>
-    <table>
-      <thead><tr>
-        <th class="tc">Draw</th><th>Date</th><th>Actual</th>
-        <th>Picks (seed)</th><th class="tc">Hits</th>
-      </tr></thead>
-      <tbody id="detailTbody"></tbody>
-    </table>
+  <!-- Seed detail modal -->
+  <div id="seedModal">
+    <div class="modal-box">
+      <div class="modal-hdr">
+        <h2 id="modalTitle">Seed detail</h2>
+        <button class="modal-close" onclick="document.getElementById('seedModal').style.display='none'">✕ Close</button>
+      </div>
+      <div class="modal-body">
+        <table class="modal-table">
+          <thead><tr>
+            <th>Draw</th><th>Date</th>
+            <th>Actual (6) + bonus</th>
+            <th>Picks ({K_PICKS})</th>
+            <th style="text-align:center">Hits</th>
+          </tr></thead>
+          <tbody id="modalTbody"></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <p class="footer">
-    Seeded random: picks = random.sample(range(1,44), 15) with seed = k×10⁷ + draw_serial.<br>
+    Seeded random: picks = random.sample(range(1,44), {K_PICKS}) with seed = k×10⁷ + draw_serial.<br>
     Each (seed, draw) pair is independent and deterministic. Lift = % above pure-chance baseline ({BASELINE:.3f} avg hits).
   </p>
 </div>
@@ -377,53 +399,69 @@ function sortTable(key) {{
   rows.forEach(r => tbody.appendChild(r));
 }}
 
+// Mulberry32 PRNG (matches Python's random.Random seeded logic via Fisher-Yates)
+function mulberry32(s) {{
+  return function() {{
+    s |= 0; s = s + 0x6D2B79F5 | 0;
+    let t = Math.imul(s ^ s >>> 15, 1 | s);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  }};
+}}
+function seededSample(rng, n, k) {{
+  const arr = Array.from({{length: n}}, (_, i) => i + 1);
+  for (let i = n - 1; i > 0; i--) {{
+    const j = Math.floor(rng() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }}
+  return arr.slice(0, k).sort((a, b) => a - b);
+}}
+
 function selSeed(seed) {{
   selSeedVal = seed;
-  document.querySelectorAll('#tbody tr').forEach(tr => tr.classList.remove('selected'));
-  const rows = document.querySelectorAll('#tbody tr');
-  rows.forEach(tr => {{
-    if (tr.cells[1].textContent.trim().split(' ')[0] == seed) tr.classList.add('selected');
+  document.querySelectorAll('#tbody tr').forEach(tr => {{
+    tr.classList.toggle('selected', tr.cells[1].textContent.trim().split(' ')[0] == seed);
   }});
-  const det = document.getElementById('detail');
-  det.style.display = 'block';
-  document.getElementById('detailTitle').textContent = 'Seed #' + seed + ' — last 20 draws';
-  const tbody2 = document.getElementById('detailTbody');
-  tbody2.innerHTML = '';
 
-  // Generate picks client-side via seeded PRNG (Mulberry32)
-  function mulberry32(seed) {{
-    return function() {{
-      seed |= 0; seed = seed + 0x6D2B79F5 | 0;
-      let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
-      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-      return ((t ^ t >>> 14) >>> 0) / 4294967296;
-    }};
-  }}
-  function seededSample(rng, n, k) {{
-    const arr = Array.from({{length: n}}, (_, i) => i + 1);
-    for (let i = n - 1; i > 0; i--) {{
-      const j = Math.floor(rng() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }}
-    return arr.slice(0, k).sort((a, b) => a - b);
-  }}
+  const K = {K_PICKS};
+  document.getElementById('modalTitle').textContent = 'Seed #' + seed + ' — ' + DRAWS.length + ' draws (K=' + K + ')';
 
-  const last20 = DRAWS.slice(-20);
-  last20.forEach(row => {{
-    const rngSeed = (seed * 10_000_000 + row.s) >>> 0;
-    const picks = seededSample(mulberry32(rngSeed), 43, 15);
-    const hits = picks.filter(p => row.a.includes(p)).length;
+  const htmlParts = [];
+  DRAWS.forEach(row => {{
+    const rngSeed = ((seed * 10000000 + row.s) >>> 0);
+    const picks = seededSample(mulberry32(rngSeed), 43, K);
+    const actualSet = new Set(row.a);
+    const hits = picks.filter(p => actualSet.has(p)).length;
     const bh   = picks.includes(row.b);
-    tbody2.innerHTML += '<tr>' +
-      '<td class="tc">' + row.s + '</td>' +
-      '<td>' + row.d + '</td>' +
-      '<td>' + row.a.join(', ') + ' <small>b=' + row.b + '</small></td>' +
-      '<td>' + picks.join(', ') + '</td>' +
-      '<td class="tc" style="color:' + (hits>=4?'#22c55e':hits>=2?'#fbbf24':'#94a3b8') + '">' +
-        hits + (bh ? '+B' : '') + '</td>' +
-    '</tr>';
+
+    const actualHtml = row.a.map(n =>
+      '<span class="nb nm">' + n + '</span>'
+    ).join('') + '<span class="nb nb-b">' + row.b + '</span>';
+
+    const picksHtml = picks.map(n =>
+      '<span class="nb' + (actualSet.has(n) ? ' nm' : '') + (n === row.b ? ' nb-bh' : '') + '">' + n + '</span>'
+    ).join('');
+
+    const hc = hits >= 5 ? '#22c55e' : hits >= 4 ? '#4ade80' : hits >= 3 ? '#fbbf24' : hits >= 2 ? '#fb923c' : '#475569';
+    htmlParts.push(
+      '<tr><td style="color:#64748b;white-space:nowrap">' + row.s + '</td>' +
+      '<td style="color:#64748b;white-space:nowrap">' + (row.d||'') + '</td>' +
+      '<td style="white-space:nowrap">' + actualHtml + '</td>' +
+      '<td style="white-space:nowrap">' + picksHtml + '</td>' +
+      '<td style="text-align:center;font-weight:700;color:' + hc + '">' + hits + (bh ? '<span style="color:#f59e0b;font-size:.7rem">+B</span>' : '') + '</td></tr>'
+    );
   }});
+  document.getElementById('modalTbody').innerHTML = htmlParts.join('');
+  document.getElementById('seedModal').style.display = 'flex';
 }}
+
+// Close modal on backdrop click
+document.getElementById('seedModal').addEventListener('click', function(e) {{
+  if (e.target === this) this.style.display = 'none';
+}});
+document.addEventListener('keydown', function(e) {{
+  if (e.key === 'Escape') document.getElementById('seedModal').style.display = 'none';
+}});
 </script>
 <script>
 (function(){{
