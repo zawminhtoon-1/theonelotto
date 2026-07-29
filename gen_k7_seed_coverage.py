@@ -75,6 +75,32 @@ chart_labels = json.dumps([p["range"] for p in PROGRESSION])
 chart_pcts = json.dumps([p["pct"] for p in PROGRESSION])
 chart_seeds = json.dumps([p["seeds"] for p in PROGRESSION])
 
+# ── Scatter: draw number vs. first-hitting seed ────────────────────────────────
+# Missed draws are plotted as a separate dataset on a "shelf" above the real
+# +-800,000 seed range (a sentinel y value), rather than mixed into the seed
+# axis or dropped — keeps them visible without implying a fake seed value.
+MISS_SENTINEL_Y = 900000
+scatter_covered = json.dumps(
+    [{"x": s, "y": seed} for s, seed in sorted(COVERED.items())]
+)
+scatter_missed = json.dumps(
+    [{"x": s, "y": MISS_SENTINEL_Y} for s in sorted(MISSED)]
+)
+
+# Pearson correlation (draw number vs. hitting seed, covered draws only) —
+# computed from the data rather than assumed, for an honest caption.
+_xs = list(COVERED.keys())
+_ys = list(COVERED.values())
+_n = len(_xs)
+_mx = sum(_xs) / _n
+_my = sum(_ys) / _n
+_cov = sum((x - _mx) * (y - _my) for x, y in zip(_xs, _ys))
+_sx = sum((x - _mx) ** 2 for x in _xs) ** 0.5
+_sy = sum((y - _my) ** 2 for y in _ys) ** 0.5
+PEARSON_R = _cov / (_sx * _sy)
+NEG_COUNT = sum(1 for y in _ys if y < 0)
+POS_COUNT = sum(1 for y in _ys if y > 0)
+
 page = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -243,6 +269,20 @@ h1{{font-size:1.4rem;font-weight:700;color:#f1f5f9;margin-bottom:4px}}
   </div>
 
   <div class="section">
+    <h2>Draw number vs. hitting seed</h2>
+    <p class="desc">Each green dot is one of the 83 covered draws, plotted at (draw #, first-hitting seed) within \u00b1800,000. The 17 red markers on the shelf above the axis are the missed draws \u2014 shown for visibility, not at a real seed value.</p>
+    <div class="chart-wrap"><canvas id="scatterChart"></canvas></div>
+    <p class="desc" style="margin-top:12px;margin-bottom:0">
+      Pearson correlation (draw # vs. seed, covered draws only): <strong style="color:#e2e8f0">r = {PEARSON_R:.3f}</strong> \u2014
+      {"no meaningful linear relationship" if abs(PEARSON_R) < 0.2 else ("a weak" if abs(PEARSON_R) < 0.4 else "a moderate") + " relationship"},
+      consistent with the seed formula behaving like a hash rather than a smooth function of draw number.
+      Note the point cloud leans negative ({NEG_COUNT} negative vs. {POS_COUNT} positive) \u2014 that's a scan-order artifact, not a real bias:
+      each draw's "first hitting seed" was found by scanning ascending from \u2212800,000, so negative seeds are systematically found first
+      whenever both a negative and positive seed would have worked.
+    </p>
+  </div>
+
+  <div class="section">
     <h2>Per-draw coverage at \u00b1800,000 seeds</h2>
     <p class="desc">Each cell is one draw (#{DRAW_START}\u2013{DRAW_END}). Green = a seed in \u00b1800,000 reproduced the actual winning combo. Red = no seed in that range did. Draw #{PERSISTENT_MISS} (amber outline) missed at \u00b1100k, \u00b1400k, and \u00b1800k \u2014 every range tested.</p>
     <div class="grid">
@@ -307,6 +347,69 @@ new Chart(document.getElementById('covChart').getContext('2d'), {{
       x: {{
         ticks: {{ color: '#64748b' }},
         grid: {{ color: '#1e293b' }}
+      }}
+    }}
+  }}
+}});
+</script>
+<script>
+new Chart(document.getElementById('scatterChart').getContext('2d'), {{
+  type: 'scatter',
+  data: {{
+    datasets: [
+      {{
+        label: 'Covered (first hitting seed)',
+        data: {scatter_covered},
+        backgroundColor: 'rgba(34,197,94,0.75)',
+        borderColor: '#16a34a',
+        pointRadius: 4,
+        pointHoverRadius: 6,
+      }},
+      {{
+        label: 'Missed (no seed found)',
+        data: {scatter_missed},
+        backgroundColor: 'rgba(248,113,113,0.85)',
+        borderColor: '#ef4444',
+        pointStyle: 'triangle',
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        rotation: 180,
+      }}
+    ]
+  }},
+  options: {{
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {{
+      legend: {{ labels: {{ color: '#94a3b8', font: {{ size: 11 }} }} }},
+      tooltip: {{
+        callbacks: {{
+          label: function(ctx) {{
+            if (ctx.dataset.label.startsWith('Missed')) {{
+              return 'Draw #' + ctx.parsed.x + ' — MISSED (no seed in ±800,000)';
+            }}
+            return 'Draw #' + ctx.parsed.x + ' — seed ' + ctx.parsed.y.toLocaleString();
+          }}
+        }}
+      }}
+    }},
+    scales: {{
+      y: {{
+        min: -850000, max: 950000,
+        ticks: {{
+          color: '#64748b',
+          callback: v => v === {MISS_SENTINEL_Y} ? 'MISSED' : v.toLocaleString()
+        }},
+        grid: {{
+          color: function(ctx) {{ return ctx.tick.value === {MISS_SENTINEL_Y} ? '#f59e0b55' : '#1e293b'; }}
+        }},
+        title: {{ display: true, text: 'First hitting seed', color: '#64748b' }}
+      }},
+      x: {{
+        min: {DRAW_START - 1}, max: {DRAW_END + 1},
+        ticks: {{ color: '#64748b' }},
+        grid: {{ color: '#1e293b' }},
+        title: {{ display: true, text: 'Draw #', color: '#64748b' }}
       }}
     }}
   }}

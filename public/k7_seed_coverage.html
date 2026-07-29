@@ -166,6 +166,20 @@ h1{font-size:1.4rem;font-weight:700;color:#f1f5f9;margin-bottom:4px}
   </div>
 
   <div class="section">
+    <h2>Draw number vs. hitting seed</h2>
+    <p class="desc">Each green dot is one of the 83 covered draws, plotted at (draw #, first-hitting seed) within ±800,000. The 17 red markers on the shelf above the axis are the missed draws — shown for visibility, not at a real seed value.</p>
+    <div class="chart-wrap"><canvas id="scatterChart"></canvas></div>
+    <p class="desc" style="margin-top:12px;margin-bottom:0">
+      Pearson correlation (draw # vs. seed, covered draws only): <strong style="color:#e2e8f0">r = -0.144</strong> —
+      no meaningful linear relationship,
+      consistent with the seed formula behaving like a hash rather than a smooth function of draw number.
+      Note the point cloud leans negative (56 negative vs. 27 positive) — that's a scan-order artifact, not a real bias:
+      each draw's "first hitting seed" was found by scanning ascending from −800,000, so negative seeds are systematically found first
+      whenever both a negative and positive seed would have worked.
+    </p>
+  </div>
+
+  <div class="section">
     <h2>Per-draw coverage at ±800,000 seeds</h2>
     <p class="desc">Each cell is one draw (#2024–2123). Green = a seed in ±800,000 reproduced the actual winning combo. Red = no seed in that range did. Draw #2122 (amber outline) missed at ±100k, ±400k, and ±800k — every range tested.</p>
     <div class="grid">
@@ -230,6 +244,69 @@ new Chart(document.getElementById('covChart').getContext('2d'), {
       x: {
         ticks: { color: '#64748b' },
         grid: { color: '#1e293b' }
+      }
+    }
+  }
+});
+</script>
+<script>
+new Chart(document.getElementById('scatterChart').getContext('2d'), {
+  type: 'scatter',
+  data: {
+    datasets: [
+      {
+        label: 'Covered (first hitting seed)',
+        data: [{"x": 2024, "y": -483452}, {"x": 2025, "y": -29862}, {"x": 2026, "y": -156632}, {"x": 2029, "y": -536117}, {"x": 2030, "y": -433422}, {"x": 2031, "y": -693734}, {"x": 2032, "y": 786931}, {"x": 2033, "y": 224015}, {"x": 2034, "y": -666340}, {"x": 2035, "y": -684468}, {"x": 2036, "y": 499886}, {"x": 2038, "y": 442510}, {"x": 2039, "y": 393793}, {"x": 2040, "y": -78252}, {"x": 2041, "y": -457425}, {"x": 2042, "y": 227468}, {"x": 2043, "y": -207512}, {"x": 2044, "y": -239565}, {"x": 2045, "y": 198664}, {"x": 2046, "y": -495583}, {"x": 2047, "y": 147918}, {"x": 2048, "y": 304348}, {"x": 2049, "y": 761265}, {"x": 2051, "y": -746123}, {"x": 2053, "y": -6191}, {"x": 2054, "y": -130067}, {"x": 2056, "y": -195568}, {"x": 2058, "y": -664462}, {"x": 2059, "y": -541333}, {"x": 2060, "y": -285796}, {"x": 2061, "y": -426700}, {"x": 2062, "y": -23749}, {"x": 2063, "y": -622866}, {"x": 2064, "y": 447474}, {"x": 2066, "y": -227639}, {"x": 2067, "y": -790327}, {"x": 2068, "y": 425674}, {"x": 2069, "y": 558591}, {"x": 2071, "y": -627283}, {"x": 2073, "y": -111528}, {"x": 2074, "y": 98116}, {"x": 2076, "y": -654108}, {"x": 2077, "y": 59220}, {"x": 2078, "y": -707687}, {"x": 2079, "y": 595682}, {"x": 2080, "y": -770658}, {"x": 2081, "y": 120604}, {"x": 2082, "y": 203142}, {"x": 2083, "y": -371529}, {"x": 2084, "y": 509627}, {"x": 2085, "y": 557340}, {"x": 2087, "y": 373363}, {"x": 2088, "y": 10466}, {"x": 2089, "y": -168860}, {"x": 2090, "y": -422046}, {"x": 2091, "y": -583830}, {"x": 2092, "y": -217921}, {"x": 2093, "y": -180330}, {"x": 2094, "y": -174403}, {"x": 2095, "y": -734335}, {"x": 2096, "y": 446136}, {"x": 2097, "y": -743253}, {"x": 2099, "y": -509433}, {"x": 2100, "y": -196096}, {"x": 2101, "y": -768544}, {"x": 2102, "y": -89912}, {"x": 2103, "y": -658063}, {"x": 2104, "y": 89189}, {"x": 2105, "y": -581150}, {"x": 2106, "y": -737224}, {"x": 2107, "y": -461155}, {"x": 2109, "y": 678481}, {"x": 2110, "y": 138775}, {"x": 2112, "y": -256516}, {"x": 2114, "y": -700273}, {"x": 2115, "y": -577860}, {"x": 2116, "y": -739251}, {"x": 2117, "y": -148699}, {"x": 2118, "y": -284240}, {"x": 2119, "y": -586670}, {"x": 2120, "y": 304888}, {"x": 2121, "y": -427295}, {"x": 2123, "y": -55615}],
+        backgroundColor: 'rgba(34,197,94,0.75)',
+        borderColor: '#16a34a',
+        pointRadius: 4,
+        pointHoverRadius: 6,
+      },
+      {
+        label: 'Missed (no seed found)',
+        data: [{"x": 2027, "y": 900000}, {"x": 2028, "y": 900000}, {"x": 2037, "y": 900000}, {"x": 2050, "y": 900000}, {"x": 2052, "y": 900000}, {"x": 2055, "y": 900000}, {"x": 2057, "y": 900000}, {"x": 2065, "y": 900000}, {"x": 2070, "y": 900000}, {"x": 2072, "y": 900000}, {"x": 2075, "y": 900000}, {"x": 2086, "y": 900000}, {"x": 2098, "y": 900000}, {"x": 2108, "y": 900000}, {"x": 2111, "y": 900000}, {"x": 2113, "y": 900000}, {"x": 2122, "y": 900000}],
+        backgroundColor: 'rgba(248,113,113,0.85)',
+        borderColor: '#ef4444',
+        pointStyle: 'triangle',
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        rotation: 180,
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { labels: { color: '#94a3b8', font: { size: 11 } } },
+      tooltip: {
+        callbacks: {
+          label: function(ctx) {
+            if (ctx.dataset.label.startsWith('Missed')) {
+              return 'Draw #' + ctx.parsed.x + ' — MISSED (no seed in ±800,000)';
+            }
+            return 'Draw #' + ctx.parsed.x + ' — seed ' + ctx.parsed.y.toLocaleString();
+          }
+        }
+      }
+    },
+    scales: {
+      y: {
+        min: -850000, max: 950000,
+        ticks: {
+          color: '#64748b',
+          callback: v => v === 900000 ? 'MISSED' : v.toLocaleString()
+        },
+        grid: {
+          color: function(ctx) { return ctx.tick.value === 900000 ? '#f59e0b55' : '#1e293b'; }
+        },
+        title: { display: true, text: 'First hitting seed', color: '#64748b' }
+      },
+      x: {
+        min: 2023, max: 2124,
+        ticks: { color: '#64748b' },
+        grid: { color: '#1e293b' },
+        title: { display: true, text: 'Draw #', color: '#64748b' }
       }
     }
   }
