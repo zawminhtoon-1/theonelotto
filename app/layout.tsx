@@ -44,6 +44,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { type: "label", label: "Random Seed" },
       { href: "/random_seed_backtest.html", icon: "🎲", label: "Random Seed (1–2000)" },
       { href: "/k7_seed_coverage.html", icon: "📈", label: "K=7 Seed Coverage" },
+      { href: "/k7_seed_hit_1000.html", icon: "🗺️", label: "K=7 Seed-Hit (1000 draws)" },
     ],
   },
   {
