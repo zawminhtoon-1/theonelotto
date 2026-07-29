@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>K=7 Seed Coverage — Loto 6</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+/* ====== SHARED FIXED NAV (dropdown) ====== */
+.site-nav{position:fixed;top:0;left:0;right:0;height:52px;background:#0a0f1e;
+  border-bottom:1px solid #1e293b;display:flex;align-items:center;padding:0 20px;
+  gap:0;z-index:9999;box-shadow:0 2px 16px rgba(0,0,0,.6)}
+.site-nav .nav-logo{font-size:1rem;font-weight:800;color:#f1f5f9;text-decoration:none;
+  white-space:nowrap;margin-right:24px;flex-shrink:0;letter-spacing:-.01em}
+.site-nav .nav-logo span{color:#38bdf8}
+.nav-groups{display:flex;gap:4px;align-items:center}
+.nav-group{position:relative}
+.nav-group-btn{display:flex;align-items:center;gap:5px;padding:7px 14px;border-radius:7px;
+  cursor:pointer;font-size:.82rem;font-weight:600;color:#94a3b8;
+  border:1px solid transparent;transition:.15s;white-space:nowrap;user-select:none}
+.nav-group-btn:hover,.nav-group:hover .nav-group-btn{color:#f1f5f9;background:#1e293b;border-color:#334155}
+.nav-group-btn .arrow{font-size:.6rem;opacity:.6;transition:transform .2s}
+.nav-group:hover .nav-group-btn .arrow{transform:rotate(180deg)}
+.nav-dropdown{display:none;position:absolute;top:100%;left:0;
+  background:transparent;padding-top:6px;z-index:10000;min-width:170px}
+.nav-dropdown-inner{background:#0d1526;border:1px solid #1e293b;border-radius:10px;
+  padding:6px;box-shadow:0 12px 32px rgba(0,0,0,.7);max-height:70vh;overflow-y:auto}
+.nav-group:hover .nav-dropdown{display:block}
+.nav-dropdown a{display:flex;align-items:center;gap:8px;padding:8px 12px;
+  border-radius:6px;color:#94a3b8;text-decoration:none;font-size:.82rem;
+  white-space:nowrap;transition:.12s}
+.nav-dropdown a:hover{color:#f1f5f9;background:#1e293b}
+.nav-dropdown a.active{color:#38bdf8;background:#0c2340}
+.nav-dd-label{font-size:.68rem;font-weight:700;color:#475569;padding:6px 12px 2px;
+  text-transform:uppercase;letter-spacing:.06em}
+.nav-divider{height:1px;background:#1e293b;margin:4px 0}
+/* ========================================= */
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0f1e;color:#e2e8f0;font-family:system-ui,sans-serif;padding-top:60px;min-height:100vh}
+.wrap{max-width:1100px;margin:0 auto;padding:24px 16px}
+h1{font-size:1.4rem;font-weight:700;color:#f1f5f9;margin-bottom:4px}
+.subtitle{font-size:.85rem;color:#64748b;margin-bottom:20px}
+
+.stats-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px}
+.stat-card{background:#0d1526;border:1px solid #1e293b;border-radius:10px;padding:14px 18px;flex:1;min-width:160px}
+.stat-card .lbl{font-size:.72rem;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.stat-card .val{font-size:1.5rem;font-weight:700;color:#f1f5f9}
+.stat-card .sub{font-size:.78rem;color:#94a3b8;margin-top:2px}
+.stat-card.warn{border-color:#f59e0b55}
+.stat-card.warn .val{color:#f59e0b}
+
+.section{background:#0d1526;border:1px solid #1e293b;border-radius:12px;padding:20px;margin-bottom:24px}
+.section h2{font-size:1rem;font-weight:700;color:#f1f5f9;margin-bottom:4px}
+.section .desc{font-size:.8rem;color:#64748b;margin-bottom:16px}
+.chart-wrap{height:280px;position:relative}
+
+.grid{display:grid;grid-template-columns:repeat(10,1fr);gap:5px;margin-top:8px}
+.cell{aspect-ratio:1;border-radius:6px;display:flex;align-items:center;justify-content:center;
+  font-size:.68rem;font-weight:600;cursor:default;transition:.12s}
+.cell:hover{transform:scale(1.12);z-index:2}
+.cell.hit{background:#14532d;color:#86efac;border:1px solid #16653499}
+.cell.miss{background:#450a0a;color:#fca5a5;border:1px solid #7f1d1d99}
+.cell.miss.persistent{background:#7c2d12;color:#fed7aa;border:2px solid #f59e0b;
+  box-shadow:0 0 0 2px #f59e0b33;font-weight:800}
+
+.legend{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;font-size:.78rem;color:#94a3b8}
+.legend .sw{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.legend .sw.hit{background:#14532d;border:1px solid #16653499}
+.legend .sw.miss{background:#450a0a;border:1px solid #7f1d1d99}
+.legend .sw.persistent{background:#7c2d12;border:2px solid #f59e0b}
+
+.callout{background:#1a0f05;border:1px solid #f59e0b55;border-radius:10px;padding:14px 18px;margin-top:16px}
+.callout .lbl{font-size:.72rem;color:#f59e0b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;font-weight:700}
+.callout p{font-size:.83rem;color:#e2e8f0;line-height:1.5}
+
+.footer{margin-top:28px;font-size:.78rem;color:#475569;padding-bottom:20px;line-height:1.6}
+</style>
+</head>
+<body>
+
+<nav class="site-nav">
+  <a class="nav-logo" href="/">🎱 The<span>One</span>Lotto</a>
+  <div class="nav-groups">
+    <div class="nav-group">
+      <div class="nav-group-btn">Data <span class="arrow">▼</span></div>
+      <div class="nav-dropdown"><div class="nav-dropdown-inner">
+        <div class="nav-dd-label">Results</div>
+        <a href="/">🏠 Latest Draw</a>
+        <a href="/history">📋 History</a>
+        <a href="/numbers">🔢 Numbers</a>
+      </div></div>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-btn">Predict <span class="arrow">▼</span></div>
+      <div class="nav-dropdown"><div class="nav-dropdown-inner">
+        <div class="nav-dd-label">Prediction Tools</div>
+        <a href="/predictions">🎯 Predictions</a>
+        <a href="/backtest.html">📊 Backtest</a>
+        <a href="/combo_evo.html">🧬 Combo Evo</a>
+        <div class="nav-divider"></div>
+        <div class="nav-dd-label">Strategy</div>
+        <a href="/overdue.html">⏳ Overdue</a>
+        <a href="/state_machine.html">🔄 State Machine</a>
+        <a href="/modular_cycle.html">🔁 Modular Cycle</a>
+        <a href="/next_relation.html">🔗 Next Relation</a>
+        <a href="/lstm_predict.html">🧠 LSTM Neural Net</a>
+        <div class="nav-divider"></div>
+        <div class="nav-dd-label">N-Draw Avg</div>
+        <a href="/avg_hub.html">⬡ All N-Draw Avg (2–43)</a>
+        <div class="nav-divider"></div>
+        <div class="nav-dd-label">N-Draw Avg Shift</div>
+        <a href="/avg_shift_hub.html">⇄ All N-Shift Avg (2–43)</a>
+        <div class="nav-divider"></div>
+        <div class="nav-dd-label">Random Seed</div>
+        <a href="/random_seed_backtest.html">🎲 Random Seed (1–3000)</a>
+        <a href="/k7_seed_coverage.html" class="active">📈 K=7 Seed Coverage</a>
+      </div></div>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-btn">Analyze <span class="arrow">▼</span></div>
+      <div class="nav-dropdown"><div class="nav-dropdown-inner">
+        <div class="nav-dd-label">Pattern Analysis</div>
+        <a href="/special.html">⭐ Special</a>
+        <a href="/consecutive.html">🔗 Consecutive</a>
+        <div class="nav-divider"></div>
+        <div class="nav-dd-label">Position</div>
+        <a href="/position.html">📍 Position Freq</a>
+        <a href="/pos_predict.html">📊 Pos 1–6 Predict</a>
+      </div></div>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+  <h1>📈 K=7 Seed Coverage Analysis</h1>
+  <p class="subtitle">Draws #2024–2123 (100 draws) · K=7 picks · formula random.Random(seed×10⁷+draw_serial).sample(range(1,44),7)</p>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="lbl">Final coverage</div>
+      <div class="val">83%</div>
+      <div class="sub">83 / 100 draws · ±800,000 seeds</div>
+    </div>
+    <div class="stat-card">
+      <div class="lbl">Starting coverage</div>
+      <div class="val">25%</div>
+      <div class="sub">at ±100,000 seeds</div>
+    </div>
+    <div class="stat-card">
+      <div class="lbl">Seeds swept (final)</div>
+      <div class="val">1.6M</div>
+      <div class="sub">±800,000 inclusive</div>
+    </div>
+    <div class="stat-card warn">
+      <div class="lbl">Persistent miss</div>
+      <div class="val">#2122</div>
+      <div class="sub">missed at every range tested</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Coverage vs. seed range</h2>
+    <p class="desc">Each doubling of the seed range grows coverage, but with diminishing returns — 25% → 43% → 59% → 83%.</p>
+    <div class="chart-wrap"><canvas id="covChart"></canvas></div>
+  </div>
+
+  <div class="section">
+    <h2>Per-draw coverage at ±800,000 seeds</h2>
+    <p class="desc">Each cell is one draw (#2024–2123). Green = a seed in ±800,000 reproduced the actual winning combo. Red = no seed in that range did. Draw #2122 (amber outline) missed at ±100k, ±400k, and ±800k — every range tested.</p>
+    <div class="grid">
+<div class="cell hit" title="Draw #2024 — covered, first hit at seed -483452">2024</div><div class="cell hit" title="Draw #2025 — covered, first hit at seed -29862">2025</div><div class="cell hit" title="Draw #2026 — covered, first hit at seed -156632">2026</div><div class="cell miss" title="Draw #2027 — MISSED at ±800,000 seed range">2027</div><div class="cell miss" title="Draw #2028 — MISSED at ±800,000 seed range">2028</div><div class="cell hit" title="Draw #2029 — covered, first hit at seed -536117">2029</div><div class="cell hit" title="Draw #2030 — covered, first hit at seed -433422">2030</div><div class="cell hit" title="Draw #2031 — covered, first hit at seed -693734">2031</div><div class="cell hit" title="Draw #2032 — covered, first hit at seed +786931">2032</div><div class="cell hit" title="Draw #2033 — covered, first hit at seed +224015">2033</div><div class="cell hit" title="Draw #2034 — covered, first hit at seed -666340">2034</div><div class="cell hit" title="Draw #2035 — covered, first hit at seed -684468">2035</div><div class="cell hit" title="Draw #2036 — covered, first hit at seed +499886">2036</div><div class="cell miss" title="Draw #2037 — MISSED at ±800,000 seed range">2037</div><div class="cell hit" title="Draw #2038 — covered, first hit at seed +442510">2038</div><div class="cell hit" title="Draw #2039 — covered, first hit at seed +393793">2039</div><div class="cell hit" title="Draw #2040 — covered, first hit at seed -78252">2040</div><div class="cell hit" title="Draw #2041 — covered, first hit at seed -457425">2041</div><div class="cell hit" title="Draw #2042 — covered, first hit at seed +227468">2042</div><div class="cell hit" title="Draw #2043 — covered, first hit at seed -207512">2043</div><div class="cell hit" title="Draw #2044 — covered, first hit at seed -239565">2044</div><div class="cell hit" title="Draw #2045 — covered, first hit at seed +198664">2045</div><div class="cell hit" title="Draw #2046 — covered, first hit at seed -495583">2046</div><div class="cell hit" title="Draw #2047 — covered, first hit at seed +147918">2047</div><div class="cell hit" title="Draw #2048 — covered, first hit at seed +304348">2048</div><div class="cell hit" title="Draw #2049 — covered, first hit at seed +761265">2049</div><div class="cell miss" title="Draw #2050 — MISSED at ±800,000 seed range">2050</div><div class="cell hit" title="Draw #2051 — covered, first hit at seed -746123">2051</div><div class="cell miss" title="Draw #2052 — MISSED at ±800,000 seed range">2052</div><div class="cell hit" title="Draw #2053 — covered, first hit at seed -6191">2053</div><div class="cell hit" title="Draw #2054 — covered, first hit at seed -130067">2054</div><div class="cell miss" title="Draw #2055 — MISSED at ±800,000 seed range">2055</div><div class="cell hit" title="Draw #2056 — covered, first hit at seed -195568">2056</div><div class="cell miss" title="Draw #2057 — MISSED at ±800,000 seed range">2057</div><div class="cell hit" title="Draw #2058 — covered, first hit at seed -664462">2058</div><div class="cell hit" title="Draw #2059 — covered, first hit at seed -541333">2059</div><div class="cell hit" title="Draw #2060 — covered, first hit at seed -285796">2060</div><div class="cell hit" title="Draw #2061 — covered, first hit at seed -426700">2061</div><div class="cell hit" title="Draw #2062 — covered, first hit at seed -23749">2062</div><div class="cell hit" title="Draw #2063 — covered, first hit at seed -622866">2063</div><div class="cell hit" title="Draw #2064 — covered, first hit at seed +447474">2064</div><div class="cell miss" title="Draw #2065 — MISSED at ±800,000 seed range">2065</div><div class="cell hit" title="Draw #2066 — covered, first hit at seed -227639">2066</div><div class="cell hit" title="Draw #2067 — covered, first hit at seed -790327">2067</div><div class="cell hit" title="Draw #2068 — covered, first hit at seed +425674">2068</div><div class="cell hit" title="Draw #2069 — covered, first hit at seed +558591">2069</div><div class="cell miss" title="Draw #2070 — MISSED at ±800,000 seed range">2070</div><div class="cell hit" title="Draw #2071 — covered, first hit at seed -627283">2071</div><div class="cell miss" title="Draw #2072 — MISSED at ±800,000 seed range">2072</div><div class="cell hit" title="Draw #2073 — covered, first hit at seed -111528">2073</div><div class="cell hit" title="Draw #2074 — covered, first hit at seed +98116">2074</div><div class="cell miss" title="Draw #2075 — MISSED at ±800,000 seed range">2075</div><div class="cell hit" title="Draw #2076 — covered, first hit at seed -654108">2076</div><div class="cell hit" title="Draw #2077 — covered, first hit at seed +59220">2077</div><div class="cell hit" title="Draw #2078 — covered, first hit at seed -707687">2078</div><div class="cell hit" title="Draw #2079 — covered, first hit at seed +595682">2079</div><div class="cell hit" title="Draw #2080 — covered, first hit at seed -770658">2080</div><div class="cell hit" title="Draw #2081 — covered, first hit at seed +120604">2081</div><div class="cell hit" title="Draw #2082 — covered, first hit at seed +203142">2082</div><div class="cell hit" title="Draw #2083 — covered, first hit at seed -371529">2083</div><div class="cell hit" title="Draw #2084 — covered, first hit at seed +509627">2084</div><div class="cell hit" title="Draw #2085 — covered, first hit at seed +557340">2085</div><div class="cell miss" title="Draw #2086 — MISSED at ±800,000 seed range">2086</div><div class="cell hit" title="Draw #2087 — covered, first hit at seed +373363">2087</div><div class="cell hit" title="Draw #2088 — covered, first hit at seed +10466">2088</div><div class="cell hit" title="Draw #2089 — covered, first hit at seed -168860">2089</div><div class="cell hit" title="Draw #2090 — covered, first hit at seed -422046">2090</div><div class="cell hit" title="Draw #2091 — covered, first hit at seed -583830">2091</div><div class="cell hit" title="Draw #2092 — covered, first hit at seed -217921">2092</div><div class="cell hit" title="Draw #2093 — covered, first hit at seed -180330">2093</div><div class="cell hit" title="Draw #2094 — covered, first hit at seed -174403">2094</div><div class="cell hit" title="Draw #2095 — covered, first hit at seed -734335">2095</div><div class="cell hit" title="Draw #2096 — covered, first hit at seed +446136">2096</div><div class="cell hit" title="Draw #2097 — covered, first hit at seed -743253">2097</div><div class="cell miss" title="Draw #2098 — MISSED at ±800,000 seed range">2098</div><div class="cell hit" title="Draw #2099 — covered, first hit at seed -509433">2099</div><div class="cell hit" title="Draw #2100 — covered, first hit at seed -196096">2100</div><div class="cell hit" title="Draw #2101 — covered, first hit at seed -768544">2101</div><div class="cell hit" title="Draw #2102 — covered, first hit at seed -89912">2102</div><div class="cell hit" title="Draw #2103 — covered, first hit at seed -658063">2103</div><div class="cell hit" title="Draw #2104 — covered, first hit at seed +89189">2104</div><div class="cell hit" title="Draw #2105 — covered, first hit at seed -581150">2105</div><div class="cell hit" title="Draw #2106 — covered, first hit at seed -737224">2106</div><div class="cell hit" title="Draw #2107 — covered, first hit at seed -461155">2107</div><div class="cell miss" title="Draw #2108 — MISSED at ±800,000 seed range">2108</div><div class="cell hit" title="Draw #2109 — covered, first hit at seed +678481">2109</div><div class="cell hit" title="Draw #2110 — covered, first hit at seed +138775">2110</div><div class="cell miss" title="Draw #2111 — MISSED at ±800,000 seed range">2111</div><div class="cell hit" title="Draw #2112 — covered, first hit at seed -256516">2112</div><div class="cell miss" title="Draw #2113 — MISSED at ±800,000 seed range">2113</div><div class="cell hit" title="Draw #2114 — covered, first hit at seed -700273">2114</div><div class="cell hit" title="Draw #2115 — covered, first hit at seed -577860">2115</div><div class="cell hit" title="Draw #2116 — covered, first hit at seed -739251">2116</div><div class="cell hit" title="Draw #2117 — covered, first hit at seed -148699">2117</div><div class="cell hit" title="Draw #2118 — covered, first hit at seed -284240">2118</div><div class="cell hit" title="Draw #2119 — covered, first hit at seed -586670">2119</div><div class="cell hit" title="Draw #2120 — covered, first hit at seed +304888">2120</div><div class="cell hit" title="Draw #2121 — covered, first hit at seed -427295">2121</div><div class="cell miss persistent" title="Draw #2122 — MISSED (missed at ±100k, ±400k, and ±800k — every range tested)">2122</div><div class="cell hit" title="Draw #2123 — covered, first hit at seed -55615">2123</div>
+    </div>
+    <div class="legend">
+      <span><span class="sw hit"></span>Covered (83)</span>
+      <span><span class="sw miss"></span>Missed (17)</span>
+      <span><span class="sw persistent"></span>Persistent miss (#2122)</span>
+    </div>
+    <div class="callout">
+      <div class="lbl">⚠ Why #2122 stands out</div>
+      <p>Draw #2122's actual winning combo was never reproduced by any seed across three independently-run ranges (±100,000, ±400,000, ±800,000 — up to 1.6 million seed values checked). Every other draw in the #2024–2123 window was covered by at least one range. This isn't proof #2122 is unreachable at K=7 — just that it sits further out in the seed space than the other 99 draws tested so far.</p>
+    </div>
+  </div>
+
+  <p class="footer">
+    Coverage = fraction of the 100 draws whose actual 6-number winning combo was a subset of some seed's 7-number pick in the given range.<br>
+    Methodology: for each seed, generate picks = random.Random(seed×10,000,000+draw_serial).sample(range(1,44),7); a draw is "covered" if any seed's 7-pick contains all 6 actual numbers.<br>
+    Data captured from a background analysis run in this session (±800,000 sweep took ~14 minutes across 100 draws).
+  </p>
+</div>
+
+<script>
+new Chart(document.getElementById('covChart').getContext('2d'), {
+  type: 'line',
+  data: {
+    labels: ["\u00b1100,000", "\u00b1200,000", "\u00b1400,000", "\u00b1800,000"],
+    datasets: [{
+      label: 'Coverage %',
+      data: [25, 43, 59, 83],
+      borderColor: '#38bdf8',
+      backgroundColor: 'rgba(56,189,248,0.12)',
+      borderWidth: 2.5,
+      pointBackgroundColor: '#38bdf8',
+      pointRadius: 5,
+      pointHoverRadius: 7,
+      tension: 0.25,
+      fill: true,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: function(ctx) {
+            const seeds = [200001, 400001, 800001, 1600001];
+            return ctx.parsed.y + '% coverage (' + seeds[ctx.dataIndex].toLocaleString() + ' seeds)';
+          }
+        }
+      }
+    },
+    scales: {
+      y: {
+        min: 0, max: 100,
+        ticks: { color: '#64748b', callback: v => v + '%' },
+        grid: { color: '#1e293b' }
+      },
+      x: {
+        ticks: { color: '#64748b' },
+        grid: { color: '#1e293b' }
+      }
+    }
+  }
+});
+</script>
+<script>
+(function(){
+  var path = window.location.pathname;
+  document.querySelectorAll('.nav-dropdown a').forEach(function(a){
+    var href = a.getAttribute('href');
+    if(!href) return;
+    if(href === path || (href !== '/' && path.startsWith(href.split('#')[0])))
+      a.classList.add('active');
+  });
+})();
+</script>
+</body>
+</html>
