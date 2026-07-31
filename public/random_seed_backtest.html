@@ -23,7 +23,7 @@
 .nav-dropdown{display:none;position:absolute;top:100%;left:0;
   background:transparent;padding-top:6px;z-index:10000;min-width:170px}
 .nav-dropdown-inner{background:#0d1526;border:1px solid #1e293b;border-radius:10px;
-  padding:6px;box-shadow:0 12px 32px rgba(0,0,0,.7);max-height:70vh;overflow-y:auto}
+  padding:6px;box-shadow:0 12px 32px rgba(0,0,0,.7)}
 .nav-group:hover .nav-dropdown{display:block}
 .nav-dropdown a{display:flex;align-items:center;gap:8px;padding:8px 12px;
   border-radius:6px;color:#94a3b8;text-decoration:none;font-size:.82rem;
@@ -33,7 +33,10 @@
 .nav-dd-label{font-size:.68rem;font-weight:700;color:#475569;padding:6px 12px 2px;
   text-transform:uppercase;letter-spacing:.06em}
 .nav-divider{height:1px;background:#1e293b;margin:4px 0}
+
 /* ========================================= */
+
+
 
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#0a0f1e;color:#e2e8f0;font-family:system-ui,sans-serif;padding-top:60px;min-height:100vh}
@@ -97,9 +100,12 @@ tbody td.tr{text-align:right}
 </head>
 <body>
 
+
 <nav class="site-nav">
   <a class="nav-logo" href="/">🎱 The<span>One</span>Lotto</a>
   <div class="nav-groups">
+
+    <!-- Data -->
     <div class="nav-group">
       <div class="nav-group-btn">Data <span class="arrow">▼</span></div>
       <div class="nav-dropdown"><div class="nav-dropdown-inner">
@@ -109,6 +115,8 @@ tbody td.tr{text-align:right}
         <a href="/numbers">🔢 Numbers</a>
       </div></div>
     </div>
+
+    <!-- Predict -->
     <div class="nav-group">
       <div class="nav-group-btn">Predict <span class="arrow">▼</span></div>
       <div class="nav-dropdown"><div class="nav-dropdown-inner">
@@ -131,11 +139,11 @@ tbody td.tr{text-align:right}
         <a href="/avg_shift_hub.html">⇄ All N-Shift Avg (2–43)</a>
         <div class="nav-divider"></div>
         <div class="nav-dd-label">Random Seed</div>
-        <a href="/random_seed_backtest.html" class="active">🎲 Random Seed (1–3000)</a>
-        <a href="/k7_seed_coverage.html">📈 K=7 Seed Coverage</a>
-        <a href="/k7_seed_hit_1000.html">🗺 K=7 Seed-Hit (1000 draws)</a>
+        <a href="/random_seed_backtest.html">🎲 Random Seed (1–2000)</a>
       </div></div>
     </div>
+
+    <!-- Analyze -->
     <div class="nav-group">
       <div class="nav-group-btn">Analyze <span class="arrow">▼</span></div>
       <div class="nav-dropdown"><div class="nav-dropdown-inner">
@@ -148,8 +156,10 @@ tbody td.tr{text-align:right}
         <a href="/pos_predict.html">📊 Pos 1–6 Predict</a>
       </div></div>
     </div>
+
   </div>
 </nav>
+
 
 <div class="wrap">
   <h1>🎲 Random Seed Backtest</h1>
@@ -30352,5 +30362,22 @@ document.addEventListener('keydown', function(e) {
   });
 })();
 </script>
+
+<script>
+(function(){
+  var path = window.location.pathname + window.location.hash;
+  document.querySelectorAll('.nav-dropdown a').forEach(function(a){
+    var href = a.getAttribute('href');
+    if(!href) return;
+    var hPath = href.split('#')[0];
+    var hHash = href.includes('#') ? href : '';
+    if(href === path) { a.classList.add('active'); return; }
+    if(hPath && hPath !== '/' && path.startsWith(hPath) && !href.includes('#')) {
+      a.classList.add('active');
+    }
+  });
+})();
+</script>
+
 </body>
 </html>
