@@ -5,11 +5,11 @@ Patch backtest.html:
 Then regenerate combo_evo_data.json + combo_evo_rounds.json
 using the updated predictions.
 """
-import json, re, sys, psycopg2, itertools, time
+import json, re, sys, psycopg2, itertools, time, os
 import numpy as np
 sys.stdout = open(sys.stdout.fileno(), mode='w', encoding='utf-8', buffering=1)
 
-DB_URL    = "postgresql://neondb_owner:npg_QbHpRZW8of3C@ep-hidden-wind-a1q0el7s-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
+DB_URL    = os.environ["DATABASE_URL"]
 HTML_PATH = r"C:\Users\Zaw Min Htoon\source\repos\theonelotto\public\backtest.html"
 DATA_PATH = r"C:\Users\Zaw Min Htoon\source\repos\theonelotto\public\combo_evo_data.json"
 ROUNDS_PATH = r"C:\Users\Zaw Min Htoon\source\repos\theonelotto\public\combo_evo_rounds.json"

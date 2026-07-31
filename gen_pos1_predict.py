@@ -3,9 +3,9 @@ Generate Position-1 prediction feature and inject into position.html.
 Strategy: for each test draw, look at last N position-1 numbers,
 pick the 2 most frequent as predictions. Backtest 1000 draws.
 """
-import psycopg2, json, re, collections
+import psycopg2, json, re, collections, os
 
-DB_URL = "postgresql://neondb_owner:npg_QbHpRZW8of3C@ep-hidden-wind-a1q0el7s-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
+DB_URL = os.environ["DATABASE_URL"]
 HTML_PATH = r"C:\Users\Zaw Min Htoon\source\repos\theonelotto\public\position.html"
 
 print("Fetching draws...")

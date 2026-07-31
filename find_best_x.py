@@ -1,6 +1,6 @@
-import psycopg2, numpy as np
+import psycopg2, numpy as np, os
 
-DB_URL = "postgresql://neondb_owner:npg_QbHpRZW8of3C@ep-hidden-wind-a1q0el7s-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
+DB_URL = os.environ["DATABASE_URL"]
 POS_IDX  = 2
 BT_DRAWS = 1000
 CMP_WIN  = 200

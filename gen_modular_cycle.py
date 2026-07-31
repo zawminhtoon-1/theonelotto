@@ -7,10 +7,7 @@ Generates public/modular_cycle.html with two tabs:
 import psycopg2, json, os, statistics
 from collections import Counter, defaultdict
 
-DB_URL = os.environ.get(
-    "DATABASE_URL",
-    "postgresql://neondb_owner:npg_QbHpRZW8of3C@ep-hidden-wind-a1q0el7s-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
-)
+DB_URL = os.environ["DATABASE_URL"]
 
 N_PICKS = 28
 BT_DRAWS = 1000

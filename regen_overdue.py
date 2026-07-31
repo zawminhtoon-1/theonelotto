@@ -3,10 +3,10 @@ Regenerate overdue.html with:
   - Updated current overdue stats (latest draw)
   - 1000-draw backtest instead of 300
 """
-import psycopg2, json, re, sys
+import psycopg2, json, re, sys, os
 sys.stdout = open(sys.stdout.fileno(), mode='w', encoding='utf-8', buffering=1)
 
-DB_URL    = "postgresql://neondb_owner:npg_QbHpRZW8of3C@ep-hidden-wind-a1q0el7s-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
+DB_URL    = os.environ["DATABASE_URL"]
 HTML_PATH = r"C:\Users\Zaw Min Htoon\source\repos\theonelotto\public\overdue.html"
 TOP_K     = 8
 BT_DRAWS  = 1000

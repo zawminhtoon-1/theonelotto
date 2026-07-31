@@ -7,10 +7,10 @@ For each draw t (using only history before t):
   - Pick top K candidates
   - Score = how many of draw t+1's actual numbers are in top K
 """
-import psycopg2, numpy as np, sys
+import psycopg2, numpy as np, sys, os
 sys.stdout = open(sys.stdout.fileno(), mode='w', encoding='utf-8', buffering=1)
 
-DB_URL = "postgresql://neondb_owner:npg_QbHpRZW8of3C@ep-hidden-wind-a1q0el7s-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
+DB_URL = os.environ["DATABASE_URL"]
 
 print("Fetching draws from DB...")
 conn = psycopg2.connect(DB_URL)

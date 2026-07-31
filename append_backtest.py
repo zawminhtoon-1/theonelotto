@@ -7,7 +7,7 @@ Also regenerates combo_evo_data.json and combo_evo_rounds.json.
 
 Run: python append_backtest.py
 """
-import json, re, sys, math, itertools, time
+import json, re, sys, math, itertools, time, os
 import numpy as np
 import psycopg2
 from collections import Counter, defaultdict
@@ -18,7 +18,7 @@ BASE      = r"C:\Users\Zaw Min Htoon\source\repos\theonelotto"
 HTML_PATH = BASE + r"\public\backtest.html"
 DATA_PATH = BASE + r"\public\combo_evo_data.json"
 ROUNDS_PATH = BASE + r"\public\combo_evo_rounds.json"
-DB_URL    = "postgresql://neondb_owner:npg_QbHpRZW8of3C@ep-hidden-wind-a1q0el7s-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
+DB_URL    = os.environ["DATABASE_URL"]
 LOTO6_MAX = 43
 K_DEFAULT = 15   # picks per method (except ModularCycle=28)
 

@@ -12,9 +12,9 @@ Strategies:
   adb        — A+B+D: proximity-feedback scoring + adaptive drift correction
                Optimised: precomputed Gaussian lookup + W-vector trick (O(window + 43²))
 """
-import psycopg2, json, collections, math
+import psycopg2, json, collections, math, os
 
-DB_URL  = "postgresql://neondb_owner:npg_QbHpRZW8of3C@ep-hidden-wind-a1q0el7s-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
+DB_URL  = os.environ["DATABASE_URL"]
 OUT_PATH = r"C:\Users\Zaw Min Htoon\source\repos\theonelotto\public\pos_predict.html"
 
 BT_DRAWS    = 1000

@@ -8,10 +8,7 @@ Also generates avg_shift_hub.html — a comparison table for all N.
 """
 import psycopg2, json, os, statistics
 
-DB_URL = os.environ.get(
-    "DATABASE_URL",
-    "postgresql://neondb_owner:npg_QbHpRZW8of3C@ep-hidden-wind-a1q0el7s-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
-)
+DB_URL = os.environ["DATABASE_URL"]
 
 BT_DRAWS = 1000
 

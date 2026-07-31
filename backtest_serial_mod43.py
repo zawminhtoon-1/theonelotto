@@ -9,10 +9,7 @@ Compare 6-hit count vs current multi-K method.
 import psycopg2, os, statistics
 from collections import Counter
 
-DB_URL = os.environ.get(
-    "DATABASE_URL",
-    "postgresql://neondb_owner:npg_QbHpRZW8of3C@ep-hidden-wind-a1q0el7s-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
-)
+DB_URL = os.environ["DATABASE_URL"]
 
 conn = psycopg2.connect(DB_URL)
 cur = conn.cursor()

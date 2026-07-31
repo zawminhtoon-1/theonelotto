@@ -11,10 +11,10 @@ States (5 sum buckets):
 1-step: state[i-1] → predict state[i]
 2-step: (state[i-2], state[i-1]) → predict state[i]
 """
-import psycopg2, json, collections
+import psycopg2, json, collections, os
 
 OUT_PATH = r"C:\Users\Zaw Min Htoon\source\repos\theonelotto\public\state_machine.html"
-DB_URL = "postgresql://neondb_owner:npg_QbHpRZW8of3C@ep-hidden-wind-a1q0el7s-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
+DB_URL = os.environ["DATABASE_URL"]
 
 BUCKETS = [
     (0,   90,  "Very Low",  "≤90",   "#6366f1"),

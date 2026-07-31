@@ -4,13 +4,9 @@ Architecture: SEQ=10, H=16, IN=43, OUT=43 (multi-label binary)
 N_PICKS=28, backtest last 1000 draws, match against 7 numbers (6 main + bonus)
 Outputs: lstm_weights.json, lstm_backtest.json
 """
-import numpy as np, json, time, psycopg2
+import numpy as np, json, time, psycopg2, os
 
-DB_URL = (
-    "postgresql://neondb_owner:npg_QbHpRZW8of3C"
-    "@ep-hidden-wind-a1q0el7s-pooler.ap-southeast-1.aws.neon.tech"
-    "/neondb?sslmode=require"
-)
+DB_URL = os.environ["DATABASE_URL"]
 
 SEQ    = 10
 H      = 16
