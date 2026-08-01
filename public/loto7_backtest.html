@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Loto 7 — Backtest Report</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f172a; --surface: #1e293b; --border: #334155;
+    --text: #f1f5f9; --muted: #94a3b8; --accent: #38bdf8;
+    --green: #4ade80; --orange: #fb923c; --red: #f87171; --yellow: #facc15;
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: system-ui,sans-serif; padding: 24px; margin: 0; }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  .subtitle { color: var(--muted); font-size: .875rem; margin-bottom: 24px; }
+  .note { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+           padding: 14px 18px; font-size: .8rem; color: var(--muted); margin-bottom: 24px; line-height: 1.6; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 24px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+           padding: 16px; }
+  .card.best { border-color: var(--yellow); box-shadow: 0 0 0 1px var(--yellow); }
+  .card-name { font-size: .8rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+  .card-avg { font-size: 1.6rem; font-weight: 700; color: var(--accent); }
+  .card-avg .unit { font-size: .8rem; color: var(--muted); font-weight: 400; margin-left: 4px; }
+  .card-sub { font-size: .75rem; color: var(--muted); margin-top: 8px; }
+  .chart-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+                 padding: 20px; margin-bottom: 24px; }
+  table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+  th { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); color: var(--muted);
+        text-transform: uppercase; font-size: .7rem; letter-spacing: .05em; }
+  td { padding: 10px 8px; border-bottom: 1px solid var(--border); }
+  tr.best td { color: var(--yellow); font-weight: 600; }
+  .baseline-row td { color: var(--muted); font-style: italic; }
+</style>
+</head>
+<body>
+
+<h1>Loto 7 — Backtest Report</h1>
+<p class="subtitle">Walk-forward evaluation &middot; Draws #3&ndash;#688 &middot; 686 draws &middot; 5 methods &middot; 7 picks each</p>
+
+<div class="note">
+  Starter set of 5 methods (of Loto6's eventual 16-method roster), adapted for Loto7's
+  7-from-37 + 2-bonus-number structure. Each method predicts using only draws strictly
+  before the target draw (no lookahead). Fixed at K=7 picks for this first pass &mdash;
+  a pick-count toggle can be added once more methods are implemented.
+</div>
+
+<div class="cards">
+  <div class="card" data-mi="0">
+    <div class="card-name">Poly deg-2</div>
+    <div class="card-avg">1.3353<span class="unit">avg hits / 7</span></div>
+    <div class="card-sub">Best draw: 4 hits &middot; Bonus hit: 37.9%</div>
+  </div>
+  <div class="card" data-mi="1">
+    <div class="card-name">MA-37</div>
+    <div class="card-avg">1.3047<span class="unit">avg hits / 7</span></div>
+    <div class="card-sub">Best draw: 5 hits &middot; Bonus hit: 36.7%</div>
+  </div>
+  <div class="card" data-mi="2">
+    <div class="card-name">Most frequent all</div>
+    <div class="card-avg">1.3251<span class="unit">avg hits / 7</span></div>
+    <div class="card-sub">Best draw: 4 hits &middot; Bonus hit: 35.6%</div>
+  </div>
+  <div class="card best" data-mi="3">
+    <div class="card-name">Markov chain ★ best</div>
+    <div class="card-avg">1.3397<span class="unit">avg hits / 7</span></div>
+    <div class="card-sub">Best draw: 4 hits &middot; Bonus hit: 35.1%</div>
+  </div>
+  <div class="card" data-mi="4">
+    <div class="card-name">Naive Bayes</div>
+    <div class="card-avg">1.3076<span class="unit">avg hits / 7</span></div>
+    <div class="card-sub">Best draw: 5 hits &middot; Bonus hit: 37.6%</div>
+  </div>
+</div>
+
+<div class="chart-wrap"><canvas id="distChart" height="110"></canvas></div>
+
+<div class="chart-wrap">
+<table>
+  <thead>
+    <tr><th>Method</th><th>Avg Hits</th><th>vs Random</th><th>Best Draw</th><th>Bonus Hit %</th></tr>
+  </thead>
+  <tbody>
+    <tr class=""><td>Poly deg-2</td><td>1.3353</td><td>1.01&times;</td><td>4</td><td>37.9%</td></tr>
+    <tr class=""><td>MA-37</td><td>1.3047</td><td>0.99&times;</td><td>5</td><td>36.7%</td></tr>
+    <tr class=""><td>Most frequent all</td><td>1.3251</td><td>1.0&times;</td><td>4</td><td>35.6%</td></tr>
+    <tr class="best"><td>Markov chain</td><td>1.3397</td><td>1.01&times;</td><td>4</td><td>35.1%</td></tr>
+    <tr class=""><td>Naive Bayes</td><td>1.3076</td><td>0.99&times;</td><td>5</td><td>37.6%</td></tr>
+    <tr class="baseline-row"><td>Random baseline</td><td>1.3243</td><td>1.00&times;</td><td>&mdash;</td><td>34.7%</td></tr>
+  </tbody>
+</table>
+</div>
+
+<script>
+const METHODS = ["Poly deg-2", "MA-37", "Most frequent all", "Markov chain", "Naive Bayes"];
+const COLORS  = ["#38bdf8", "#818cf8", "#4ade80", "#facc15", "#f87171"];
+const HIT_COUNTS = [[124, 288, 205, 58, 11, 0, 0, 0], [135, 290, 189, 62, 9, 1, 0, 0], [137, 272, 211, 49, 17, 0, 0, 0], [128, 289, 188, 70, 11, 0, 0, 0], [138, 291, 179, 65, 12, 1, 0, 0]];
+const RANDOM_AVG = 1.3243243243243243;
+
+const HP = (k) => {
+  // hypergeometric P(k matches | 7 picks, 7 actual winners, 37 total)
+  const C = (n,r) => { if(r<0||r>n) return 0; let x=1; for(let i=0;i<r;i++) x=x*(n-i)/(i+1); return x; };
+  return C(7,k)*C(30,7-k)/C(37,7);
+};
+const randomDist = [0,1,2,3,4,5,6,7].map(k => HP(k)*686);
+
+new Chart(document.getElementById('distChart').getContext('2d'), {
+  type: 'bar',
+  data: {
+    labels: ['0','1','2','3','4','5','6','7'],
+    datasets: [
+      ...METHODS.map((name,mi) => ({
+        label: name, data: HIT_COUNTS[mi],
+        backgroundColor: COLORS[mi]+'bb', borderColor: COLORS[mi], borderWidth: 1
+      })),
+      { label: 'Random baseline', data: randomDist,
+        type: 'line', borderColor: '#fff', borderDash: [5,3],
+        borderWidth: 2, pointRadius: 0, fill: false, tension: 0 }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { labels: { color:'#94a3b8' } } },
+    scales: {
+      x: { ticks:{color:'#94a3b8'}, grid:{color:'#334155'},
+           title:{display:true, text:'Matches (out of 7)', color:'#94a3b8'} },
+      y: { ticks:{color:'#94a3b8'}, grid:{color:'#334155'},
+           title:{display:true, text:'Count', color:'#94a3b8'} }
+    }
+  }
+});
+</script>
+
+</body>
+</html>

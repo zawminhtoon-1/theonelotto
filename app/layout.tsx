@@ -59,6 +59,13 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { href: "/pos_predict.html", icon: "📊", label: "Pos 1–6 Predict" },
     ],
   },
+  {
+    label: "Loto7",
+    items: [
+      { type: "label", label: "Loto 7 (7 from 37 + 2 bonus)" },
+      { href: "/loto7_backtest.html", icon: "📊", label: "Backtest" },
+    ],
+  },
 ];
 
 const navStyle: React.CSSProperties = {
