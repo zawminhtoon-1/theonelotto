@@ -22,7 +22,7 @@ export default function PredictionsView({
 }) {
   const [selected, setSelected] = useState("all");
   const [filterInput, setFilterInput] = useState("");
-  const [showK, setShowK] = useState<7 | 13>(7);
+  const [showK, setShowK] = useState<7 | 9 | 13>(7);
 
   const filterNum = (() => {
     const v = parseInt(filterInput, 10);
@@ -47,7 +47,7 @@ export default function PredictionsView({
   // last 1000 draws (backtest.html's per-method historical picks). Winner:
   // Markov chain + Random Forest + Naive Bayes, avg 1.0330 hits (+5.8% vs
   // baseline 0.9767), 6 draws with 4+ hits.
-  // K=13: no entry — not searched, no panel shown for that pick count.
+  // K=9, K=13: no entry — not searched, no panel shown for those pick counts.
   const BEST_COMBOS: Record<number, { labels: string[]; name: string }> = {
     7: { labels: ["5", "7", "14"], name: "Markov + RF + NaiveBay" },
   };
@@ -120,7 +120,7 @@ export default function PredictionsView({
 
         {/* Pick count toggle */}
         <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
-          {([7, 13] as const).map((k) => (
+          {([7, 9, 13] as const).map((k) => (
             <button
               key={k}
               onClick={() => setShowK(k)}
