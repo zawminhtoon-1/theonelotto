@@ -45,89 +45,91 @@
   structure. Each method predicts using only draws strictly before the target draw (no
   lookahead) &mdash; LSTM additionally trains online after each prediction, same as Loto6's.
   Fixed at K=7 picks for all methods (Loto6's Modular Cycle uniquely used K=28; here every
-  method is normalized to K=7 for a fair comparison).
+  method is normalized to K=7 for a fair comparison). Headline metric: count of 6-hit / 5-hit /
+  4-hit draws (out of 7 possible) per method across all 686 backtested draws &mdash; no method
+  has ever hit all 7, and none have hit 6 either, so 5-hit is the highest band actually reached.
 </div>
 
 <div class="cards">
   <div class="card" data-mi="0">
     <div class="card-name">Poly deg-2</div>
-    <div class="card-avg">1.3353<span class="unit">avg hits / 7</span></div>
-    <div class="card-sub">Best draw: 4 hits &middot; Bonus hit: 37.9%</div>
+    <div class="card-avg">0<span class="unit">5-hit draws</span></div>
+    <div class="card-sub">6-hit: 0 &middot; 4-hit: 11 &middot; Bonus hit: 37.9%</div>
   </div>
   <div class="card" data-mi="1">
     <div class="card-name">MA-37</div>
-    <div class="card-avg">1.3047<span class="unit">avg hits / 7</span></div>
-    <div class="card-sub">Best draw: 5 hits &middot; Bonus hit: 36.7%</div>
+    <div class="card-avg">1<span class="unit">5-hit draws</span></div>
+    <div class="card-sub">6-hit: 0 &middot; 4-hit: 9 &middot; Bonus hit: 36.7%</div>
   </div>
   <div class="card" data-mi="2">
     <div class="card-name">Exp-weighted</div>
-    <div class="card-avg">1.3076<span class="unit">avg hits / 7</span></div>
-    <div class="card-sub">Best draw: 4 hits &middot; Bonus hit: 36.9%</div>
+    <div class="card-avg">0<span class="unit">5-hit draws</span></div>
+    <div class="card-sub">6-hit: 0 &middot; 4-hit: 4 &middot; Bonus hit: 36.9%</div>
   </div>
   <div class="card" data-mi="3">
     <div class="card-name">Most frequent all</div>
-    <div class="card-avg">1.3251<span class="unit">avg hits / 7</span></div>
-    <div class="card-sub">Best draw: 4 hits &middot; Bonus hit: 35.6%</div>
+    <div class="card-avg">0<span class="unit">5-hit draws</span></div>
+    <div class="card-sub">6-hit: 0 &middot; 4-hit: 17 &middot; Bonus hit: 35.6%</div>
   </div>
   <div class="card" data-mi="4">
     <div class="card-name">Markov chain</div>
-    <div class="card-avg">1.3397<span class="unit">avg hits / 7</span></div>
-    <div class="card-sub">Best draw: 4 hits &middot; Bonus hit: 35.1%</div>
+    <div class="card-avg">0<span class="unit">5-hit draws</span></div>
+    <div class="card-sub">6-hit: 0 &middot; 4-hit: 11 &middot; Bonus hit: 35.1%</div>
   </div>
-  <div class="card" data-mi="5">
-    <div class="card-name">ARIMA(2,1,0)</div>
-    <div class="card-avg">1.3149<span class="unit">avg hits / 7</span></div>
-    <div class="card-sub">Best draw: 5 hits &middot; Bonus hit: 34.7%</div>
+  <div class="card best" data-mi="5">
+    <div class="card-name">ARIMA(2,1,0) ★</div>
+    <div class="card-avg">2<span class="unit">5-hit draws</span></div>
+    <div class="card-sub">6-hit: 0 &middot; 4-hit: 7 &middot; Bonus hit: 34.7%</div>
   </div>
   <div class="card" data-mi="6">
     <div class="card-name">Random Forest</div>
-    <div class="card-avg">1.3178<span class="unit">avg hits / 7</span></div>
-    <div class="card-sub">Best draw: 5 hits &middot; Bonus hit: 34.5%</div>
+    <div class="card-avg">2<span class="unit">5-hit draws</span></div>
+    <div class="card-sub">6-hit: 0 &middot; 4-hit: 7 &middot; Bonus hit: 34.5%</div>
   </div>
   <div class="card" data-mi="7">
     <div class="card-name">RL (Linear Q)</div>
-    <div class="card-avg">1.3222<span class="unit">avg hits / 7</span></div>
-    <div class="card-sub">Best draw: 5 hits &middot; Bonus hit: 36.0%</div>
+    <div class="card-avg">1<span class="unit">5-hit draws</span></div>
+    <div class="card-sub">6-hit: 0 &middot; 4-hit: 16 &middot; Bonus hit: 36.0%</div>
   </div>
   <div class="card" data-mi="8">
     <div class="card-name">Hidden Markov Model</div>
-    <div class="card-avg">1.3061<span class="unit">avg hits / 7</span></div>
-    <div class="card-sub">Best draw: 4 hits &middot; Bonus hit: 33.5%</div>
+    <div class="card-avg">0<span class="unit">5-hit draws</span></div>
+    <div class="card-sub">6-hit: 0 &middot; 4-hit: 5 &middot; Bonus hit: 33.5%</div>
   </div>
   <div class="card" data-mi="9">
     <div class="card-name">kNN (k=10)</div>
-    <div class="card-avg">1.363<span class="unit">avg hits / 7</span></div>
-    <div class="card-sub">Best draw: 5 hits &middot; Bonus hit: 34.3%</div>
+    <div class="card-avg">1<span class="unit">5-hit draws</span></div>
+    <div class="card-sub">6-hit: 0 &middot; 4-hit: 8 &middot; Bonus hit: 34.3%</div>
   </div>
   <div class="card" data-mi="10">
     <div class="card-name">Modular Cycle (mod 37)</div>
-    <div class="card-avg">1.2959<span class="unit">avg hits / 7</span></div>
-    <div class="card-sub">Best draw: 5 hits &middot; Bonus hit: 32.4%</div>
+    <div class="card-avg">1<span class="unit">5-hit draws</span></div>
+    <div class="card-sub">6-hit: 0 &middot; 4-hit: 7 &middot; Bonus hit: 32.4%</div>
   </div>
   <div class="card" data-mi="11">
     <div class="card-name">Apriori Assoc Rules</div>
-    <div class="card-avg">1.3397<span class="unit">avg hits / 7</span></div>
-    <div class="card-sub">Best draw: 4 hits &middot; Bonus hit: 35.1%</div>
+    <div class="card-avg">0<span class="unit">5-hit draws</span></div>
+    <div class="card-sub">6-hit: 0 &middot; 4-hit: 11 &middot; Bonus hit: 35.1%</div>
   </div>
-  <div class="card best" data-mi="12">
-    <div class="card-name">Monte Carlo ★</div>
-    <div class="card-avg">1.3673<span class="unit">avg hits / 7</span></div>
-    <div class="card-sub">Best draw: 5 hits &middot; Bonus hit: 34.1%</div>
+  <div class="card" data-mi="12">
+    <div class="card-name">Monte Carlo</div>
+    <div class="card-avg">1<span class="unit">5-hit draws</span></div>
+    <div class="card-sub">6-hit: 0 &middot; 4-hit: 13 &middot; Bonus hit: 34.1%</div>
   </div>
   <div class="card" data-mi="13">
     <div class="card-name">Naive Bayes</div>
-    <div class="card-avg">1.3076<span class="unit">avg hits / 7</span></div>
-    <div class="card-sub">Best draw: 5 hits &middot; Bonus hit: 37.6%</div>
+    <div class="card-avg">1<span class="unit">5-hit draws</span></div>
+    <div class="card-sub">6-hit: 0 &middot; 4-hit: 12 &middot; Bonus hit: 37.6%</div>
   </div>
   <div class="card" data-mi="14">
     <div class="card-name">Weighted MA-37</div>
-    <div class="card-avg">1.3017<span class="unit">avg hits / 7</span></div>
-    <div class="card-sub">Best draw: 5 hits &middot; Bonus hit: 38.6%</div>
+    <div class="card-avg">1<span class="unit">5-hit draws</span></div>
+    <div class="card-sub">6-hit: 0 &middot; 4-hit: 8 &middot; Bonus hit: 38.6%</div>
   </div>
   <div class="card" data-mi="15">
     <div class="card-name">LSTM (seq prediction)</div>
-    <div class="card-avg">1.3061<span class="unit">avg hits / 7</span></div>
-    <div class="card-sub">Best draw: 4 hits &middot; Bonus hit: 35.3%</div>
+    <div class="card-avg">0<span class="unit">5-hit draws</span></div>
+    <div class="card-sub">6-hit: 0 &middot; 4-hit: 14 &middot; Bonus hit: 35.3%</div>
   </div>
 </div>
 
@@ -136,26 +138,26 @@
 <div class="chart-wrap">
 <table>
   <thead>
-    <tr><th>Method</th><th>Avg Hits</th><th>vs Random</th><th>Best Draw</th><th>Bonus Hit %</th></tr>
+    <tr><th>Method</th><th>6 Hits</th><th>5 Hits</th><th>4 Hits</th><th>Avg Hits</th><th>vs Random</th><th>Bonus Hit %</th></tr>
   </thead>
   <tbody>
-    <tr class="best"><td>Monte Carlo</td><td>1.3673</td><td>1.03&times;</td><td>5</td><td>34.1%</td></tr>
-    <tr class=""><td>kNN (k=10)</td><td>1.363</td><td>1.03&times;</td><td>5</td><td>34.3%</td></tr>
-    <tr class=""><td>Markov chain</td><td>1.3397</td><td>1.01&times;</td><td>4</td><td>35.1%</td></tr>
-    <tr class=""><td>Apriori Assoc Rules</td><td>1.3397</td><td>1.01&times;</td><td>4</td><td>35.1%</td></tr>
-    <tr class=""><td>Poly deg-2</td><td>1.3353</td><td>1.01&times;</td><td>4</td><td>37.9%</td></tr>
-    <tr class=""><td>Most frequent all</td><td>1.3251</td><td>1.0&times;</td><td>4</td><td>35.6%</td></tr>
-    <tr class=""><td>RL (Linear Q)</td><td>1.3222</td><td>1.0&times;</td><td>5</td><td>36.0%</td></tr>
-    <tr class=""><td>Random Forest</td><td>1.3178</td><td>1.0&times;</td><td>5</td><td>34.5%</td></tr>
-    <tr class=""><td>ARIMA(2,1,0)</td><td>1.3149</td><td>0.99&times;</td><td>5</td><td>34.7%</td></tr>
-    <tr class=""><td>Exp-weighted</td><td>1.3076</td><td>0.99&times;</td><td>4</td><td>36.9%</td></tr>
-    <tr class=""><td>Naive Bayes</td><td>1.3076</td><td>0.99&times;</td><td>5</td><td>37.6%</td></tr>
-    <tr class=""><td>Hidden Markov Model</td><td>1.3061</td><td>0.99&times;</td><td>4</td><td>33.5%</td></tr>
-    <tr class=""><td>LSTM (seq prediction)</td><td>1.3061</td><td>0.99&times;</td><td>4</td><td>35.3%</td></tr>
-    <tr class=""><td>MA-37</td><td>1.3047</td><td>0.99&times;</td><td>5</td><td>36.7%</td></tr>
-    <tr class=""><td>Weighted MA-37</td><td>1.3017</td><td>0.98&times;</td><td>5</td><td>38.6%</td></tr>
-    <tr class=""><td>Modular Cycle (mod 37)</td><td>1.2959</td><td>0.98&times;</td><td>5</td><td>32.4%</td></tr>
-    <tr class="baseline-row"><td>Random baseline</td><td>1.3243</td><td>1.00&times;</td><td>&mdash;</td><td>34.7%</td></tr>
+    <tr class="best"><td>ARIMA(2,1,0)</td><td>0</td><td>2</td><td>7</td><td>1.3149</td><td>0.99&times;</td><td>34.7%</td></tr>
+    <tr class=""><td>Random Forest</td><td>0</td><td>2</td><td>7</td><td>1.3178</td><td>1.0&times;</td><td>34.5%</td></tr>
+    <tr class=""><td>RL (Linear Q)</td><td>0</td><td>1</td><td>16</td><td>1.3222</td><td>1.0&times;</td><td>36.0%</td></tr>
+    <tr class=""><td>Monte Carlo</td><td>0</td><td>1</td><td>13</td><td>1.3673</td><td>1.03&times;</td><td>34.1%</td></tr>
+    <tr class=""><td>Naive Bayes</td><td>0</td><td>1</td><td>12</td><td>1.3076</td><td>0.99&times;</td><td>37.6%</td></tr>
+    <tr class=""><td>MA-37</td><td>0</td><td>1</td><td>9</td><td>1.3047</td><td>0.99&times;</td><td>36.7%</td></tr>
+    <tr class=""><td>kNN (k=10)</td><td>0</td><td>1</td><td>8</td><td>1.363</td><td>1.03&times;</td><td>34.3%</td></tr>
+    <tr class=""><td>Weighted MA-37</td><td>0</td><td>1</td><td>8</td><td>1.3017</td><td>0.98&times;</td><td>38.6%</td></tr>
+    <tr class=""><td>Modular Cycle (mod 37)</td><td>0</td><td>1</td><td>7</td><td>1.2959</td><td>0.98&times;</td><td>32.4%</td></tr>
+    <tr class=""><td>Most frequent all</td><td>0</td><td>0</td><td>17</td><td>1.3251</td><td>1.0&times;</td><td>35.6%</td></tr>
+    <tr class=""><td>LSTM (seq prediction)</td><td>0</td><td>0</td><td>14</td><td>1.3061</td><td>0.99&times;</td><td>35.3%</td></tr>
+    <tr class=""><td>Poly deg-2</td><td>0</td><td>0</td><td>11</td><td>1.3353</td><td>1.01&times;</td><td>37.9%</td></tr>
+    <tr class=""><td>Markov chain</td><td>0</td><td>0</td><td>11</td><td>1.3397</td><td>1.01&times;</td><td>35.1%</td></tr>
+    <tr class=""><td>Apriori Assoc Rules</td><td>0</td><td>0</td><td>11</td><td>1.3397</td><td>1.01&times;</td><td>35.1%</td></tr>
+    <tr class=""><td>Hidden Markov Model</td><td>0</td><td>0</td><td>5</td><td>1.3061</td><td>0.99&times;</td><td>33.5%</td></tr>
+    <tr class=""><td>Exp-weighted</td><td>0</td><td>0</td><td>4</td><td>1.3076</td><td>0.99&times;</td><td>36.9%</td></tr>
+    <tr class="baseline-row"><td>Random baseline (expected)</td><td>0.01</td><td>0.61</td><td>9.47</td><td>1.3243</td><td>1.00&times;</td><td>34.7%</td></tr>
   </tbody>
 </table>
 </div>

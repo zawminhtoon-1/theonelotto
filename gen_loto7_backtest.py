@@ -378,56 +378,65 @@ def method_lstm(idx):
     lstm.train_step(xs, lstm_vecs[idx])  # online learning, walk-forward safe (target is THIS draw, applied AFTER prediction)
     return picks
 
-# ── 2. Walk-forward backtest ─────────────────────────────────────────────────
-print("Running walk-forward backtest (16 methods)...")
-t0 = time.time()
+# ── 2. Walk-forward backtest (reuse cached DATA if it matches current DB) ────
+CACHE_PATH = BASE + r"\loto7_backtest_data.json"
+DATA = None
+if os.path.exists(CACHE_PATH):
+    with open(CACHE_PATH, encoding='utf-8') as f:
+        cached = json.load(f)
+    if cached.get("methods") == METHODS and len(cached.get("data", [])) == len(all_serials) - 2:
+        print(f"Reusing cached backtest data from {CACHE_PATH} ({len(cached['data'])} draws, methods match)")
+        DATA = cached["data"]
 
-DATA = []
-for idx in range(len(all_serials)):
-    target_serial = all_serials[idx]
-    train_serials = all_serials[:idx]
-    train_main7 = all_main7[:idx]
-    if len(train_serials) < 2:
-        continue
+if DATA is None:
+    print("No usable cache -- running walk-forward backtest (16 methods)...")
+    t0 = time.time()
+    DATA = []
+    for idx in range(len(all_serials)):
+        target_serial = all_serials[idx]
+        train_serials = all_serials[:idx]
+        train_main7 = all_main7[:idx]
+        if len(train_serials) < 2:
+            continue
 
-    target_actual7 = all_main7[idx]
-    target_b1, target_b2 = all_bonus1[idx], all_bonus2[idx]
+        target_actual7 = all_main7[idx]
+        target_b1, target_b2 = all_bonus1[idx], all_bonus2[idx]
 
-    picks_fns = [
-        lambda: method_poly(train_main7, train_serials, target_serial),
-        lambda: method_ma(train_main7),
-        lambda: method_exp_weighted(train_main7),
-        lambda: method_freq_all(train_main7),
-        lambda: method_markov(train_main7),
-        lambda: method_arima(train_main7),
-        lambda: method_random_forest(train_main7, train_serials, target_serial),
-        lambda: method_rl_linear_q(train_main7),
-        lambda: method_hmm(train_main7),
-        lambda: method_knn(train_main7),
-        lambda: method_modular_cycle(train_serials, train_main7, target_serial),
-        lambda: method_apriori(train_main7),
-        lambda: method_monte_carlo(idx, train_main7),
-        lambda: method_naive_bayes(train_main7),
-        lambda: method_weighted_ma37(train_main7),
-        lambda: method_lstm(idx),
-    ]
+        picks_fns = [
+            lambda: method_poly(train_main7, train_serials, target_serial),
+            lambda: method_ma(train_main7),
+            lambda: method_exp_weighted(train_main7),
+            lambda: method_freq_all(train_main7),
+            lambda: method_markov(train_main7),
+            lambda: method_arima(train_main7),
+            lambda: method_random_forest(train_main7, train_serials, target_serial),
+            lambda: method_rl_linear_q(train_main7),
+            lambda: method_hmm(train_main7),
+            lambda: method_knn(train_main7),
+            lambda: method_modular_cycle(train_serials, train_main7, target_serial),
+            lambda: method_apriori(train_main7),
+            lambda: method_monte_carlo(idx, train_main7),
+            lambda: method_naive_bayes(train_main7),
+            lambda: method_weighted_ma37(train_main7),
+            lambda: method_lstm(idx),
+        ]
 
-    preds_list = []
-    for fn in picks_fns:
-        picks = fn()
-        hits, bonus_hit = compute_hits(picks, target_actual7, target_b1, target_b2)
-        preds_list.append([picks, hits, bonus_hit])
+        preds_list = []
+        for fn in picks_fns:
+            picks = fn()
+            hits, bonus_hit = compute_hits(picks, target_actual7, target_b1, target_b2)
+            preds_list.append([picks, hits, bonus_hit])
 
-    DATA.append({
-        "s": target_serial, "d": all_dates[idx],
-        "a": target_actual7, "b1": target_b1, "b2": target_b2,
-        "p": preds_list,
-    })
+        DATA.append({
+            "s": target_serial, "d": all_dates[idx],
+            "a": target_actual7, "b1": target_b1, "b2": target_b2,
+            "p": preds_list,
+        })
 
-    if len(DATA) % 100 == 0:
-        print(f"  {len(DATA)}/{len(all_serials)-2} draws, elapsed {time.time()-t0:.0f}s")
+        if len(DATA) % 100 == 0:
+            print(f"  {len(DATA)}/{len(all_serials)-2} draws, elapsed {time.time()-t0:.0f}s")
 
-print(f"Backtested {len(DATA)} draws in {round(time.time()-t0,1)}s")
+    print(f"Backtested {len(DATA)} draws in {round(time.time()-t0,1)}s")
 
 # ── 3. Aggregate stats ────────────────────────────────────────────────────────
 N_METHODS = len(METHODS)
@@ -447,17 +456,30 @@ avg_hits = [round(sum(match_series[mi]) / T, 4) for mi in range(N_METHODS)]
 bonus_pct = [round(bonus_hits[mi] / T * 100, 1) for mi in range(N_METHODS)]
 best_hits = [max(match_series[mi]) for mi in range(N_METHODS)]
 
+# Headline metric: count of 6-hit / 5-hit / 4-hit draws per method
+hit6 = [hit_counts[mi][6] for mi in range(N_METHODS)]
+hit5 = [hit_counts[mi][5] for mi in range(N_METHODS)]
+hit4 = [hit_counts[mi][4] for mi in range(N_METHODS)]
+
 random_avg = K * 7 / LOTO7_MAX
 from math import comb
 random_bonus_pct = round((1 - comb(LOTO7_MAX-2, K) / comb(LOTO7_MAX, K)) * 100, 1)
 
+def hypergeom_p(k):
+    return comb(7,k) * comb(LOTO7_MAX-7, K-k) / comb(LOTO7_MAX, K)
+
+random_hit6 = round(hypergeom_p(6) * T, 2)
+random_hit5 = round(hypergeom_p(5) * T, 2)
+random_hit4 = round(hypergeom_p(4) * T, 2)
+
 print("\n=== Results ===")
 for mi in range(N_METHODS):
-    print(f"  {METHODS[mi]:24s} avg={avg_hits[mi]:.4f}  bonus%={bonus_pct[mi]:5.1f}  best={best_hits[mi]}  dist={hit_counts[mi]}")
-print(f"  {'Random baseline':24s} avg={random_avg:.4f}  bonus%={random_bonus_pct:5.1f}")
+    print(f"  {METHODS[mi]:24s} 6hit={hit6[mi]:3d}  5hit={hit5[mi]:3d}  4hit={hit4[mi]:3d}  avg={avg_hits[mi]:.4f}  bonus%={bonus_pct[mi]:5.1f}")
+print(f"  {'Random baseline':24s} 6hit={random_hit6:5.2f}  5hit={random_hit5:5.2f}  4hit={random_hit4:5.2f}  avg={random_avg:.4f}  bonus%={random_bonus_pct:5.1f}")
 
-best_method_idx = max(range(N_METHODS), key=lambda i: avg_hits[i])
-print(f"\nBest method: {METHODS[best_method_idx]} (avg {avg_hits[best_method_idx]} vs random {random_avg:.4f})")
+# Rank by (6-hit, 5-hit, 4-hit) descending -- the new headline metric
+best_method_idx = max(range(N_METHODS), key=lambda i: (hit6[i], hit5[i], hit4[i]))
+print(f"\nBest method: {METHODS[best_method_idx]} (6hit={hit6[best_method_idx]} 5hit={hit5[best_method_idx]} 4hit={hit4[best_method_idx]})")
 
 # ── 4. Save DATA for downstream use (Best Combo search, etc.) ────────────────
 DATA_JSON_OUT = BASE + r"\loto7_backtest_data.json"
@@ -515,7 +537,9 @@ html = f'''<!DOCTYPE html>
   structure. Each method predicts using only draws strictly before the target draw (no
   lookahead) &mdash; LSTM additionally trains online after each prediction, same as Loto6's.
   Fixed at K=7 picks for all methods (Loto6's Modular Cycle uniquely used K=28; here every
-  method is normalized to K=7 for a fair comparison).
+  method is normalized to K=7 for a fair comparison). Headline metric: count of 6-hit / 5-hit /
+  4-hit draws (out of 7 possible) per method across all {T} backtested draws &mdash; no method
+  has ever hit all 7, and none have hit 6 either, so 5-hit is the highest band actually reached.
 </div>
 
 <div class="cards">
@@ -525,8 +549,8 @@ for mi in range(N_METHODS):
     is_best = mi == best_method_idx
     html += f'''  <div class="card{' best' if is_best else ''}" data-mi="{mi}">
     <div class="card-name">{METHODS[mi]}{' ★' if is_best else ''}</div>
-    <div class="card-avg">{avg_hits[mi]}<span class="unit">avg hits / 7</span></div>
-    <div class="card-sub">Best draw: {best_hits[mi]} hits &middot; Bonus hit: {bonus_pct[mi]}%</div>
+    <div class="card-avg">{hit5[mi]}<span class="unit">5-hit draws</span></div>
+    <div class="card-sub">6-hit: {hit6[mi]} &middot; 4-hit: {hit4[mi]} &middot; Bonus hit: {bonus_pct[mi]}%</div>
   </div>
 '''
 
@@ -537,19 +561,19 @@ html += '''</div>
 <div class="chart-wrap">
 <table>
   <thead>
-    <tr><th>Method</th><th>Avg Hits</th><th>vs Random</th><th>Best Draw</th><th>Bonus Hit %</th></tr>
+    <tr><th>Method</th><th>6 Hits</th><th>5 Hits</th><th>4 Hits</th><th>Avg Hits</th><th>vs Random</th><th>Bonus Hit %</th></tr>
   </thead>
   <tbody>
 '''
 
-order = sorted(range(N_METHODS), key=lambda i: -avg_hits[i])
+order = sorted(range(N_METHODS), key=lambda i: (-hit6[i], -hit5[i], -hit4[i]))
 for mi in order:
     is_best = mi == best_method_idx
     lift = round(avg_hits[mi] / random_avg, 2)
-    html += f'''    <tr class="{'best' if is_best else ''}"><td>{METHODS[mi]}</td><td>{avg_hits[mi]}</td><td>{lift}&times;</td><td>{best_hits[mi]}</td><td>{bonus_pct[mi]}%</td></tr>
+    html += f'''    <tr class="{'best' if is_best else ''}"><td>{METHODS[mi]}</td><td>{hit6[mi]}</td><td>{hit5[mi]}</td><td>{hit4[mi]}</td><td>{avg_hits[mi]}</td><td>{lift}&times;</td><td>{bonus_pct[mi]}%</td></tr>
 '''
 
-html += f'''    <tr class="baseline-row"><td>Random baseline</td><td>{random_avg:.4f}</td><td>1.00&times;</td><td>&mdash;</td><td>{random_bonus_pct}%</td></tr>
+html += f'''    <tr class="baseline-row"><td>Random baseline (expected)</td><td>{random_hit6}</td><td>{random_hit5}</td><td>{random_hit4}</td><td>{random_avg:.4f}</td><td>1.00&times;</td><td>{random_bonus_pct}%</td></tr>
   </tbody>
 </table>
 </div>
