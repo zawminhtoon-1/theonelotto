@@ -17,14 +17,14 @@
   .subtitle { color: var(--muted); font-size: .875rem; margin-bottom: 24px; }
   .note { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
            padding: 14px 18px; font-size: .8rem; color: var(--muted); margin-bottom: 24px; line-height: 1.6; }
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 24px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-bottom: 24px; }
   .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
-           padding: 16px; }
+           padding: 14px; }
   .card.best { border-color: var(--yellow); box-shadow: 0 0 0 1px var(--yellow); }
-  .card-name { font-size: .8rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
-  .card-avg { font-size: 1.6rem; font-weight: 700; color: var(--accent); }
-  .card-avg .unit { font-size: .8rem; color: var(--muted); font-weight: 400; margin-left: 4px; }
-  .card-sub { font-size: .75rem; color: var(--muted); margin-top: 8px; }
+  .card-name { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+  .card-avg { font-size: 1.4rem; font-weight: 700; color: var(--accent); }
+  .card-avg .unit { font-size: .75rem; color: var(--muted); font-weight: 400; margin-left: 4px; }
+  .card-sub { font-size: .72rem; color: var(--muted); margin-top: 6px; }
   .chart-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
                  padding: 20px; margin-bottom: 24px; }
   table { width: 100%; border-collapse: collapse; font-size: .85rem; }
@@ -38,13 +38,14 @@
 <body>
 
 <h1>Loto 7 — Backtest Report</h1>
-<p class="subtitle">Walk-forward evaluation &middot; Draws #3&ndash;#688 &middot; 686 draws &middot; 5 methods &middot; 7 picks each</p>
+<p class="subtitle">Walk-forward evaluation &middot; Draws #3&ndash;#688 &middot; 686 draws &middot; 16 methods &middot; 7 picks each</p>
 
 <div class="note">
-  Starter set of 5 methods (of Loto6's eventual 16-method roster), adapted for Loto7's
-  7-from-37 + 2-bonus-number structure. Each method predicts using only draws strictly
-  before the target draw (no lookahead). Fixed at K=7 picks for this first pass &mdash;
-  a pick-count toggle can be added once more methods are implemented.
+  Full 16-method roster adapted from Loto6's backtest, for Loto7's 7-from-37 + 2-bonus-number
+  structure. Each method predicts using only draws strictly before the target draw (no
+  lookahead) &mdash; LSTM additionally trains online after each prediction, same as Loto6's.
+  Fixed at K=7 picks for all methods (Loto6's Modular Cycle uniquely used K=28; here every
+  method is normalized to K=7 for a fair comparison).
 </div>
 
 <div class="cards">
@@ -59,19 +60,74 @@
     <div class="card-sub">Best draw: 5 hits &middot; Bonus hit: 36.7%</div>
   </div>
   <div class="card" data-mi="2">
+    <div class="card-name">Exp-weighted</div>
+    <div class="card-avg">1.3076<span class="unit">avg hits / 7</span></div>
+    <div class="card-sub">Best draw: 4 hits &middot; Bonus hit: 36.9%</div>
+  </div>
+  <div class="card" data-mi="3">
     <div class="card-name">Most frequent all</div>
     <div class="card-avg">1.3251<span class="unit">avg hits / 7</span></div>
     <div class="card-sub">Best draw: 4 hits &middot; Bonus hit: 35.6%</div>
   </div>
-  <div class="card best" data-mi="3">
-    <div class="card-name">Markov chain ★ best</div>
+  <div class="card" data-mi="4">
+    <div class="card-name">Markov chain</div>
     <div class="card-avg">1.3397<span class="unit">avg hits / 7</span></div>
     <div class="card-sub">Best draw: 4 hits &middot; Bonus hit: 35.1%</div>
   </div>
-  <div class="card" data-mi="4">
+  <div class="card" data-mi="5">
+    <div class="card-name">ARIMA(2,1,0)</div>
+    <div class="card-avg">1.3149<span class="unit">avg hits / 7</span></div>
+    <div class="card-sub">Best draw: 5 hits &middot; Bonus hit: 34.7%</div>
+  </div>
+  <div class="card" data-mi="6">
+    <div class="card-name">Random Forest</div>
+    <div class="card-avg">1.3178<span class="unit">avg hits / 7</span></div>
+    <div class="card-sub">Best draw: 5 hits &middot; Bonus hit: 34.5%</div>
+  </div>
+  <div class="card" data-mi="7">
+    <div class="card-name">RL (Linear Q)</div>
+    <div class="card-avg">1.3222<span class="unit">avg hits / 7</span></div>
+    <div class="card-sub">Best draw: 5 hits &middot; Bonus hit: 36.0%</div>
+  </div>
+  <div class="card" data-mi="8">
+    <div class="card-name">Hidden Markov Model</div>
+    <div class="card-avg">1.3061<span class="unit">avg hits / 7</span></div>
+    <div class="card-sub">Best draw: 4 hits &middot; Bonus hit: 33.5%</div>
+  </div>
+  <div class="card" data-mi="9">
+    <div class="card-name">kNN (k=10)</div>
+    <div class="card-avg">1.363<span class="unit">avg hits / 7</span></div>
+    <div class="card-sub">Best draw: 5 hits &middot; Bonus hit: 34.3%</div>
+  </div>
+  <div class="card" data-mi="10">
+    <div class="card-name">Modular Cycle (mod 37)</div>
+    <div class="card-avg">1.2959<span class="unit">avg hits / 7</span></div>
+    <div class="card-sub">Best draw: 5 hits &middot; Bonus hit: 32.4%</div>
+  </div>
+  <div class="card" data-mi="11">
+    <div class="card-name">Apriori Assoc Rules</div>
+    <div class="card-avg">1.3397<span class="unit">avg hits / 7</span></div>
+    <div class="card-sub">Best draw: 4 hits &middot; Bonus hit: 35.1%</div>
+  </div>
+  <div class="card best" data-mi="12">
+    <div class="card-name">Monte Carlo ★</div>
+    <div class="card-avg">1.3673<span class="unit">avg hits / 7</span></div>
+    <div class="card-sub">Best draw: 5 hits &middot; Bonus hit: 34.1%</div>
+  </div>
+  <div class="card" data-mi="13">
     <div class="card-name">Naive Bayes</div>
     <div class="card-avg">1.3076<span class="unit">avg hits / 7</span></div>
     <div class="card-sub">Best draw: 5 hits &middot; Bonus hit: 37.6%</div>
+  </div>
+  <div class="card" data-mi="14">
+    <div class="card-name">Weighted MA-37</div>
+    <div class="card-avg">1.3017<span class="unit">avg hits / 7</span></div>
+    <div class="card-sub">Best draw: 5 hits &middot; Bonus hit: 38.6%</div>
+  </div>
+  <div class="card" data-mi="15">
+    <div class="card-name">LSTM (seq prediction)</div>
+    <div class="card-avg">1.3061<span class="unit">avg hits / 7</span></div>
+    <div class="card-sub">Best draw: 4 hits &middot; Bonus hit: 35.3%</div>
   </div>
 </div>
 
@@ -83,24 +139,33 @@
     <tr><th>Method</th><th>Avg Hits</th><th>vs Random</th><th>Best Draw</th><th>Bonus Hit %</th></tr>
   </thead>
   <tbody>
+    <tr class="best"><td>Monte Carlo</td><td>1.3673</td><td>1.03&times;</td><td>5</td><td>34.1%</td></tr>
+    <tr class=""><td>kNN (k=10)</td><td>1.363</td><td>1.03&times;</td><td>5</td><td>34.3%</td></tr>
+    <tr class=""><td>Markov chain</td><td>1.3397</td><td>1.01&times;</td><td>4</td><td>35.1%</td></tr>
+    <tr class=""><td>Apriori Assoc Rules</td><td>1.3397</td><td>1.01&times;</td><td>4</td><td>35.1%</td></tr>
     <tr class=""><td>Poly deg-2</td><td>1.3353</td><td>1.01&times;</td><td>4</td><td>37.9%</td></tr>
-    <tr class=""><td>MA-37</td><td>1.3047</td><td>0.99&times;</td><td>5</td><td>36.7%</td></tr>
     <tr class=""><td>Most frequent all</td><td>1.3251</td><td>1.0&times;</td><td>4</td><td>35.6%</td></tr>
-    <tr class="best"><td>Markov chain</td><td>1.3397</td><td>1.01&times;</td><td>4</td><td>35.1%</td></tr>
+    <tr class=""><td>RL (Linear Q)</td><td>1.3222</td><td>1.0&times;</td><td>5</td><td>36.0%</td></tr>
+    <tr class=""><td>Random Forest</td><td>1.3178</td><td>1.0&times;</td><td>5</td><td>34.5%</td></tr>
+    <tr class=""><td>ARIMA(2,1,0)</td><td>1.3149</td><td>0.99&times;</td><td>5</td><td>34.7%</td></tr>
+    <tr class=""><td>Exp-weighted</td><td>1.3076</td><td>0.99&times;</td><td>4</td><td>36.9%</td></tr>
     <tr class=""><td>Naive Bayes</td><td>1.3076</td><td>0.99&times;</td><td>5</td><td>37.6%</td></tr>
+    <tr class=""><td>Hidden Markov Model</td><td>1.3061</td><td>0.99&times;</td><td>4</td><td>33.5%</td></tr>
+    <tr class=""><td>LSTM (seq prediction)</td><td>1.3061</td><td>0.99&times;</td><td>4</td><td>35.3%</td></tr>
+    <tr class=""><td>MA-37</td><td>1.3047</td><td>0.99&times;</td><td>5</td><td>36.7%</td></tr>
+    <tr class=""><td>Weighted MA-37</td><td>1.3017</td><td>0.98&times;</td><td>5</td><td>38.6%</td></tr>
+    <tr class=""><td>Modular Cycle (mod 37)</td><td>1.2959</td><td>0.98&times;</td><td>5</td><td>32.4%</td></tr>
     <tr class="baseline-row"><td>Random baseline</td><td>1.3243</td><td>1.00&times;</td><td>&mdash;</td><td>34.7%</td></tr>
   </tbody>
 </table>
 </div>
 
 <script>
-const METHODS = ["Poly deg-2", "MA-37", "Most frequent all", "Markov chain", "Naive Bayes"];
-const COLORS  = ["#38bdf8", "#818cf8", "#4ade80", "#facc15", "#f87171"];
-const HIT_COUNTS = [[124, 288, 205, 58, 11, 0, 0, 0], [135, 290, 189, 62, 9, 1, 0, 0], [137, 272, 211, 49, 17, 0, 0, 0], [128, 289, 188, 70, 11, 0, 0, 0], [138, 291, 179, 65, 12, 1, 0, 0]];
-const RANDOM_AVG = 1.3243243243243243;
+const METHODS = ["Poly deg-2", "MA-37", "Exp-weighted", "Most frequent all", "Markov chain", "ARIMA(2,1,0)", "Random Forest", "RL (Linear Q)", "Hidden Markov Model", "kNN (k=10)", "Modular Cycle (mod 37)", "Apriori Assoc Rules", "Monte Carlo", "Naive Bayes", "Weighted MA-37", "LSTM (seq prediction)"];
+const COLORS  = ["#38bdf8", "#818cf8", "#f472b6", "#4ade80", "#facc15", "#f87171", "#34d399", "#a78bfa", "#fb7185", "#f59e0b", "#10b981", "#e879f9", "#06b6d4", "#84cc16", "#f97316", "#e11d48"];
+const HIT_COUNTS = [[124, 288, 205, 58, 11, 0, 0, 0], [135, 290, 189, 62, 9, 1, 0, 0], [142, 271, 197, 72, 4, 0, 0, 0], [137, 272, 211, 49, 17, 0, 0, 0], [128, 289, 188, 70, 11, 0, 0, 0], [155, 254, 194, 74, 7, 2, 0, 0], [130, 287, 201, 59, 7, 2, 0, 0], [145, 272, 190, 62, 16, 1, 0, 0], [132, 291, 189, 69, 5, 0, 0, 0], [121, 283, 204, 69, 8, 1, 0, 0], [153, 266, 187, 72, 7, 1, 0, 0], [128, 289, 188, 70, 11, 0, 0, 0], [129, 273, 202, 68, 13, 1, 0, 0], [138, 291, 179, 65, 12, 1, 0, 0], [147, 268, 198, 64, 8, 1, 0, 0], [150, 272, 182, 68, 14, 0, 0, 0]];
 
 const HP = (k) => {
-  // hypergeometric P(k matches | 7 picks, 7 actual winners, 37 total)
   const C = (n,r) => { if(r<0||r>n) return 0; let x=1; for(let i=0;i<r;i++) x=x*(n-i)/(i+1); return x; };
   return C(7,k)*C(30,7-k)/C(37,7);
 };
@@ -122,7 +187,7 @@ new Chart(document.getElementById('distChart').getContext('2d'), {
   },
   options: {
     responsive: true,
-    plugins: { legend: { labels: { color:'#94a3b8' } } },
+    plugins: { legend: { labels: { color:'#94a3b8', boxWidth: 12, font: {size: 10} } } },
     scales: {
       x: { ticks:{color:'#94a3b8'}, grid:{color:'#334155'},
            title:{display:true, text:'Matches (out of 7)', color:'#94a3b8'} },

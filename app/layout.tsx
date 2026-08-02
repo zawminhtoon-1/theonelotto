@@ -63,6 +63,9 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     label: "Loto7",
     items: [
       { type: "label", label: "Loto 7 (7 from 37 + 2 bonus)" },
+      { href: "/loto7",             icon: "🏠", label: "Latest Draw" },
+      { href: "/loto7/history",     icon: "📋", label: "History" },
+      { href: "/loto7/predictions", icon: "🎯", label: "Predictions" },
       { href: "/loto7_backtest.html", icon: "📊", label: "Backtest" },
     ],
   },
