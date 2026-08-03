@@ -69,6 +69,16 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { href: "/loto7_backtest.html", icon: "📊", label: "Backtest" },
     ],
   },
+  {
+    label: "MiniLoto",
+    items: [
+      { type: "label", label: "MiniLoto (5 from 31 + 1 bonus)" },
+      { href: "/miniloto",             icon: "🏠", label: "Latest Draw" },
+      { href: "/miniloto/history",     icon: "📋", label: "History" },
+      { href: "/miniloto/predictions", icon: "🎯", label: "Predictions" },
+      { href: "/miniloto_backtest.html", icon: "📊", label: "Backtest" },
+    ],
+  },
 ];
 
 const navStyle: React.CSSProperties = {
