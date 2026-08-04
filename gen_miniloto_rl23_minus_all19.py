@@ -68,8 +68,11 @@ html = f'''<!DOCTYPE html>
            background: var(--accent); color: #0f172a; flex-shrink: 0; }}
   .ctrl-row {{ display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }}
   .ctrl-row label {{ font-size: .8rem; color: var(--muted); }}
-  input.filter-num {{ width: 70px; padding: 5px 8px; background: var(--surface);
-                       border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: .82rem; }}
+  .num-btn {{ display: inline-flex; align-items: center; justify-content: center;
+              width: 30px; height: 30px; border-radius: 50%; font-size: .78rem; font-weight: 700;
+              color: #fff; border: none; cursor: pointer; opacity: .7; transition: all .12s; flex-shrink: 0; }}
+  .num-btn:hover {{ opacity: 1; }}
+  .num-btn.active {{ opacity: 1; box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--accent); transform: scale(1.1); }}
   .btn {{ padding: 5px 12px; background: var(--surface); border: 1px solid var(--border);
           border-radius: 6px; color: var(--muted); font-size: .8rem; cursor: pointer; }}
   .btn:hover {{ color: var(--text); }}
@@ -135,11 +138,18 @@ for n in rlq_pool23:
 html += f'''  </div>
 </div>
 
-<div class="ctrl-row">
-  <label>Contains number:</label>
-  <input id="filterNum" class="filter-num" type="number" min="1" max="31" placeholder="1-31" oninput="applyFilter()">
-  <button class="btn" onclick="clearFilter()">Clear</button>
-  <span id="filterInfo" class="page-info"></span>
+<div class="table-wrap" style="margin-bottom:20px">
+  <div class="pool-label" style="margin-bottom:10px">Contains number(s) &mdash; click to toggle, multiple selections use AND logic</div>
+  <div class="balls" id="filterGrid">
+'''
+for n in rlq_pool23:
+    html += f'    <button class="num-btn" data-n="{n}" onclick="toggleNum({n})">{n}</button>\n'
+
+html += f'''  </div>
+  <div class="ctrl-row" style="margin-top:12px;margin-bottom:0">
+    <button class="btn" onclick="clearFilter()">Clear</button>
+    <span id="filterInfo" class="page-info"></span>
+  </div>
 </div>
 
 <div class="table-wrap">
@@ -190,17 +200,38 @@ function goPage(p) {{
   render();
 }}
 
+function getBallColor(n) {{
+  if (n <= 7) return '#e74c3c';
+  if (n <= 13) return '#e67e22';
+  if (n <= 19) return '#2ecc71';
+  if (n <= 25) return '#3498db';
+  return '#9b59b6';
+}}
+document.querySelectorAll('#filterGrid .num-btn').forEach(btn => {{
+  btn.style.background = getBallColor(parseInt(btn.dataset.n, 10));
+}});
+
+const selectedNums = new Set();
+function toggleNum(n) {{
+  if (selectedNums.has(n)) selectedNums.delete(n);
+  else selectedNums.add(n);
+  document.querySelector('#filterGrid .num-btn[data-n="'+n+'"]').classList.toggle('active', selectedNums.has(n));
+  applyFilter();
+}}
+
 function applyFilter() {{
-  const v = document.getElementById('filterNum').value.trim();
-  const n = v === '' ? null : parseInt(v, 10);
-  filtered = (n === null) ? REMAINING : REMAINING.filter(c => c.includes(n));
-  document.getElementById('filterInfo').textContent = n === null ? '' : (filtered.length.toLocaleString()+' / '+REMAINING.length.toLocaleString()+' combos contain '+n);
+  filtered = selectedNums.size === 0
+    ? REMAINING
+    : REMAINING.filter(c => {{ for (const n of selectedNums) if (!c.includes(n)) return false; return true; }});
+  document.getElementById('filterInfo').textContent = selectedNums.size === 0 ? '' :
+    (filtered.length.toLocaleString()+' / '+REMAINING.length.toLocaleString()+' combos contain '+[...selectedNums].sort((a,b)=>a-b).join(', '));
   curPage = 0;
   render();
 }}
 
 function clearFilter() {{
-  document.getElementById('filterNum').value = '';
+  selectedNums.clear();
+  document.querySelectorAll('#filterGrid .num-btn.active').forEach(b => b.classList.remove('active'));
   applyFilter();
 }}
 

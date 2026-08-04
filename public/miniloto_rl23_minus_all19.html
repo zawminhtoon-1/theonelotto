@@ -30,8 +30,11 @@
            background: var(--accent); color: #0f172a; flex-shrink: 0; }
   .ctrl-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
   .ctrl-row label { font-size: .8rem; color: var(--muted); }
-  input.filter-num { width: 70px; padding: 5px 8px; background: var(--surface);
-                       border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: .82rem; }
+  .num-btn { display: inline-flex; align-items: center; justify-content: center;
+              width: 30px; height: 30px; border-radius: 50%; font-size: .78rem; font-weight: 700;
+              color: #fff; border: none; cursor: pointer; opacity: .7; transition: all .12s; flex-shrink: 0; }
+  .num-btn:hover { opacity: 1; }
+  .num-btn.active { opacity: 1; box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--accent); transform: scale(1.1); }
   .btn { padding: 5px 12px; background: var(--surface); border: 1px solid var(--border);
           border-radius: 6px; color: var(--muted); font-size: .8rem; cursor: pointer; }
   .btn:hover { color: var(--text); }
@@ -116,11 +119,37 @@
   </div>
 </div>
 
-<div class="ctrl-row">
-  <label>Contains number:</label>
-  <input id="filterNum" class="filter-num" type="number" min="1" max="31" placeholder="1-31" oninput="applyFilter()">
-  <button class="btn" onclick="clearFilter()">Clear</button>
-  <span id="filterInfo" class="page-info"></span>
+<div class="table-wrap" style="margin-bottom:20px">
+  <div class="pool-label" style="margin-bottom:10px">Contains number(s) &mdash; click to toggle, multiple selections use AND logic</div>
+  <div class="balls" id="filterGrid">
+    <button class="num-btn" data-n="1" onclick="toggleNum(1)">1</button>
+    <button class="num-btn" data-n="2" onclick="toggleNum(2)">2</button>
+    <button class="num-btn" data-n="3" onclick="toggleNum(3)">3</button>
+    <button class="num-btn" data-n="4" onclick="toggleNum(4)">4</button>
+    <button class="num-btn" data-n="5" onclick="toggleNum(5)">5</button>
+    <button class="num-btn" data-n="6" onclick="toggleNum(6)">6</button>
+    <button class="num-btn" data-n="11" onclick="toggleNum(11)">11</button>
+    <button class="num-btn" data-n="12" onclick="toggleNum(12)">12</button>
+    <button class="num-btn" data-n="13" onclick="toggleNum(13)">13</button>
+    <button class="num-btn" data-n="14" onclick="toggleNum(14)">14</button>
+    <button class="num-btn" data-n="16" onclick="toggleNum(16)">16</button>
+    <button class="num-btn" data-n="17" onclick="toggleNum(17)">17</button>
+    <button class="num-btn" data-n="18" onclick="toggleNum(18)">18</button>
+    <button class="num-btn" data-n="19" onclick="toggleNum(19)">19</button>
+    <button class="num-btn" data-n="20" onclick="toggleNum(20)">20</button>
+    <button class="num-btn" data-n="21" onclick="toggleNum(21)">21</button>
+    <button class="num-btn" data-n="22" onclick="toggleNum(22)">22</button>
+    <button class="num-btn" data-n="23" onclick="toggleNum(23)">23</button>
+    <button class="num-btn" data-n="27" onclick="toggleNum(27)">27</button>
+    <button class="num-btn" data-n="28" onclick="toggleNum(28)">28</button>
+    <button class="num-btn" data-n="29" onclick="toggleNum(29)">29</button>
+    <button class="num-btn" data-n="30" onclick="toggleNum(30)">30</button>
+    <button class="num-btn" data-n="31" onclick="toggleNum(31)">31</button>
+  </div>
+  <div class="ctrl-row" style="margin-top:12px;margin-bottom:0">
+    <button class="btn" onclick="clearFilter()">Clear</button>
+    <span id="filterInfo" class="page-info"></span>
+  </div>
 </div>
 
 <div class="table-wrap">
@@ -171,17 +200,38 @@ function goPage(p) {
   render();
 }
 
+function getBallColor(n) {
+  if (n <= 7) return '#e74c3c';
+  if (n <= 13) return '#e67e22';
+  if (n <= 19) return '#2ecc71';
+  if (n <= 25) return '#3498db';
+  return '#9b59b6';
+}
+document.querySelectorAll('#filterGrid .num-btn').forEach(btn => {
+  btn.style.background = getBallColor(parseInt(btn.dataset.n, 10));
+});
+
+const selectedNums = new Set();
+function toggleNum(n) {
+  if (selectedNums.has(n)) selectedNums.delete(n);
+  else selectedNums.add(n);
+  document.querySelector('#filterGrid .num-btn[data-n="'+n+'"]').classList.toggle('active', selectedNums.has(n));
+  applyFilter();
+}
+
 function applyFilter() {
-  const v = document.getElementById('filterNum').value.trim();
-  const n = v === '' ? null : parseInt(v, 10);
-  filtered = (n === null) ? REMAINING : REMAINING.filter(c => c.includes(n));
-  document.getElementById('filterInfo').textContent = n === null ? '' : (filtered.length.toLocaleString()+' / '+REMAINING.length.toLocaleString()+' combos contain '+n);
+  filtered = selectedNums.size === 0
+    ? REMAINING
+    : REMAINING.filter(c => { for (const n of selectedNums) if (!c.includes(n)) return false; return true; });
+  document.getElementById('filterInfo').textContent = selectedNums.size === 0 ? '' :
+    (filtered.length.toLocaleString()+' / '+REMAINING.length.toLocaleString()+' combos contain '+[...selectedNums].sort((a,b)=>a-b).join(', '));
   curPage = 0;
   render();
 }
 
 function clearFilter() {
-  document.getElementById('filterNum').value = '';
+  selectedNums.clear();
+  document.querySelectorAll('#filterGrid .num-btn.active').forEach(b => b.classList.remove('active'));
   applyFilter();
 }
 
