@@ -1,12 +1,17 @@
 """
 gen_miniloto_rl23_minus_all19.py
 -----------------------------------
-Generates a static report page showing the set difference: RL (Linear Q)'s
-K=23 prediction combinations for MiniLoto draw #1398, MINUS the union of
-all 16 methods' K=19 prediction combinations -- i.e. combos RL's wider pick
-covers that none of the 16 methods' K=19 picks already cover.
+Generates a static report page showing a two-stage elimination for
+MiniLoto draw #1398:
 
-Reads: miniloto_rl23_minus_all19_data.json (precomputed set difference)
+  1. RL (Linear Q)'s K=23 prediction combinations, MINUS the union of all
+     16 methods' K=19 prediction combinations -- i.e. combos RL's wider
+     pick covers that none of the 16 methods' K=19 picks already cover.
+  2. From that remaining set, further remove any combo that exactly
+     matches a real historical MiniLoto winning combination (draws
+     #521-1397) -- same elimination spirit as the Loto6 work earlier.
+
+Reads: miniloto_rl23_minus_all19_data.json (precomputed, both stages)
 Output: public/miniloto_rl23_minus_all19.html
 Run: python gen_miniloto_rl23_minus_all19.py
 """
@@ -23,9 +28,11 @@ draw_serial = data["drawSerial"]
 rlq_pool23 = data["rlqPool23"]
 rlq_count = data["rlqComboCount"]
 union19_count = data["union19Count"]
+remaining_before_hist = data["remainingBeforeHistFilter"]
+historical_match_count = data["historicalMatchCount"]
 remaining_count = data["remainingCount"]
 remaining_pct = data["remainingPct"]
-remaining = data["remaining"]  # list of [n1,n2,n3,n4,n5] sorted
+remaining = data["remaining"]  # list of [n1,n2,n3,n4,n5] sorted, after both elimination stages
 
 remaining_json = json.dumps(remaining, separators=(',', ':'))
 
@@ -82,12 +89,13 @@ html = f'''<!DOCTYPE html>
 <p class="subtitle">Draw #{draw_serial} &middot; set difference between one method's wider pick and the combined coverage of all 16 methods</p>
 
 <div class="note">
-  RL (Linear Q)'s pool was padded from its stored 15 candidates up to 23 (cross-method consensus,
-  same mechanism as the backtest page's live K toggle). All 16 methods' pools were separately padded
-  to 19 and their C(19,5) combinations merged into one union set. This page shows the combinations
-  that exist in RL's 23-pick C(23,5) set but are <strong style="color:var(--text)">not</strong>
-  covered by any of the 16 methods' 19-pick predictions &mdash; i.e. what RL's wider net catches that
-  the rest of the field, even combined, misses.
+  Two-stage elimination. Stage 1: RL (Linear Q)'s pool was padded from its stored 15 candidates up
+  to 23 (cross-method consensus, same mechanism as the backtest page's live K toggle). All 16
+  methods' pools were separately padded to 19 and their C(19,5) combinations merged into one union
+  set; combos in RL's 23-pick C(23,5) set that overlap that union were removed. Stage 2: from what's
+  left, any combo that exactly matches a real historical MiniLoto winning combination (draws
+  #521&ndash;1397, checked against all 877) was also removed &mdash; same elimination spirit as the
+  Loto6 work earlier this session.
 </div>
 
 <div class="cards">
@@ -100,7 +108,15 @@ html = f'''<!DOCTYPE html>
     <div class="card-val">{union19_count:,}</div>
   </div>
   <div class="card">
-    <div class="card-name">Remaining (RL23 &minus; union19)</div>
+    <div class="card-name">After stage 1 (minus union19)</div>
+    <div class="card-val">{remaining_before_hist:,}</div>
+  </div>
+  <div class="card">
+    <div class="card-name">Removed: matched a real historical draw</div>
+    <div class="card-val">{historical_match_count:,}</div>
+  </div>
+  <div class="card">
+    <div class="card-name">Final remaining</div>
     <div class="card-val">{remaining_count:,}</div>
   </div>
   <div class="card">
