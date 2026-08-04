@@ -77,6 +77,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { href: "/miniloto/history",     icon: "📋", label: "History" },
       { href: "/miniloto/predictions", icon: "🎯", label: "Predictions" },
       { href: "/miniloto_backtest.html", icon: "📊", label: "Backtest" },
+      { href: "/miniloto_rl23_minus_all19.html", icon: "🧮", label: "RL K=23 minus All-16 K=19" },
     ],
   },
 ];
