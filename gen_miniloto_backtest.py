@@ -8,7 +8,7 @@ Loto6/Loto7's backtests to MiniLoto's 5-from-31 + 1-bonus structure.
 Each method predicts using only draws strictly before it (no lookahead).
 Each method's picks are stored as a POOL of 15 candidates per draw (not
 just 5) so the generated page can live-recompute hit distributions for
-K=5/6/7/17/19/29 by trimming/padding that pool via cross-method consensus
+K=5/6/7/17/19/23/29 by trimming/padding that pool via cross-method consensus
 -- the same topKNums()/computeForK() mechanism Loto6's public/backtest.html
 uses -- instead of being locked to a single fixed K baked in at generation
 time. Any K above 15 takes the pad path (each method's own 15 plus more
@@ -623,6 +623,7 @@ html = f'''<!DOCTYPE html>
     <button class="ptbtn" onclick="setGlobalK(7,this)">7 picks</button>
     <button class="ptbtn" onclick="setGlobalK(17,this)">17 picks</button>
     <button class="ptbtn" onclick="setGlobalK(19,this)">19 picks</button>
+    <button class="ptbtn" onclick="setGlobalK(23,this)">23 picks</button>
     <button class="ptbtn" onclick="setGlobalK(29,this)">29 picks</button>
   </div>
 </div>
