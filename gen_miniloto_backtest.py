@@ -5,10 +5,21 @@ Walk-forward backtest for MiniLoto across all historical draws in
 miniloto_results, implementing the full 16-method roster adapted from
 Loto6/Loto7's backtests to MiniLoto's 5-from-31 + 1-bonus structure.
 
-Each method predicts 5 numbers per draw using ONLY draws strictly before it
-(no lookahead). Headline metric: count of 5-hit / 4-hit / 3-hit draws (the
-game only has 5 numbers total, so these are the top three meaningful bands,
-same idea as Loto7's 6/5/4 but shifted down since MiniLoto's max is 5).
+Each method predicts using only draws strictly before it (no lookahead).
+Each method's picks are stored as a POOL of 15 candidates per draw (not
+just 5) so the generated page can live-recompute hit distributions for
+K=5/6/7 by trimming/padding that pool via cross-method consensus -- the
+same topKNums()/computeForK() mechanism Loto6's public/backtest.html uses
+-- instead of being locked to a single fixed K baked in at generation time.
+
+Also embeds the full per-draw DATA array so the page can render a Draw
+Detail tab (model selector + position filters + per-draw actual-vs-
+predicted breakdown), mirroring Loto6's backtest.html Draw Detail tab.
+
+Headline metric shown: count of 5-hit / 4-hit / 3-hit draws (out of 5
+possible -- MiniLoto only has 5 real winning numbers, so these bands stay
+fixed regardless of which K is selected; a bigger K just gives each
+method more chances to have caught them).
 
 Output: public/miniloto_backtest.html
 Run: python gen_miniloto_backtest.py
@@ -17,6 +28,7 @@ import os, json, time, itertools, warnings
 import numpy as np
 import psycopg2
 from collections import Counter, defaultdict
+from math import comb
 
 warnings.filterwarnings('ignore')
 
@@ -25,13 +37,18 @@ HTML_OUT = BASE + r"\public\miniloto_backtest.html"
 DB_URL = os.environ["DATABASE_URL"]
 
 ML_MAX = 31
-K = 5  # fixed pick count for all methods (MiniLoto's natural pick size)
+POOL_SIZE = 15   # candidate pool stored per method per draw (matches Loto6's K_DEFAULT convention)
+DEFAULT_K = 5    # initial displayed pick count (MiniLoto's natural pick size)
 
 METHODS = [
     "Poly deg-2", "MA-31", "Exp-weighted", "Most frequent all", "Markov chain",
     "ARIMA(2,1,0)", "Random Forest", "RL (Linear Q)", "Hidden Markov Model",
     "kNN (k=10)", "Modular Cycle (mod 31)", "Apriori Assoc Rules",
     "Monte Carlo", "Naive Bayes", "Weighted MA-31", "LSTM (seq prediction)",
+]
+MSHORT = [
+    "Poly-2", "MA-31", "Exp-W", "FreqAll", "Markov", "ARIMA", "RF", "RL-Q",
+    "HMM", "kNN", "ModCyc", "Apriori", "MonteCar", "NaiveBay", "WMA-31", "LSTM",
 ]
 COLORS = [
     "#38bdf8", "#818cf8", "#f472b6", "#4ade80", "#facc15", "#f87171",
@@ -57,7 +74,7 @@ all_main5   = [sorted([r[2],r[3],r[4],r[5],r[6]]) for r in db_rows]
 all_bonus   = [r[7] for r in db_rows]
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
-def pad_to_k(base_picks, all_before_main5, k=K):
+def pad_to_k(base_picks, all_before_main5, k=POOL_SIZE):
     freq = Counter(n for nums in all_before_main5 for n in nums)
     seen = set(base_picks)
     result = list(base_picks)
@@ -68,7 +85,7 @@ def pad_to_k(base_picks, all_before_main5, k=K):
             seen.add(n); result.append(n)
     return sorted(result[:k])
 
-def make_unique(nums, all_before_main5, k=K):
+def make_unique(nums, all_before_main5, k=POOL_SIZE):
     seen = set(); result = []
     for n in nums:
         n = max(1, min(ML_MAX, int(round(n))))
@@ -81,7 +98,7 @@ def compute_hits(picks, actual5, bonus):
     bonus_hit = bonus in picks
     return hits, bonus_hit
 
-# ── 16 prediction methods (5 positions instead of Loto7's 7) ────────────────
+# ── 16 prediction methods (each now returns a POOL_SIZE=15 candidate pool) ──
 
 def method_poly(train_main5, train_serials, target_serial):
     x = np.array(train_serials, dtype=float)
@@ -113,11 +130,11 @@ def method_exp_weighted(train_main5):
         base.append(max(1, min(ML_MAX, int(round(v)))))
     return make_unique(base, train_main5)
 
-def method_freq_all(train_main5, k=K):
+def method_freq_all(train_main5, k=POOL_SIZE):
     freq = Counter(n for draws in train_main5 for n in draws)
     return sorted(n for n, _ in freq.most_common(k))
 
-def method_markov(train_main5, k=K):
+def method_markov(train_main5, k=POOL_SIZE):
     pair_freq = defaultdict(int)
     for draws in train_main5:
         for a in draws:
@@ -134,7 +151,7 @@ def method_markov(train_main5, k=K):
     result = list(last) + result
     return pad_to_k(sorted(result[:k]), train_main5, k)
 
-def method_arima(train_main5, k=K):
+def method_arima(train_main5, k=POOL_SIZE):
     from statsmodels.tsa.arima.model import ARIMA
     base = []
     for p in range(5):
@@ -152,7 +169,7 @@ def method_arima(train_main5, k=K):
         base.append(v)
     return make_unique(base, train_main5, k)
 
-def method_random_forest(train_main5, train_serials, target_serial, k=K):
+def method_random_forest(train_main5, train_serials, target_serial, k=POOL_SIZE):
     from sklearn.ensemble import RandomForestRegressor
     base = []
     xs = np.array(train_serials, dtype=float).reshape(-1, 1)
@@ -168,7 +185,7 @@ def method_random_forest(train_main5, train_serials, target_serial, k=K):
         base.append(v)
     return make_unique(base, train_main5, k)
 
-def method_rl_linear_q(train_main5, k=K):
+def method_rl_linear_q(train_main5, k=POOL_SIZE):
     n = len(train_main5)
     if n == 0:
         return list(range(1, k+1))
@@ -180,7 +197,7 @@ def method_rl_linear_q(train_main5, k=K):
     top = sorted(range(1, ML_MAX+1), key=lambda x: -freq.get(x, 0))
     return sorted(top[:k])
 
-def method_hmm(train_main5, k=K):
+def method_hmm(train_main5, k=POOL_SIZE):
     sums = [sum(d) for d in train_main5]
     if not sums:
         return list(range(1, k+1))
@@ -207,7 +224,7 @@ def method_hmm(train_main5, k=K):
         freq = Counter(n for d in train_main5 for n in d)
     return sorted(n for n, _ in freq.most_common(k))
 
-def method_knn(train_main5, k_nn=10, k=K):
+def method_knn(train_main5, k_nn=10, k=POOL_SIZE):
     if len(train_main5) < k_nn + 1:
         return method_freq_all(train_main5, k)
     last = set(train_main5[-1])
@@ -220,7 +237,7 @@ def method_knn(train_main5, k_nn=10, k=K):
     freq = Counter(n for d in neighbors for n in d)
     return sorted(n for n, _ in freq.most_common(k))
 
-def method_modular_cycle(train_serials, train_main5, target_serial, k=K):
+def method_modular_cycle(train_serials, train_main5, target_serial, k=POOL_SIZE):
     target_mod = target_serial % ML_MAX
     freq = Counter()
     for s, d in zip(train_serials, train_main5):
@@ -232,7 +249,7 @@ def method_modular_cycle(train_serials, train_main5, target_serial, k=K):
     top = sorted(range(1, ML_MAX+1), key=lambda x: -freq.get(x, 0))[:k]
     return sorted(top)
 
-def method_apriori(train_main5, k=K):
+def method_apriori(train_main5, k=POOL_SIZE):
     pair_freq = Counter()
     for draws in train_main5:
         for pair in itertools.combinations(draws, 2):
@@ -251,7 +268,7 @@ def method_apriori(train_main5, k=K):
         result.append(n)
     return pad_to_k(sorted(result[:k]), train_main5, k)
 
-def method_monte_carlo(idx, train_main5, k=K, n_sim=1000):
+def method_monte_carlo(idx, train_main5, k=POOL_SIZE, n_sim=1000):
     n = len(train_main5)
     if n == 0:
         return list(range(1, k+1))
@@ -265,7 +282,7 @@ def method_monte_carlo(idx, train_main5, k=K, n_sim=1000):
             freq[num] += 1
     return sorted(n for n, _ in freq.most_common(k))
 
-def method_naive_bayes(train_main5, k=K):
+def method_naive_bayes(train_main5, k=POOL_SIZE):
     if len(train_main5) < 2:
         return method_freq_all(train_main5, k)
     last = set(train_main5[-1])
@@ -283,7 +300,7 @@ def method_naive_bayes(train_main5, k=K):
                 scores[n] += co[(m, n)] / prior[m]
     return sorted(n for n, _ in scores.most_common(k))
 
-def method_weighted_ma31(train_main5, k=K):
+def method_weighted_ma31(train_main5, k=POOL_SIZE):
     window = train_main5[-31:] if len(train_main5) >= 1 else train_main5
     n = len(window)
     wts = list(range(1, n+1))
@@ -296,7 +313,7 @@ def method_weighted_ma31(train_main5, k=K):
     return make_unique(base, train_main5, k)
 
 # ── LSTM (trained online, walk-forward, no separate weights file) ───────────
-SEQ, H, IN, OUT, N_PICKS = 10, 16, 31, 31, 5
+SEQ, H, IN, OUT = 10, 16, 31, 31
 
 def sigmoid(x):
     return 1.0 / (1.0 + np.exp(-np.clip(x, -20.0, 20.0)))
@@ -348,7 +365,7 @@ class LSTM:
         adam(self.W,dW,self.mW,self.vW); adam(self.b,db,self.mb,self.vb)
         adam(self.Wy,dWy,self.mWy,self.vWy); adam(self.by,dby,self.mby,self.vby)
 
-    def predict(self, xs, k=N_PICKS):
+    def predict(self, xs, k=POOL_SIZE):
         y, _, _ = self.forward(xs)
         return sorted(int(i+1) for i in np.argsort(y)[::-1][:k])
 
@@ -372,11 +389,25 @@ print(f"LSTM warm-up done in {time.time()-t_lstm0:.1f}s")
 
 def method_lstm(idx):
     if idx < SEQ:
-        return list(range(1, N_PICKS+1))
+        return list(range(1, POOL_SIZE+1))
     xs = lstm_vecs[idx-SEQ:idx]
     picks = lstm.predict(xs)
     lstm.train_step(xs, lstm_vecs[idx])
     return picks
+
+# ── Python mirror of the page's topKNums(), used only for the console summary
+def top_k_nums(pool, all_pools_this_draw, k):
+    if len(pool) == k:
+        return pool
+    freq = Counter()
+    for p in all_pools_this_draw:
+        for n in p:
+            freq[n] += 1
+    if len(pool) > k:
+        return sorted(sorted(pool, key=lambda n: -freq.get(n, 0))[:k])
+    in_pool = set(pool)
+    extra = sorted((n for n in freq if n not in in_pool), key=lambda n: -freq[n])
+    return sorted(list(pool) + extra[:k - len(pool)])
 
 # ── 2. Walk-forward backtest (reuse cached DATA if it matches current DB) ────
 CACHE_PATH = BASE + r"\miniloto_backtest_data.json"
@@ -384,12 +415,14 @@ DATA = None
 if os.path.exists(CACHE_PATH):
     with open(CACHE_PATH, encoding='utf-8') as f:
         cached = json.load(f)
-    if cached.get("methods") == METHODS and len(cached.get("data", [])) == len(all_serials) - 2:
-        print(f"Reusing cached backtest data from {CACHE_PATH} ({len(cached['data'])} draws, methods match)")
+    if (cached.get("methods") == METHODS
+            and len(cached.get("data", [])) == len(all_serials) - 2
+            and cached.get("poolSize") == POOL_SIZE):
+        print(f"Reusing cached backtest data from {CACHE_PATH} ({len(cached['data'])} draws, pool size matches)")
         DATA = cached["data"]
 
 if DATA is None:
-    print("No usable cache -- running walk-forward backtest (16 methods)...")
+    print(f"No usable cache -- running walk-forward backtest (16 methods, pool size {POOL_SIZE})...")
     t0 = time.time()
     DATA = []
     for idx in range(len(all_serials)):
@@ -438,56 +471,57 @@ if DATA is None:
 
     print(f"Backtested {len(DATA)} draws in {round(time.time()-t0,1)}s")
 
-# ── 3. Aggregate stats ────────────────────────────────────────────────────────
+# ── 3. Aggregate stats at DEFAULT_K (for console summary only -- the page
+#      recomputes live in JS for whatever K the user selects) ────────────────
 N_METHODS = len(METHODS)
-hit_counts = [[0]*6 for _ in range(N_METHODS)]  # 0..5 hits
-bonus_hits = [0]*N_METHODS
-match_series = [[] for _ in range(N_METHODS)]
+T = len(DATA)
+
+hit_counts_default = [[0]*6 for _ in range(N_METHODS)]  # 0..5 hits
+bonus_hits_default = [0]*N_METHODS
+match_series_default = [[] for _ in range(N_METHODS)]
 
 for row in DATA:
-    for mi, (picks, hits, bonus_hit) in enumerate(row["p"]):
-        hit_counts[mi][min(hits,5)] += 1
-        if bonus_hit:
-            bonus_hits[mi] += 1
-        match_series[mi].append(hits)
+    all_pools = [pred[0] for pred in row["p"]]
+    actual_set = set(row["a"])
+    for mi, pred in enumerate(row["p"]):
+        combo = top_k_nums(pred[0], all_pools, DEFAULT_K)
+        hits = len(set(combo) & actual_set)
+        hit_counts_default[mi][min(hits,5)] += 1
+        if row["b"] in combo:
+            bonus_hits_default[mi] += 1
+        match_series_default[mi].append(hits)
 
-T = len(DATA)
-avg_hits = [round(sum(match_series[mi]) / T, 4) for mi in range(N_METHODS)]
-bonus_pct = [round(bonus_hits[mi] / T * 100, 1) for mi in range(N_METHODS)]
-best_hits = [max(match_series[mi]) for mi in range(N_METHODS)]
+avg_hits = [round(sum(match_series_default[mi]) / T, 4) for mi in range(N_METHODS)]
+bonus_pct = [round(bonus_hits_default[mi] / T * 100, 1) for mi in range(N_METHODS)]
 
-# Headline metric: count of 5-hit / 4-hit / 3-hit draws per method
-hit5 = [hit_counts[mi][5] for mi in range(N_METHODS)]
-hit4 = [hit_counts[mi][4] for mi in range(N_METHODS)]
-hit3 = [hit_counts[mi][3] for mi in range(N_METHODS)]
+hit5 = [hit_counts_default[mi][5] for mi in range(N_METHODS)]
+hit4 = [hit_counts_default[mi][4] for mi in range(N_METHODS)]
+hit3 = [hit_counts_default[mi][3] for mi in range(N_METHODS)]
 
-random_avg = K * 5 / ML_MAX
-from math import comb
-random_bonus_pct = round((1 - comb(ML_MAX-1, K) / comb(ML_MAX, K)) * 100, 1)
-
-def hypergeom_p(k):
+def hypergeom_p(k, K):
     return comb(5,k) * comb(ML_MAX-5, K-k) / comb(ML_MAX, K)
 
-random_hit5 = round(hypergeom_p(5) * T, 3)
-random_hit4 = round(hypergeom_p(4) * T, 2)
-random_hit3 = round(hypergeom_p(3) * T, 2)
+random_avg = sum(k * hypergeom_p(k, DEFAULT_K) for k in range(6))
+random_bonus_pct = round(DEFAULT_K / ML_MAX * 100, 1)
 
-print("\n=== Results ===")
+print(f"\n=== Results at default K={DEFAULT_K} (live-recomputable on the page for K=5/6/7) ===")
 for mi in range(N_METHODS):
     print(f"  {METHODS[mi]:24s} 5hit={hit5[mi]:3d}  4hit={hit4[mi]:3d}  3hit={hit3[mi]:3d}  avg={avg_hits[mi]:.4f}  bonus%={bonus_pct[mi]:5.1f}")
-print(f"  {'Random baseline':24s} 5hit={random_hit5:6.3f}  4hit={random_hit4:5.2f}  3hit={random_hit3:5.2f}  avg={random_avg:.4f}  bonus%={random_bonus_pct:5.1f}")
+print(f"  {'Random baseline':24s} avg={random_avg:.4f}  bonus%={random_bonus_pct:5.1f}")
 
 best_method_idx = max(range(N_METHODS), key=lambda i: (hit5[i], hit4[i], hit3[i]))
-print(f"\nBest method: {METHODS[best_method_idx]} (5hit={hit5[best_method_idx]} 4hit={hit4[best_method_idx]} 3hit={hit3[best_method_idx]})")
+print(f"\nBest method at K={DEFAULT_K}: {METHODS[best_method_idx]} (5hit={hit5[best_method_idx]} 4hit={hit4[best_method_idx]} 3hit={hit3[best_method_idx]})")
 
-# ── 4. Save DATA for downstream use (Best Combo search, predictions, etc.) ───
+# ── 4. Save DATA (now with 15-pick pools) for downstream use ────────────────
 DATA_JSON_OUT = BASE + r"\miniloto_backtest_data.json"
 with open(DATA_JSON_OUT, 'w') as f:
-    json.dump({"methods": METHODS, "data": DATA}, f, separators=(',',':'))
+    json.dump({"methods": METHODS, "poolSize": POOL_SIZE, "data": DATA}, f, separators=(',',':'))
 print(f"Saved {DATA_JSON_OUT}")
 
-# ── 5. Generate HTML ──────────────────────────────────────────────────────────
+# ── 5. Generate HTML (live-recompute engine, mirroring Loto6's backtest.html) ─
 print("\nGenerating HTML...")
+
+data_json_str = json.dumps(DATA, separators=(',',':'))
 
 html = f'''<!DOCTYPE html>
 <html lang="en">
@@ -507,111 +541,369 @@ html = f'''<!DOCTYPE html>
   h1 {{ font-size: 1.5rem; margin: 0 0 4px; }}
   .subtitle {{ color: var(--muted); font-size: .875rem; margin-bottom: 24px; }}
   .note {{ background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
-           padding: 14px 18px; font-size: .8rem; color: var(--muted); margin-bottom: 24px; line-height: 1.6; }}
-  .cards {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-bottom: 24px; }}
-  .card {{ background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
-           padding: 14px; }}
+           padding: 14px 18px; font-size: .8rem; color: var(--muted); margin-bottom: 20px; line-height: 1.6; }}
+  .ctrl-row {{ display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 0 0 20px; }}
+  .pick-toggle {{ display:flex; background:var(--surface); border:1px solid var(--border); border-radius:6px; overflow:hidden; }}
+  .ptbtn {{ padding:6px 14px; background:transparent; border:none; color:var(--muted); font-size:.8rem; cursor:pointer; transition:background .15s,color .15s; }}
+  .ptbtn.active {{ background:var(--accent); color:#fff; }}
+  .cards {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-bottom: 20px; }}
+  .card {{ background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }}
   .card.best {{ border-color: var(--yellow); box-shadow: 0 0 0 1px var(--yellow); }}
   .card-name {{ font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }}
   .card-avg {{ font-size: 1.4rem; font-weight: 700; color: var(--accent); }}
   .card-avg .unit {{ font-size: .75rem; color: var(--muted); font-weight: 400; margin-left: 4px; }}
   .card-sub {{ font-size: .72rem; color: var(--muted); margin-top: 6px; }}
-  .chart-wrap {{ background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
-                 padding: 20px; margin-bottom: 24px; }}
-  table {{ width: 100%; border-collapse: collapse; font-size: .85rem; }}
-  th {{ text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); color: var(--muted);
-        text-transform: uppercase; font-size: .7rem; letter-spacing: .05em; }}
-  td {{ padding: 10px 8px; border-bottom: 1px solid var(--border); }}
+  .tabs {{ display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }}
+  .tab {{ padding: 8px 18px; border-radius: 6px; border: 1px solid var(--border);
+          background: var(--surface); color: var(--muted); cursor: pointer; font-size: .875rem; }}
+  .tab.active {{ background: var(--accent); color: #0f172a; border-color: var(--accent); font-weight: 600; }}
+  .panel {{ display: none; }}
+  .panel.active {{ display: block; }}
+  .chart-wrap {{ background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 20px; }}
+  table {{ width: 100%; border-collapse: collapse; font-size: .82rem; }}
+  th {{ position: sticky; top: 0; background: var(--surface); text-align: left; padding: 8px 6px;
+        border-bottom: 1px solid var(--border); color: var(--muted); text-transform: uppercase;
+        font-size: .68rem; letter-spacing: .05em; white-space: nowrap; z-index: 1; }}
+  td {{ padding: 7px 6px; border-bottom: 1px solid var(--border); vertical-align: top; white-space: nowrap; }}
+  tr:hover td {{ background: rgba(255,255,255,.04); }}
   tr.best td {{ color: var(--yellow); font-weight: 600; }}
   .baseline-row td {{ color: var(--muted); font-style: italic; }}
+  /* Draw detail */
+  .detail-wrap {{ background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+                  padding: 16px; max-height: 620px; overflow-y: auto; overflow-x: auto; }}
+  .balls {{ display: flex; flex-wrap: wrap; gap: 3px; }}
+  .ball {{ display: inline-flex; align-items: center; justify-content: center;
+           width: 26px; height: 26px; border-radius: 50%; font-size: .7rem; font-weight: 700;
+           background: var(--border); color: var(--text); flex-shrink: 0; }}
+  .ball.match {{ background: var(--green); color: #052e16; }}
+  .ball.bonus {{ background: var(--orange); color: #431407; }}
+  select.model-sel {{ padding: 6px 10px; background: var(--surface); border: 1px solid var(--border);
+                       border-radius: 6px; color: var(--text); font-size: .85rem; cursor: pointer; }}
+  input.pos-filter {{ width: 60px; padding: 4px 6px; background: var(--surface);
+                       border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: .8rem; }}
+  .btn-clear {{ padding: 4px 10px; background: var(--surface); border: 1px solid var(--border);
+                border-radius: 6px; color: var(--muted); font-size: .8rem; cursor: pointer; }}
+  .sticky-cols th:nth-child(1), .sticky-cols td:nth-child(1) {{
+    position: sticky; left: 0; background: var(--surface); z-index: 2; min-width: 44px; }}
+  .sticky-cols th:nth-child(2), .sticky-cols td:nth-child(2) {{
+    position: sticky; left: 44px; background: var(--surface); z-index: 2; min-width: 84px; }}
+  .sticky-cols th:nth-child(3), .sticky-cols td:nth-child(3) {{
+    position: sticky; left: 128px; background: var(--surface); z-index: 2; min-width: 170px;
+    border-right: 1px solid var(--border); }}
+  .scroll-hint {{ font-size:.72rem; color:#64748b; display:none; margin-left:auto; }}
 </style>
 </head>
 <body>
 
 <h1>MiniLoto — Backtest Report</h1>
-<p class="subtitle">Walk-forward evaluation &middot; Draws #{DATA[0]['s']}&ndash;#{DATA[-1]['s']} &middot; {T} draws &middot; {N_METHODS} methods &middot; 5 picks each</p>
+<p class="subtitle">Walk-forward evaluation &middot; Draws #{DATA[0]['s']}&ndash;#{DATA[-1]['s']} &middot; {T} draws &middot; {N_METHODS} methods</p>
 
 <div class="note">
   Full 16-method roster adapted from Loto6/Loto7's backtests, for MiniLoto's 5-from-31 +
   1-bonus-number structure. Each method predicts using only draws strictly before the target
-  draw (no lookahead) &mdash; LSTM additionally trains online after each prediction. Fixed at
-  K=5 picks for all methods (MiniLoto's natural pick size). Headline metric: count of 5-hit /
-  4-hit / 3-hit draws (out of 5 possible) per method across all {T} backtested draws &mdash;
-  the top three meaningful bands for a 5-number game.
+  draw (no lookahead) &mdash; LSTM additionally trains online after each prediction. Each method
+  stores a pool of {POOL_SIZE} ranked candidates per draw, live-trimmed/padded (by cross-method
+  consensus, same mechanism as Loto6's backtest page) to whichever pick count is selected below.
+  Headline metric: count of 5-hit / 4-hit / 3-hit draws (out of 5 possible) &mdash; these bands
+  stay fixed regardless of K, since MiniLoto always has exactly 5 real winning numbers; a bigger
+  K just gives each method more chances to have caught them.
 </div>
 
-<div class="cards">
+<div class="ctrl-row">
+  <span style="font-size:.8rem;color:var(--muted);">Picks per draw:</span>
+  <div class="pick-toggle">
+    <button class="ptbtn active" onclick="setGlobalK(5,this)">5 picks</button>
+    <button class="ptbtn" onclick="setGlobalK(6,this)">6 picks</button>
+    <button class="ptbtn" onclick="setGlobalK(7,this)">7 picks</button>
+  </div>
+</div>
+
+<div class="cards" id="cardsWrap"></div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('dist',this)">Distribution</button>
+  <button class="tab" onclick="switchTab('detail',this)">Draw Detail</button>
+</div>
+
+<div id="tab-dist" class="panel active">
+  <div class="chart-wrap"><canvas id="distChart" height="110"></canvas></div>
+  <div class="chart-wrap">
+    <table>
+      <thead>
+        <tr><th>Method</th><th>5 Hits</th><th>4 Hits</th><th>3 Hits</th><th>Avg Hits</th><th>vs Random</th><th>Bonus Hit %</th></tr>
+      </thead>
+      <tbody id="summaryBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div id="tab-detail" class="panel">
+  <div class="ctrl-row">
+    <label style="font-size:.8rem;color:var(--muted);">Model:</label>
+    <select id="modelSelect" class="model-sel" onchange="buildDetail()">
+      <option value="-1">All Models (compact)</option>
 '''
 
 for mi in range(N_METHODS):
-    is_best = mi == best_method_idx
-    html += f'''  <div class="card{' best' if is_best else ''}" data-mi="{mi}">
-    <div class="card-name">{METHODS[mi]}{' ★' if is_best else ''}</div>
-    <div class="card-avg">{hit4[mi]}<span class="unit">4-hit draws</span></div>
-    <div class="card-sub">5-hit: {hit5[mi]} &middot; 3-hit: {hit3[mi]} &middot; Bonus hit: {bonus_pct[mi]}%</div>
+    html += f'      <option value="{mi}">{mi+1}: {METHODS[mi]}</option>\n'
+
+html += f'''    </select>
+    <span id="scrollHint" class="scroll-hint">⟵ scroll right to see all 16 models ⟶</span>
   </div>
-'''
-
-html += '''</div>
-
-<div class="chart-wrap"><canvas id="distChart" height="110"></canvas></div>
-
-<div class="chart-wrap">
-<table>
-  <thead>
-    <tr><th>Method</th><th>5 Hits</th><th>4 Hits</th><th>3 Hits</th><th>Avg Hits</th><th>vs Random</th><th>Bonus Hit %</th></tr>
-  </thead>
-  <tbody>
-'''
-
-order = sorted(range(N_METHODS), key=lambda i: (-hit5[i], -hit4[i], -hit3[i]))
-for mi in order:
-    is_best = mi == best_method_idx
-    lift = round(avg_hits[mi] / random_avg, 2)
-    html += f'''    <tr class="{'best' if is_best else ''}"><td>{METHODS[mi]}</td><td>{hit5[mi]}</td><td>{hit4[mi]}</td><td>{hit3[mi]}</td><td>{avg_hits[mi]}</td><td>{lift}&times;</td><td>{bonus_pct[mi]}%</td></tr>
-'''
-
-html += f'''    <tr class="baseline-row"><td>Random baseline (expected)</td><td>{random_hit5}</td><td>{random_hit4}</td><td>{random_hit3}</td><td>{random_avg:.4f}</td><td>1.00&times;</td><td>{random_bonus_pct}%</td></tr>
-  </tbody>
-</table>
+  <div class="ctrl-row" id="posFilterRow">
+    <label style="font-size:.8rem;color:var(--muted);">Filter actual by position:</label>
+    <input id="f1" class="pos-filter" type="number" min="1" max="31" placeholder="P1" oninput="applyFilter()">
+    <input id="f2" class="pos-filter" type="number" min="1" max="31" placeholder="P2" oninput="applyFilter()">
+    <input id="f3" class="pos-filter" type="number" min="1" max="31" placeholder="P3" oninput="applyFilter()">
+    <input id="f4" class="pos-filter" type="number" min="1" max="31" placeholder="P4" oninput="applyFilter()">
+    <input id="f5" class="pos-filter" type="number" min="1" max="31" placeholder="P5" oninput="applyFilter()">
+    <button class="btn-clear" onclick="clearFilters()">Clear</button>
+    <span id="filterCount" style="font-size:.75rem;color:var(--muted);"></span>
+  </div>
+  <div class="detail-wrap">
+    <table id="detailTable">
+      <thead id="detailHead"></thead>
+      <tbody id="detailBody"></tbody>
+    </table>
+  </div>
 </div>
 
 <script>
-const METHODS = {json.dumps(METHODS)};
-const COLORS  = {json.dumps(COLORS)};
-const HIT_COUNTS = {json.dumps(hit_counts)};
+const METHODS = ''' + json.dumps(METHODS) + ''';
+const MSHORT  = ''' + json.dumps(MSHORT) + ''';
+const COLORS  = ''' + json.dumps(COLORS) + ''';
+const ML_MAX  = 31;
+const DATA = ''' + data_json_str + f'''
+const N = DATA.length;
 
-const HP = (k) => {{
-  const C = (n,r) => {{ if(r<0||r>n) return 0; let x=1; for(let i=0;i<r;i++) x=x*(n-i)/(i+1); return x; }};
-  return C(5,k)*C(26,5-k)/C(31,5);
-}};
-const randomDist = [0,1,2,3,4,5].map(k => HP(k)*{T});
+// Combinatorics + hypergeometric P(k matches | K picks, 5 actual, 31 total)
+const C = (n,k) => {{ if(k<0||k>n) return 0; let r=1; for(let i=0;i<k;i++) r=r*(n-i)/(i+1); return r; }};
+const HP = (k,K) => C(5,k)*C(ML_MAX-5,K-k)/C(ML_MAX,K);
 
-new Chart(document.getElementById('distChart').getContext('2d'), {{
-  type: 'bar',
-  data: {{
-    labels: ['0','1','2','3','4','5'],
-    datasets: [
-      ...METHODS.map((name,mi) => ({{
-        label: name, data: HIT_COUNTS[mi],
-        backgroundColor: COLORS[mi]+'bb', borderColor: COLORS[mi], borderWidth: 1
-      }})),
-      {{ label: 'Random baseline', data: randomDist,
-        type: 'line', borderColor: '#fff', borderDash: [5,3],
-        borderWidth: 2, pointRadius: 0, fill: false, tension: 0 }}
-    ]
-  }},
-  options: {{
-    responsive: true,
-    plugins: {{ legend: {{ labels: {{ color:'#94a3b8', boxWidth: 12, font: {{size: 10}} }} }} }},
-    scales: {{
-      x: {{ ticks:{{color:'#94a3b8'}}, grid:{{color:'#334155'}},
-           title:{{display:true, text:'Matches (out of 5)', color:'#94a3b8'}} }},
-      y: {{ ticks:{{color:'#94a3b8'}}, grid:{{color:'#334155'}},
-           title:{{display:true, text:'Count', color:'#94a3b8'}} }}
-    }}
+// Return top-K numbers ranked by cross-method consensus frequency
+function topKNums(pool, r, k) {{
+  const freq = {{}};
+  r.p.forEach(pred => pred[0].forEach(n => {{ freq[n] = (freq[n]||0)+1; }}));
+  if (pool.length === k) return pool;
+  if (pool.length > k) {{
+    return [...pool].sort((a,b)=>(freq[b]||0)-(freq[a]||0)).slice(0,k).sort((a,b)=>a-b);
   }}
-}});
+  const inPool = new Set(pool);
+  const extra = Object.keys(freq)
+    .map(Number)
+    .filter(n => !inPool.has(n))
+    .sort((a,b) => (freq[b]||0)-(freq[a]||0))
+    .slice(0, k - pool.length);
+  return [...pool, ...extra].sort((a,b)=>a-b);
+}}
+
+function computeForK(K) {{
+  const hitCounts = METHODS.map(() => [0,0,0,0,0,0]);
+  const bonusCounts = new Array(METHODS.length).fill(0);
+  DATA.forEach(r => {{
+    const actualSet = new Set(r.a);
+    r.p.forEach((pred,mi) => {{
+      const combo = topKNums(pred[0], r, K);
+      const hits  = combo.filter(n=>actualSet.has(n)).length;
+      hitCounts[mi][Math.min(hits,5)]++;
+      if (combo.includes(r.b)) bonusCounts[mi]++;
+    }});
+  }});
+  const randAvg = [0,1,2,3,4,5].reduce((s,k) => s+k*HP(k,K), 0);
+  const randBonusPct = K/ML_MAX*100;
+  return {{ hitCounts, bonusCounts, randAvg, randBonusPct }};
+}}
+
+let distChart = null;
+let CUR_HIT_COUNTS = null;
+
+function buildAll(K) {{
+  const {{ hitCounts, bonusCounts, randAvg, randBonusPct }} = computeForK(K);
+  CUR_HIT_COUNTS = hitCounts;
+
+  const hit5 = hitCounts.map(c => c[5]);
+  const hit4 = hitCounts.map(c => c[4]);
+  const hit3 = hitCounts.map(c => c[3]);
+  const avgHits = hitCounts.map(c => (c.reduce((s,v,i)=>s+v*i,0)/N));
+  const bonusPct = bonusCounts.map(b => b/N*100);
+  const bestIdx = [...METHODS.keys()].sort((a,b) =>
+    hit5[b]-hit5[a] || hit4[b]-hit4[a] || hit3[b]-hit3[a])[0];
+
+  // Distribution chart
+  if (distChart) distChart.destroy();
+  distChart = new Chart(document.getElementById('distChart').getContext('2d'), {{
+    type: 'bar',
+    data: {{
+      labels: ['0','1','2','3','4','5'],
+      datasets: [
+        ...METHODS.map((name,mi) => ({{
+          label: name, data: hitCounts[mi],
+          backgroundColor: COLORS[mi]+'bb', borderColor: COLORS[mi], borderWidth: 1
+        }})),
+        {{ label: 'Random baseline', data: [0,1,2,3,4,5].map(k=>HP(k,K)*N),
+          type: 'line', borderColor: '#fff', borderDash: [5,3],
+          borderWidth: 2, pointRadius: 0, fill: false, tension: 0 }}
+      ]
+    }},
+    options: {{
+      responsive: true,
+      plugins: {{ legend: {{ labels: {{ color:'#94a3b8', boxWidth: 12, font: {{size: 10}} }} }} }},
+      scales: {{
+        x: {{ ticks:{{color:'#94a3b8'}}, grid:{{color:'#334155'}},
+             title:{{display:true, text:'Matches (out of 5)', color:'#94a3b8'}} }},
+        y: {{ ticks:{{color:'#94a3b8'}}, grid:{{color:'#334155'}},
+             title:{{display:true, text:'Count', color:'#94a3b8'}} }}
+      }}
+    }}
+  }});
+
+  // Cards
+  const cardsWrap = document.getElementById('cardsWrap');
+  cardsWrap.innerHTML = METHODS.map((name,mi) => {{
+    const isBest = mi === bestIdx;
+    return `<div class="card${{isBest?' best':''}}">
+      <div class="card-name">${{name}}${{isBest?' \u2605':''}}</div>
+      <div class="card-avg">${{hit4[mi]}}<span class="unit">4-hit draws</span></div>
+      <div class="card-sub">5-hit: ${{hit5[mi]}} &middot; 3-hit: ${{hit3[mi]}} &middot; Bonus hit: ${{bonusPct[mi].toFixed(1)}}%</div>
+    </div>`;
+  }}).join('');
+
+  // Summary table
+  const order = [...METHODS.keys()].sort((a,b) =>
+    hit5[b]-hit5[a] || hit4[b]-hit4[a] || hit3[b]-hit3[a]);
+  const rows = order.map(mi => {{
+    const isBest = mi === bestIdx;
+    const lift = (avgHits[mi]/randAvg).toFixed(2);
+    return `<tr class="${{isBest?'best':''}}"><td>${{METHODS[mi]}}</td><td>${{hit5[mi]}}</td><td>${{hit4[mi]}}</td><td>${{hit3[mi]}}</td><td>${{avgHits[mi].toFixed(4)}}</td><td>${{lift}}&times;</td><td>${{bonusPct[mi].toFixed(1)}}%</td></tr>`;
+  }}).join('');
+  const baseline = `<tr class="baseline-row"><td>Random baseline (expected)</td><td>${{(HP(5,K)*N).toFixed(3)}}</td><td>${{(HP(4,K)*N).toFixed(2)}}</td><td>${{(HP(3,K)*N).toFixed(2)}}</td><td>${{randAvg.toFixed(4)}}</td><td>1.00&times;</td><td>${{randBonusPct.toFixed(1)}}%</td></tr>`;
+  document.getElementById('summaryBody').innerHTML = rows + baseline;
+
+  // Sync detail table
+  SHOW_K = K;
+  builtModel = -999;
+  if (document.querySelector('#tab-detail.active')) buildDetail();
+}}
+
+let SHOW_K = ''' + str(DEFAULT_K) + f'''
+function setGlobalK(k, btn) {{
+  document.querySelectorAll('.pick-toggle .ptbtn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  buildAll(k);
+}}
+
+// Draw Detail
+const REV_DATA = [...DATA].reverse();
+let builtModel = -999;
+
+function matchColor(m) {{
+  return m>=4 ? '#4ade80' : m>=3 ? '#86efac' : m>=2 ? '#facc15' : '#94a3b8';
+}}
+
+function buildDetail() {{
+  const mi = parseInt(document.getElementById('modelSelect').value);
+  if (mi === builtModel) {{ applyFilter(); return; }}
+  builtModel = mi;
+
+  const head = document.getElementById('detailHead');
+  const body = document.getElementById('detailBody');
+  body.innerHTML = '';
+  const tbl  = document.getElementById('detailTable');
+  const hint = document.getElementById('scrollHint');
+
+  if (mi === -1) {{
+    tbl.classList.add('sticky-cols');
+    hint.style.display = 'inline';
+    head.innerHTML =
+      '<tr><th>#</th><th>Date</th><th>Actual</th>' +
+      MSHORT.map((s,i) =>
+        '<th style="color:'+COLORS[i]+';text-align:center">'+s+
+        '<br><span style="font-weight:400;font-size:.7rem;color:#64748b">'+SHOW_K+'pk</span></th>'
+      ).join('') + '</tr>';
+    REV_DATA.forEach(r => {{
+      const tr = document.createElement('tr');
+      tr.dataset.actual = JSON.stringify(r.a);
+      const actualSet = new Set(r.a);
+      let cells =
+        '<td>'+r.s+'</td>' +
+        '<td>'+(r.d ? r.d.slice(0,10) : '')+'</td>' +
+        '<td><div class="balls">' +
+        r.a.map(n=>'<span class="ball">'+n+'</span>').join('') +
+        '<span class="ball bonus">'+r.b+'\u2605</span></div></td>';
+      r.p.forEach((pred,i) => {{
+        const combo = topKNums(pred[0], r, SHOW_K);
+        const m = combo.filter(n=>actualSet.has(n)).length;
+        const bh = combo.includes(r.b);
+        cells += '<td style="text-align:center;font-weight:700;color:'+matchColor(m)+'">'+m+(bh?'\u2726':'')+'</td>';
+      }});
+      tr.innerHTML = cells;
+      body.appendChild(tr);
+    }});
+  }} else {{
+    tbl.classList.remove('sticky-cols');
+    hint.style.display = 'none';
+    head.innerHTML =
+      '<tr><th>#</th><th>Date</th><th>Actual (5)</th>' +
+      '<th>'+METHODS[mi]+' — '+SHOW_K+' picks</th>' +
+      '<th style="text-align:center">Hits</th></tr>';
+    REV_DATA.forEach(r => {{
+      const tr = document.createElement('tr');
+      tr.dataset.actual = JSON.stringify(r.a);
+      const actualSet = new Set(r.a);
+      const pred    = r.p[mi];
+      const combo   = topKNums(pred[0], r, SHOW_K);
+      const matched = combo.filter(n=>actualSet.has(n)).length;
+      const bHit    = combo.includes(r.b);
+      const predSet = new Set(combo);
+      let cells =
+        '<td>'+r.s+'</td>' +
+        '<td>'+(r.d ? r.d.slice(0,10) : '')+'</td>' +
+        '<td><div class="balls">' +
+        r.a.map(n=>'<span class="ball'+(predSet.has(n)?' match':'')+'">'+n+'</span>').join('') +
+        '<span class="ball'+(bHit?' bonus':'')+'">'+r.b+(bHit?'\u2605':'')+'</span></div></td>' +
+        '<td><div class="balls">' +
+        combo.map(n=>'<span class="ball'+(actualSet.has(n)?' match':'')+'">'+n+'</span>').join('') +
+        '</div></td>' +
+        '<td style="text-align:center;font-weight:700;color:'+matchColor(matched)+'">'+matched+'</td>';
+      tr.innerHTML = cells;
+      body.appendChild(tr);
+    }});
+  }}
+  applyFilter();
+}}
+
+function applyFilter() {{
+  const filters = [1,2,3,4,5].map(i => {{
+    const v = document.getElementById('f'+i).value.trim();
+    return v==='' ? null : parseInt(v);
+  }});
+  const rows = Array.from(document.getElementById('detailBody').rows);
+  let shown = 0;
+  rows.forEach(tr => {{
+    const actual = JSON.parse(tr.dataset.actual);
+    const sorted = [...actual].sort((a,b)=>a-b);
+    const ok = filters.every((f,i) => f===null||sorted[i]===f);
+    tr.style.display = ok ? '' : 'none';
+    if (ok) shown++;
+  }});
+  const active = filters.some(f=>f!==null);
+  document.getElementById('filterCount').textContent = active ? shown+' / '+rows.length+' draws' : '';
+}}
+function clearFilters() {{
+  [1,2,3,4,5].forEach(i => document.getElementById('f'+i).value='');
+  applyFilter();
+}}
+
+function switchTab(name, btn) {{
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+  if (name==='detail' && builtModel===-999) buildDetail();
+}}
+
+// Initial build
+buildAll(''' + str(DEFAULT_K) + ''');
 </script>
 
 </body>
