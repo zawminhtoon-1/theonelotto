@@ -91,6 +91,8 @@
     <button class="ptbtn" onclick="setGlobalK(6,this)">6 picks</button>
     <button class="ptbtn" onclick="setGlobalK(7,this)">7 picks</button>
     <button class="ptbtn" onclick="setGlobalK(17,this)">17 picks</button>
+    <button class="ptbtn" onclick="setGlobalK(19,this)">19 picks</button>
+    <button class="ptbtn" onclick="setGlobalK(29,this)">29 picks</button>
   </div>
 </div>
 
@@ -176,11 +178,22 @@ function topKNums(pool, r, k) {
     return [...pool].sort((a,b)=>(freq[b]||0)-(freq[a]||0)).slice(0,k).sort((a,b)=>a-b);
   }
   const inPool = new Set(pool);
-  const extra = Object.keys(freq)
+  let extra = Object.keys(freq)
     .map(Number)
     .filter(n => !inPool.has(n))
-    .sort((a,b) => (freq[b]||0)-(freq[a]||0))
-    .slice(0, k - pool.length);
+    .sort((a,b) => (freq[b]||0)-(freq[a]||0));
+  // Last-resort fallback: if cross-method consensus doesn't have enough
+  // candidates to reach k (can happen at high K, e.g. K=29 near the
+  // 31-number pool limit), fill remaining slots from ANY number not
+  // already included, in ascending order -- deterministic, unbiased,
+  // and only ever kicks in when the primary consensus pool is exhausted.
+  if (pool.length + extra.length < k) {
+    const have = new Set([...pool, ...extra]);
+    for (let n = 1; n <= ML_MAX; n++) {
+      if (!have.has(n)) extra.push(n);
+    }
+  }
+  extra = extra.slice(0, k - pool.length);
   return [...pool, ...extra].sort((a,b)=>a-b);
 }
 

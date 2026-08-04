@@ -8,13 +8,15 @@ Loto6/Loto7's backtests to MiniLoto's 5-from-31 + 1-bonus structure.
 Each method predicts using only draws strictly before it (no lookahead).
 Each method's picks are stored as a POOL of 15 candidates per draw (not
 just 5) so the generated page can live-recompute hit distributions for
-K=5/6/7/17 by trimming/padding that pool via cross-method consensus -- the
-same topKNums()/computeForK() mechanism Loto6's public/backtest.html uses
--- instead of being locked to a single fixed K baked in at generation time.
-K=17 exceeds the stored pool size, so it always takes the pad path (each
-method's own 15 plus 2 more from cross-method consensus) -- confirmed the
-combined pool covers >=17 distinct numbers on all 875 draws, so this never
-falls short.
+K=5/6/7/17/19/29 by trimming/padding that pool via cross-method consensus
+-- the same topKNums()/computeForK() mechanism Loto6's public/backtest.html
+uses -- instead of being locked to a single fixed K baked in at generation
+time. Any K above 15 takes the pad path (each method's own 15 plus more
+from cross-method consensus). At very high K (e.g. 29, just 2 short of the
+full 31-number pool), a given draw's cross-method consensus pool can itself
+run short of K distinct numbers -- topKNums() has a last-resort fallback
+that fills any remaining slots from ALL numbers 1..31 not already picked,
+in ascending order, so every combo always reaches exactly K regardless.
 
 Also embeds the full per-draw DATA array so the page can render a Draw
 Detail tab (model selector + position filters + per-draw actual-vs-
@@ -620,6 +622,8 @@ html = f'''<!DOCTYPE html>
     <button class="ptbtn" onclick="setGlobalK(6,this)">6 picks</button>
     <button class="ptbtn" onclick="setGlobalK(7,this)">7 picks</button>
     <button class="ptbtn" onclick="setGlobalK(17,this)">17 picks</button>
+    <button class="ptbtn" onclick="setGlobalK(19,this)">19 picks</button>
+    <button class="ptbtn" onclick="setGlobalK(29,this)">29 picks</button>
   </div>
 </div>
 
@@ -694,11 +698,22 @@ function topKNums(pool, r, k) {{
     return [...pool].sort((a,b)=>(freq[b]||0)-(freq[a]||0)).slice(0,k).sort((a,b)=>a-b);
   }}
   const inPool = new Set(pool);
-  const extra = Object.keys(freq)
+  let extra = Object.keys(freq)
     .map(Number)
     .filter(n => !inPool.has(n))
-    .sort((a,b) => (freq[b]||0)-(freq[a]||0))
-    .slice(0, k - pool.length);
+    .sort((a,b) => (freq[b]||0)-(freq[a]||0));
+  // Last-resort fallback: if cross-method consensus doesn't have enough
+  // candidates to reach k (can happen at high K, e.g. K=29 near the
+  // 31-number pool limit), fill remaining slots from ANY number not
+  // already included, in ascending order -- deterministic, unbiased,
+  // and only ever kicks in when the primary consensus pool is exhausted.
+  if (pool.length + extra.length < k) {{
+    const have = new Set([...pool, ...extra]);
+    for (let n = 1; n <= ML_MAX; n++) {{
+      if (!have.has(n)) extra.push(n);
+    }}
+  }}
+  extra = extra.slice(0, k - pool.length);
   return [...pool, ...extra].sort((a,b)=>a-b);
 }}
 
