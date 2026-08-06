@@ -127,6 +127,8 @@
 
 
 
+
+
   :root {
     --bg:#0f172a;--surface:#1e293b;--border:#334155;
     --text:#f1f5f9;--muted:#94a3b8;--accent:#a78bfa;
@@ -259,6 +261,7 @@
 
 
 
+
 <nav class="site-nav">
   <a class="nav-logo" href="/">🎱 The<span>One</span>Lotto</a>
   <div class="nav-groups">
@@ -317,6 +320,7 @@
 
   </div>
 </nav>
+
 
 
 
@@ -646,6 +650,23 @@ function sw(name,btn){
 </script>
 
 
+
+
+<script>
+(function(){
+  var path = window.location.pathname + window.location.hash;
+  document.querySelectorAll('.nav-dropdown a').forEach(function(a){
+    var href = a.getAttribute('href');
+    if(!href) return;
+    var hPath = href.split('#')[0];
+    var hHash = href.includes('#') ? href : '';
+    if(href === path) { a.classList.add('active'); return; }
+    if(hPath && hPath !== '/' && path.startsWith(hPath) && !href.includes('#')) {
+      a.classList.add('active');
+    }
+  });
+})();
+</script>
 
 
 <script>
