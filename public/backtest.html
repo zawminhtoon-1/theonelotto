@@ -365,6 +365,7 @@
     <button class="ptbtn active" onclick="setGlobalK(7,this)">7 picks</button>
     <button class="ptbtn" onclick="setGlobalK(9,this)">9 picks</button>
     <button class="ptbtn" onclick="setGlobalK(13,this)">13 picks</button>
+    <button class="ptbtn" onclick="setGlobalK(21,this)">21 picks</button>
   </div>
 </div>
 
@@ -555,11 +556,22 @@ function topKNums(combo, r, k) {
   }
   // Pad: K > stored picks, fill extra slots from cross-method consensus
   const inCombo = new Set(combo);
-  const extra = Object.keys(freq)
+  let extra = Object.keys(freq)
     .map(Number)
     .filter(n => !inCombo.has(n))
-    .sort((a,b) => (freq[b]||0)-(freq[a]||0))
-    .slice(0, k - combo.length);
+    .sort((a,b) => (freq[b]||0)-(freq[a]||0));
+  // Last-resort fallback: if cross-method consensus doesn't have enough
+  // candidates to reach k, fill remaining slots from ANY number 1-43 not
+  // already included, in ascending order -- deterministic, unbiased, and
+  // only ever kicks in when the primary consensus pool is exhausted (same
+  // fix applied to MiniLoto's backtest page after finding this gap there).
+  if (combo.length + extra.length < k) {
+    const have = new Set([...combo, ...extra]);
+    for (let n = 1; n <= 43; n++) {
+      if (!have.has(n)) extra.push(n);
+    }
+  }
+  extra = extra.slice(0, k - combo.length);
   return [...combo, ...extra].sort((a,b)=>a-b);
 }
 
