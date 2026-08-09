@@ -313,6 +313,7 @@ tbody td.tr{{text-align:right}}
         <div class="nav-dd-label">Random Seed</div>
         <a href="/random_seed_backtest.html">🎲 Random Seed (1–3000)</a>
         <a href="/xoshiro_seed_backtest.html" class="active">🌀 Xoshiro Seed (0–1000)</a>
+        <a href="/xoshiro_seed_scan_100k.html">🔬 Xoshiro Seed Scan (1–100k)</a>
       </div></div>
     </div>
     <div class="nav-group">
@@ -436,7 +437,11 @@ tbody td.tr{{text-align:right}}
     combined seed = seed×10⁷ + draw_serial.<br>
     Each (seed, draw) pair is independent and deterministic. Lift = % above pure-chance baseline
     ({BASELINE:.3f} avg hits). Both PRNG stages verified against independent reference
-    implementations before this backtest was run -- see the note above.
+    implementations before this backtest was run -- see the note above.<br>
+    Curious whether a wider search turns up something better? See the
+    <a href="/xoshiro_seed_scan_100k.html" style="color:#a78bfa">100,000-seed expanded scan</a> --
+    short answer: a marginally better seed shows up, but it's within the noise level expected from
+    testing 100x more candidates, not a stronger signal.
   </p>
 </div>
 
