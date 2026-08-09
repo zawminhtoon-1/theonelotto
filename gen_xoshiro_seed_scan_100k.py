@@ -13,11 +13,12 @@ aggregates (distribution histograms) and top-N seed tables are embedded.
 Output: public/xoshiro_seed_scan_100k.html
 Run: python gen_xoshiro_seed_scan_100k.py
 """
-import sqlite3, json
+import sqlite3, json, re
 from collections import Counter
 
 BASE = r"C:\Users\Zaw Min Htoon\source\repos\theonelotto"
 DB_PATH = BASE + r"\loto6_local.db"
+HTML_IN = BASE + r"\public\backtest.html"
 HTML_OUT = BASE + r"\public\xoshiro_seed_scan_100k.html"
 TABLE = "seed_hit_xoshiro_k21"
 
@@ -76,6 +77,28 @@ def expected_max_lift_pct(n_seeds):
 predicted_lift_1001 = expected_max_lift_pct(1001)
 predicted_lift_100000 = expected_max_lift_pct(100_000)
 
+# ── Load the 1000-draw window (same source/slice as gen_xoshiro_seed_backtest.py) ──
+# Needed client-side for the seed-detail modal: picks are computed live in JS via
+# the same verified xoshiro256** implementation, for ANY seed the user types in --
+# not just the top-25 rows -- so only the draw records (not 100k precomputed rows)
+# need to ship to the browser.
+with open(HTML_IN, encoding='utf-8') as f:
+    _html = f.read()
+_m = re.search(r'const DATA\s*=\s*(\[)', _html)
+_bs = _m.start(1)
+_depth = 0; _pos = _bs
+while _pos < len(_html):
+    if _html[_pos] == '[': _depth += 1
+    elif _html[_pos] == ']':
+        _depth -= 1
+        if _depth == 0: _be = _pos + 1; break
+    _pos += 1
+_ALL_DATA = json.loads(_html[_bs:_be])
+DRAWS = _ALL_DATA[-N_DRAWS:]
+if DRAWS[0]['s'] != DRAW_START or DRAWS[-1]['s'] != DRAW_END:
+    raise SystemExit(f"Draw window mismatch: got {DRAWS[0]['s']}-{DRAWS[-1]['s']}, expected {DRAW_START}-{DRAW_END}")
+js_draws = json.dumps([{'s': r['s'], 'd': r.get('d', ''), 'a': r['a'], 'b': r['b']} for r in DRAWS], separators=(',', ':'))
+
 print(f"Loaded {num_seeds:,} seeds from {TABLE}")
 print(f"Best by avg: seed={best_avg[0]} avg={best_avg[1]:.4f} lift={best_lift:+.2f}%")
 print(f"Best by hit6: seed={best_hit6[0]} hit6={best_hit6[2]} avg={best_hit6[1]:.4f}")
@@ -89,7 +112,7 @@ def render_rows(rows, highlight_seed=None):
         lift = (avg / BASELINE - 1) * 100
         lift_color = "#22c55e" if lift > 0 else "#ef4444"
         badge = ' <span class="badge">BEST</span>' if seed == highlight_seed else ''
-        html += f"""<tr>
+        html += f"""<tr class="dr" onclick="openSeedDetail({seed})">
   <td class="tc">{rank}</td>
   <td class="tc">{seed:,}{badge}</td>
   <td class="tr">{avg:.4f}</td>
@@ -174,10 +197,40 @@ thead th{{background:#0d1526;padding:9px 12px;text-align:right;color:#94a3b8;
 thead th.tc{{text-align:center}}
 tbody tr{{border-bottom:1px solid #1e293b}}
 tbody tr:hover{{background:#111827}}
+tbody tr.dr{{cursor:pointer}}
 tbody td{{padding:7px 12px;text-align:right;color:#cbd5e1}}
 tbody td.tc{{text-align:center}}
 tbody td.tr{{text-align:right}}
 .badge{{background:#fef08a;color:#713f12;font-size:9px;padding:2px 6px;border-radius:4px;margin-left:4px;font-weight:700}}
+
+.lookup{{background:#0d1526;border:1px solid #a78bfa55;border-radius:10px;padding:14px 18px;margin-bottom:24px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}}
+.lookup .lbl{{font-size:.72rem;color:#a78bfa;text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-right:4px}}
+.lookup input{{background:#0a0f1e;border:1px solid #334155;border-radius:7px;padding:8px 12px;
+  color:#e2e8f0;font-size:.85rem;width:160px}}
+.lookup button{{background:#7c3aed;border:none;color:#fff;padding:8px 16px;border-radius:7px;
+  cursor:pointer;font-size:.83rem;font-weight:600}}
+.lookup button:hover{{background:#6d28d9}}
+.lookup .hint{{font-size:.78rem;color:#64748b}}
+.lookup .err{{font-size:.78rem;color:#f87171}}
+
+#seedModal{{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.82);z-index:20000;align-items:flex-start;justify-content:center;padding:60px 16px 20px}}
+.modal-box{{background:#0a0f1e;border:1px solid #1e293b;border-radius:12px;width:100%;max-width:1000px;max-height:85vh;display:flex;flex-direction:column}}
+.modal-hdr{{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #1e293b;flex-shrink:0;gap:16px;flex-wrap:wrap}}
+.modal-hdr h2{{font-size:.95rem;font-weight:700;color:#f1f5f9;margin:0}}
+.modal-hdr .modal-stats{{font-size:.78rem;color:#94a3b8;display:flex;gap:14px;flex-wrap:wrap}}
+.modal-hdr .modal-stats b{{color:#e2e8f0}}
+.modal-close{{background:#1e293b;border:none;color:#94a3b8;padding:5px 14px;border-radius:6px;cursor:pointer;font-size:.83rem}}
+.modal-close:hover{{background:#334155;color:#f1f5f9}}
+.modal-body{{overflow-y:auto;flex:1}}
+.modal-table{{width:100%;border-collapse:collapse;font-size:.78rem}}
+.modal-table thead{{position:sticky;top:0;background:#0a0f1e;z-index:1}}
+.modal-table th{{padding:9px 12px;color:#64748b;text-align:left;border-bottom:1px solid #1e293b;font-weight:600;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}}
+.modal-table td{{padding:6px 10px;border-bottom:1px solid #0f172a;vertical-align:middle}}
+.modal-table tr:hover td{{background:#0f172a}}
+.nb{{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:#1e293b;color:#64748b;font-size:.7rem;font-weight:700;margin:1px}}
+.nm{{background:#14532d;color:#86efac}}
+.nb-b{{background:#451a03;color:#fde68a;border:1px solid #92400e}}
+.nb-bh{{background:#7c2d12;color:#fed7aa}}
 
 .callout{{background:#0c2340;border:1px solid #38bdf855;border-radius:10px;padding:14px 18px;margin-top:16px}}
 .callout .lbl{{font-size:.72rem;color:#38bdf8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;font-weight:700}}
@@ -259,6 +312,14 @@ tbody td.tr{{text-align:right}}
     generation time, rather than shipping the full row set to the browser.
   </div>
 
+  <div class="lookup">
+    <span class="lbl">🔍 Seed detail lookup</span>
+    <input id="seedLookupInput" type="number" min="0" step="1" placeholder="Enter any seed number..." onkeydown="if(event.key==='Enter')lookupSeed()">
+    <button onclick="lookupSeed()">View {N_DRAWS}-draw breakdown</button>
+    <span class="hint">e.g. try {best_avg[0]:,} or {best_hit6[0]:,} — or any seed, not just ones in the tables below. Computed live in your browser, not limited to the top-{TOP_N} lists.</span>
+    <span id="lookupErr" class="err" style="display:none"></span>
+  </div>
+
   <div class="stats-row">
     <div class="stat-card">
       <div class="lbl">Best seed (avg hits)</div>
@@ -315,7 +376,7 @@ tbody td.tr{{text-align:right}}
   <div class="two-col" style="margin-top:0">
     <div class="section">
       <h2>Top {TOP_N} seeds by avg hits</h2>
-      <p class="desc">Highest average hits per draw across all {N_DRAWS} draws.</p>
+      <p class="desc">Highest average hits per draw across all {N_DRAWS} draws. Click a row for the full per-draw breakdown.</p>
       <div class="tbl-wrap">
         <table>
           <thead><tr><th class="tc">#</th><th class="tc">Seed</th><th>Avg hits</th><th>Lift %</th><th>6-hits</th><th>0-hits</th></tr></thead>
@@ -325,7 +386,7 @@ tbody td.tr{{text-align:right}}
     </div>
     <div class="section">
       <h2>Top {TOP_N} seeds by 6-hit count</h2>
-      <p class="desc">Most perfect-match (all 6 numbers) draws out of {N_DRAWS}.</p>
+      <p class="desc">Most perfect-match (all 6 numbers) draws out of {N_DRAWS}. Click a row for the full per-draw breakdown.</p>
       <div class="tbl-wrap">
         <table>
           <thead><tr><th class="tc">#</th><th class="tc">Seed</th><th>Avg hits</th><th>Lift %</th><th>6-hits</th><th>0-hits</th></tr></thead>
@@ -344,6 +405,27 @@ tbody td.tr{{text-align:right}}
     (7 workers, ~15 minutes) in a prior session.<br>
     Formula-based only · Not financial advice · Loto 6 is random.
   </p>
+
+  <div id="seedModal">
+    <div class="modal-box">
+      <div class="modal-hdr">
+        <h2 id="modalTitle">Seed detail</h2>
+        <div class="modal-stats" id="modalStats"></div>
+        <button class="modal-close" onclick="document.getElementById('seedModal').style.display='none'">✕ Close</button>
+      </div>
+      <div class="modal-body">
+        <table class="modal-table">
+          <thead><tr>
+            <th>Draw</th><th>Date</th>
+            <th>Actual (6) + bonus</th>
+            <th>Picks ({K_PICKS})</th>
+            <th style="text-align:center">Hits</th>
+          </tr></thead>
+          <tbody id="modalTbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -396,6 +478,121 @@ new Chart(document.getElementById('hit0Chart').getContext('2d'), {{
       x: {{ ticks: {{ color: '#64748b', maxTicksLimit: 15 }}, grid: {{ display: false }}, title: {{ display: true, text: '0-hit draws out of {N_DRAWS}', color: '#64748b' }} }}
     }}
   }}
+}});
+</script>
+<script>
+// ── Seed-detail modal: picks computed LIVE for any seed via the same
+// verified xoshiro256** implementation (bit-exact BigInt port) used in
+// xoshiro_seed_backtest.html and the Python scan -- not limited to seeds
+// in the top-{TOP_N} tables, since only the {N_DRAWS} draw records (not
+// per-seed results) are shipped to the browser.
+const DRAWS = {js_draws};
+const BASELINE = {BASELINE};
+
+const MASK64 = (1n << 64n) - 1n;
+function rotl(x, k) {{
+  x &= MASK64;
+  return ((x << BigInt(k)) | (x >> BigInt(64 - k))) & MASK64;
+}}
+function splitmix64Next(z) {{
+  z = (z + 0x9E3779B97F4A7C15n) & MASK64;
+  let zz = z;
+  zz = ((zz ^ (zz >> 30n)) * 0xBF58476D1CE4E5B9n) & MASK64;
+  zz = ((zz ^ (zz >> 27n)) * 0x94D049BB133111EBn) & MASK64;
+  zz = zz ^ (zz >> 31n);
+  return [z, zz];
+}}
+function seedState(seed) {{
+  let z = BigInt(seed) & MASK64;
+  const state = [];
+  for (let i = 0; i < 4; i++) {{
+    const [nz, out] = splitmix64Next(z);
+    z = nz;
+    state.push(out);
+  }}
+  return state;
+}}
+function xoshiroNext(s) {{
+  const result = (rotl((s[1] * 5n) & MASK64, 7) * 9n) & MASK64;
+  const t = (s[1] << 17n) & MASK64;
+  s[2] ^= s[0]; s[3] ^= s[1]; s[1] ^= s[2]; s[0] ^= s[3];
+  s[2] ^= t;
+  s[3] = rotl(s[3], 45);
+  return result;
+}}
+function xoshiroPredict(seed, drawSerial, k) {{
+  const combined = (BigInt(seed) * 10000000n + BigInt(drawSerial)) & MASK64;
+  const s = seedState(combined);
+  const arr = Array.from({{length: 43}}, (_, i) => i + 1);
+  const n = arr.length;
+  for (let i = n - 1; i >= n - k; i--) {{
+    const r = xoshiroNext(s);
+    const j = Number(r % BigInt(i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }}
+  return arr.slice(n - k).sort((a, b) => a - b);
+}}
+
+function lookupSeed() {{
+  const input = document.getElementById('seedLookupInput');
+  const errEl = document.getElementById('lookupErr');
+  const raw = input.value.trim();
+  errEl.style.display = 'none';
+  if (raw === '' || !/^\\d+$/.test(raw)) {{
+    errEl.textContent = 'Enter a non-negative whole number.';
+    errEl.style.display = 'inline';
+    return;
+  }}
+  openSeedDetail(parseInt(raw, 10));
+}}
+
+function openSeedDetail(seed) {{
+  const K = {K_PICKS};
+  let totalHits = 0, hit6 = 0, hit0 = 0;
+  const htmlParts = [];
+  [...DRAWS].reverse().forEach(row => {{
+    const picks = xoshiroPredict(seed, row.s, K);
+    const actualSet = new Set(row.a);
+    const hits = picks.filter(p => actualSet.has(p)).length;
+    const bh   = picks.includes(row.b);
+    totalHits += hits;
+    if (hits === 6) hit6++;
+    if (hits === 0) hit0++;
+
+    const actualHtml = row.a.map(n =>
+      '<span class="nb nm">' + n + '</span>'
+    ).join('') + '<span class="nb nb-b">' + row.b + '</span>';
+
+    const picksHtml = picks.map(n =>
+      '<span class="nb' + (actualSet.has(n) ? ' nm' : '') + (n === row.b ? ' nb-bh' : '') + '">' + n + '</span>'
+    ).join('');
+
+    const hc = hits >= 5 ? '#22c55e' : hits >= 4 ? '#4ade80' : hits >= 3 ? '#fbbf24' : hits >= 2 ? '#fb923c' : '#475569';
+    htmlParts.push(
+      '<tr><td style="color:#64748b;white-space:nowrap">' + row.s + '</td>' +
+      '<td style="color:#64748b;white-space:nowrap">' + (row.d||'') + '</td>' +
+      '<td style="white-space:nowrap">' + actualHtml + '</td>' +
+      '<td style="white-space:nowrap">' + picksHtml + '</td>' +
+      '<td style="text-align:center;font-weight:700;color:' + hc + '">' + hits + (bh ? '<span style="color:#a78bfa;font-size:.7rem">+B</span>' : '') + '</td></tr>'
+    );
+  }});
+
+  const avg = totalHits / DRAWS.length;
+  const lift = (avg / BASELINE - 1) * 100;
+  document.getElementById('modalTitle').textContent = 'Seed #' + seed.toLocaleString() + ' — ' + DRAWS.length + ' draws (K=' + K + ')';
+  document.getElementById('modalStats').innerHTML =
+    'Avg hits: <b>' + avg.toFixed(4) + '</b> (' + (lift >= 0 ? '+' : '') + lift.toFixed(2) + '% vs baseline)' +
+    ' &nbsp;·&nbsp; 6-hit draws: <b>' + hit6 + '</b>' +
+    ' &nbsp;·&nbsp; 0-hit draws: <b>' + hit0 + '</b>';
+  document.getElementById('modalTbody').innerHTML = htmlParts.join('');
+  document.getElementById('seedModal').style.display = 'flex';
+}}
+
+document.getElementById('seedModal').addEventListener('click', function(e) {{
+  if (e.target === this) this.style.display = 'none';
+}});
+document.addEventListener('keydown', function(e) {{
+  if (e.key === 'Escape') document.getElementById('seedModal').style.display = 'none';
 }});
 </script>
 <script>
