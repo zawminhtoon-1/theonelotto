@@ -1,18 +1,18 @@
 """
-xoshiro_seed_scan_k33_1126.py
+xoshiro_seed_scan_k33_1127.py
 --------------------------------
-Corrected re-run of xoshiro_seed_scan_k33_10k.py: same K=33, same seeds
-0-10,000, same xoshiro256** algorithm/formula and same hit6b/hit6/hit5
-ranking, but over draws #1001-2126 (1126 draws) instead of #1127-2126
-(1000 draws), per user correction.
+Second correction of the K=33 scan: draws #1001-2127 (1127 draws), not
+#1001-2126 (1126 draws, xoshiro_seed_scan_k33_1126.py -- itself already a
+correction of the original #1127-2126/1000-draw run). Draw #2127 was
+backfilled into the production DB in this same session; the user asked
+for it to be included in this window too.
 
-#1001-2126 is NOT available in public/backtest.html's embedded DATA array
-(that file only goes back to #1121 -- confirmed by direct inspection before
-writing this script). Pulled instead from the production Neon Postgres DB
-(loto6_results table), which has the full unbroken history (draws #1-2127,
-verified no gaps for #1001-2126: exactly 1126 rows).
+Same K=33, same seeds 0-10,000, same xoshiro256** algorithm/formula, same
+hit6b/hit6/hit5 ranking as the prior two runs. Draw records pulled from
+the production Neon Postgres DB (loto6_results), same as the 1126-draw
+version, since backtest.html's embedded array doesn't go back this far.
 
-Run: python xoshiro_seed_scan_k33_1126.py
+Run: python xoshiro_seed_scan_k33_1127.py
 """
 import json, re, time, sys, math, os
 import multiprocessing as mp
@@ -20,11 +20,11 @@ from collections import Counter
 
 BASE = r"C:\Users\Zaw Min Htoon\source\repos\theonelotto"
 ENV_LOCAL = BASE + r"\.env.local"
-OUT_JSON = BASE + r"\xoshiro_seed_scan_k33_1126.json"
+OUT_JSON = BASE + r"\xoshiro_seed_scan_k33_1127.json"
 
 K_PICKS = 33
-DRAW_START, DRAW_END = 1001, 2126   # per user correction (was 1127-2126)
-N_DRAWS = DRAW_END - DRAW_START + 1  # 1126
+DRAW_START, DRAW_END = 1001, 2127   # corrected again: was 1001-2126
+N_DRAWS = DRAW_END - DRAW_START + 1  # 1127
 LOTO6_MAX = 43
 NUM_SEEDS = 10_001    # seeds 0..10000 inclusive
 N_WORKERS = 7
@@ -32,7 +32,6 @@ CHUNK_SIZE = 200
 
 MASK64 = 0xFFFFFFFFFFFFFFFF
 
-# ── Core algorithm (same as gen_xoshiro_seed_backtest.py, inlined for speed) ──
 def xoshiro_predict_inline(seed, draw_serial, k, pool_max, arr_template):
     combined = (seed * 10_000_000 + draw_serial) & MASK64
     z = combined & MASK64
@@ -87,7 +86,6 @@ def process_chunk(seed_chunk):
     return out
 
 def load_data_from_db():
-    # DATABASE_URL: prefer already-set env var, else load from .env.local (never hardcoded)
     if 'DATABASE_URL' not in os.environ:
         with open(ENV_LOCAL, encoding='utf-8') as f:
             env_text = f.read()
@@ -108,11 +106,9 @@ def load_data_from_db():
     return data
 
 def main():
-    # ── Load DATA from the production DB (backtest.html doesn't go back far enough) ──
     DATA = load_data_from_db()
     print(f"Loaded {len(DATA)} rows from loto6_results for draws {DRAW_START}-{DRAW_END} (expected {N_DRAWS}).")
 
-    # Verify: exact count, correct endpoints, no gaps/duplicates
     serials = [r['s'] for r in DATA]
     if len(DATA) != N_DRAWS:
         raise SystemExit(f"Row count mismatch: got {len(DATA)}, expected {N_DRAWS}")
@@ -128,7 +124,6 @@ def main():
 
     data_bytes = json.dumps(DATA)
 
-    # ── Self-check: inlined function must match the already-verified modular one
     def xoshiro_predict_modular(seed, draw_serial, k=K_PICKS, pool_max=LOTO6_MAX):
         combined = (seed * 10_000_000 + draw_serial) & MASK64
         z = combined & MASK64
@@ -157,14 +152,13 @@ def main():
         return sorted(arr[n - k:])
 
     arr_t = list(range(1, LOTO6_MAX + 1))
-    for test_seed, test_draw in [(0, 1001), (168, 2126), (9999, 1500), (5555, 2000), (10000, 1001)]:
+    for test_seed, test_draw in [(0, 1001), (168, 2127), (9999, 1500), (5555, 2000), (10000, 1001)]:
         inline_result = sorted(xoshiro_predict_inline(test_seed, test_draw, K_PICKS, LOTO6_MAX, arr_t))
         modular_result = xoshiro_predict_modular(test_seed, test_draw)
         assert inline_result == modular_result, f"MISMATCH seed={test_seed} draw={test_draw}: {inline_result} vs {modular_result}"
         assert len(inline_result) == K_PICKS, f"WRONG PICK COUNT seed={test_seed}: {len(inline_result)} != {K_PICKS}"
     print(f"Self-check: inlined fast-path (K={K_PICKS}) matches the verified modular implementation exactly. OK.")
 
-    # ── Parallel scan ────────────────────────────────────────────────────────
     seeds = list(range(0, NUM_SEEDS))
     chunks = [seeds[i:i + CHUNK_SIZE] for i in range(0, len(seeds), CHUNK_SIZE)]
     total_chunks = len(chunks)
@@ -188,7 +182,6 @@ def main():
     elapsed_total = time.time() - t0
     print(f"\nDONE scanning in {elapsed_total:.1f}s ({elapsed_total/60:.1f} min)")
 
-    # ── Rank: highest hit6b, tiebreak hit6, tiebreak hit5 ───────────────────
     all_results.sort(key=lambda r: r[0])
     ranked = sorted(all_results, key=lambda r: (-r[1], -r[2], -r[3], r[0]))
     best = ranked[0]
@@ -197,7 +190,6 @@ def main():
     hit6_dist = Counter(r[2] for r in all_results)
     hit5_dist = Counter(r[3] for r in all_results)
 
-    # ── Analytical baselines (hypergeometric, for context) ──────────────────
     def hyper_pmf(x, pool, success, draws):
         return (math.comb(success, x) * math.comb(pool - success, draws - x)) / math.comb(pool, draws)
     def prob_all_in(subset_size_needed, pool_max, pick_k):

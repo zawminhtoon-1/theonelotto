@@ -1,18 +1,19 @@
 """
 load_xoshiro_seed_scan_k33_to_db.py
 --------------------------------------
-One-off loader: reads xoshiro_seed_scan_k33_1126.json (produced by
-xoshiro_seed_scan_k33_1126.py -- the 10,001-seed x 1126-draw x K=33
-xoshiro256** backtest scan over draws #1001-2126) and loads it into
-loto6_local.db as seed_hit_xoshiro_k33, mirroring the seed_hit_xoshiro_k21
-table's schema pattern.
+One-off loader: reads xoshiro_seed_scan_k33_1127.json (produced by
+xoshiro_seed_scan_k33_1127.py -- the 10,001-seed x 1127-draw x K=33
+xoshiro256** backtest scan over draws #1001-2127, including the
+backfilled draw #2127) and loads it into loto6_local.db as
+seed_hit_xoshiro_k33, mirroring the seed_hit_xoshiro_k21 table's schema
+pattern.
 
 Run: python load_xoshiro_seed_scan_k33_to_db.py
 """
 import json, sqlite3
 
 BASE = r"C:\Users\Zaw Min Htoon\source\repos\theonelotto"
-JSON_IN = BASE + r"\xoshiro_seed_scan_k33_1126.json"
+JSON_IN = BASE + r"\xoshiro_seed_scan_k33_1127.json"
 DB_PATH = BASE + r"\loto6_local.db"
 TABLE = "seed_hit_xoshiro_k33"
 

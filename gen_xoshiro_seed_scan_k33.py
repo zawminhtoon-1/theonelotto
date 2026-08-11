@@ -2,12 +2,13 @@
 gen_xoshiro_seed_scan_k33.py
 --------------------------------
 Static report page for the K=33 xoshiro256** backtest scan: seeds
-0-10,000, draws #1001-2126 (1126 draws), ranked by hit6b (6-hit +
-bonus) desc, tiebreak hit6 desc, tiebreak hit5 desc.
+0-10,000, draws #1001-2127 (1127 draws, including the backfilled draw
+#2127), ranked by hit6b (6-hit + bonus) desc, tiebreak hit6 desc,
+tiebreak hit5 desc.
 
 Reads live from loto6_local.db's seed_hit_xoshiro_k33 table (populated
-by load_xoshiro_seed_scan_k33_to_db.py from xoshiro_seed_scan_k33_1126.py's
-scan) for aggregates and the top-N table. The 1126-draw window (small
+by load_xoshiro_seed_scan_k33_to_db.py from xoshiro_seed_scan_k33_1127.py's
+scan) for aggregates and the top-N table. The 1127-draw window (small
 enough to embed, unlike the 100k-seed K=21 page's 1000-row table) is
 embedded client-side for the seed-detail modal, so per-draw breakdowns
 work for ANY seed typed in, computed live via the same verified
@@ -27,8 +28,8 @@ TABLE = "seed_hit_xoshiro_k33"
 
 K_PICKS = 33
 LOTO6_MAX = 43
-DRAW_START, DRAW_END = 1001, 2126
-N_DRAWS = DRAW_END - DRAW_START + 1  # 1126
+DRAW_START, DRAW_END = 1001, 2127
+N_DRAWS = DRAW_END - DRAW_START + 1  # 1127
 TOP_N = 25
 
 # ── Load aggregates + top-N from SQLite ──────────────────────────────────────
@@ -79,7 +80,7 @@ print(f"Loaded {num_seeds:,} seeds from {TABLE}")
 print(f"Best: seed={best[0]} hit6b={best[1]} hit6={best[2]} hit5={best[3]}")
 print(f"Analytical expectation: hit6b~={exp_hit6b:.2f} hit6~={exp_hit6:.2f} hit5~={exp_hit5:.2f} (of {N_DRAWS} draws)")
 
-# ── Load the exact 1001-2126 draw window from the production DB, for the
+# ── Load the exact 1001-2127 draw window from the production DB, for the
 # client-side seed-detail modal (backtest.html's embedded array doesn't go
 # back this far -- confirmed by direct inspection before the scan). ───────
 if 'DATABASE_URL' not in os.environ:
