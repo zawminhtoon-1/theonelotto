@@ -2,7 +2,7 @@
 gen_xoshiro_seed_scan_k33.py
 --------------------------------
 Static report page for the K=33 xoshiro256** backtest scan: seeds
-0-100,000, draws #1001-2127 (1127 draws, including the backfilled draw
+0-1,000,000, draws #1001-2127 (1127 draws, including the backfilled draw
 #2127), ranked by hit6b (6-hit + bonus) desc, tiebreak hit6 desc,
 tiebreak hit5 desc.
 
@@ -38,7 +38,7 @@ cur = conn.cursor()
 
 cur.execute(f"SELECT COUNT(*) FROM {TABLE}")
 num_seeds = cur.fetchone()[0]
-if num_seeds != 100_001:
+if num_seeds != 1_000_001:
     raise SystemExit(f"Expected 10,001 rows in {TABLE}, found {num_seeds}")
 
 cur.execute(f"SELECT seed, hit6b_count, hit6_count, hit5_count FROM {TABLE}")
@@ -133,7 +133,7 @@ page = f"""<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Xoshiro Seed Scan K=33 (0–100,000) — Loto 6</title>
+<title>Xoshiro Seed Scan K=33 (0–1,000,000) — Loto 6</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
 .site-nav{{position:fixed;top:0;left:0;right:0;height:52px;background:#0a0f1e;
@@ -280,7 +280,7 @@ tbody td.tr{{text-align:right}}
         <div class="nav-dd-label">Xoshiro256** Seed Scans</div>
         <a href="/xoshiro_seed_backtest.html">🌀 K=21, seeds 0–1,000</a>
         <a href="/xoshiro_seed_scan_100k.html">🔬 K=21, seeds 1–100,000</a>
-        <a href="/xoshiro_seed_scan_k33.html" class="active">🎯 K=33, seeds 0–100,000</a>
+        <a href="/xoshiro_seed_scan_k33.html" class="active">🎯 K=33, seeds 0–1,000,000</a>
       </div></div>
     </div>
     <div class="nav-group">
@@ -299,7 +299,7 @@ tbody td.tr{{text-align:right}}
 </nav>
 
 <div class="wrap">
-  <h1>🎯 Xoshiro Seed Scan — K=33 (0–100,000)</h1>
+  <h1>🎯 Xoshiro Seed Scan — K=33 (0–1,000,000)</h1>
   <p class="subtitle">{num_seeds:,} seeds · K={K_PICKS} picks · {N_DRAWS} draws (#{DRAW_START}–{DRAW_END}) · xoshiro256** (SplitMix64-seeded)</p>
 
   <div class="note">
@@ -345,7 +345,7 @@ tbody td.tr{{text-align:right}}
     <div class="stat-card">
       <div class="lbl">Seeds tested</div>
       <div class="val">{num_seeds:,}</div>
-      <div class="sub">seeds 0–100,000</div>
+      <div class="sub">seeds 0–1,000,000</div>
     </div>
   </div>
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Xoshiro Seed Scan K=33 (0–100,000) — Loto 6</title>
+<title>Xoshiro Seed Scan K=33 (0–1,000,000) — Loto 6</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
 .site-nav{position:fixed;top:0;left:0;right:0;height:52px;background:#0a0f1e;
@@ -150,7 +150,7 @@ tbody td.tr{text-align:right}
         <div class="nav-dd-label">Xoshiro256** Seed Scans</div>
         <a href="/xoshiro_seed_backtest.html">🌀 K=21, seeds 0–1,000</a>
         <a href="/xoshiro_seed_scan_100k.html">🔬 K=21, seeds 1–100,000</a>
-        <a href="/xoshiro_seed_scan_k33.html" class="active">🎯 K=33, seeds 0–100,000</a>
+        <a href="/xoshiro_seed_scan_k33.html" class="active">🎯 K=33, seeds 0–1,000,000</a>
       </div></div>
     </div>
     <div class="nav-group">
@@ -169,8 +169,8 @@ tbody td.tr{text-align:right}
 </nav>
 
 <div class="wrap">
-  <h1>🎯 Xoshiro Seed Scan — K=33 (0–100,000)</h1>
-  <p class="subtitle">100,001 seeds · K=33 picks · 1127 draws (#1001–2127) · xoshiro256** (SplitMix64-seeded)</p>
+  <h1>🎯 Xoshiro Seed Scan — K=33 (0–1,000,000)</h1>
+  <p class="subtitle">1,000,001 seeds · K=33 picks · 1127 draws (#1001–2127) · xoshiro256** (SplitMix64-seeded)</p>
 
   <div class="note">
     Same xoshiro256**/SplitMix64 algorithm and combined-seed formula (<code>seed×10,000,000 + draw_serial</code>) as the
@@ -187,15 +187,15 @@ tbody td.tr{text-align:right}
     <span class="lbl">🔍 Seed detail lookup</span>
     <input id="seedLookupInput" type="number" min="0" step="1" placeholder="Enter any seed number..." onkeydown="if(event.key==='Enter')lookupSeed()">
     <button onclick="lookupSeed()">View 1127-draw breakdown</button>
-    <span class="hint">e.g. try 71,812 (the top-ranked seed) — or any seed, not just ones in the table below. Computed live in your browser.</span>
+    <span class="hint">e.g. try 118,590 (the top-ranked seed) — or any seed, not just ones in the table below. Computed live in your browser.</span>
     <span id="lookupErr" class="err" style="display:none"></span>
   </div>
 
   <div class="stats-row">
     <div class="stat-card">
       <div class="lbl">Best seed (ranked)</div>
-      <div class="val">#71,812</div>
-      <div class="sub">hit6b 201 · hit6 257 · hit5 432</div>
+      <div class="val">#118,590</div>
+      <div class="sub">hit6b 209 · hit6 270 · hit5 402</div>
     </div>
     <div class="stat-card">
       <div class="lbl">Expected hit6b (chance)</div>
@@ -214,25 +214,25 @@ tbody td.tr{text-align:right}
     </div>
     <div class="stat-card">
       <div class="lbl">Seeds tested</div>
-      <div class="val">100,001</div>
-      <div class="sub">seeds 0–100,000</div>
+      <div class="val">1,000,001</div>
+      <div class="sub">seeds 0–1,000,000</div>
     </div>
   </div>
 
   <div class="three-col">
     <div class="section">
       <h2>hit6b distribution</h2>
-      <p class="desc">6-hit + bonus draw count across all 100,001 seeds.</p>
+      <p class="desc">6-hit + bonus draw count across all 1,000,001 seeds.</p>
       <div class="chart-wrap"><canvas id="hit6bChart"></canvas></div>
     </div>
     <div class="section">
       <h2>hit6 distribution</h2>
-      <p class="desc">6-hit (any bonus) draw count across all 100,001 seeds.</p>
+      <p class="desc">6-hit (any bonus) draw count across all 1,000,001 seeds.</p>
       <div class="chart-wrap"><canvas id="hit6Chart"></canvas></div>
     </div>
     <div class="section">
       <h2>hit5 distribution</h2>
-      <p class="desc">Exactly-5-hit draw count across all 100,001 seeds.</p>
+      <p class="desc">Exactly-5-hit draw count across all 1,000,001 seeds.</p>
       <div class="chart-wrap"><canvas id="hit5Chart"></canvas></div>
     </div>
   </div>
@@ -243,156 +243,156 @@ tbody td.tr{text-align:right}
     <div class="tbl-wrap">
       <table>
         <thead><tr><th class="tc">#</th><th class="tc">Seed</th><th>hit6b</th><th>hit6</th><th>hit5</th></tr></thead>
-        <tbody><tr class="dr" onclick="openSeedDetail(71812)">
+        <tbody><tr class="dr" onclick="openSeedDetail(118590)">
   <td class="tc">1</td>
-  <td class="tc">71,812 <span class="badge">BEST</span></td>
+  <td class="tc">118,590 <span class="badge">BEST</span></td>
+  <td class="tr">209</td>
+  <td class="tr">270</td>
+  <td class="tr">402</td>
+</tr><tr class="dr" onclick="openSeedDetail(111195)">
+  <td class="tc">2</td>
+  <td class="tc">111,195</td>
+  <td class="tr">206</td>
+  <td class="tr">273</td>
+  <td class="tr">412</td>
+</tr><tr class="dr" onclick="openSeedDetail(131844)">
+  <td class="tc">3</td>
+  <td class="tc">131,844</td>
+  <td class="tr">202</td>
+  <td class="tr">253</td>
+  <td class="tr">410</td>
+</tr><tr class="dr" onclick="openSeedDetail(71812)">
+  <td class="tc">4</td>
+  <td class="tc">71,812</td>
   <td class="tr">201</td>
   <td class="tr">257</td>
   <td class="tr">432</td>
+</tr><tr class="dr" onclick="openSeedDetail(970214)">
+  <td class="tc">5</td>
+  <td class="tc">970,214</td>
+  <td class="tr">201</td>
+  <td class="tr">248</td>
+  <td class="tr">433</td>
+</tr><tr class="dr" onclick="openSeedDetail(673738)">
+  <td class="tc">6</td>
+  <td class="tc">673,738</td>
+  <td class="tr">200</td>
+  <td class="tr">265</td>
+  <td class="tr">358</td>
+</tr><tr class="dr" onclick="openSeedDetail(908347)">
+  <td class="tc">7</td>
+  <td class="tc">908,347</td>
+  <td class="tr">200</td>
+  <td class="tr">255</td>
+  <td class="tr">394</td>
+</tr><tr class="dr" onclick="openSeedDetail(537898)">
+  <td class="tc">8</td>
+  <td class="tc">537,898</td>
+  <td class="tr">200</td>
+  <td class="tr">246</td>
+  <td class="tr">437</td>
+</tr><tr class="dr" onclick="openSeedDetail(264125)">
+  <td class="tc">9</td>
+  <td class="tc">264,125</td>
+  <td class="tr">199</td>
+  <td class="tr">252</td>
+  <td class="tr">449</td>
+</tr><tr class="dr" onclick="openSeedDetail(450530)">
+  <td class="tc">10</td>
+  <td class="tc">450,530</td>
+  <td class="tr">199</td>
+  <td class="tr">251</td>
+  <td class="tr">412</td>
+</tr><tr class="dr" onclick="openSeedDetail(388411)">
+  <td class="tc">11</td>
+  <td class="tc">388,411</td>
+  <td class="tr">198</td>
+  <td class="tr">263</td>
+  <td class="tr">442</td>
+</tr><tr class="dr" onclick="openSeedDetail(878222)">
+  <td class="tc">12</td>
+  <td class="tc">878,222</td>
+  <td class="tr">198</td>
+  <td class="tr">261</td>
+  <td class="tr">408</td>
+</tr><tr class="dr" onclick="openSeedDetail(315081)">
+  <td class="tc">13</td>
+  <td class="tc">315,081</td>
+  <td class="tr">198</td>
+  <td class="tr">259</td>
+  <td class="tr">437</td>
+</tr><tr class="dr" onclick="openSeedDetail(501552)">
+  <td class="tc">14</td>
+  <td class="tc">501,552</td>
+  <td class="tr">198</td>
+  <td class="tr">238</td>
+  <td class="tr">434</td>
+</tr><tr class="dr" onclick="openSeedDetail(995816)">
+  <td class="tc">15</td>
+  <td class="tc">995,816</td>
+  <td class="tr">198</td>
+  <td class="tr">238</td>
+  <td class="tr">431</td>
+</tr><tr class="dr" onclick="openSeedDetail(247629)">
+  <td class="tc">16</td>
+  <td class="tc">247,629</td>
+  <td class="tr">197</td>
+  <td class="tr">260</td>
+  <td class="tr">417</td>
+</tr><tr class="dr" onclick="openSeedDetail(569168)">
+  <td class="tc">17</td>
+  <td class="tc">569,168</td>
+  <td class="tr">197</td>
+  <td class="tr">258</td>
+  <td class="tr">433</td>
+</tr><tr class="dr" onclick="openSeedDetail(399615)">
+  <td class="tc">18</td>
+  <td class="tc">399,615</td>
+  <td class="tr">197</td>
+  <td class="tr">256</td>
+  <td class="tr">411</td>
+</tr><tr class="dr" onclick="openSeedDetail(691739)">
+  <td class="tc">19</td>
+  <td class="tc">691,739</td>
+  <td class="tr">197</td>
+  <td class="tr">249</td>
+  <td class="tr">430</td>
+</tr><tr class="dr" onclick="openSeedDetail(777055)">
+  <td class="tc">20</td>
+  <td class="tc">777,055</td>
+  <td class="tr">197</td>
+  <td class="tr">247</td>
+  <td class="tr">415</td>
+</tr><tr class="dr" onclick="openSeedDetail(537055)">
+  <td class="tc">21</td>
+  <td class="tc">537,055</td>
+  <td class="tr">197</td>
+  <td class="tr">245</td>
+  <td class="tr">414</td>
+</tr><tr class="dr" onclick="openSeedDetail(308429)">
+  <td class="tc">22</td>
+  <td class="tc">308,429</td>
+  <td class="tr">197</td>
+  <td class="tr">240</td>
+  <td class="tr">424</td>
+</tr><tr class="dr" onclick="openSeedDetail(741211)">
+  <td class="tc">23</td>
+  <td class="tc">741,211</td>
+  <td class="tr">196</td>
+  <td class="tr">263</td>
+  <td class="tr">422</td>
 </tr><tr class="dr" onclick="openSeedDetail(22396)">
-  <td class="tc">2</td>
+  <td class="tc">24</td>
   <td class="tc">22,396</td>
   <td class="tr">196</td>
   <td class="tr">258</td>
   <td class="tr">421</td>
-</tr><tr class="dr" onclick="openSeedDetail(91031)">
-  <td class="tc">3</td>
-  <td class="tc">91,031</td>
-  <td class="tr">195</td>
-  <td class="tr">250</td>
-  <td class="tr">444</td>
-</tr><tr class="dr" onclick="openSeedDetail(45564)">
-  <td class="tc">4</td>
-  <td class="tc">45,564</td>
-  <td class="tr">195</td>
-  <td class="tr">236</td>
-  <td class="tr">431</td>
-</tr><tr class="dr" onclick="openSeedDetail(89008)">
-  <td class="tc">5</td>
-  <td class="tc">89,008</td>
-  <td class="tr">194</td>
-  <td class="tr">254</td>
-  <td class="tr">413</td>
-</tr><tr class="dr" onclick="openSeedDetail(84835)">
-  <td class="tc">6</td>
-  <td class="tc">84,835</td>
-  <td class="tr">194</td>
-  <td class="tr">243</td>
-  <td class="tr">415</td>
-</tr><tr class="dr" onclick="openSeedDetail(95122)">
-  <td class="tc">7</td>
-  <td class="tc">95,122</td>
-  <td class="tr">194</td>
-  <td class="tr">236</td>
-  <td class="tr">431</td>
-</tr><tr class="dr" onclick="openSeedDetail(40565)">
-  <td class="tc">8</td>
-  <td class="tc">40,565</td>
-  <td class="tr">194</td>
-  <td class="tr">236</td>
-  <td class="tr">402</td>
-</tr><tr class="dr" onclick="openSeedDetail(10192)">
-  <td class="tc">9</td>
-  <td class="tc">10,192</td>
-  <td class="tr">193</td>
-  <td class="tr">256</td>
-  <td class="tr">435</td>
-</tr><tr class="dr" onclick="openSeedDetail(50307)">
-  <td class="tc">10</td>
-  <td class="tc">50,307</td>
-  <td class="tr">193</td>
-  <td class="tr">254</td>
-  <td class="tr">426</td>
-</tr><tr class="dr" onclick="openSeedDetail(48538)">
-  <td class="tc">11</td>
-  <td class="tc">48,538</td>
-  <td class="tr">193</td>
-  <td class="tr">252</td>
-  <td class="tr">417</td>
-</tr><tr class="dr" onclick="openSeedDetail(98403)">
-  <td class="tc">12</td>
-  <td class="tc">98,403</td>
-  <td class="tr">193</td>
-  <td class="tr">251</td>
-  <td class="tr">404</td>
-</tr><tr class="dr" onclick="openSeedDetail(32426)">
-  <td class="tc">13</td>
-  <td class="tc">32,426</td>
-  <td class="tr">192</td>
-  <td class="tr">258</td>
-  <td class="tr">400</td>
-</tr><tr class="dr" onclick="openSeedDetail(26087)">
-  <td class="tc">14</td>
-  <td class="tc">26,087</td>
-  <td class="tr">192</td>
-  <td class="tr">257</td>
-  <td class="tr">427</td>
-</tr><tr class="dr" onclick="openSeedDetail(73911)">
-  <td class="tc">15</td>
-  <td class="tc">73,911</td>
-  <td class="tr">192</td>
-  <td class="tr">252</td>
-  <td class="tr">434</td>
-</tr><tr class="dr" onclick="openSeedDetail(81605)">
-  <td class="tc">16</td>
-  <td class="tc">81,605</td>
-  <td class="tr">192</td>
-  <td class="tr">246</td>
-  <td class="tr">398</td>
-</tr><tr class="dr" onclick="openSeedDetail(48486)">
-  <td class="tc">17</td>
-  <td class="tc">48,486</td>
-  <td class="tr">192</td>
-  <td class="tr">239</td>
-  <td class="tr">414</td>
-</tr><tr class="dr" onclick="openSeedDetail(98950)">
-  <td class="tc">18</td>
-  <td class="tc">98,950</td>
-  <td class="tr">192</td>
-  <td class="tr">238</td>
-  <td class="tr">425</td>
-</tr><tr class="dr" onclick="openSeedDetail(2200)">
-  <td class="tc">19</td>
-  <td class="tc">2,200</td>
-  <td class="tr">191</td>
-  <td class="tr">251</td>
-  <td class="tr">422</td>
-</tr><tr class="dr" onclick="openSeedDetail(85106)">
-  <td class="tc">20</td>
-  <td class="tc">85,106</td>
-  <td class="tr">191</td>
-  <td class="tr">245</td>
-  <td class="tr">409</td>
-</tr><tr class="dr" onclick="openSeedDetail(4210)">
-  <td class="tc">21</td>
-  <td class="tc">4,210</td>
-  <td class="tr">191</td>
-  <td class="tr">245</td>
-  <td class="tr">408</td>
-</tr><tr class="dr" onclick="openSeedDetail(78863)">
-  <td class="tc">22</td>
-  <td class="tc">78,863</td>
-  <td class="tr">191</td>
-  <td class="tr">243</td>
-  <td class="tr">429</td>
-</tr><tr class="dr" onclick="openSeedDetail(9352)">
-  <td class="tc">23</td>
-  <td class="tc">9,352</td>
-  <td class="tr">191</td>
-  <td class="tr">241</td>
-  <td class="tr">403</td>
-</tr><tr class="dr" onclick="openSeedDetail(33044)">
-  <td class="tc">24</td>
-  <td class="tc">33,044</td>
-  <td class="tr">191</td>
-  <td class="tr">240</td>
-  <td class="tr">422</td>
-</tr><tr class="dr" onclick="openSeedDetail(33626)">
+</tr><tr class="dr" onclick="openSeedDetail(445955)">
   <td class="tc">25</td>
-  <td class="tc">33,626</td>
-  <td class="tr">191</td>
-  <td class="tr">240</td>
-  <td class="tr">410</td>
+  <td class="tc">445,955</td>
+  <td class="tr">196</td>
+  <td class="tr">257</td>
+  <td class="tr">411</td>
 </tr></tbody>
       </table>
     </div>
@@ -445,9 +445,9 @@ function mkChart(id, labels, values, color) {
     }
   });
 }
-mkChart('hit6bChart', [100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201], [1, 0, 1, 1, 1, 1, 1, 3, 2, 7, 8, 7, 13, 15, 20, 35, 36, 57, 89, 74, 123, 133, 186, 248, 281, 354, 417, 476, 573, 718, 796, 955, 1089, 1307, 1387, 1642, 1798, 2040, 2246, 2287, 2443, 2663, 2850, 3045, 3187, 3277, 3401, 3386, 3568, 3514, 3518, 3438, 3521, 3298, 3119, 3060, 2936, 2710, 2556, 2402, 2205, 2044, 1860, 1684, 1481, 1373, 1228, 1044, 870, 794, 747, 578, 486, 417, 343, 306, 232, 199, 161, 133, 96, 89, 72, 54, 54, 25, 18, 29, 14, 13, 6, 8, 6, 4, 4, 2, 1, 0, 0, 0, 0, 1], '#38bdf8');
-mkChart('hit6Chart', [150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260, 261, 262], [2, 0, 0, 0, 2, 3, 1, 5, 5, 6, 5, 10, 6, 10, 25, 36, 30, 32, 47, 57, 76, 96, 128, 146, 175, 220, 260, 323, 340, 419, 472, 550, 652, 794, 885, 969, 1120, 1206, 1364, 1452, 1703, 1755, 1916, 2030, 2206, 2389, 2514, 2549, 2801, 2820, 2918, 2998, 3054, 3054, 2965, 3099, 2912, 3024, 2986, 2868, 2927, 2784, 2612, 2527, 2412, 2206, 2095, 1964, 1779, 1645, 1477, 1340, 1244, 1129, 963, 870, 823, 709, 599, 501, 472, 416, 314, 277, 236, 200, 197, 153, 114, 102, 97, 63, 39, 51, 41, 32, 17, 14, 15, 8, 7, 13, 7, 2, 4, 3, 4, 3, 2, 1, 0, 0, 1], '#22c55e');
-mkChart('hit5Chart', [372, 373, 374, 375, 376, 377, 378, 379, 380, 381, 382, 383, 384, 385, 386, 387, 388, 389, 390, 391, 392, 393, 394, 395, 396, 397, 398, 399, 400, 401, 402, 403, 404, 405, 406, 407, 408, 409, 410, 411, 412, 413, 414, 415, 416, 417, 418, 419, 420, 421, 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432, 433, 434, 435, 436, 437, 438, 439, 440, 441, 442, 443, 444, 445, 446, 447, 448, 449, 450, 451, 452, 453, 454, 455, 456, 457, 458, 459, 460, 461, 462, 463, 464, 465, 466, 467, 468, 469, 470, 471, 472, 473, 474, 475, 476, 477, 478, 479, 480, 481, 482, 483, 484, 485, 486, 487, 488, 489, 490, 491, 492, 493, 494, 495, 496, 497, 498, 499, 500, 501, 502, 503, 504, 505, 506, 507, 508], [2, 1, 1, 4, 2, 2, 1, 1, 1, 5, 5, 5, 7, 6, 11, 21, 19, 18, 32, 33, 37, 39, 67, 66, 69, 89, 120, 104, 144, 175, 193, 221, 238, 293, 341, 377, 443, 460, 558, 576, 627, 727, 818, 854, 939, 1029, 1065, 1181, 1213, 1331, 1421, 1529, 1628, 1770, 1807, 1873, 1994, 2046, 2123, 2185, 2284, 2284, 2319, 2321, 2278, 2399, 2403, 2526, 2383, 2351, 2361, 2340, 2277, 2320, 2245, 2131, 2137, 2013, 1876, 1776, 1706, 1703, 1604, 1491, 1379, 1302, 1248, 1181, 1097, 975, 929, 833, 763, 683, 606, 575, 497, 467, 348, 337, 333, 273, 257, 205, 167, 165, 148, 120, 101, 79, 82, 53, 48, 37, 32, 35, 27, 23, 25, 16, 19, 9, 8, 13, 6, 5, 5, 6, 1, 0, 1, 1, 1, 1, 2, 1, 1], '#f59e0b');
+mkChart('hit6bChart', [100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209], [1, 2, 3, 3, 5, 6, 8, 21, 32, 38, 51, 80, 117, 172, 201, 313, 404, 507, 692, 856, 1166, 1425, 1784, 2310, 2765, 3345, 4116, 4878, 5846, 7046, 8301, 9513, 10843, 12578, 14147, 16147, 18052, 19916, 21843, 23148, 25270, 26863, 28608, 30302, 31812, 33018, 33968, 34344, 34662, 34863, 35004, 34285, 33989, 33103, 31887, 30788, 29311, 27754, 26121, 24080, 22393, 20270, 18805, 16925, 15112, 13521, 11827, 10650, 9182, 7876, 6900, 5842, 5097, 4310, 3463, 2914, 2488, 1944, 1625, 1264, 998, 845, 684, 534, 453, 340, 213, 220, 152, 100, 80, 65, 50, 44, 37, 27, 16, 7, 5, 2, 3, 2, 1, 0, 0, 0, 1, 0, 0, 1], '#38bdf8');
+mkChart('hit6Chart', [137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 271, 272, 273], [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 3, 1, 5, 4, 8, 16, 11, 24, 26, 48, 60, 79, 96, 140, 206, 231, 277, 409, 502, 560, 775, 982, 1170, 1401, 1755, 2052, 2486, 3069, 3621, 4293, 4955, 5714, 6506, 7481, 8579, 9723, 10862, 12079, 13560, 14867, 16507, 17636, 19217, 20743, 22216, 23599, 24981, 25816, 27173, 28255, 28635, 29656, 30543, 30936, 30484, 30811, 30249, 30152, 29516, 29007, 28214, 27488, 26303, 24874, 23787, 22226, 20835, 19118, 18000, 16665, 15201, 13858, 12325, 11332, 10045, 8982, 8042, 7073, 6060, 5412, 4744, 4052, 3430, 2984, 2468, 2044, 1744, 1420, 1270, 997, 806, 694, 594, 457, 378, 271, 192, 191, 157, 101, 86, 93, 48, 39, 26, 24, 19, 17, 11, 14, 5, 3, 3, 3, 0, 2, 0, 0, 1, 0, 2, 0, 0, 1], '#22c55e');
+mkChart('hit5Chart', [358, 359, 360, 361, 362, 363, 364, 365, 366, 367, 368, 369, 370, 371, 372, 373, 374, 375, 376, 377, 378, 379, 380, 381, 382, 383, 384, 385, 386, 387, 388, 389, 390, 391, 392, 393, 394, 395, 396, 397, 398, 399, 400, 401, 402, 403, 404, 405, 406, 407, 408, 409, 410, 411, 412, 413, 414, 415, 416, 417, 418, 419, 420, 421, 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432, 433, 434, 435, 436, 437, 438, 439, 440, 441, 442, 443, 444, 445, 446, 447, 448, 449, 450, 451, 452, 453, 454, 455, 456, 457, 458, 459, 460, 461, 462, 463, 464, 465, 466, 467, 468, 469, 470, 471, 472, 473, 474, 475, 476, 477, 478, 479, 480, 481, 482, 483, 484, 485, 486, 487, 488, 489, 490, 491, 492, 493, 494, 495, 496, 497, 498, 499, 500, 501, 502, 503, 504, 505, 506, 507, 508, 509, 510, 511, 512, 513, 514, 515], [1, 0, 0, 0, 0, 2, 1, 0, 1, 3, 3, 3, 2, 4, 7, 5, 8, 17, 17, 24, 20, 30, 39, 39, 48, 77, 91, 98, 114, 160, 194, 231, 301, 333, 370, 459, 540, 645, 752, 963, 1089, 1333, 1406, 1713, 1954, 2189, 2456, 2902, 3381, 3645, 4221, 4659, 5265, 5835, 6560, 7117, 7903, 8691, 9371, 10083, 10960, 11874, 12531, 13487, 14531, 15433, 16086, 17104, 18106, 18907, 19625, 20605, 21248, 21692, 22840, 22960, 23544, 23718, 23791, 24108, 24396, 24479, 24134, 24128, 23978, 23659, 22874, 22741, 22173, 21235, 20595, 19888, 19014, 18080, 17493, 16610, 15509, 14873, 13797, 12874, 12258, 11417, 10516, 9790, 8923, 8083, 7482, 6795, 6037, 5443, 4995, 4536, 4033, 3543, 3268, 2702, 2484, 2122, 1834, 1553, 1394, 1159, 1068, 939, 726, 646, 540, 433, 375, 334, 283, 208, 189, 161, 135, 102, 88, 82, 57, 43, 45, 30, 14, 19, 13, 10, 9, 7, 6, 1, 5, 5, 1, 1, 0, 1, 2, 1], '#f59e0b');
 </script>
 <script>
 // ── Seed-detail modal: picks computed LIVE for any seed via the same
