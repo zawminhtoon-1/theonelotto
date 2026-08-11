@@ -54,6 +54,9 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { href: "/xoshiro_seed_backtest.html", icon: "🌀", label: "K=21, seeds 0–1,000" },
       { href: "/xoshiro_seed_scan_100k.html", icon: "🔬", label: "K=21, seeds 1–100,000" },
       { href: "/xoshiro_seed_scan_k33.html", icon: "🎯", label: "K=33, seeds 0–1,000,000" },
+      { type: "divider" },
+      { type: "label", label: "Predictions" },
+      { href: "/xoshiro_elim_2128.html", icon: "✂️", label: "Draw #2128 Elimination" },
     ],
   },
   {

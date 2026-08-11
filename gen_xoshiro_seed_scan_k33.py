@@ -281,6 +281,9 @@ tbody td.tr{{text-align:right}}
         <a href="/xoshiro_seed_backtest.html">🌀 K=21, seeds 0–1,000</a>
         <a href="/xoshiro_seed_scan_100k.html">🔬 K=21, seeds 1–100,000</a>
         <a href="/xoshiro_seed_scan_k33.html" class="active">🎯 K=33, seeds 0–1,000,000</a>
+        <div class="nav-divider"></div>
+        <div class="nav-dd-label">Predictions</div>
+        <a href="/xoshiro_elim_2128.html">✂️ Draw #2128 Elimination</a>
       </div></div>
     </div>
     <div class="nav-group">
