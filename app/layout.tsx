@@ -43,11 +43,17 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { type: "divider" },
       { type: "label", label: "Random Seed" },
       { href: "/random_seed_backtest.html", icon: "🎲", label: "Random Seed (1–2000)" },
-      { href: "/xoshiro_seed_backtest.html", icon: "🌀", label: "Xoshiro Seed (0–1000)" },
-      { href: "/xoshiro_seed_scan_100k.html", icon: "🔬", label: "Xoshiro Seed Scan (1–100k)" },
-      { href: "/xoshiro_seed_scan_k33.html", icon: "🎯", label: "Xoshiro K=33 Scan (0–10k)" },
       { href: "/k7_seed_coverage.html", icon: "📈", label: "K=7 Seed Coverage" },
       { href: "/k7_seed_hit_1000.html", icon: "🗺️", label: "K=7 Seed-Hit (1000 draws)" },
+    ],
+  },
+  {
+    label: "Xoshiro Research",
+    items: [
+      { type: "label", label: "Xoshiro256** Seed Scans" },
+      { href: "/xoshiro_seed_backtest.html", icon: "🌀", label: "K=21, seeds 0–1,000" },
+      { href: "/xoshiro_seed_scan_100k.html", icon: "🔬", label: "K=21, seeds 1–100,000" },
+      { href: "/xoshiro_seed_scan_k33.html", icon: "🎯", label: "K=33, seeds 0–10,000" },
     ],
   },
   {
