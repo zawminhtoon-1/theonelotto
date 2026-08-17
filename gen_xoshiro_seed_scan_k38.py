@@ -1,21 +1,21 @@
 """
-gen_xoshiro_seed_scan_k33.py
+gen_xoshiro_seed_scan_k38.py
 --------------------------------
-Static report page for the K=33 xoshiro256** backtest scan: seeds
-0-1,000,000, draws #1001-2127 (1127 draws, including the backfilled draw
-#2127), ranked by hit6b (6-hit + bonus) desc, tiebreak hit6 desc,
-tiebreak hit5 desc.
+Static report page for the K=38 xoshiro256** backtest scan: seeds
+0-1,000,000, draws #1000-2127 (1128 draws, the corrected window),
+ranked by hit6b (6-hit + bonus) desc, tiebreak hit6 desc, tiebreak
+hit5 desc.
 
-Reads live from loto6_local.db's seed_hit_xoshiro_k33 table (populated
-by load_xoshiro_seed_scan_k33_to_db.py from xoshiro_seed_scan_k33_1127.py's
-scan) for aggregates and the top-N table. The 1127-draw window (small
-enough to embed, unlike the 100k-seed K=21 page's 1000-row table) is
-embedded client-side for the seed-detail modal, so per-draw breakdowns
-work for ANY seed typed in, computed live via the same verified
-xoshiro256** JS port used elsewhere on the site.
+Reads live from loto6_local.db's seed_hit_xoshiro_k38 table (populated
+by load_xoshiro_seed_scan_k38_to_db.py from the two-stage scan:
+xoshiro_seed_scan_k38_0_100k.py + xoshiro_seed_scan_k38_100k_to_1m.py)
+for aggregates and the top-N table. The 1128-draw window is embedded
+client-side for the seed-detail modal, so per-draw breakdowns work for
+ANY seed typed in, computed live via the same verified xoshiro256**
+JS port used elsewhere on the site.
 
-Output: public/xoshiro_seed_scan_k33.html
-Run: python gen_xoshiro_seed_scan_k33.py
+Output: public/xoshiro_seed_scan_k38.html
+Run: python gen_xoshiro_seed_scan_k38.py
 """
 import sqlite3, json, re, math, os
 from collections import Counter
@@ -23,13 +23,13 @@ from collections import Counter
 BASE = r"C:\Users\Zaw Min Htoon\source\repos\theonelotto"
 DB_PATH = BASE + r"\loto6_local.db"
 ENV_LOCAL = BASE + r"\.env.local"
-HTML_OUT = BASE + r"\public\xoshiro_seed_scan_k33.html"
-TABLE = "seed_hit_xoshiro_k33"
+HTML_OUT = BASE + r"\public\xoshiro_seed_scan_k38.html"
+TABLE = "seed_hit_xoshiro_k38"
 
-K_PICKS = 33
+K_PICKS = 38
 LOTO6_MAX = 43
-DRAW_START, DRAW_END = 1001, 2127
-N_DRAWS = DRAW_END - DRAW_START + 1  # 1127
+DRAW_START, DRAW_END = 1000, 2127
+N_DRAWS = DRAW_END - DRAW_START + 1  # 1128
 TOP_N = 25
 
 # ── Load aggregates + top-N from SQLite ──────────────────────────────────────
@@ -39,7 +39,7 @@ cur = conn.cursor()
 cur.execute(f"SELECT COUNT(*) FROM {TABLE}")
 num_seeds = cur.fetchone()[0]
 if num_seeds != 1_000_001:
-    raise SystemExit(f"Expected 10,001 rows in {TABLE}, found {num_seeds}")
+    raise SystemExit(f"Expected 1,000,001 rows in {TABLE}, found {num_seeds}")
 
 cur.execute(f"SELECT seed, hit6b_count, hit6_count, hit5_count FROM {TABLE}")
 all_rows = cur.fetchall()
@@ -80,9 +80,8 @@ print(f"Loaded {num_seeds:,} seeds from {TABLE}")
 print(f"Best: seed={best[0]} hit6b={best[1]} hit6={best[2]} hit5={best[3]}")
 print(f"Analytical expectation: hit6b~={exp_hit6b:.2f} hit6~={exp_hit6:.2f} hit5~={exp_hit5:.2f} (of {N_DRAWS} draws)")
 
-# ── Load the exact 1001-2127 draw window from the production DB, for the
-# client-side seed-detail modal (backtest.html's embedded array doesn't go
-# back this far -- confirmed by direct inspection before the scan). ───────
+# ── Load the exact 1000-2127 draw window from the production DB, for the
+# client-side seed-detail modal. ────────────────────────────────────────────
 if 'DATABASE_URL' not in os.environ:
     with open(ENV_LOCAL, encoding='utf-8') as f:
         env_text = f.read()
@@ -133,7 +132,7 @@ page = f"""<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Xoshiro Seed Scan K=33 (0–1,000,000) — Loto 6</title>
+<title>Xoshiro Seed Scan K=38 (0–1,000,000) — Loto 6</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
 .site-nav{{position:fixed;top:0;left:0;right:0;height:52px;background:#0a0f1e;
@@ -280,8 +279,8 @@ tbody td.tr{{text-align:right}}
         <div class="nav-dd-label">Xoshiro256** Seed Scans</div>
         <a href="/xoshiro_seed_backtest.html">🌀 K=21, seeds 0–1,000</a>
         <a href="/xoshiro_seed_scan_100k.html">🔬 K=21, seeds 1–100,000</a>
-        <a href="/xoshiro_seed_scan_k33.html" class="active">🎯 K=33, seeds 0–1,000,000</a>
-        <a href="/xoshiro_seed_scan_k38.html">🔷 K=38, seeds 0–1,000,000</a>
+        <a href="/xoshiro_seed_scan_k33.html">🎯 K=33, seeds 0–1,000,000</a>
+        <a href="/xoshiro_seed_scan_k38.html" class="active">🔷 K=38, seeds 0–1,000,000</a>
         <a href="/xoshiro_seed_scan_k7.html">🔎 K=7, seeds 0–10,000</a>
         <div class="nav-divider"></div>
         <div class="nav-dd-label">Predictions</div>
@@ -304,18 +303,17 @@ tbody td.tr{{text-align:right}}
 </nav>
 
 <div class="wrap">
-  <h1>🎯 Xoshiro Seed Scan — K=33 (0–1,000,000)</h1>
+  <h1>🔷 Xoshiro Seed Scan — K=38 (0–1,000,000)</h1>
   <p class="subtitle">{num_seeds:,} seeds · K={K_PICKS} picks · {N_DRAWS} draws (#{DRAW_START}–{DRAW_END}) · xoshiro256** (SplitMix64-seeded)</p>
 
   <div class="note">
     Same xoshiro256**/SplitMix64 algorithm and combined-seed formula (<code>seed×10,000,000 + draw_serial</code>) as the
-    other seed-scan pages, but with 33 picks out of 43 (not 21) and a wider {N_DRAWS}-draw window (#{DRAW_START}–{DRAW_END},
-    not the {2126-1127+1}-draw window used by the K=21 scans). Three metrics tracked per seed: <b>hit6b</b> = draws where
-    the 33 picks contain all 6 main winning numbers <em>and</em> the bonus number; <b>hit6</b> = draws with all 6 main
-    numbers (any bonus); <b>hit5</b> = draws with exactly 5 of 6 main numbers. Ranking: highest hit6b, tiebreak hit6,
-    tiebreak hit5. This window (#{DRAW_START}–{DRAW_END}) isn't in <code>backtest.html</code>'s embedded data (which only
-    goes back to #1121) — draw records for this page were pulled directly from the production database and verified for
-    exactly {N_DRAWS} consecutive rows with no gaps before scanning.
+    other seed-scan pages, but with 38 picks out of 43 (not 33) and the corrected {N_DRAWS}-draw window (#{DRAW_START}–{DRAW_END}),
+    used fresh for this scan. Three metrics tracked per seed: <b>hit6b</b> = draws where the 38 picks contain all 6 main
+    winning numbers <em>and</em> the bonus number; <b>hit6</b> = draws with all 6 main numbers (any bonus); <b>hit5</b> =
+    draws with exactly 5 of 6 main numbers. Ranking: highest hit6b, tiebreak hit6, tiebreak hit5. Scanned in two stages
+    (0–100,000, then 100,001–1,000,000) — draw records pulled directly from the production database and verified for
+    exactly {N_DRAWS} consecutive rows with no gaps before each stage.
   </div>
 
   <div class="lookup">
@@ -388,8 +386,7 @@ tbody td.tr{{text-align:right}}
     Algorithm verified against independent reference sources before running — see
     <a href="/xoshiro_seed_backtest.html" style="color:#64748b">the 0–1000 seed page</a> for full verification details.<br>
     Data read live from <code>{TABLE}</code> in <code>loto6_local.db</code>. Draw records for #{DRAW_START}–{DRAW_END}
-    sourced directly from the production database (not <code>backtest.html</code>'s embedded array, which doesn't cover
-    this far back), verified for exactly {N_DRAWS} consecutive rows with no gaps before scanning.<br>
+    sourced directly from the production database, verified for exactly {N_DRAWS} consecutive rows with no gaps before scanning.<br>
     Formula-based only · Not financial advice · Loto 6 is random.
   </p>
 
