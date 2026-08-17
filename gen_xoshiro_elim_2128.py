@@ -210,6 +210,7 @@ table.combos tr:hover td{{background:#111827}}
         <div class="nav-divider"></div>
         <div class="nav-dd-label">Predictions</div>
         <a href="/xoshiro_elim_2128.html" class="active">✂️ Draw #{TARGET_SERIAL} Elimination</a>
+        <a href="/xoshiro_elim_2129.html">✂️ Draw #2129 Elimination</a>
       </div></div>
     </div>
     <div class="nav-group">

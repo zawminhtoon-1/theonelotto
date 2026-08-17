@@ -286,6 +286,7 @@ tbody td.tr{{text-align:right}}
         <div class="nav-divider"></div>
         <div class="nav-dd-label">Predictions</div>
         <a href="/xoshiro_elim_2128.html">✂️ Draw #2128 Elimination</a>
+        <a href="/xoshiro_elim_2129.html">✂️ Draw #2129 Elimination</a>
       </div></div>
     </div>
     <div class="nav-group">

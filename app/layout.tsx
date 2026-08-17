@@ -59,6 +59,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { type: "divider" },
       { type: "label", label: "Predictions" },
       { href: "/xoshiro_elim_2128.html", icon: "✂️", label: "Draw #2128 Elimination" },
+      { href: "/xoshiro_elim_2129.html", icon: "✂️", label: "Draw #2129 Elimination" },
     ],
   },
   {
