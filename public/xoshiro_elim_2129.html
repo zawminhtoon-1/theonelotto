@@ -192,7 +192,13 @@ table.combos tr:hover td{background:#111827}
     walk-forward (trained on all 2,128 real draws through #2128) then normalized to exactly 26 numbers via the same
     cross-method-consensus trim/pad algorithm as <a href="/backtest.html" style="color:#a78bfa">backtest.html</a>'s <code>topKNums()</code>.
     Any of Base's remaining combos fully contained within ANY single one of these 16 sets also gets removed.</p>
-    <p>Base &amp; Pass 1 (xoshiro) are recomputed <strong>live in your browser</strong> below &mdash; check the verification badges.
+    <p><strong style="color:#e2e8f0">Pass 3</strong> is seed <strong>#692,809</strong>'s xoshiro256** K=33 pick &mdash;
+    the <em>same seed as Base</em>, just K=33 instead of K=38. Worth knowing: this isn't independent randomness &mdash; partial
+    Fisher-Yates always nests a smaller-K pick inside a larger-K pick from the same seed/draw, so Pass 3's 33-number pool is
+    <strong>guaranteed</strong> to be a full subset of Base's 38-pool (verified: all 33 numbers present). It's literally the
+    "inner core" of Base's own pick that survives even when only 33 numbers are kept. Any combo still remaining after Pass 1 &amp; 2
+    that's fully contained within this subset also gets removed.</p>
+    <p>Base, Pass 1 &amp; Pass 3 (all xoshiro) are recomputed <strong>live in your browser</strong> below &mdash; check the verification badges.
     Pass 2's 16 statistical/ML methods (ARIMA, Random Forest, HMM, LSTM, etc.) are precomputed server-side, same as every other
     draw on this site, and embedded as static data.</p>
   </div>
@@ -221,6 +227,12 @@ table.combos tr:hover td{background:#111827}
   </div>
 
   <div class="section">
+    <h2>Pass 3 — xoshiro256** K=33, seed #692,809 (same seed as Base) <span id="badge3" class="verify-badge pending">verifying…</span></h2>
+    <p class="desc">Same seed as Base, K=33 instead of K=38 — guaranteed subset of Base's pool (partial Fisher-Yates same-seed nesting). Combos it fully covers get removed from what's left after Pass 1 &amp; 2.</p>
+    <div class="balls" id="block3Balls"></div>
+  </div>
+
+  <div class="section">
     <h2>Elimination summary</h2>
     <div class="stats-row">
       <div class="stat-card">
@@ -234,19 +246,19 @@ table.combos tr:hover td{background:#111827}
         <div class="sub">contained in the 33-set</div>
       </div>
       <div class="stat-card">
-        <div class="lbl">After Pass 1</div>
-        <div class="val">2,285,661</div>
-        <div class="sub">remaining after Pass 1</div>
-      </div>
-      <div class="stat-card">
         <div class="lbl">Removed by 16 methods</div>
         <div class="val">393,734</div>
         <div class="sub">contained in ANY method's K=26</div>
       </div>
+      <div class="stat-card">
+        <div class="lbl">Removed by Pass 3</div>
+        <div class="val">681,046</div>
+        <div class="sub">contained in the 33-set (Base's core)</div>
+      </div>
       <div class="stat-card final">
         <div class="lbl">Final remaining</div>
-        <div class="val">1,891,927</div>
-        <div class="sub">68.5% of universe retained</div>
+        <div class="val">1,210,881</div>
+        <div class="sub">43.9% of universe retained</div>
       </div>
     </div>
     <div class="elim-flow">
@@ -254,14 +266,16 @@ table.combos tr:hover td{background:#111827}
       <span class="arrow">&rarr;</span>
       <span class="n">2,285,661</span>
       <span class="arrow">&rarr;</span>
-      <span class="n final">1,891,927</span> remaining
+      <span class="n">1,891,927</span>
+      <span class="arrow">&rarr;</span>
+      <span class="n final">1,210,881</span> remaining
     </div>
   </div>
 
   <div class="section">
     <h2>Browse remaining combinations</h2>
-    <p class="desc">Fetched from a separate JSON asset (not inlined — 1,891,927 rows is too large for the page itself).</p>
-    <div id="loadingMsg">Loading 1,891,927 combinations…</div>
+    <p class="desc">Fetched from a separate JSON asset (not inlined — 1,210,881 rows is too large for the page itself).</p>
+    <div id="loadingMsg">Loading 1,210,881 combinations…</div>
     <div id="comboUI" style="display:none">
       <div class="lookup">
         <button class="btn" onclick="clearFilter()">Clear filter</button>
@@ -343,12 +357,14 @@ function xoshiroPredict(seed, drawSerial, k) {
   return arr.slice(n - k).sort((a, b) => a - b);
 }
 
-// ── Base & Pass1: compute live + verify against server-embedded reference ────
+// ── Base, Pass1 & Pass3: compute live + verify against server-embedded reference ────
 const KNOWN_BLOCK1 = [2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 24, 25, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 38, 39, 40, 41, 42, 43];
 const KNOWN_BLOCK2 = [1, 4, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 21, 22, 23, 25, 26, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 43];
+const KNOWN_BLOCK3 = [2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 18, 20, 21, 22, 24, 25, 27, 28, 30, 31, 32, 33, 34, 35, 36, 38, 40, 42, 43];
 
 const liveBlock1 = xoshiroPredict(692809, 2129, 38);
 const liveBlock2 = xoshiroPredict(118590, 2129, 33);
+const liveBlock3 = xoshiroPredict(692809, 2129, 33);
 
 function arraysEqual(a, b) {
   return a.length === b.length && a.every((v, i) => v === b[i]);
@@ -364,10 +380,13 @@ function renderBalls(elId, nums, cls) {
 
 renderBalls('block1Balls', liveBlock1, 'b1');
 renderBalls('block2Balls', liveBlock2, 'b2');
+renderBalls('block3Balls', liveBlock3, 'b2');
 renderBadge('badge1', arraysEqual(liveBlock1, KNOWN_BLOCK1));
 renderBadge('badge2', arraysEqual(liveBlock2, KNOWN_BLOCK2));
+renderBadge('badge3', arraysEqual(liveBlock3, KNOWN_BLOCK3));
 if (!arraysEqual(liveBlock1, KNOWN_BLOCK1)) console.error('Base mismatch', liveBlock1, KNOWN_BLOCK1);
 if (!arraysEqual(liveBlock2, KNOWN_BLOCK2)) console.error('Pass1 mismatch', liveBlock2, KNOWN_BLOCK2);
+if (!arraysEqual(liveBlock3, KNOWN_BLOCK3)) console.error('Pass3 mismatch', liveBlock3, KNOWN_BLOCK3);
 
 // ── Remaining combos: fetch, paginate, filter, download ─────────────────────
 const POOL33 = liveBlock1;

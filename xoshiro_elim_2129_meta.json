@@ -843,7 +843,7 @@
   "removedByPass1": 475020,
   "afterPass1": 2285661,
   "removedByMethods": 393734,
-  "finalRemaining": 1891927,
+  "finalRemaining": 1210881,
   "pass1Overlap": 29,
   "methodOverlaps": [
     23,
@@ -862,5 +862,47 @@
     23,
     23,
     22
-  ]
+  ],
+  "pass3": {
+    "seed": 692809,
+    "k": 33,
+    "pool": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      18,
+      20,
+      21,
+      22,
+      24,
+      25,
+      27,
+      28,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      38,
+      40,
+      42,
+      43
+    ],
+    "isSubsetOfBase": true
+  },
+  "beforePass3": 1891927,
+  "removedByPass3": 681046
 }

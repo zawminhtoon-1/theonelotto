@@ -32,6 +32,7 @@ with open(META_PATH, encoding='utf-8') as f:
 TARGET_SERIAL = meta['targetSerial']
 base = meta['base']
 pass1 = meta['pass1']
+pass3 = meta['pass3']
 method_names = meta['methodNames']
 method_picks = meta['methodPicks']
 method_k = meta['methodK']
@@ -39,6 +40,8 @@ universe_count = meta['universeCount']
 removed_by_pass1 = meta['removedByPass1']
 after_pass1 = meta['afterPass1']
 removed_by_methods = meta['removedByMethods']
+before_pass3 = meta['beforePass3']
+removed_by_pass3 = meta['removedByPass3']
 final_remaining = meta['finalRemaining']
 final_pct = final_remaining / universe_count * 100
 
@@ -241,7 +244,13 @@ table.combos tr:hover td{{background:#111827}}
     walk-forward (trained on all {TARGET_SERIAL-1:,} real draws through #{TARGET_SERIAL-1}) then normalized to exactly {method_k} numbers via the same
     cross-method-consensus trim/pad algorithm as <a href="/backtest.html" style="color:#a78bfa">backtest.html</a>'s <code>topKNums()</code>.
     Any of Base's remaining combos fully contained within ANY single one of these 16 sets also gets removed.</p>
-    <p>Base &amp; Pass 1 (xoshiro) are recomputed <strong>live in your browser</strong> below &mdash; check the verification badges.
+    <p><strong style="color:#e2e8f0">Pass 3</strong> is seed <strong>#{pass3['seed']:,}</strong>'s xoshiro256** K={pass3['k']} pick &mdash;
+    the <em>same seed as Base</em>, just K={pass3['k']} instead of K={base['k']}. Worth knowing: this isn't independent randomness &mdash; partial
+    Fisher-Yates always nests a smaller-K pick inside a larger-K pick from the same seed/draw, so Pass 3's {pass3['k']}-number pool is
+    <strong>guaranteed</strong> to be a full subset of Base's {base['k']}-pool (verified: all {pass3['k']} numbers present). It's literally the
+    "inner core" of Base's own pick that survives even when only {pass3['k']} numbers are kept. Any combo still remaining after Pass 1 &amp; 2
+    that's fully contained within this subset also gets removed.</p>
+    <p>Base, Pass 1 &amp; Pass 3 (all xoshiro) are recomputed <strong>live in your browser</strong> below &mdash; check the verification badges.
     Pass 2's 16 statistical/ML methods (ARIMA, Random Forest, HMM, LSTM, etc.) are precomputed server-side, same as every other
     draw on this site, and embedded as static data.</p>
   </div>
@@ -270,6 +279,12 @@ table.combos tr:hover td{{background:#111827}}
   </div>
 
   <div class="section">
+    <h2>Pass 3 — xoshiro256** K={pass3['k']}, seed #{pass3['seed']:,} (same seed as Base) <span id="badge3" class="verify-badge pending">verifying…</span></h2>
+    <p class="desc">Same seed as Base, K={pass3['k']} instead of K={base['k']} — guaranteed subset of Base's pool (partial Fisher-Yates same-seed nesting). Combos it fully covers get removed from what's left after Pass 1 &amp; 2.</p>
+    <div class="balls" id="block3Balls"></div>
+  </div>
+
+  <div class="section">
     <h2>Elimination summary</h2>
     <div class="stats-row">
       <div class="stat-card">
@@ -283,14 +298,14 @@ table.combos tr:hover td{{background:#111827}}
         <div class="sub">contained in the {pass1['k']}-set</div>
       </div>
       <div class="stat-card">
-        <div class="lbl">After Pass 1</div>
-        <div class="val">{after_pass1:,}</div>
-        <div class="sub">remaining after Pass 1</div>
-      </div>
-      <div class="stat-card">
         <div class="lbl">Removed by 16 methods</div>
         <div class="val">{removed_by_methods:,}</div>
         <div class="sub">contained in ANY method's K={method_k}</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Removed by Pass 3</div>
+        <div class="val">{removed_by_pass3:,}</div>
+        <div class="sub">contained in the {pass3['k']}-set (Base's core)</div>
       </div>
       <div class="stat-card final">
         <div class="lbl">Final remaining</div>
@@ -302,6 +317,8 @@ table.combos tr:hover td{{background:#111827}}
       <span class="n">{universe_count:,}</span>
       <span class="arrow">&rarr;</span>
       <span class="n">{after_pass1:,}</span>
+      <span class="arrow">&rarr;</span>
+      <span class="n">{before_pass3:,}</span>
       <span class="arrow">&rarr;</span>
       <span class="n final">{final_remaining:,}</span> remaining
     </div>
@@ -392,12 +409,14 @@ function xoshiroPredict(seed, drawSerial, k) {{
   return arr.slice(n - k).sort((a, b) => a - b);
 }}
 
-// ── Base & Pass1: compute live + verify against server-embedded reference ────
+// ── Base, Pass1 & Pass3: compute live + verify against server-embedded reference ────
 const KNOWN_BLOCK1 = {json.dumps(base['pool'])};
 const KNOWN_BLOCK2 = {json.dumps(pass1['pool'])};
+const KNOWN_BLOCK3 = {json.dumps(pass3['pool'])};
 
 const liveBlock1 = xoshiroPredict({base['seed']}, {TARGET_SERIAL}, {base['k']});
 const liveBlock2 = xoshiroPredict({pass1['seed']}, {TARGET_SERIAL}, {pass1['k']});
+const liveBlock3 = xoshiroPredict({pass3['seed']}, {TARGET_SERIAL}, {pass3['k']});
 
 function arraysEqual(a, b) {{
   return a.length === b.length && a.every((v, i) => v === b[i]);
@@ -413,10 +432,13 @@ function renderBalls(elId, nums, cls) {{
 
 renderBalls('block1Balls', liveBlock1, 'b1');
 renderBalls('block2Balls', liveBlock2, 'b2');
+renderBalls('block3Balls', liveBlock3, 'b2');
 renderBadge('badge1', arraysEqual(liveBlock1, KNOWN_BLOCK1));
 renderBadge('badge2', arraysEqual(liveBlock2, KNOWN_BLOCK2));
+renderBadge('badge3', arraysEqual(liveBlock3, KNOWN_BLOCK3));
 if (!arraysEqual(liveBlock1, KNOWN_BLOCK1)) console.error('Base mismatch', liveBlock1, KNOWN_BLOCK1);
 if (!arraysEqual(liveBlock2, KNOWN_BLOCK2)) console.error('Pass1 mismatch', liveBlock2, KNOWN_BLOCK2);
+if (!arraysEqual(liveBlock3, KNOWN_BLOCK3)) console.error('Pass3 mismatch', liveBlock3, KNOWN_BLOCK3);
 
 // ── Remaining combos: fetch, paginate, filter, download ─────────────────────
 const POOL33 = liveBlock1;
