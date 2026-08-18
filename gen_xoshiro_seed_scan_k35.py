@@ -445,7 +445,7 @@ tbody td.tr{{text-align:right}}
           <thead><tr>
             <th>Draw</th><th>Date</th>
             <th>Actual (6) + bonus</th>
-            <th>Picks ({K_PICKS})</th>
+            <th>Picks ({K_PICKS}) · generation order</th>
             <th style="text-align:center">Hits</th>
           </tr></thead>
           <tbody id="modalTbody"></tbody>
@@ -517,12 +517,19 @@ function xoshiroPredict(seed, drawSerial, k) {{
   const s = seedState(combined);
   const arr = Array.from({{length: 43}}, (_, i) => i + 1);
   const n = arr.length;
+  // Returned in generation order (the order the partial Fisher-Yates shuffle
+  // finalizes each position: i = n-1 first, down to i = n-k last) -- NOT
+  // sorted. Callers that only need set-membership (hit counting) are
+  // unaffected since order doesn't matter there; callers that display the
+  // picks (the seed-detail modal) show the raw generation sequence.
+  const order = [];
   for (let i = n - 1; i >= n - k; i--) {{
     const r = xoshiroNext(s);
     const j = Number(r % BigInt(i + 1));
     [arr[i], arr[j]] = [arr[j], arr[i]];
+    order.push(arr[i]);
   }}
-  return arr.slice(n - k).sort((a, b) => a - b);
+  return order;
 }}
 
 function lookupSeed() {{
