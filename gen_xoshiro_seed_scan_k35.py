@@ -1,21 +1,21 @@
 """
-gen_xoshiro_seed_scan_k38.py
+gen_xoshiro_seed_scan_k35.py
 --------------------------------
-Static report page for the K=38 xoshiro256** backtest scan: seeds
-0-1,000,000, draws #1000-2127 (1128 draws, the corrected window),
-ranked by hit6b (6-hit + bonus) desc, tiebreak hit6 desc, tiebreak
-hit5 desc.
+Static report page for the K=35 xoshiro256** backtest scan: seeds
+-1,623,160 to 1,623,160 (3,246,321 seeds -- the first scan on this site
+to include negative seeds), draws #1000-2127 (1128 draws), ranked by
+hit6b (6-hit + bonus) desc, tiebreak hit6 desc, tiebreak hit5 desc.
 
-Reads live from loto6_local.db's seed_hit_xoshiro_k38 table (populated
-by load_xoshiro_seed_scan_k38_to_db.py from the two-stage scan:
-xoshiro_seed_scan_k38_0_100k.py + xoshiro_seed_scan_k38_100k_to_1m.py)
-for aggregates and the top-N table. The 1128-draw window is embedded
-client-side for the seed-detail modal, so per-draw breakdowns work for
-ANY seed typed in, computed live via the same verified xoshiro256**
-JS port used elsewhere on the site.
+Reads live from loto6_local.db's seed_hit_xoshiro_k35 table (populated
+by load_xoshiro_seed_scan_k35_to_db.py from the 4-stage scan:
+xoshiro_seed_scan_k35_stage.py run for stages 1-4) for aggregates and
+the top-N table. The 1128-draw window is embedded client-side for the
+seed-detail modal, so per-draw breakdowns work for ANY seed typed in
+(including negative ones), computed live via the same verified
+xoshiro256** JS port used elsewhere on the site.
 
-Output: public/xoshiro_seed_scan_k38.html
-Run: python gen_xoshiro_seed_scan_k38.py
+Output: public/xoshiro_seed_scan_k35.html
+Run: python gen_xoshiro_seed_scan_k35.py
 """
 import sqlite3, json, re, math, os
 from collections import Counter
@@ -23,13 +23,14 @@ from collections import Counter
 BASE = r"C:\Users\Zaw Min Htoon\source\repos\theonelotto"
 DB_PATH = BASE + r"\loto6_local.db"
 ENV_LOCAL = BASE + r"\.env.local"
-HTML_OUT = BASE + r"\public\xoshiro_seed_scan_k38.html"
-TABLE = "seed_hit_xoshiro_k38"
+HTML_OUT = BASE + r"\public\xoshiro_seed_scan_k35.html"
+TABLE = "seed_hit_xoshiro_k35"
 
-K_PICKS = 38
+K_PICKS = 35
 LOTO6_MAX = 43
 DRAW_START, DRAW_END = 1000, 2127
 N_DRAWS = DRAW_END - DRAW_START + 1  # 1128
+SEED_LO, SEED_HI = -1_623_160, 1_623_160
 TOP_N = 25
 
 # ── Load aggregates + top-N from SQLite ──────────────────────────────────────
@@ -38,8 +39,9 @@ cur = conn.cursor()
 
 cur.execute(f"SELECT COUNT(*) FROM {TABLE}")
 num_seeds = cur.fetchone()[0]
-if num_seeds != 1_000_001:
-    raise SystemExit(f"Expected 1,000,001 rows in {TABLE}, found {num_seeds}")
+expected_seeds = SEED_HI - SEED_LO + 1
+if num_seeds != expected_seeds:
+    raise SystemExit(f"Expected {expected_seeds:,} rows in {TABLE}, found {num_seeds:,}")
 
 cur.execute(f"SELECT seed, hit6b_count, hit6_count, hit5_count FROM {TABLE}")
 all_rows = cur.fetchall()
@@ -77,7 +79,7 @@ exp_hit6 = p_hit6 * N_DRAWS
 exp_hit5 = p_hit5 * N_DRAWS
 
 print(f"Loaded {num_seeds:,} seeds from {TABLE}")
-print(f"Best: seed={best[0]} hit6b={best[1]} hit6={best[2]} hit5={best[3]}")
+print(f"Best: seed={best[0]:,} hit6b={best[1]} hit6={best[2]} hit5={best[3]}")
 print(f"Analytical expectation: hit6b~={exp_hit6b:.2f} hit6~={exp_hit6:.2f} hit5~={exp_hit5:.2f} (of {N_DRAWS} draws)")
 
 # ── Load the exact 1000-2127 draw window from the production DB, for the
@@ -132,7 +134,7 @@ page = f"""<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Xoshiro Seed Scan K=38 (0–1,000,000) — Loto 6</title>
+<title>Xoshiro Seed Scan K=35 (±1,623,160) — Loto 6</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
 .site-nav{{position:fixed;top:0;left:0;right:0;height:52px;background:#0a0f1e;
@@ -280,8 +282,8 @@ tbody td.tr{{text-align:right}}
         <a href="/xoshiro_seed_backtest.html">🌀 K=21, seeds 0–1,000</a>
         <a href="/xoshiro_seed_scan_100k.html">🔬 K=21, seeds 1–100,000</a>
         <a href="/xoshiro_seed_scan_k33.html">🎯 K=33, seeds 0–1,000,000</a>
-        <a href="/xoshiro_seed_scan_k38.html" class="active">🔷 K=38, seeds 0–1,000,000</a>
-        <a href="/xoshiro_seed_scan_k35.html">🟣 K=35, seeds ±1,623,160</a>
+        <a href="/xoshiro_seed_scan_k38.html">🔷 K=38, seeds 0–1,000,000</a>
+        <a href="/xoshiro_seed_scan_k35.html" class="active">🟣 K=35, seeds ±1,623,160</a>
         <a href="/xoshiro_seed_scan_k7.html">🔎 K=7, seeds 0–10,000</a>
         <div class="nav-divider"></div>
         <div class="nav-dd-label">Predictions</div>
@@ -305,24 +307,27 @@ tbody td.tr{{text-align:right}}
 </nav>
 
 <div class="wrap">
-  <h1>🔷 Xoshiro Seed Scan — K=38 (0–1,000,000)</h1>
+  <h1>🟣 Xoshiro Seed Scan — K=35 (seeds -1,623,160 to 1,623,160)</h1>
   <p class="subtitle">{num_seeds:,} seeds · K={K_PICKS} picks · {N_DRAWS} draws (#{DRAW_START}–{DRAW_END}) · xoshiro256** (SplitMix64-seeded)</p>
 
   <div class="note">
     Same xoshiro256**/SplitMix64 algorithm and combined-seed formula (<code>seed×10,000,000 + draw_serial</code>) as the
-    other seed-scan pages, but with 38 picks out of 43 (not 33) and the corrected {N_DRAWS}-draw window (#{DRAW_START}–{DRAW_END}),
-    used fresh for this scan. Three metrics tracked per seed: <b>hit6b</b> = draws where the 38 picks contain all 6 main
-    winning numbers <em>and</em> the bonus number; <b>hit6</b> = draws with all 6 main numbers (any bonus); <b>hit5</b> =
-    draws with exactly 5 of 6 main numbers. Ranking: highest hit6b, tiebreak hit6, tiebreak hit5. Scanned in two stages
-    (0–100,000, then 100,001–1,000,000) — draw records pulled directly from the production database and verified for
-    exactly {N_DRAWS} consecutive rows with no gaps before each stage.
+    other seed-scan pages, but with 35 picks out of 43 and the <b>first negative-seed range tested on this site</b>:
+    seeds {SEED_LO:,} to {SEED_HI:,} ({num_seeds:,} values). Python's bitwise AND on negative integers correctly produces
+    the standard 64-bit two's-complement wraparound needed by the formula — self-checked against the verified modular
+    implementation for several negative seeds (including both range boundaries) before scaling up. Three metrics tracked
+    per seed: <b>hit6b</b> = draws where the 35 picks contain all 6 main winning numbers <em>and</em> the bonus number;
+    <b>hit6</b> = draws with all 6 main numbers (any bonus); <b>hit5</b> = draws with exactly 5 of 6 main numbers.
+    Ranking: highest hit6b, tiebreak hit6, tiebreak hit5. Scanned in 4 stages of ~811,580 seeds each (roughly 7.8 hours
+    total) — draw records pulled directly from the production database and verified for exactly {N_DRAWS} consecutive
+    rows with no gaps before each stage.
   </div>
 
   <div class="lookup">
     <span class="lbl">🔍 Seed detail lookup</span>
-    <input id="seedLookupInput" type="number" min="0" step="1" placeholder="Enter any seed number..." onkeydown="if(event.key==='Enter')lookupSeed()">
+    <input id="seedLookupInput" type="number" step="1" placeholder="Enter any seed (negative OK)..." onkeydown="if(event.key==='Enter')lookupSeed()">
     <button onclick="lookupSeed()">View {N_DRAWS}-draw breakdown</button>
-    <span class="hint">e.g. try {best[0]:,} (the top-ranked seed) — or any seed, not just ones in the table below. Computed live in your browser.</span>
+    <span class="hint">e.g. try {best[0]:,} (the top-ranked seed) — or any seed, positive or negative. Computed live in your browser.</span>
     <span id="lookupErr" class="err" style="display:none"></span>
   </div>
 
@@ -350,7 +355,7 @@ tbody td.tr{{text-align:right}}
     <div class="stat-card">
       <div class="lbl">Seeds tested</div>
       <div class="val">{num_seeds:,}</div>
-      <div class="sub">seeds 0–1,000,000</div>
+      <div class="sub">{SEED_LO:,} to {SEED_HI:,}</div>
     </div>
   </div>
 
@@ -386,7 +391,9 @@ tbody td.tr{{text-align:right}}
   <p class="footer">
     Xoshiro256** (seeded via SplitMix64): picks = partial Fisher-Yates(range(1,44), {K_PICKS}) with combined seed = seed×10⁷ + draw_serial.
     Algorithm verified against independent reference sources before running — see
-    <a href="/xoshiro_seed_backtest.html" style="color:#64748b">the 0–1000 seed page</a> for full verification details.<br>
+    <a href="/xoshiro_seed_backtest.html" style="color:#64748b">the 0–1000 seed page</a> for full verification details, plus a
+    dedicated negative-seed self-check for this scan (Python's <code>&amp;</code> on negative ints correctly wraps to 64-bit
+    two's complement, matching the modular reference bit-exact).<br>
     Data read live from <code>{TABLE}</code> in <code>loto6_local.db</code>. Draw records for #{DRAW_START}–{DRAW_END}
     sourced directly from the production database, verified for exactly {N_DRAWS} consecutive rows with no gaps before scanning.<br>
     Formula-based only · Not financial advice · Loto 6 is random.
@@ -434,9 +441,9 @@ mkChart('hit6Chart', {hit6_labels_json}, {hit6_values_json}, '#22c55e');
 mkChart('hit5Chart', {hit5_labels_json}, {hit5_values_json}, '#f59e0b');
 </script>
 <script>
-// ── Seed-detail modal: picks computed LIVE for any seed via the same
-// verified xoshiro256** implementation (bit-exact BigInt port) used
-// elsewhere on the site -- not limited to seeds in the top-{TOP_N} table.
+// ── Seed-detail modal: picks computed LIVE for any seed (including negative)
+// via the same verified xoshiro256** implementation (bit-exact BigInt port)
+// used elsewhere on the site -- not limited to seeds in the top-{TOP_N} table.
 const DRAWS = {js_draws};
 
 const MASK64 = (1n << 64n) - 1n;
@@ -453,6 +460,7 @@ function splitmix64Next(z) {{
   return [z, zz];
 }}
 function seedState(seed) {{
+  // BigInt & MASK64 correctly wraps negative BigInts to 64-bit two's complement, same as Python
   let z = BigInt(seed) & MASK64;
   const state = [];
   for (let i = 0; i < 4; i++) {{
@@ -488,8 +496,8 @@ function lookupSeed() {{
   const errEl = document.getElementById('lookupErr');
   const raw = input.value.trim();
   errEl.style.display = 'none';
-  if (raw === '' || !/^\\d+$/.test(raw)) {{
-    errEl.textContent = 'Enter a non-negative whole number.';
+  if (raw === '' || !/^-?\\d+$/.test(raw)) {{
+    errEl.textContent = 'Enter a whole number (negative or positive).';
     errEl.style.display = 'inline';
     return;
   }}
