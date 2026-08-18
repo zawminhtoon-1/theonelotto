@@ -231,6 +231,22 @@ tbody td.tr{{text-align:right}}
 .nb-b{{background:#451a03;color:#fde68a;border:1px solid #92400e}}
 .nb-bh{{background:#7c2d12;color:#fed7aa}}
 
+.nbhd-section{{padding:14px 18px;border-bottom:1px solid #1e293b;flex-shrink:0;background:#0d1526}}
+.nbhd-hdr{{display:flex;align-items:center;gap:12px;flex-wrap:wrap}}
+.nbhd-hdr h3{{font-size:.85rem;font-weight:700;color:#f1f5f9;margin:0}}
+.nbhd-hdr .hint{{font-size:.74rem;color:#64748b}}
+#nbhdBtn{{background:#7c3aed;border:none;color:#fff;padding:6px 14px;border-radius:7px;
+  cursor:pointer;font-size:.78rem;font-weight:600}}
+#nbhdBtn:hover{{background:#6d28d9}}
+#nbhdBtn:disabled{{background:#4c1d95;cursor:default;opacity:.7}}
+.nbhd-progress{{font-size:.78rem;color:#a78bfa}}
+.nbhd-stats-row{{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}}
+.nbhd-stat{{background:#0a0f1e;border:1px solid #1e293b;border-radius:8px;padding:8px 12px;flex:1;min-width:120px}}
+.nbhd-stat .lbl{{font-size:.66rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px}}
+.nbhd-stat .val{{font-size:1.05rem;font-weight:700;color:#f1f5f9}}
+.nbhd-chart-wrap{{height:170px;position:relative;margin-top:12px}}
+.nbhd-note{{font-size:.78rem;color:#94a3b8;margin-top:10px;line-height:1.5}}
+
 .footer{{margin-top:28px;font-size:.78rem;color:#475569;padding-bottom:20px;line-height:1.6}}
 </style>
 </head>
@@ -406,6 +422,24 @@ tbody td.tr{{text-align:right}}
         <div class="modal-stats" id="modalStats"></div>
         <button class="modal-close" onclick="document.getElementById('seedModal').style.display='none'">✕ Close</button>
       </div>
+      <div class="nbhd-section">
+        <div class="nbhd-hdr">
+          <h3>🔬 Local Neighborhood (±100 seeds)</h3>
+          <button id="nbhdBtn" onclick="computeNeighborhood()">Compute ±100 seeds around this one</button>
+          <span id="nbhdProgress" class="nbhd-progress" style="display:none"></span>
+          <span class="hint">Recomputed live in your browser for the seed currently open — not precomputed or stored.</span>
+        </div>
+        <div id="nbhdResults" style="display:none">
+          <div class="nbhd-stats-row">
+            <div class="nbhd-stat"><div class="lbl">Local rank (hit6b)</div><div class="val" id="nbhdRank">-</div></div>
+            <div class="nbhd-stat"><div class="lbl">hit6b range</div><div class="val" id="nbhdRange">-</div></div>
+            <div class="nbhd-stat"><div class="lbl">hit6b mean / median</div><div class="val" id="nbhdMeanMed">-</div></div>
+            <div class="nbhd-stat"><div class="lbl">hit6b stdev</div><div class="val" id="nbhdStdev">-</div></div>
+          </div>
+          <div class="nbhd-chart-wrap"><canvas id="nbhdChart"></canvas></div>
+          <p id="nbhdNote" class="nbhd-note"></p>
+        </div>
+      </div>
       <div class="modal-body">
         <table class="modal-table">
           <thead><tr>
@@ -505,6 +539,8 @@ function lookupSeed() {{
 }}
 
 function openSeedDetail(seed) {{
+  window.__currentModalSeed = seed;
+  resetNeighborhood();
   const K = {K_PICKS};
   let hit6b = 0, hit6 = 0, hit5 = 0;
   const htmlParts = [];
@@ -540,6 +576,139 @@ function openSeedDetail(seed) {{
     'hit6b: <b>' + hit6b + '</b> &nbsp;·&nbsp; hit6: <b>' + hit6 + '</b> &nbsp;·&nbsp; hit5: <b>' + hit5 + '</b>';
   document.getElementById('modalTbody').innerHTML = htmlParts.join('');
   document.getElementById('seedModal').style.display = 'flex';
+}}
+
+// ── Local neighborhood (±100 seeds): computed live in the browser, on
+// demand, for whichever seed the modal currently has open. Not stored or
+// precomputed for every seed -- just the same live BigInt xoshiro256** run
+// used for the per-draw breakdown above, repeated for 201 nearby seeds.
+let nbhdChart = null;
+const NBHD_RADIUS = 100;
+const NBHD_CHUNK = 10;
+
+function resetNeighborhood() {{
+  const resultsEl = document.getElementById('nbhdResults');
+  const progress = document.getElementById('nbhdProgress');
+  const btn = document.getElementById('nbhdBtn');
+  resultsEl.style.display = 'none';
+  progress.style.display = 'none';
+  btn.disabled = false;
+  btn.textContent = 'Compute ±100 seeds around this one';
+  if (nbhdChart) {{ nbhdChart.destroy(); nbhdChart = null; }}
+}}
+
+function computeNeighborhood() {{
+  const seed = window.__currentModalSeed;
+  if (seed === undefined || seed === null) return;
+  const K = {K_PICKS};
+  const btn = document.getElementById('nbhdBtn');
+  const progress = document.getElementById('nbhdProgress');
+  const resultsEl = document.getElementById('nbhdResults');
+  btn.disabled = true;
+  progress.style.display = 'inline';
+  resultsEl.style.display = 'none';
+
+  const seeds = [];
+  for (let s = seed - NBHD_RADIUS; s <= seed + NBHD_RADIUS; s++) seeds.push(s);
+  const results = [];
+  let idx = 0;
+
+  function step() {{
+    const end = Math.min(idx + NBHD_CHUNK, seeds.length);
+    for (; idx < end; idx++) {{
+      const s = seeds[idx];
+      let hit6b = 0, hit6 = 0, hit5 = 0;
+      for (const row of DRAWS) {{
+        const picks = xoshiroPredict(s, row.s, K);
+        const actualSet = new Set(row.a);
+        const picksSet = new Set(picks);
+        const hits = picks.filter(p => actualSet.has(p)).length;
+        if (hits === 6) {{ hit6++; if (picksSet.has(row.b)) hit6b++; }}
+        else if (hits === 5) {{ hit5++; }}
+      }}
+      results.push({{ seed: s, hit6b, hit6, hit5 }});
+    }}
+    progress.textContent = 'Computing... ' + idx + '/' + seeds.length;
+    if (idx < seeds.length) {{
+      setTimeout(step, 0);
+    }} else {{
+      finishNeighborhood(seed, results);
+    }}
+  }}
+  setTimeout(step, 0);
+}}
+
+function finishNeighborhood(seed, results) {{
+  const btn = document.getElementById('nbhdBtn');
+  const progress = document.getElementById('nbhdProgress');
+  const resultsEl = document.getElementById('nbhdResults');
+  btn.disabled = false;
+  btn.textContent = 'Recompute';
+  progress.style.display = 'none';
+
+  const n = results.length;
+  const h6b = results.map(r => r.hit6b);
+  const sorted = [...h6b].sort((a, b) => a - b);
+  const min = sorted[0], max = sorted[n - 1];
+  const mean = h6b.reduce((a, b) => a + b, 0) / n;
+  const median = n % 2 === 1 ? sorted[(n - 1) / 2] : (sorted[n / 2 - 1] + sorted[n / 2]) / 2;
+  const variance = h6b.reduce((a, b) => a + (b - mean) * (b - mean), 0) / (n - 1);
+  const stdev = Math.sqrt(variance);
+
+  const ranked = [...results].sort((a, b) =>
+    b.hit6b - a.hit6b || b.hit6 - a.hit6 || b.hit5 - a.hit5 || a.seed - b.seed);
+  const rankIdx = ranked.findIndex(r => r.seed === seed) + 1;
+  const target = results.find(r => r.seed === seed);
+  const sigma = stdev > 0 ? (target.hit6b - mean) / stdev : 0;
+
+  document.getElementById('nbhdRank').textContent = '#' + rankIdx + ' of ' + n;
+  document.getElementById('nbhdRange').textContent = min + ' – ' + max;
+  document.getElementById('nbhdMeanMed').textContent = mean.toFixed(1) + ' / ' + median;
+  document.getElementById('nbhdStdev').textContent = stdev.toFixed(2);
+
+  let note = 'Seed #' + seed.toLocaleString() + ' ranks #' + rankIdx + ' of ' + n +
+    ' in its own ±' + NBHD_RADIUS + ' neighborhood (hit6b=' + target.hit6b + ', ' +
+    (sigma >= 0 ? '+' : '') + sigma.toFixed(1) + 'σ vs the local mean).';
+  if (rankIdx === 1 && n > 1) {{
+    const second = ranked[1];
+    const gap = target.hit6b - second.hit6b;
+    note += ' It leads the 2nd-best local seed (#' + second.seed.toLocaleString() + ', hit6b=' + second.hit6b + ') by ' + gap +
+      (gap > stdev * 2
+        ? ' — an isolated spike, not surrounded by similarly strong neighbors.'
+        : ' — part of a cluster of comparably strong neighboring seeds.');
+  }}
+  document.getElementById('nbhdNote').textContent = note;
+
+  // Reveal the container BEFORE constructing the Chart -- Chart.js measures
+  // its parent at creation time, so building it while display:none is still
+  // in effect would freeze the canvas at 0x0.
+  resultsEl.style.display = 'block';
+
+  const labels = results.map(r => (r.seed - seed > 0 ? '+' : '') + (r.seed - seed));
+  const values = results.map(r => r.hit6b);
+  const colors = results.map(r => r.seed === seed ? '#fbbf24' : '#a78bfa77');
+  const borders = results.map(r => r.seed === seed ? '#fbbf24' : '#a78bfa');
+  if (nbhdChart) nbhdChart.destroy();
+  nbhdChart = new Chart(document.getElementById('nbhdChart').getContext('2d'), {{
+    type: 'bar',
+    data: {{ labels: labels, datasets: [{{ label: 'hit6b', data: values, backgroundColor: colors, borderColor: borders, borderWidth: 1 }}] }},
+    options: {{
+      responsive: true, maintainAspectRatio: false,
+      plugins: {{
+        legend: {{ display: false }},
+        tooltip: {{
+          callbacks: {{
+            title: function(items) {{ return 'seed offset ' + items[0].label; }},
+            label: function(ctx) {{ return 'hit6b: ' + ctx.parsed.y; }}
+          }}
+        }}
+      }},
+      scales: {{
+        y: {{ beginAtZero: false, ticks: {{ color: '#64748b' }}, grid: {{ color: '#1e293b' }} }},
+        x: {{ ticks: {{ color: '#64748b', maxTicksLimit: 12 }}, grid: {{ display: false }} }}
+      }}
+    }}
+  }});
 }}
 
 document.getElementById('seedModal').addEventListener('click', function(e) {{
