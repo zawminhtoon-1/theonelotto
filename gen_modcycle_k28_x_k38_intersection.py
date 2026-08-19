@@ -33,6 +33,7 @@ from math import comb
 
 BASE = r"C:\Users\Zaw Min Htoon\source\repos\theonelotto"
 DATA_JSON = BASE + r"\modcycle_k28_x_k38_intersection_data.json"
+NEXT_DRAW_JSON = BASE + r"\modcycle_next_draw_x_k38_data.json"
 HTML_OUT = BASE + r"\public\xoshiro_k38_x_modularcycle_k28_intersection.html"
 
 FULL_UNIVERSE = comb(43, 6)
@@ -43,6 +44,14 @@ with open(DATA_JSON, encoding='utf-8') as f:
 meta = payload['meta']
 summary = payload['summary']
 rows_data = payload['rows']
+
+with open(NEXT_DRAW_JSON, encoding='utf-8') as f:
+    next_draw_payload = json.load(f)
+next_draw_serial = next_draw_payload['targetSerial']
+next_draw_block = next_draw_payload['k28']
+next_mc_pool = next_draw_block['mcPool']
+next_inter = next_draw_block['inter']
+next_combo_count = next_draw_block['comboCount']
 
 K_MC = meta['K_MC']
 K_XO = meta['K_XO']
@@ -125,6 +134,7 @@ def render_table_rows(rows):
     return html
 
 table_rows_html = render_table_rows(rows_data)
+next_inter_html = num_badges(next_inter)
 
 page = f"""<!DOCTYPE html>
 <html lang="en">
@@ -259,11 +269,16 @@ tbody td.inter-cell{{max-width:520px;white-space:normal}}
     </div>
   </div>
 
-  <div class="note">
-    <p>No next-upcoming-draw reference pool is shown on this page (unlike the K=38/K=35 5-seed pages): Modular
-    Cycle's picks come from <code>backtest.html</code>'s precomputed prediction data, which only covers historical
-    draws with known outcomes attached &mdash; there's no live client-side implementation of its training/prediction
-    logic to compute a pick for a not-yet-drawn serial the way the pure-formula xoshiro seeds can.</p>
+  <div class="section">
+    <h2>Next upcoming draw (#{next_draw_serial}) &mdash; reference only, not part of the backtest</h2>
+    <p class="desc">Modular Cycle's pick is computed the same walk-forward way as the #2128/#2129 elimination
+    pages: trained on all real draws through #{next_draw_serial - 1}, native K=28 pick normalized to K={K_MC} via
+    the same cross-method-consensus <code>topKNums()</code> logic used throughout this page (drawing on all 16
+    methods' native picks for #{next_draw_serial}, computed fresh). Intersected with xoshiro seed #{XO_SEED:,}'s
+    K={K_XO} pick for #{next_draw_serial}.</p>
+    <p class="desc">{len(next_inter)}-number intersection pool &middot; C({len(next_inter)},6) = {next_combo_count:,} combos
+    ({next_combo_count/FULL_UNIVERSE*100:.2f}% of universe).</p>
+    <div class="inter-cell">{next_inter_html}</div>
   </div>
 
   <div class="section">
