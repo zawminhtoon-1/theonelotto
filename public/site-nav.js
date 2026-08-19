@@ -80,7 +80,8 @@
             '<a href="/xoshiro_elim_2129.html">✂️ Draw #2129 Elimination</a>' +
             '<a href="/xoshiro_k38_5seed_intersection.html">✂️ K=38 5-Seed Intersection Backtest</a>' +
             '<a href="/xoshiro_k35_5seed_intersection.html">✂️ K=35 5-Seed Intersection Backtest</a>' +
-            '<a href="/xoshiro_k38_x_modularcycle_k28_intersection.html">✂️ Modular Cycle × K=38 Intersection</a>' +
+            '<a href="/xoshiro_k38_x_modularcycle_k28_intersection.html">✂️ Modular Cycle (K=28) × K=38</a>' +
+            '<a href="/xoshiro_k38_x_modularcycle_k33_intersection.html">✂️ Modular Cycle (K=33) × K=38</a>' +
           '</div></div>' +
         '</div>' +
         '<div class="nav-group">' +
