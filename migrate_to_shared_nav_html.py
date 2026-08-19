@@ -1,37 +1,34 @@
 """
-migrate_to_shared_nav.py
+migrate_to_shared_nav_html.py
 --------------------------------
-One-time migration: replaces each generator script's baked nav CSS block,
-<nav class="site-nav">...</nav> HTML block, and active-link-marking IIFE
-with a single include of the new shared /site-nav.js module (see that file
-for the single source of truth for nav content going forward).
+Same migration as migrate_to_shared_nav.py, but for pages that are
+maintained by "append/patch" scripts operating directly on already-built
+HTML (e.g. append_backtest.py only ever touches backtest.html's embedded
+DATA/METHODS JS arrays, never its nav) rather than a from-scratch Python
+f-string template. For these there is no generator to edit -- the nav
+migration has to happen on the static HTML file itself, once, and it will
+stick because nothing else in the pipeline touches that part of the file.
 
-For each target script, does three surgical, repeat-until-none-left
-replacements (some scripts emit more than one page per run -- e.g. hub +
-per-N pages -- and bake a full nav copy into each):
-  1. Removes every nav-specific CSS block (from ".site-nav{{position:fixed"
-     through the ".nav-divider{{...}}" rule, inclusive).
-  2. Replaces every "<nav class=\"site-nav\">...</nav>" block with
-     "<script src=\"/site-nav.js\"></script>".
-  3. Removes every "<script>(function(){{ ... .nav-dropdown a ... }})();</script>"
-     active-link-marking IIFE (site-nav.js now does this itself). Not every
-     page had one to begin with -- that's fine, zero-found is not a failure.
+Same three replacements as the .py-script version, but without f-string
+brace escaping ({{ -> {, }} -> }).
 
-Reports a per-file count of how many of each block were removed, so a
-script whose markup doesn't match the expected pattern at all (0 CSS
-blocks found) is visibly flagged rather than silently left untouched.
+Also handles a discovered duplication bug on some of these pages: some had
+the active-link-marking IIFE accidentally re-appended on every past patch
+run instead of being idempotent, leaving dozens of identical copies in a
+single file. The repeat-until-none-left removal loop cleans all of them up
+in one pass, not just the first.
 
-Run: python migrate_to_shared_nav.py file1.py file2.py ...
+Run: python migrate_to_shared_nav_html.py file1.html file2.html ...
 """
 import sys
 
-CSS_START = ".site-nav{{position:fixed"
-CSS_END_MARKER = ".nav-divider{{height:1px;background:#1e293b;margin:4px 0}}"
+CSS_START = ".site-nav{position:fixed"
+CSS_END_MARKER = ".nav-divider{height:1px;background:#1e293b;margin:4px 0}"
 
 NAV_HTML_START = "<nav class=\"site-nav\">"
 NAV_HTML_END = "</nav>"
 
-IIFE_MARKER = "document.querySelectorAll('.nav-dropdown a').forEach(function(a){{"
+IIFE_MARKER = "document.querySelectorAll('.nav-dropdown a').forEach(function(a){"
 
 def remove_all_css_blocks(text):
     count = 0
@@ -85,7 +82,8 @@ def remove_all_iifes(text):
 def collapse_blank_run(text, max_blank=1):
     """Collapse runs of 3+ blank lines down to max_blank blank lines. Purely
     cosmetic cleanup for the whitespace left behind when many duplicated
-    blocks get removed back-to-back."""
+    blocks get removed back-to-back (harmless to rendering either way, but
+    ugly and worth tidying while the file is already being touched)."""
     lines = text.split('\n')
     out = []
     blank_run = 0
@@ -108,6 +106,8 @@ def migrate_file(path):
     text, nav_count = replace_all_nav_html(text)
     text, iife_count = remove_all_iifes(text)
     if iife_count > 1:
+        # Only bother collapsing blank runs when we actually removed
+        # duplicate blocks -- normal single-IIFE files don't need it.
         text = collapse_blank_run(text)
 
     changed = text != orig
@@ -121,21 +121,17 @@ def migrate_file(path):
 if __name__ == '__main__':
     files = sys.argv[1:]
     if not files:
-        print("Usage: python migrate_to_shared_nav.py file1.py file2.py ...")
+        print("Usage: python migrate_to_shared_nav_html.py file1.html file2.html ...")
         sys.exit(1)
-    any_untouched = False
+    any_bad = False
     for path in files:
         r = migrate_file(path)
-        # A file is "OK" if at least one nav CSS+HTML block was found and
-        # replaced, and the two counts agree (every nav block had matching
-        # CSS). IIFE count can legitimately be 0 (some pages never had one)
-        # or should match nav_count (one IIFE per page that had one).
         ok = r["css_count"] > 0 and r["css_count"] == r["nav_count"]
         if not ok:
-            any_untouched = True
+            any_bad = True
         status = "OK" if ok else "NO MATCH -- inspect manually"
         print(f"[{status}] {path}: css_blocks={r['css_count']} nav_blocks={r['nav_count']} iife_blocks_removed={r['iife_count']}")
-    if any_untouched:
-        print("\nAt least one file did not match the expected pattern (0 blocks found, or CSS/nav count mismatch) -- inspect manually before regenerating.")
+    if any_bad:
+        print("\nAt least one file did not match the expected pattern -- inspect manually.")
         sys.exit(1)
     print("\nAll files migrated cleanly.")
