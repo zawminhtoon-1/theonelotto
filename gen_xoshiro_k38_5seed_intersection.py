@@ -1,0 +1,342 @@
+"""
+gen_xoshiro_k38_5seed_intersection.py
+--------------------------------------
+Static report page for the 5-seed K=38 xoshiro256** intersection backtest:
+seeds 692,809 / 394,299 / 129,218 / 806,181 / 409,150 (the top 5 seeds from
+seed_hit_xoshiro_k38, ranked by hit6b desc, tiebreak hit6 desc, tiebreak
+hit5 desc), against the last 100 actual draws (#2030-2129).
+
+For each draw, all 5 seeds' K=38 picks are recomputed using THAT draw's own
+draw_serial (xoshiro formula = seed*10_000_000 + draw_serial, so each draw
+gets its own version of each seed's pool), intersected, and checked whether
+the actual 6-number winner fell fully inside the intersection pool.
+
+Explicit look-ahead-bias caveat included in the page itself: the K=38 scan
+window is #1000-2129 (after the incremental extension), which fully
+contains the #2030-2129 backtest range -- these 5 seeds were selected
+because they scored best across a window that includes every draw being
+"backtested" here, so this is NOT a held-out/out-of-sample test.
+
+Output: public/xoshiro_k38_5seed_intersection.html
+Run: python gen_xoshiro_k38_5seed_intersection.py
+"""
+import re, os, math, json, statistics
+from math import comb
+
+BASE = r"C:\Users\Zaw Min Htoon\source\repos\theonelotto"
+ENV_LOCAL = BASE + r"\.env.local"
+HTML_OUT = BASE + r"\public\xoshiro_k38_5seed_intersection.html"
+
+LOTO6_MAX = 43
+K_PICKS = 38
+MASK64 = 0xFFFFFFFFFFFFFFFF
+FULL_UNIVERSE = comb(43, 6)
+SEEDS = [692809, 394299, 129218, 806181, 409150]
+N_BACKTEST_DRAWS = 100
+
+def xoshiro_predict(seed, draw_serial, k=K_PICKS, pool_max=LOTO6_MAX):
+    combined = (seed * 10_000_000 + draw_serial) & MASK64
+    z = combined & MASK64
+    s = [0, 0, 0, 0]
+    for i in range(4):
+        z = (z + 0x9E3779B97F4A7C15) & MASK64
+        zz = z
+        zz = ((zz ^ (zz >> 30)) * 0xBF58476D1CE4E5B9) & MASK64
+        zz = ((zz ^ (zz >> 27)) * 0x94D049BB133111EB) & MASK64
+        zz = zz ^ (zz >> 31)
+        s[i] = zz
+    def rotl(x, kk):
+        x &= MASK64
+        return ((x << kk) | (x >> (64 - kk))) & MASK64
+    arr = list(range(1, pool_max + 1))
+    n = len(arr)
+    for i in range(n - 1, n - 1 - k, -1):
+        result = (rotl((s[1] * 5) & MASK64, 7) * 9) & MASK64
+        t = (s[1] << 17) & MASK64
+        s[2] ^= s[0]; s[3] ^= s[1]; s[1] ^= s[2]; s[0] ^= s[3]
+        s[2] ^= t
+        s[3] = rotl(s[3], 45)
+        j = result % (i + 1)
+        arr[i], arr[j] = arr[j], arr[i]
+    return set(arr[n - k:])
+
+# ── Confirm the 5 seeds are actually the current top-5 (self-check) ─────────
+import sqlite3
+DB_PATH = BASE + r"\loto6_local.db"
+conn = sqlite3.connect(DB_PATH)
+cur = conn.cursor()
+cur.execute("""SELECT seed, hit6b_count, hit6_count, hit5_count FROM seed_hit_xoshiro_k38
+                ORDER BY hit6b_count DESC, hit6_count DESC, hit5_count DESC, seed ASC LIMIT 5""")
+top5_rows = cur.fetchall()
+conn.close()
+top5_seeds = [r[0] for r in top5_rows]
+if top5_seeds != SEEDS:
+    raise SystemExit(f"Top-5 seeds in DB {top5_seeds} do not match hardcoded SEEDS {SEEDS} -- rankings changed, update SEEDS.")
+seed_stats = {r[0]: {'hit6b': r[1], 'hit6': r[2], 'hit5': r[3]} for r in top5_rows}
+print(f"Confirmed top-5 K=38 seeds match: {SEEDS}")
+
+# ── Load draws from production DB ────────────────────────────────────────────
+if 'DATABASE_URL' not in os.environ:
+    with open(ENV_LOCAL, encoding='utf-8') as f:
+        env_text = f.read()
+    m = re.search(r'DATABASE_URL=(.+)', env_text)
+    os.environ['DATABASE_URL'] = m.group(1).strip()
+import psycopg2
+pg = psycopg2.connect(os.environ['DATABASE_URL'])
+pgcur = pg.cursor()
+pgcur.execute("SELECT MAX(draw_serial) FROM loto6_results")
+max_serial = pgcur.fetchone()[0]
+draw_lo, draw_hi = max_serial - N_BACKTEST_DRAWS + 1, max_serial
+pgcur.execute(
+    "SELECT draw_serial, draw_date, num1,num2,num3,num4,num5,num6, bonus "
+    "FROM loto6_results WHERE draw_serial BETWEEN %s AND %s ORDER BY draw_serial",
+    (draw_lo, draw_hi),
+)
+pg_rows = pgcur.fetchall()
+pg.close()
+if len(pg_rows) != N_BACKTEST_DRAWS:
+    raise SystemExit(f"Expected {N_BACKTEST_DRAWS} draws, got {len(pg_rows)}")
+print(f"Loaded {len(pg_rows)} draws (#{draw_lo}-{draw_hi}) for the backtest.")
+
+# ── Also compute the next-upcoming-draw intersection (fixed reference, not
+# part of the backtest loop) for the page header. ───────────────────────────
+next_draw = max_serial + 1
+next_picks = {s: xoshiro_predict(s, next_draw) for s in SEEDS}
+next_intersection = sorted(set.intersection(*next_picks.values()))
+next_combo_count = comb(len(next_intersection), 6) if len(next_intersection) >= 6 else 0
+
+# ── Backtest ──────────────────────────────────────────────────────────────
+rows_out = []
+pool_sizes = []
+hits = 0
+for r in pg_rows:
+    serial, date, n1, n2, n3, n4, n5, n6, bonus = r
+    actual = sorted([n1, n2, n3, n4, n5, n6])
+    actual_set = set(actual)
+    picks_per_seed = [xoshiro_predict(s, serial) for s in SEEDS]
+    inter = sorted(set.intersection(*picks_per_seed))
+    is_hit = actual_set.issubset(set(inter))
+    if is_hit:
+        hits += 1
+    pool_sizes.append(len(inter))
+    rows_out.append({
+        's': serial, 'd': date.isoformat(), 'actual': actual, 'bonus': bonus,
+        'hit': is_hit, 'poolSize': len(inter), 'inter': inter,
+    })
+
+avg_pool_shared = statistics.mean(pool_sizes)
+median_pool_shared = statistics.median(pool_sizes)
+min_pool_shared = min(pool_sizes)
+max_pool_shared = max(pool_sizes)
+avg_pool_combo = statistics.mean(comb(p, 6) if p >= 6 else 0 for p in pool_sizes)
+avg_pool_pct = avg_pool_combo / FULL_UNIVERSE * 100
+observed_rate = hits / N_BACKTEST_DRAWS
+expected_rate = avg_pool_pct / 100
+ratio = observed_rate / expected_rate if expected_rate > 0 else float('nan')
+
+# rough Poisson tail P(X >= hits | lambda = expected count)
+lam = expected_rate * N_BACKTEST_DRAWS
+def poisson_pmf(k, lam):
+    return math.exp(-lam) * lam**k / math.factorial(k)
+p_le = sum(poisson_pmf(k, lam) for k in range(hits))
+p_ge_hits = 1 - p_le
+
+print(f"\nHits: {hits}/{N_BACKTEST_DRAWS} ({observed_rate*100:.1f}%)")
+print(f"Avg pool size: {avg_pool_shared:.2f} shared numbers, avg combo {avg_pool_combo:,.0f} ({avg_pool_pct:.3f}% of universe)")
+print(f"Observed/expected ratio: {ratio:.2f}x  (Poisson P(X>={hits}|lambda={lam:.2f}) = {p_ge_hits*100:.2f}%)")
+
+# ── Render ────────────────────────────────────────────────────────────────
+def num_badges(nums, hit_nums=None, bonus=None):
+    hit_nums = hit_nums or set()
+    html = ""
+    for n in nums:
+        cls = "nb"
+        if n in hit_nums:
+            cls += " nm"
+        if bonus is not None and n == bonus:
+            cls += " nb-bh"
+        html += f'<span class="{cls}">{n}</span>'
+    return html
+
+def render_table_rows(rows):
+    html = ""
+    for row in reversed(rows):  # newest first
+        hit_badge = '<span class="hit-yes">✔ HIT</span>' if row['hit'] else '<span class="hit-no">—</span>'
+        row_cls = 'hit-row' if row['hit'] else ''
+        actual_html = num_badges(row['actual'], hit_nums=set(row['actual'])) + f'<span class="nb nb-b">{row["bonus"]}</span>'
+        inter_html = num_badges(row['inter'], hit_nums=set(row['actual']) if row['hit'] else set())
+        html += f"""<tr class="{row_cls}">
+  <td class="tc">{row['s']}</td>
+  <td class="tc">{row['d']}</td>
+  <td class="nowrap">{actual_html}</td>
+  <td class="tc">{hit_badge}</td>
+  <td class="tc">{row['poolSize']}</td>
+  <td class="inter-cell">{inter_html}</td>
+</tr>"""
+    return html
+
+table_rows_html = render_table_rows(rows_out)
+seed_rows_html = "".join(
+    f'<tr><td class="tc">{rank}</td><td class="tc">{s:,}</td>'
+    f'<td class="tr">{seed_stats[s]["hit6b"]}</td><td class="tr">{seed_stats[s]["hit6"]}</td>'
+    f'<td class="tr">{seed_stats[s]["hit5"]}</td></tr>'
+    for rank, s in enumerate(SEEDS, 1)
+)
+next_inter_html = num_badges(next_intersection)
+
+hit_serials = [row['s'] for row in rows_out if row['hit']]
+
+page = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>K=38 5-Seed Intersection Backtest — Loto 6</title>
+<style>
+*{{box-sizing:border-box;margin:0;padding:0}}
+body{{background:#0a0f1e;color:#e2e8f0;font-family:system-ui,sans-serif;padding-top:60px;min-height:100vh}}
+.wrap{{max-width:1300px;margin:0 auto;padding:24px 16px}}
+h1{{font-size:1.4rem;font-weight:700;color:#f1f5f9;margin-bottom:4px}}
+.subtitle{{font-size:.85rem;color:#64748b;margin-bottom:20px}}
+
+.note{{background:#0d1526;border:1px solid #1e293b;border-radius:10px;padding:14px 18px;
+  font-size:.8rem;color:#94a3b8;margin-bottom:20px;line-height:1.6}}
+.note.warn{{border-color:#f59e0b55;background:#1c1206}}
+.note.warn strong{{color:#fbbf24}}
+.note p+p{{margin-top:8px}}
+
+.stats-row{{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px}}
+.stat-card{{background:#0d1526;border:1px solid #1e293b;border-radius:10px;padding:14px 18px;flex:1;min-width:170px}}
+.stat-card .lbl{{font-size:.72rem;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}}
+.stat-card .val{{font-size:1.4rem;font-weight:700;color:#f1f5f9}}
+.stat-card .sub{{font-size:.78rem;color:#94a3b8;margin-top:2px}}
+
+.section{{background:#0d1526;border:1px solid #1e293b;border-radius:12px;padding:20px;margin-bottom:24px}}
+.section h2{{font-size:1rem;font-weight:700;color:#f1f5f9;margin-bottom:4px}}
+.section .desc{{font-size:.8rem;color:#64748b;margin-bottom:16px}}
+
+.tbl-wrap{{overflow-x:auto;border-radius:10px;border:1px solid #1e293b}}
+table{{width:100%;border-collapse:collapse;font-size:.8rem}}
+thead th{{background:#0d1526;padding:9px 12px;text-align:right;color:#94a3b8;
+  font-weight:600;font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;
+  white-space:nowrap;border-bottom:1px solid #1e293b}}
+thead th.tc{{text-align:center}}
+tbody tr{{border-bottom:1px solid #1e293b}}
+tbody tr:hover{{background:#111827}}
+tbody tr.hit-row{{background:#0d2416}}
+tbody tr.hit-row:hover{{background:#123420}}
+tbody td{{padding:8px 12px;text-align:right;color:#cbd5e1;vertical-align:middle}}
+tbody td.tc{{text-align:center}}
+tbody td.tr{{text-align:right}}
+tbody td.nowrap{{white-space:nowrap}}
+tbody td.inter-cell{{max-width:520px;white-space:normal}}
+
+.hit-yes{{color:#4ade80;font-weight:700;font-size:.76rem}}
+.hit-no{{color:#475569;font-size:.76rem}}
+
+.nb{{display:inline-flex;align-items:center;justify-content:center;width:23px;height:23px;border-radius:50%;background:#1e293b;color:#64748b;font-size:.64rem;font-weight:700;margin:1px}}
+.nm{{background:#14532d;color:#86efac}}
+.nb-b{{background:#451a03;color:#fde68a;border:1px solid #92400e}}
+.nb-bh{{background:#7c2d12;color:#fed7aa}}
+
+.footer{{margin-top:28px;font-size:.78rem;color:#475569;padding-bottom:20px;line-height:1.6}}
+</style>
+</head>
+<body>
+<script src="/site-nav.js"></script>
+
+<div class="wrap">
+  <h1>✂️ K=38 5-Seed Intersection Backtest</h1>
+  <p class="subtitle">Top 5 K=38 seeds by hit6b &middot; intersection pool per draw &middot; last {N_BACKTEST_DRAWS} draws (#{draw_lo}&ndash;{draw_hi})</p>
+
+  <div class="note warn">
+    <p><strong>Not an out-of-sample test.</strong> The K=38 scan window is #1000&ndash;2129 (after the incremental
+    extension that folded in #2128/#2129), which fully contains the #{draw_lo}&ndash;{draw_hi} range backtested below.
+    These 5 seeds were selected <em>because</em> they scored best across a window that includes every draw being
+    tested here &mdash; a subset of the data a ranking was built from will trivially show elevated performance on
+    that same subset. This is look-ahead bias, not evidence the xoshiro formula predicts anything. A genuine test
+    would rank seeds using only draws before some cutoff and check hits only on draws after it, which no scan on
+    this site currently does.</p>
+    <p>A rough Poisson check still puts P(&ge;{hits} hits by pure chance | &lambda;={lam:.2f}) at only
+    {p_ge_hits*100:.2f}% &mdash; worth knowing, but read alongside the caveat above, not instead of it.</p>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="lbl">Hits</div>
+      <div class="val">{hits} / {N_BACKTEST_DRAWS}</div>
+      <div class="sub">{observed_rate*100:.1f}% observed hit rate</div>
+    </div>
+    <div class="stat-card">
+      <div class="lbl">Avg intersection pool</div>
+      <div class="val">{avg_pool_shared:.1f} numbers</div>
+      <div class="sub">range {min_pool_shared}&ndash;{max_pool_shared}, median {median_pool_shared:.0f}</div>
+    </div>
+    <div class="stat-card">
+      <div class="lbl">Avg pool as % of universe</div>
+      <div class="val">{avg_pool_pct:.2f}%</div>
+      <div class="sub">of C(43,6) = {FULL_UNIVERSE:,} combos</div>
+    </div>
+    <div class="stat-card">
+      <div class="lbl">Observed vs expected</div>
+      <div class="val">{ratio:.2f}&times;</div>
+      <div class="sub">{observed_rate*100:.2f}% observed vs {expected_rate*100:.2f}% expected (proportional)</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>The 5 seeds</h2>
+    <p class="desc">Top 5 by hit6b from <code>seed_hit_xoshiro_k38</code> (full #1000&ndash;2129 window), tiebreak hit6, tiebreak hit5.</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th class="tc">#</th><th class="tc">Seed</th><th>hit6b</th><th>hit6</th><th>hit5</th></tr></thead>
+        <tbody>{seed_rows_html}</tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Next upcoming draw (#{next_draw}) &mdash; reference only, not part of the backtest</h2>
+    <p class="desc">{len(next_intersection)}-number intersection pool &middot; C({len(next_intersection)},6) = {next_combo_count:,} combos
+    ({next_combo_count/FULL_UNIVERSE*100:.2f}% of universe).</p>
+    <div class="inter-cell">{next_inter_html}</div>
+  </div>
+
+  <div class="section">
+    <h2>Per-draw detail &mdash; last {N_BACKTEST_DRAWS} draws</h2>
+    <p class="desc">Newest first. Each row recomputes all 5 seeds' K=38 picks using that draw's own draw_serial, intersects them, and checks whether the actual winner fell fully inside. Hit draws highlighted; matched numbers in the intersection column shown in green.</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th class="tc">Draw</th><th class="tc">Date</th><th>Actual (6) + bonus</th>
+          <th class="tc">Hit</th><th class="tc">Pool size</th><th>Intersection numbers</th>
+        </tr></thead>
+        <tbody>{table_rows_html}</tbody>
+      </table>
+    </div>
+  </div>
+
+  <p class="footer">
+    Xoshiro256** (seeded via SplitMix64): picks = partial Fisher-Yates(range(1,44), 38) with combined seed =
+    seed&times;10&#8311; + draw_serial. Each (seed, draw) pair independent and deterministic.<br>
+    Intersection pool = numbers appearing in ALL 5 seeds' 38-number picks for that specific draw. Hit = actual
+    6-number winner is a full subset of that draw's intersection pool.<br>
+    Data read live from <code>seed_hit_xoshiro_k38</code> in <code>loto6_local.db</code> and directly from the
+    production database for per-draw winning numbers.<br>
+    Formula-based only &middot; Not financial advice &middot; Loto 6 is random.
+  </p>
+</div>
+
+<script>
+(function(){{
+  // No client-side seed picking needed on this page -- everything is
+  // precomputed server-side. Just a no-op placeholder for consistency
+  // with the site's other xoshiro pages.
+}})();
+</script>
+</body>
+</html>"""
+
+with open(HTML_OUT, 'w', encoding='utf-8') as f:
+    f.write(page)
+print(f"\nWrote {HTML_OUT} ({len(page)//1024} KB)")

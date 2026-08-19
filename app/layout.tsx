@@ -60,6 +60,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { type: "label", label: "Predictions" },
       { href: "/xoshiro_elim_2128.html", icon: "✂️", label: "Draw #2128 Elimination" },
       { href: "/xoshiro_elim_2129.html", icon: "✂️", label: "Draw #2129 Elimination" },
+      { href: "/xoshiro_k38_5seed_intersection.html", icon: "✂️", label: "K=38 5-Seed Intersection Backtest" },
     ],
   },
   {

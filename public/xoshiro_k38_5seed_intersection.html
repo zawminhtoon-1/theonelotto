@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>K=38 5-Seed Intersection Backtest — Loto 6</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0f1e;color:#e2e8f0;font-family:system-ui,sans-serif;padding-top:60px;min-height:100vh}
+.wrap{max-width:1300px;margin:0 auto;padding:24px 16px}
+h1{font-size:1.4rem;font-weight:700;color:#f1f5f9;margin-bottom:4px}
+.subtitle{font-size:.85rem;color:#64748b;margin-bottom:20px}
+
+.note{background:#0d1526;border:1px solid #1e293b;border-radius:10px;padding:14px 18px;
+  font-size:.8rem;color:#94a3b8;margin-bottom:20px;line-height:1.6}
+.note.warn{border-color:#f59e0b55;background:#1c1206}
+.note.warn strong{color:#fbbf24}
+.note p+p{margin-top:8px}
+
+.stats-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px}
+.stat-card{background:#0d1526;border:1px solid #1e293b;border-radius:10px;padding:14px 18px;flex:1;min-width:170px}
+.stat-card .lbl{font-size:.72rem;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.stat-card .val{font-size:1.4rem;font-weight:700;color:#f1f5f9}
+.stat-card .sub{font-size:.78rem;color:#94a3b8;margin-top:2px}
+
+.section{background:#0d1526;border:1px solid #1e293b;border-radius:12px;padding:20px;margin-bottom:24px}
+.section h2{font-size:1rem;font-weight:700;color:#f1f5f9;margin-bottom:4px}
+.section .desc{font-size:.8rem;color:#64748b;margin-bottom:16px}
+
+.tbl-wrap{overflow-x:auto;border-radius:10px;border:1px solid #1e293b}
+table{width:100%;border-collapse:collapse;font-size:.8rem}
+thead th{background:#0d1526;padding:9px 12px;text-align:right;color:#94a3b8;
+  font-weight:600;font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;
+  white-space:nowrap;border-bottom:1px solid #1e293b}
+thead th.tc{text-align:center}
+tbody tr{border-bottom:1px solid #1e293b}
+tbody tr:hover{background:#111827}
+tbody tr.hit-row{background:#0d2416}
+tbody tr.hit-row:hover{background:#123420}
+tbody td{padding:8px 12px;text-align:right;color:#cbd5e1;vertical-align:middle}
+tbody td.tc{text-align:center}
+tbody td.tr{text-align:right}
+tbody td.nowrap{white-space:nowrap}
+tbody td.inter-cell{max-width:520px;white-space:normal}
+
+.hit-yes{color:#4ade80;font-weight:700;font-size:.76rem}
+.hit-no{color:#475569;font-size:.76rem}
+
+.nb{display:inline-flex;align-items:center;justify-content:center;width:23px;height:23px;border-radius:50%;background:#1e293b;color:#64748b;font-size:.64rem;font-weight:700;margin:1px}
+.nm{background:#14532d;color:#86efac}
+.nb-b{background:#451a03;color:#fde68a;border:1px solid #92400e}
+.nb-bh{background:#7c2d12;color:#fed7aa}
+
+.footer{margin-top:28px;font-size:.78rem;color:#475569;padding-bottom:20px;line-height:1.6}
+</style>
+</head>
+<body>
+<script src="/site-nav.js"></script>
+
+<div class="wrap">
+  <h1>✂️ K=38 5-Seed Intersection Backtest</h1>
+  <p class="subtitle">Top 5 K=38 seeds by hit6b &middot; intersection pool per draw &middot; last 100 draws (#2030&ndash;2129)</p>
+
+  <div class="note warn">
+    <p><strong>Not an out-of-sample test.</strong> The K=38 scan window is #1000&ndash;2129 (after the incremental
+    extension that folded in #2128/#2129), which fully contains the #2030&ndash;2129 range backtested below.
+    These 5 seeds were selected <em>because</em> they scored best across a window that includes every draw being
+    tested here &mdash; a subset of the data a ranking was built from will trivially show elevated performance on
+    that same subset. This is look-ahead bias, not evidence the xoshiro formula predicts anything. A genuine test
+    would rank seeds using only draws before some cutoff and check hits only on draws after it, which no scan on
+    this site currently does.</p>
+    <p>A rough Poisson check still puts P(&ge;7 hits by pure chance | &lambda;=1.96) at only
+    0.40% &mdash; worth knowing, but read alongside the caveat above, not instead of it.</p>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="lbl">Hits</div>
+      <div class="val">7 / 100</div>
+      <div class="sub">7.0% observed hit rate</div>
+    </div>
+    <div class="stat-card">
+      <div class="lbl">Avg intersection pool</div>
+      <div class="val">23.2 numbers</div>
+      <div class="sub">range 20&ndash;27, median 23</div>
+    </div>
+    <div class="stat-card">
+      <div class="lbl">Avg pool as % of universe</div>
+      <div class="val">1.96%</div>
+      <div class="sub">of C(43,6) = 6,096,454 combos</div>
+    </div>
+    <div class="stat-card">
+      <div class="lbl">Observed vs expected</div>
+      <div class="val">3.58&times;</div>
+      <div class="sub">7.00% observed vs 1.96% expected (proportional)</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>The 5 seeds</h2>
+    <p class="desc">Top 5 by hit6b from <code>seed_hit_xoshiro_k38</code> (full #1000&ndash;2129 window), tiebreak hit6, tiebreak hit5.</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th class="tc">#</th><th class="tc">Seed</th><th>hit6b</th><th>hit6</th><th>hit5</th></tr></thead>
+        <tbody><tr><td class="tc">1</td><td class="tc">692,809</td><td class="tr">524</td><td class="tr">586</td><td class="tr">397</td></tr><tr><td class="tc">2</td><td class="tc">394,299</td><td class="tr">516</td><td class="tr">588</td><td class="tr">399</td></tr><tr><td class="tc">3</td><td class="tc">129,218</td><td class="tr">516</td><td class="tr">586</td><td class="tr">414</td></tr><tr><td class="tc">4</td><td class="tc">806,181</td><td class="tr">513</td><td class="tr">578</td><td class="tr">420</td></tr><tr><td class="tc">5</td><td class="tc">409,150</td><td class="tr">513</td><td class="tr">570</td><td class="tr">428</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Next upcoming draw (#2130) &mdash; reference only, not part of the backtest</h2>
+    <p class="desc">21-number intersection pool &middot; C(21,6) = 54,264 combos
+    (0.89% of universe).</p>
+    <div class="inter-cell"><span class="nb">1</span><span class="nb">9</span><span class="nb">10</span><span class="nb">12</span><span class="nb">13</span><span class="nb">15</span><span class="nb">16</span><span class="nb">22</span><span class="nb">23</span><span class="nb">24</span><span class="nb">25</span><span class="nb">26</span><span class="nb">27</span><span class="nb">30</span><span class="nb">31</span><span class="nb">34</span><span class="nb">35</span><span class="nb">36</span><span class="nb">38</span><span class="nb">39</span><span class="nb">42</span></div>
+  </div>
+
+  <div class="section">
+    <h2>Per-draw detail &mdash; last 100 draws</h2>
+    <p class="desc">Newest first. Each row recomputes all 5 seeds' K=38 picks using that draw's own draw_serial, intersects them, and checks whether the actual winner fell fully inside. Hit draws highlighted; matched numbers in the intersection column shown in green.</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th class="tc">Draw</th><th class="tc">Date</th><th>Actual (6) + bonus</th>
+          <th class="tc">Hit</th><th class="tc">Pool size</th><th>Intersection numbers</th>
+        </tr></thead>
+        <tbody><tr class="">
+  <td class="tc">2129</td>
+  <td class="tc">2026-08-17</td>
+  <td class="nowrap"><span class="nb nm">2</span><span class="nb nm">4</span><span class="nb nm">6</span><span class="nb nm">16</span><span class="nb nm">25</span><span class="nb nm">41</span><span class="nb nb-b">40</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">22</td>
+  <td class="inter-cell"><span class="nb">3</span><span class="nb">7</span><span class="nb">8</span><span class="nb">9</span><span class="nb">12</span><span class="nb">16</span><span class="nb">17</span><span class="nb">19</span><span class="nb">20</span><span class="nb">22</span><span class="nb">25</span><span class="nb">27</span><span class="nb">29</span><span class="nb">30</span><span class="nb">31</span><span class="nb">32</span><span class="nb">35</span><span class="nb">36</span><span class="nb">39</span><span class="nb">40</span><span class="nb">41</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2128</td>
+  <td class="tc">2026-08-13</td>
+  <td class="nowrap"><span class="nb nm">13</span><span class="nb nm">20</span><span class="nb nm">22</span><span class="nb nm">27</span><span class="nb nm">35</span><span class="nb nm">38</span><span class="nb nb-b">11</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">23</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">2</span><span class="nb">3</span><span class="nb">4</span><span class="nb">5</span><span class="nb">7</span><span class="nb">8</span><span class="nb">9</span><span class="nb">11</span><span class="nb">12</span><span class="nb">15</span><span class="nb">20</span><span class="nb">21</span><span class="nb">23</span><span class="nb">25</span><span class="nb">26</span><span class="nb">28</span><span class="nb">31</span><span class="nb">34</span><span class="nb">37</span><span class="nb">38</span><span class="nb">39</span><span class="nb">41</span></td>
+</tr><tr class="">
+  <td class="tc">2127</td>
+  <td class="tc">2026-08-10</td>
+  <td class="nowrap"><span class="nb nm">7</span><span class="nb nm">12</span><span class="nb nm">15</span><span class="nb nm">29</span><span class="nb nm">30</span><span class="nb nm">33</span><span class="nb nb-b">22</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">20</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">2</span><span class="nb">5</span><span class="nb">6</span><span class="nb">7</span><span class="nb">13</span><span class="nb">14</span><span class="nb">15</span><span class="nb">16</span><span class="nb">17</span><span class="nb">18</span><span class="nb">23</span><span class="nb">25</span><span class="nb">26</span><span class="nb">27</span><span class="nb">30</span><span class="nb">32</span><span class="nb">35</span><span class="nb">36</span><span class="nb">42</span></td>
+</tr><tr class="">
+  <td class="tc">2126</td>
+  <td class="tc">2026-08-06</td>
+  <td class="nowrap"><span class="nb nm">18</span><span class="nb nm">20</span><span class="nb nm">22</span><span class="nb nm">35</span><span class="nb nm">37</span><span class="nb nm">42</span><span class="nb nb-b">24</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">24</td>
+  <td class="inter-cell"><span class="nb">2</span><span class="nb">3</span><span class="nb">4</span><span class="nb">6</span><span class="nb">7</span><span class="nb">8</span><span class="nb">9</span><span class="nb">11</span><span class="nb">12</span><span class="nb">13</span><span class="nb">24</span><span class="nb">25</span><span class="nb">26</span><span class="nb">27</span><span class="nb">28</span><span class="nb">29</span><span class="nb">30</span><span class="nb">32</span><span class="nb">34</span><span class="nb">35</span><span class="nb">36</span><span class="nb">37</span><span class="nb">40</span><span class="nb">42</span></td>
+</tr><tr class="">
+  <td class="tc">2125</td>
+  <td class="tc">2026-08-03</td>
+  <td class="nowrap"><span class="nb nm">3</span><span class="nb nm">22</span><span class="nb nm">25</span><span class="nb nm">28</span><span class="nb nm">30</span><span class="nb nm">43</span><span class="nb nb-b">39</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">24</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">9</span><span class="nb">10</span><span class="nb">11</span><span class="nb">12</span><span class="nb">13</span><span class="nb">14</span><span class="nb">16</span><span class="nb">17</span><span class="nb">18</span><span class="nb">19</span><span class="nb">20</span><span class="nb">21</span><span class="nb">22</span><span class="nb">23</span><span class="nb">28</span><span class="nb">29</span><span class="nb">31</span><span class="nb">33</span><span class="nb">35</span><span class="nb">37</span><span class="nb">38</span><span class="nb">40</span><span class="nb">42</span></td>
+</tr><tr class="">
+  <td class="tc">2124</td>
+  <td class="tc">2026-07-30</td>
+  <td class="nowrap"><span class="nb nm">6</span><span class="nb nm">20</span><span class="nb nm">29</span><span class="nb nm">36</span><span class="nb nm">37</span><span class="nb nm">41</span><span class="nb nb-b">19</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">22</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">2</span><span class="nb">4</span><span class="nb">5</span><span class="nb">6</span><span class="nb">7</span><span class="nb">8</span><span class="nb">10</span><span class="nb">13</span><span class="nb">15</span><span class="nb">16</span><span class="nb">20</span><span class="nb">22</span><span class="nb">23</span><span class="nb">26</span><span class="nb">27</span><span class="nb">33</span><span class="nb">35</span><span class="nb">37</span><span class="nb">38</span><span class="nb">41</span><span class="nb">42</span></td>
+</tr><tr class="">
+  <td class="tc">2123</td>
+  <td class="tc">2026-07-27</td>
+  <td class="nowrap"><span class="nb nm">1</span><span class="nb nm">2</span><span class="nb nm">4</span><span class="nb nm">25</span><span class="nb nm">37</span><span class="nb nm">40</span><span class="nb nb-b">43</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">24</td>
+  <td class="inter-cell"><span class="nb">2</span><span class="nb">3</span><span class="nb">5</span><span class="nb">6</span><span class="nb">8</span><span class="nb">9</span><span class="nb">10</span><span class="nb">13</span><span class="nb">14</span><span class="nb">15</span><span class="nb">16</span><span class="nb">17</span><span class="nb">19</span><span class="nb">20</span><span class="nb">21</span><span class="nb">24</span><span class="nb">25</span><span class="nb">27</span><span class="nb">28</span><span class="nb">30</span><span class="nb">36</span><span class="nb">39</span><span class="nb">42</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2122</td>
+  <td class="tc">2026-07-23</td>
+  <td class="nowrap"><span class="nb nm">12</span><span class="nb nm">15</span><span class="nb nm">18</span><span class="nb nm">21</span><span class="nb nm">26</span><span class="nb nm">32</span><span class="nb nb-b">41</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">20</td>
+  <td class="inter-cell"><span class="nb">2</span><span class="nb">3</span><span class="nb">4</span><span class="nb">5</span><span class="nb">6</span><span class="nb">9</span><span class="nb">11</span><span class="nb">16</span><span class="nb">24</span><span class="nb">26</span><span class="nb">28</span><span class="nb">31</span><span class="nb">32</span><span class="nb">33</span><span class="nb">34</span><span class="nb">35</span><span class="nb">36</span><span class="nb">38</span><span class="nb">41</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2121</td>
+  <td class="tc">2026-07-20</td>
+  <td class="nowrap"><span class="nb nm">1</span><span class="nb nm">3</span><span class="nb nm">10</span><span class="nb nm">17</span><span class="nb nm">25</span><span class="nb nm">26</span><span class="nb nb-b">36</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">25</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">2</span><span class="nb">6</span><span class="nb">7</span><span class="nb">9</span><span class="nb">10</span><span class="nb">11</span><span class="nb">14</span><span class="nb">15</span><span class="nb">17</span><span class="nb">18</span><span class="nb">21</span><span class="nb">22</span><span class="nb">24</span><span class="nb">26</span><span class="nb">29</span><span class="nb">30</span><span class="nb">33</span><span class="nb">34</span><span class="nb">35</span><span class="nb">37</span><span class="nb">38</span><span class="nb">40</span><span class="nb">42</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2120</td>
+  <td class="tc">2026-07-16</td>
+  <td class="nowrap"><span class="nb nm">3</span><span class="nb nm">8</span><span class="nb nm">13</span><span class="nb nm">14</span><span class="nb nm">16</span><span class="nb nm">43</span><span class="nb nb-b">26</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">23</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">3</span><span class="nb">4</span><span class="nb">5</span><span class="nb">8</span><span class="nb">10</span><span class="nb">12</span><span class="nb">14</span><span class="nb">15</span><span class="nb">18</span><span class="nb">20</span><span class="nb">21</span><span class="nb">23</span><span class="nb">24</span><span class="nb">26</span><span class="nb">28</span><span class="nb">30</span><span class="nb">31</span><span class="nb">34</span><span class="nb">35</span><span class="nb">36</span><span class="nb">38</span><span class="nb">40</span></td>
+</tr><tr class="">
+  <td class="tc">2119</td>
+  <td class="tc">2026-07-13</td>
+  <td class="nowrap"><span class="nb nm">15</span><span class="nb nm">18</span><span class="nb nm">20</span><span class="nb nm">22</span><span class="nb nm">30</span><span class="nb nm">38</span><span class="nb nb-b">42</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">24</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">3</span><span class="nb">4</span><span class="nb">6</span><span class="nb">7</span><span class="nb">8</span><span class="nb">11</span><span class="nb">14</span><span class="nb">15</span><span class="nb">16</span><span class="nb">19</span><span class="nb">20</span><span class="nb">21</span><span class="nb">22</span><span class="nb">23</span><span class="nb">27</span><span class="nb">28</span><span class="nb">29</span><span class="nb">30</span><span class="nb">31</span><span class="nb">32</span><span class="nb">37</span><span class="nb">38</span><span class="nb">39</span></td>
+</tr><tr class="">
+  <td class="tc">2118</td>
+  <td class="tc">2026-07-09</td>
+  <td class="nowrap"><span class="nb nm">1</span><span class="nb nm">5</span><span class="nb nm">8</span><span class="nb nm">35</span><span class="nb nm">36</span><span class="nb nm">37</span><span class="nb nb-b">24</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">25</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">2</span><span class="nb">4</span><span class="nb">5</span><span class="nb">7</span><span class="nb">9</span><span class="nb">11</span><span class="nb">12</span><span class="nb">13</span><span class="nb">14</span><span class="nb">15</span><span class="nb">16</span><span class="nb">19</span><span class="nb">20</span><span class="nb">21</span><span class="nb">25</span><span class="nb">27</span><span class="nb">28</span><span class="nb">32</span><span class="nb">33</span><span class="nb">34</span><span class="nb">35</span><span class="nb">37</span><span class="nb">40</span><span class="nb">42</span></td>
+</tr><tr class="">
+  <td class="tc">2117</td>
+  <td class="tc">2026-07-06</td>
+  <td class="nowrap"><span class="nb nm">4</span><span class="nb nm">7</span><span class="nb nm">26</span><span class="nb nm">27</span><span class="nb nm">35</span><span class="nb nm">41</span><span class="nb nb-b">34</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">23</td>
+  <td class="inter-cell"><span class="nb">2</span><span class="nb">3</span><span class="nb">4</span><span class="nb">5</span><span class="nb">12</span><span class="nb">13</span><span class="nb">14</span><span class="nb">15</span><span class="nb">17</span><span class="nb">19</span><span class="nb">20</span><span class="nb">21</span><span class="nb">23</span><span class="nb">26</span><span class="nb">28</span><span class="nb">29</span><span class="nb">31</span><span class="nb">34</span><span class="nb">36</span><span class="nb">37</span><span class="nb">41</span><span class="nb">42</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2116</td>
+  <td class="tc">2026-07-02</td>
+  <td class="nowrap"><span class="nb nm">2</span><span class="nb nm">6</span><span class="nb nm">13</span><span class="nb nm">14</span><span class="nb nm">20</span><span class="nb nm">42</span><span class="nb nb-b">10</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">24</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">2</span><span class="nb">4</span><span class="nb">7</span><span class="nb">10</span><span class="nb">12</span><span class="nb">13</span><span class="nb">15</span><span class="nb">16</span><span class="nb">19</span><span class="nb">20</span><span class="nb">24</span><span class="nb">25</span><span class="nb">26</span><span class="nb">27</span><span class="nb">29</span><span class="nb">30</span><span class="nb">33</span><span class="nb">36</span><span class="nb">38</span><span class="nb">39</span><span class="nb">40</span><span class="nb">41</span><span class="nb">42</span></td>
+</tr><tr class="">
+  <td class="tc">2115</td>
+  <td class="tc">2026-06-29</td>
+  <td class="nowrap"><span class="nb nm">1</span><span class="nb nm">3</span><span class="nb nm">11</span><span class="nb nm">34</span><span class="nb nm">35</span><span class="nb nm">42</span><span class="nb nb-b">23</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">24</td>
+  <td class="inter-cell"><span class="nb">2</span><span class="nb">4</span><span class="nb">5</span><span class="nb">7</span><span class="nb">12</span><span class="nb">13</span><span class="nb">14</span><span class="nb">15</span><span class="nb">17</span><span class="nb">18</span><span class="nb">19</span><span class="nb">20</span><span class="nb">21</span><span class="nb">22</span><span class="nb">24</span><span class="nb">25</span><span class="nb">26</span><span class="nb">27</span><span class="nb">28</span><span class="nb">29</span><span class="nb">30</span><span class="nb">37</span><span class="nb">39</span><span class="nb">41</span></td>
+</tr><tr class="">
+  <td class="tc">2114</td>
+  <td class="tc">2026-06-25</td>
+  <td class="nowrap"><span class="nb nm">2</span><span class="nb nm">16</span><span class="nb nm">20</span><span class="nb nm">21</span><span class="nb nm">23</span><span class="nb nm">33</span><span class="nb nb-b">43</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">22</td>
+  <td class="inter-cell"><span class="nb">6</span><span class="nb">7</span><span class="nb">8</span><span class="nb">9</span><span class="nb">10</span><span class="nb">12</span><span class="nb">13</span><span class="nb">17</span><span class="nb">18</span><span class="nb">19</span><span class="nb">20</span><span class="nb">26</span><span class="nb">28</span><span class="nb">29</span><span class="nb">30</span><span class="nb">33</span><span class="nb">35</span><span class="nb">39</span><span class="nb">40</span><span class="nb">41</span><span class="nb">42</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2113</td>
+  <td class="tc">2026-06-22</td>
+  <td class="nowrap"><span class="nb nm">2</span><span class="nb nm">5</span><span class="nb nm">32</span><span class="nb nm">36</span><span class="nb nm">38</span><span class="nb nm">42</span><span class="nb nb-b">14</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">24</td>
+  <td class="inter-cell"><span class="nb">3</span><span class="nb">5</span><span class="nb">6</span><span class="nb">8</span><span class="nb">9</span><span class="nb">10</span><span class="nb">13</span><span class="nb">15</span><span class="nb">16</span><span class="nb">19</span><span class="nb">23</span><span class="nb">24</span><span class="nb">25</span><span class="nb">26</span><span class="nb">29</span><span class="nb">30</span><span class="nb">31</span><span class="nb">33</span><span class="nb">34</span><span class="nb">36</span><span class="nb">38</span><span class="nb">40</span><span class="nb">42</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2112</td>
+  <td class="tc">2026-06-18</td>
+  <td class="nowrap"><span class="nb nm">3</span><span class="nb nm">7</span><span class="nb nm">8</span><span class="nb nm">27</span><span class="nb nm">31</span><span class="nb nm">40</span><span class="nb nb-b">18</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">26</td>
+  <td class="inter-cell"><span class="nb">7</span><span class="nb">8</span><span class="nb">10</span><span class="nb">12</span><span class="nb">16</span><span class="nb">17</span><span class="nb">18</span><span class="nb">20</span><span class="nb">22</span><span class="nb">23</span><span class="nb">26</span><span class="nb">27</span><span class="nb">29</span><span class="nb">30</span><span class="nb">31</span><span class="nb">32</span><span class="nb">33</span><span class="nb">34</span><span class="nb">35</span><span class="nb">36</span><span class="nb">38</span><span class="nb">39</span><span class="nb">40</span><span class="nb">41</span><span class="nb">42</span><span class="nb">43</span></td>
+</tr><tr class="hit-row">
+  <td class="tc">2111</td>
+  <td class="tc">2026-06-15</td>
+  <td class="nowrap"><span class="nb nm">1</span><span class="nb nm">5</span><span class="nb nm">8</span><span class="nb nm">12</span><span class="nb nm">37</span><span class="nb nm">43</span><span class="nb nb-b">36</span></td>
+  <td class="tc"><span class="hit-yes">✔ HIT</span></td>
+  <td class="tc">24</td>
+  <td class="inter-cell"><span class="nb nm">1</span><span class="nb nm">5</span><span class="nb nm">8</span><span class="nb">9</span><span class="nb">10</span><span class="nb nm">12</span><span class="nb">13</span><span class="nb">15</span><span class="nb">16</span><span class="nb">17</span><span class="nb">19</span><span class="nb">20</span><span class="nb">22</span><span class="nb">24</span><span class="nb">25</span><span class="nb">27</span><span class="nb">30</span><span class="nb">32</span><span class="nb">34</span><span class="nb">35</span><span class="nb nm">37</span><span class="nb">41</span><span class="nb">42</span><span class="nb nm">43</span></td>
+</tr><tr class="">
+  <td class="tc">2110</td>
+  <td class="tc">2026-06-11</td>
+  <td class="nowrap"><span class="nb nm">3</span><span class="nb nm">9</span><span class="nb nm">18</span><span class="nb nm">35</span><span class="nb nm">36</span><span class="nb nm">40</span><span class="nb nb-b">29</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">22</td>
+  <td class="inter-cell"><span class="nb">2</span><span class="nb">5</span><span class="nb">6</span><span class="nb">8</span><span class="nb">9</span><span class="nb">13</span><span class="nb">15</span><span class="nb">17</span><span class="nb">20</span><span class="nb">21</span><span class="nb">22</span><span class="nb">23</span><span class="nb">25</span><span class="nb">26</span><span class="nb">29</span><span class="nb">30</span><span class="nb">31</span><span class="nb">32</span><span class="nb">33</span><span class="nb">34</span><span class="nb">41</span><span class="nb">42</span></td>
+</tr><tr class="">
+  <td class="tc">2109</td>
+  <td class="tc">2026-06-08</td>
+  <td class="nowrap"><span class="nb nm">6</span><span class="nb nm">11</span><span class="nb nm">19</span><span class="nb nm">31</span><span class="nb nm">38</span><span class="nb nm">41</span><span class="nb nb-b">3</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">21</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">2</span><span class="nb">3</span><span class="nb">8</span><span class="nb">11</span><span class="nb">13</span><span class="nb">15</span><span class="nb">16</span><span class="nb">19</span><span class="nb">22</span><span class="nb">23</span><span class="nb">24</span><span class="nb">27</span><span class="nb">30</span><span class="nb">31</span><span class="nb">32</span><span class="nb">33</span><span class="nb">35</span><span class="nb">37</span><span class="nb">38</span><span class="nb">41</span></td>
+</tr><tr class="">
+  <td class="tc">2108</td>
+  <td class="tc">2026-06-04</td>
+  <td class="nowrap"><span class="nb nm">2</span><span class="nb nm">5</span><span class="nb nm">10</span><span class="nb nm">15</span><span class="nb nm">28</span><span class="nb nm">43</span><span class="nb nb-b">27</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">22</td>
+  <td class="inter-cell"><span class="nb">4</span><span class="nb">9</span><span class="nb">10</span><span class="nb">11</span><span class="nb">12</span><span class="nb">15</span><span class="nb">16</span><span class="nb">17</span><span class="nb">18</span><span class="nb">21</span><span class="nb">22</span><span class="nb">24</span><span class="nb">25</span><span class="nb">26</span><span class="nb">27</span><span class="nb">28</span><span class="nb">29</span><span class="nb">35</span><span class="nb">36</span><span class="nb">37</span><span class="nb">38</span><span class="nb">42</span></td>
+</tr><tr class="">
+  <td class="tc">2107</td>
+  <td class="tc">2026-06-01</td>
+  <td class="nowrap"><span class="nb nm">5</span><span class="nb nm">8</span><span class="nb nm">27</span><span class="nb nm">32</span><span class="nb nm">36</span><span class="nb nm">39</span><span class="nb nb-b">38</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">22</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">3</span><span class="nb">4</span><span class="nb">5</span><span class="nb">6</span><span class="nb">9</span><span class="nb">11</span><span class="nb">14</span><span class="nb">16</span><span class="nb">17</span><span class="nb">18</span><span class="nb">19</span><span class="nb">20</span><span class="nb">22</span><span class="nb">23</span><span class="nb">26</span><span class="nb">29</span><span class="nb">31</span><span class="nb">35</span><span class="nb">38</span><span class="nb">41</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2106</td>
+  <td class="tc">2026-05-28</td>
+  <td class="nowrap"><span class="nb nm">1</span><span class="nb nm">6</span><span class="nb nm">17</span><span class="nb nm">27</span><span class="nb nm">34</span><span class="nb nm">43</span><span class="nb nb-b">24</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">23</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">5</span><span class="nb">6</span><span class="nb">9</span><span class="nb">12</span><span class="nb">13</span><span class="nb">17</span><span class="nb">21</span><span class="nb">25</span><span class="nb">26</span><span class="nb">28</span><span class="nb">29</span><span class="nb">31</span><span class="nb">32</span><span class="nb">33</span><span class="nb">34</span><span class="nb">35</span><span class="nb">36</span><span class="nb">37</span><span class="nb">38</span><span class="nb">39</span><span class="nb">41</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2105</td>
+  <td class="tc">2026-05-25</td>
+  <td class="nowrap"><span class="nb nm">5</span><span class="nb nm">26</span><span class="nb nm">28</span><span class="nb nm">30</span><span class="nb nm">36</span><span class="nb nm">40</span><span class="nb nb-b">32</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">24</td>
+  <td class="inter-cell"><span class="nb">3</span><span class="nb">4</span><span class="nb">7</span><span class="nb">9</span><span class="nb">10</span><span class="nb">14</span><span class="nb">15</span><span class="nb">16</span><span class="nb">17</span><span class="nb">19</span><span class="nb">21</span><span class="nb">22</span><span class="nb">23</span><span class="nb">25</span><span class="nb">27</span><span class="nb">30</span><span class="nb">31</span><span class="nb">33</span><span class="nb">34</span><span class="nb">36</span><span class="nb">39</span><span class="nb">40</span><span class="nb">41</span><span class="nb">42</span></td>
+</tr><tr class="">
+  <td class="tc">2104</td>
+  <td class="tc">2026-05-21</td>
+  <td class="nowrap"><span class="nb nm">18</span><span class="nb nm">19</span><span class="nb nm">21</span><span class="nb nm">25</span><span class="nb nm">28</span><span class="nb nm">34</span><span class="nb nb-b">4</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">26</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">2</span><span class="nb">3</span><span class="nb">6</span><span class="nb">7</span><span class="nb">8</span><span class="nb">9</span><span class="nb">10</span><span class="nb">12</span><span class="nb">14</span><span class="nb">19</span><span class="nb">20</span><span class="nb">23</span><span class="nb">25</span><span class="nb">27</span><span class="nb">30</span><span class="nb">32</span><span class="nb">33</span><span class="nb">34</span><span class="nb">35</span><span class="nb">36</span><span class="nb">37</span><span class="nb">38</span><span class="nb">40</span><span class="nb">41</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2103</td>
+  <td class="tc">2026-05-18</td>
+  <td class="nowrap"><span class="nb nm">1</span><span class="nb nm">2</span><span class="nb nm">4</span><span class="nb nm">5</span><span class="nb nm">8</span><span class="nb nm">38</span><span class="nb nb-b">39</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">26</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">3</span><span class="nb">4</span><span class="nb">5</span><span class="nb">6</span><span class="nb">8</span><span class="nb">9</span><span class="nb">11</span><span class="nb">13</span><span class="nb">16</span><span class="nb">17</span><span class="nb">18</span><span class="nb">20</span><span class="nb">22</span><span class="nb">25</span><span class="nb">27</span><span class="nb">28</span><span class="nb">29</span><span class="nb">33</span><span class="nb">34</span><span class="nb">35</span><span class="nb">37</span><span class="nb">38</span><span class="nb">40</span><span class="nb">41</span><span class="nb">42</span></td>
+</tr><tr class="">
+  <td class="tc">2102</td>
+  <td class="tc">2026-05-14</td>
+  <td class="nowrap"><span class="nb nm">18</span><span class="nb nm">21</span><span class="nb nm">25</span><span class="nb nm">28</span><span class="nb nm">30</span><span class="nb nm">43</span><span class="nb nb-b">8</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">23</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">2</span><span class="nb">5</span><span class="nb">7</span><span class="nb">8</span><span class="nb">9</span><span class="nb">12</span><span class="nb">14</span><span class="nb">17</span><span class="nb">18</span><span class="nb">19</span><span class="nb">20</span><span class="nb">26</span><span class="nb">27</span><span class="nb">28</span><span class="nb">29</span><span class="nb">34</span><span class="nb">35</span><span class="nb">37</span><span class="nb">38</span><span class="nb">39</span><span class="nb">41</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2101</td>
+  <td class="tc">2026-05-11</td>
+  <td class="nowrap"><span class="nb nm">1</span><span class="nb nm">17</span><span class="nb nm">29</span><span class="nb nm">33</span><span class="nb nm">40</span><span class="nb nm">42</span><span class="nb nb-b">21</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">25</td>
+  <td class="inter-cell"><span class="nb">5</span><span class="nb">6</span><span class="nb">7</span><span class="nb">9</span><span class="nb">10</span><span class="nb">13</span><span class="nb">15</span><span class="nb">16</span><span class="nb">20</span><span class="nb">21</span><span class="nb">22</span><span class="nb">23</span><span class="nb">24</span><span class="nb">25</span><span class="nb">26</span><span class="nb">29</span><span class="nb">30</span><span class="nb">32</span><span class="nb">33</span><span class="nb">35</span><span class="nb">36</span><span class="nb">37</span><span class="nb">38</span><span class="nb">40</span><span class="nb">41</span></td>
+</tr><tr class="">
+  <td class="tc">2100</td>
+  <td class="tc">2026-05-07</td>
+  <td class="nowrap"><span class="nb nm">8</span><span class="nb nm">17</span><span class="nb nm">24</span><span class="nb nm">32</span><span class="nb nm">35</span><span class="nb nm">41</span><span class="nb nb-b">28</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">23</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">2</span><span class="nb">3</span><span class="nb">4</span><span class="nb">6</span><span class="nb">8</span><span class="nb">10</span><span class="nb">13</span><span class="nb">18</span><span class="nb">19</span><span class="nb">20</span><span class="nb">22</span><span class="nb">23</span><span class="nb">24</span><span class="nb">26</span><span class="nb">27</span><span class="nb">29</span><span class="nb">31</span><span class="nb">34</span><span class="nb">35</span><span class="nb">36</span><span class="nb">39</span><span class="nb">40</span></td>
+</tr><tr class="">
+  <td class="tc">2099</td>
+  <td class="tc">2026-05-04</td>
+  <td class="nowrap"><span class="nb nm">19</span><span class="nb nm">21</span><span class="nb nm">34</span><span class="nb nm">36</span><span class="nb nm">39</span><span class="nb nm">42</span><span class="nb nb-b">43</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">26</td>
+  <td class="inter-cell"><span class="nb">2</span><span class="nb">5</span><span class="nb">6</span><span class="nb">7</span><span class="nb">8</span><span class="nb">11</span><span class="nb">13</span><span class="nb">14</span><span class="nb">15</span><span class="nb">16</span><span class="nb">17</span><span class="nb">19</span><span class="nb">20</span><span class="nb">22</span><span class="nb">23</span><span class="nb">27</span><span class="nb">28</span><span class="nb">31</span><span class="nb">32</span><span class="nb">33</span><span class="nb">34</span><span class="nb">35</span><span class="nb">36</span><span class="nb">39</span><span class="nb">41</span><span class="nb">43</span></td>
+</tr><tr class="hit-row">
+  <td class="tc">2098</td>
+  <td class="tc">2026-04-30</td>
+  <td class="nowrap"><span class="nb nm">1</span><span class="nb nm">6</span><span class="nb nm">15</span><span class="nb nm">18</span><span class="nb nm">19</span><span class="nb nm">42</span><span class="nb nb-b">24</span></td>
+  <td class="tc"><span class="hit-yes">✔ HIT</span></td>
+  <td class="tc">25</td>
+  <td class="inter-cell"><span class="nb nm">1</span><span class="nb">2</span><span class="nb">5</span><span class="nb nm">6</span><span class="nb">7</span><span class="nb">8</span><span class="nb">11</span><span class="nb">12</span><span class="nb">13</span><span class="nb">14</span><span class="nb nm">15</span><span class="nb">16</span><span class="nb nm">18</span><span class="nb nm">19</span><span class="nb">20</span><span class="nb">21</span><span class="nb">23</span><span class="nb">24</span><span class="nb">26</span><span class="nb">34</span><span class="nb">35</span><span class="nb">37</span><span class="nb">39</span><span class="nb nm">42</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2097</td>
+  <td class="tc">2026-04-27</td>
+  <td class="nowrap"><span class="nb nm">3</span><span class="nb nm">20</span><span class="nb nm">24</span><span class="nb nm">27</span><span class="nb nm">34</span><span class="nb nm">42</span><span class="nb nb-b">37</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">25</td>
+  <td class="inter-cell"><span class="nb">3</span><span class="nb">5</span><span class="nb">7</span><span class="nb">9</span><span class="nb">10</span><span class="nb">12</span><span class="nb">14</span><span class="nb">15</span><span class="nb">16</span><span class="nb">17</span><span class="nb">18</span><span class="nb">20</span><span class="nb">22</span><span class="nb">23</span><span class="nb">25</span><span class="nb">27</span><span class="nb">28</span><span class="nb">29</span><span class="nb">30</span><span class="nb">31</span><span class="nb">34</span><span class="nb">37</span><span class="nb">38</span><span class="nb">39</span><span class="nb">42</span></td>
+</tr><tr class="">
+  <td class="tc">2096</td>
+  <td class="tc">2026-04-23</td>
+  <td class="nowrap"><span class="nb nm">8</span><span class="nb nm">15</span><span class="nb nm">18</span><span class="nb nm">21</span><span class="nb nm">33</span><span class="nb nm">43</span><span class="nb nb-b">38</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">20</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">2</span><span class="nb">3</span><span class="nb">7</span><span class="nb">8</span><span class="nb">9</span><span class="nb">11</span><span class="nb">12</span><span class="nb">17</span><span class="nb">20</span><span class="nb">24</span><span class="nb">27</span><span class="nb">28</span><span class="nb">30</span><span class="nb">31</span><span class="nb">37</span><span class="nb">38</span><span class="nb">39</span><span class="nb">40</span><span class="nb">43</span></td>
+</tr><tr class="hit-row">
+  <td class="tc">2095</td>
+  <td class="tc">2026-04-20</td>
+  <td class="nowrap"><span class="nb nm">13</span><span class="nb nm">20</span><span class="nb nm">22</span><span class="nb nm">23</span><span class="nb nm">28</span><span class="nb nm">30</span><span class="nb nb-b">29</span></td>
+  <td class="tc"><span class="hit-yes">✔ HIT</span></td>
+  <td class="tc">26</td>
+  <td class="inter-cell"><span class="nb">3</span><span class="nb">4</span><span class="nb">6</span><span class="nb">7</span><span class="nb">9</span><span class="nb">10</span><span class="nb">11</span><span class="nb">12</span><span class="nb nm">13</span><span class="nb">14</span><span class="nb">16</span><span class="nb">17</span><span class="nb">19</span><span class="nb nm">20</span><span class="nb nm">22</span><span class="nb nm">23</span><span class="nb">25</span><span class="nb nm">28</span><span class="nb">29</span><span class="nb nm">30</span><span class="nb">33</span><span class="nb">35</span><span class="nb">37</span><span class="nb">38</span><span class="nb">42</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2094</td>
+  <td class="tc">2026-04-16</td>
+  <td class="nowrap"><span class="nb nm">3</span><span class="nb nm">4</span><span class="nb nm">7</span><span class="nb nm">11</span><span class="nb nm">24</span><span class="nb nm">30</span><span class="nb nb-b">16</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">23</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">3</span><span class="nb">4</span><span class="nb">5</span><span class="nb">8</span><span class="nb">9</span><span class="nb">10</span><span class="nb">11</span><span class="nb">14</span><span class="nb">15</span><span class="nb">16</span><span class="nb">17</span><span class="nb">22</span><span class="nb">23</span><span class="nb">26</span><span class="nb">27</span><span class="nb">28</span><span class="nb">32</span><span class="nb">35</span><span class="nb">38</span><span class="nb">39</span><span class="nb">41</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2093</td>
+  <td class="tc">2026-04-13</td>
+  <td class="nowrap"><span class="nb nm">2</span><span class="nb nm">10</span><span class="nb nm">21</span><span class="nb nm">26</span><span class="nb nm">29</span><span class="nb nm">38</span><span class="nb nb-b">12</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">25</td>
+  <td class="inter-cell"><span class="nb">3</span><span class="nb">4</span><span class="nb">8</span><span class="nb">9</span><span class="nb">10</span><span class="nb">12</span><span class="nb">13</span><span class="nb">15</span><span class="nb">16</span><span class="nb">17</span><span class="nb">18</span><span class="nb">19</span><span class="nb">20</span><span class="nb">22</span><span class="nb">23</span><span class="nb">24</span><span class="nb">27</span><span class="nb">28</span><span class="nb">29</span><span class="nb">30</span><span class="nb">34</span><span class="nb">36</span><span class="nb">37</span><span class="nb">38</span><span class="nb">41</span></td>
+</tr><tr class="">
+  <td class="tc">2092</td>
+  <td class="tc">2026-04-09</td>
+  <td class="nowrap"><span class="nb nm">8</span><span class="nb nm">13</span><span class="nb nm">27</span><span class="nb nm">36</span><span class="nb nm">37</span><span class="nb nm">43</span><span class="nb nb-b">3</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">23</td>
+  <td class="inter-cell"><span class="nb">2</span><span class="nb">3</span><span class="nb">6</span><span class="nb">11</span><span class="nb">12</span><span class="nb">13</span><span class="nb">16</span><span class="nb">19</span><span class="nb">21</span><span class="nb">22</span><span class="nb">28</span><span class="nb">30</span><span class="nb">31</span><span class="nb">32</span><span class="nb">33</span><span class="nb">35</span><span class="nb">36</span><span class="nb">37</span><span class="nb">38</span><span class="nb">40</span><span class="nb">41</span><span class="nb">42</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2091</td>
+  <td class="tc">2026-04-06</td>
+  <td class="nowrap"><span class="nb nm">6</span><span class="nb nm">16</span><span class="nb nm">21</span><span class="nb nm">25</span><span class="nb nm">28</span><span class="nb nm">43</span><span class="nb nb-b">9</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">27</td>
+  <td class="inter-cell"><span class="nb">2</span><span class="nb">5</span><span class="nb">6</span><span class="nb">7</span><span class="nb">8</span><span class="nb">11</span><span class="nb">12</span><span class="nb">13</span><span class="nb">15</span><span class="nb">16</span><span class="nb">19</span><span class="nb">20</span><span class="nb">22</span><span class="nb">24</span><span class="nb">25</span><span class="nb">28</span><span class="nb">30</span><span class="nb">31</span><span class="nb">32</span><span class="nb">33</span><span class="nb">34</span><span class="nb">35</span><span class="nb">37</span><span class="nb">39</span><span class="nb">40</span><span class="nb">42</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2090</td>
+  <td class="tc">2026-04-02</td>
+  <td class="nowrap"><span class="nb nm">2</span><span class="nb nm">3</span><span class="nb nm">6</span><span class="nb nm">9</span><span class="nb nm">24</span><span class="nb nm">36</span><span class="nb nb-b">5</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">21</td>
+  <td class="inter-cell"><span class="nb">3</span><span class="nb">4</span><span class="nb">8</span><span class="nb">9</span><span class="nb">10</span><span class="nb">11</span><span class="nb">13</span><span class="nb">16</span><span class="nb">18</span><span class="nb">22</span><span class="nb">24</span><span class="nb">25</span><span class="nb">27</span><span class="nb">30</span><span class="nb">31</span><span class="nb">32</span><span class="nb">33</span><span class="nb">34</span><span class="nb">38</span><span class="nb">40</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2089</td>
+  <td class="tc">2026-03-30</td>
+  <td class="nowrap"><span class="nb nm">9</span><span class="nb nm">16</span><span class="nb nm">18</span><span class="nb nm">32</span><span class="nb nm">37</span><span class="nb nm">43</span><span class="nb nb-b">13</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">22</td>
+  <td class="inter-cell"><span class="nb">2</span><span class="nb">5</span><span class="nb">6</span><span class="nb">8</span><span class="nb">10</span><span class="nb">11</span><span class="nb">14</span><span class="nb">17</span><span class="nb">18</span><span class="nb">19</span><span class="nb">22</span><span class="nb">24</span><span class="nb">26</span><span class="nb">28</span><span class="nb">31</span><span class="nb">32</span><span class="nb">33</span><span class="nb">34</span><span class="nb">36</span><span class="nb">37</span><span class="nb">40</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2088</td>
+  <td class="tc">2026-03-26</td>
+  <td class="nowrap"><span class="nb nm">8</span><span class="nb nm">16</span><span class="nb nm">18</span><span class="nb nm">27</span><span class="nb nm">37</span><span class="nb nm">39</span><span class="nb nb-b">29</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">23</td>
+  <td class="inter-cell"><span class="nb">3</span><span class="nb">4</span><span class="nb">5</span><span class="nb">7</span><span class="nb">9</span><span class="nb">12</span><span class="nb">14</span><span class="nb">15</span><span class="nb">17</span><span class="nb">21</span><span class="nb">23</span><span class="nb">24</span><span class="nb">26</span><span class="nb">30</span><span class="nb">31</span><span class="nb">32</span><span class="nb">33</span><span class="nb">35</span><span class="nb">38</span><span class="nb">40</span><span class="nb">41</span><span class="nb">42</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2087</td>
+  <td class="tc">2026-03-23</td>
+  <td class="nowrap"><span class="nb nm">7</span><span class="nb nm">10</span><span class="nb nm">15</span><span class="nb nm">18</span><span class="nb nm">26</span><span class="nb nm">39</span><span class="nb nb-b">13</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">21</td>
+  <td class="inter-cell"><span class="nb">3</span><span class="nb">5</span><span class="nb">9</span><span class="nb">10</span><span class="nb">11</span><span class="nb">12</span><span class="nb">13</span><span class="nb">14</span><span class="nb">15</span><span class="nb">18</span><span class="nb">20</span><span class="nb">21</span><span class="nb">22</span><span class="nb">27</span><span class="nb">28</span><span class="nb">32</span><span class="nb">33</span><span class="nb">37</span><span class="nb">41</span><span class="nb">42</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2086</td>
+  <td class="tc">2026-03-19</td>
+  <td class="nowrap"><span class="nb nm">4</span><span class="nb nm">11</span><span class="nb nm">19</span><span class="nb nm">28</span><span class="nb nm">39</span><span class="nb nm">40</span><span class="nb nb-b">6</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">23</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">3</span><span class="nb">4</span><span class="nb">9</span><span class="nb">10</span><span class="nb">12</span><span class="nb">13</span><span class="nb">15</span><span class="nb">16</span><span class="nb">19</span><span class="nb">20</span><span class="nb">21</span><span class="nb">23</span><span class="nb">25</span><span class="nb">27</span><span class="nb">28</span><span class="nb">32</span><span class="nb">33</span><span class="nb">34</span><span class="nb">36</span><span class="nb">37</span><span class="nb">39</span><span class="nb">41</span></td>
+</tr><tr class="">
+  <td class="tc">2085</td>
+  <td class="tc">2026-03-16</td>
+  <td class="nowrap"><span class="nb nm">6</span><span class="nb nm">8</span><span class="nb nm">13</span><span class="nb nm">26</span><span class="nb nm">35</span><span class="nb nm">43</span><span class="nb nb-b">14</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">23</td>
+  <td class="inter-cell"><span class="nb">2</span><span class="nb">5</span><span class="nb">6</span><span class="nb">8</span><span class="nb">10</span><span class="nb">11</span><span class="nb">16</span><span class="nb">19</span><span class="nb">21</span><span class="nb">22</span><span class="nb">24</span><span class="nb">25</span><span class="nb">26</span><span class="nb">27</span><span class="nb">28</span><span class="nb">29</span><span class="nb">30</span><span class="nb">31</span><span class="nb">33</span><span class="nb">34</span><span class="nb">35</span><span class="nb">38</span><span class="nb">39</span></td>
+</tr><tr class="">
+  <td class="tc">2084</td>
+  <td class="tc">2026-03-12</td>
+  <td class="nowrap"><span class="nb nm">8</span><span class="nb nm">17</span><span class="nb nm">18</span><span class="nb nm">19</span><span class="nb nm">30</span><span class="nb nm">39</span><span class="nb nb-b">9</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">21</td>
+  <td class="inter-cell"><span class="nb">4</span><span class="nb">5</span><span class="nb">8</span><span class="nb">10</span><span class="nb">12</span><span class="nb">14</span><span class="nb">15</span><span class="nb">17</span><span class="nb">18</span><span class="nb">19</span><span class="nb">20</span><span class="nb">21</span><span class="nb">23</span><span class="nb">28</span><span class="nb">31</span><span class="nb">32</span><span class="nb">33</span><span class="nb">34</span><span class="nb">36</span><span class="nb">38</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2083</td>
+  <td class="tc">2026-03-09</td>
+  <td class="nowrap"><span class="nb nm">8</span><span class="nb nm">10</span><span class="nb nm">13</span><span class="nb nm">17</span><span class="nb nm">26</span><span class="nb nm">29</span><span class="nb nb-b">43</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">22</td>
+  <td class="inter-cell"><span class="nb">2</span><span class="nb">3</span><span class="nb">4</span><span class="nb">5</span><span class="nb">8</span><span class="nb">10</span><span class="nb">14</span><span class="nb">16</span><span class="nb">17</span><span class="nb">22</span><span class="nb">23</span><span class="nb">24</span><span class="nb">25</span><span class="nb">27</span><span class="nb">28</span><span class="nb">29</span><span class="nb">34</span><span class="nb">37</span><span class="nb">39</span><span class="nb">41</span><span class="nb">42</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2082</td>
+  <td class="tc">2026-03-05</td>
+  <td class="nowrap"><span class="nb nm">5</span><span class="nb nm">11</span><span class="nb nm">14</span><span class="nb nm">19</span><span class="nb nm">25</span><span class="nb nm">40</span><span class="nb nb-b">17</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">23</td>
+  <td class="inter-cell"><span class="nb">3</span><span class="nb">4</span><span class="nb">5</span><span class="nb">7</span><span class="nb">9</span><span class="nb">11</span><span class="nb">12</span><span class="nb">13</span><span class="nb">15</span><span class="nb">18</span><span class="nb">19</span><span class="nb">22</span><span class="nb">23</span><span class="nb">29</span><span class="nb">32</span><span class="nb">33</span><span class="nb">34</span><span class="nb">35</span><span class="nb">36</span><span class="nb">37</span><span class="nb">39</span><span class="nb">42</span><span class="nb">43</span></td>
+</tr><tr class="hit-row">
+  <td class="tc">2081</td>
+  <td class="tc">2026-03-02</td>
+  <td class="nowrap"><span class="nb nm">14</span><span class="nb nm">31</span><span class="nb nm">32</span><span class="nb nm">37</span><span class="nb nm">41</span><span class="nb nm">42</span><span class="nb nb-b">22</span></td>
+  <td class="tc"><span class="hit-yes">✔ HIT</span></td>
+  <td class="tc">23</td>
+  <td class="inter-cell"><span class="nb">4</span><span class="nb">7</span><span class="nb">8</span><span class="nb">11</span><span class="nb nm">14</span><span class="nb">15</span><span class="nb">16</span><span class="nb">17</span><span class="nb">18</span><span class="nb">20</span><span class="nb">23</span><span class="nb">24</span><span class="nb">26</span><span class="nb">27</span><span class="nb">28</span><span class="nb nm">31</span><span class="nb nm">32</span><span class="nb">33</span><span class="nb">34</span><span class="nb nm">37</span><span class="nb">38</span><span class="nb nm">41</span><span class="nb nm">42</span></td>
+</tr><tr class="">
+  <td class="tc">2080</td>
+  <td class="tc">2026-02-26</td>
+  <td class="nowrap"><span class="nb nm">6</span><span class="nb nm">12</span><span class="nb nm">30</span><span class="nb nm">36</span><span class="nb nm">37</span><span class="nb nm">38</span><span class="nb nb-b">8</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">21</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">2</span><span class="nb">5</span><span class="nb">6</span><span class="nb">7</span><span class="nb">10</span><span class="nb">11</span><span class="nb">12</span><span class="nb">13</span><span class="nb">17</span><span class="nb">20</span><span class="nb">21</span><span class="nb">24</span><span class="nb">29</span><span class="nb">31</span><span class="nb">32</span><span class="nb">35</span><span class="nb">36</span><span class="nb">37</span><span class="nb">40</span><span class="nb">41</span></td>
+</tr><tr class="">
+  <td class="tc">2079</td>
+  <td class="tc">2026-02-23</td>
+  <td class="nowrap"><span class="nb nm">5</span><span class="nb nm">11</span><span class="nb nm">15</span><span class="nb nm">17</span><span class="nb nm">24</span><span class="nb nm">39</span><span class="nb nb-b">31</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">24</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">2</span><span class="nb">3</span><span class="nb">4</span><span class="nb">7</span><span class="nb">11</span><span class="nb">12</span><span class="nb">14</span><span class="nb">15</span><span class="nb">17</span><span class="nb">18</span><span class="nb">19</span><span class="nb">20</span><span class="nb">22</span><span class="nb">23</span><span class="nb">25</span><span class="nb">30</span><span class="nb">32</span><span class="nb">34</span><span class="nb">35</span><span class="nb">36</span><span class="nb">38</span><span class="nb">39</span><span class="nb">40</span></td>
+</tr><tr class="">
+  <td class="tc">2078</td>
+  <td class="tc">2026-02-19</td>
+  <td class="nowrap"><span class="nb nm">1</span><span class="nb nm">10</span><span class="nb nm">20</span><span class="nb nm">24</span><span class="nb nm">30</span><span class="nb nm">35</span><span class="nb nb-b">41</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">24</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">2</span><span class="nb">5</span><span class="nb">7</span><span class="nb">8</span><span class="nb">9</span><span class="nb">10</span><span class="nb">11</span><span class="nb">13</span><span class="nb">14</span><span class="nb">15</span><span class="nb">16</span><span class="nb">17</span><span class="nb">20</span><span class="nb">24</span><span class="nb">25</span><span class="nb">26</span><span class="nb">28</span><span class="nb">32</span><span class="nb">33</span><span class="nb">38</span><span class="nb">39</span><span class="nb">41</span><span class="nb">42</span></td>
+</tr><tr class="">
+  <td class="tc">2077</td>
+  <td class="tc">2026-02-16</td>
+  <td class="nowrap"><span class="nb nm">17</span><span class="nb nm">18</span><span class="nb nm">23</span><span class="nb nm">24</span><span class="nb nm">26</span><span class="nb nm">43</span><span class="nb nb-b">10</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">22</td>
+  <td class="inter-cell"><span class="nb">3</span><span class="nb">12</span><span class="nb">14</span><span class="nb">15</span><span class="nb">16</span><span class="nb">17</span><span class="nb">18</span><span class="nb">20</span><span class="nb">21</span><span class="nb">23</span><span class="nb">24</span><span class="nb">25</span><span class="nb">27</span><span class="nb">30</span><span class="nb">31</span><span class="nb">33</span><span class="nb">34</span><span class="nb">35</span><span class="nb">36</span><span class="nb">38</span><span class="nb">39</span><span class="nb">40</span></td>
+</tr><tr class="">
+  <td class="tc">2076</td>
+  <td class="tc">2026-02-12</td>
+  <td class="nowrap"><span class="nb nm">1</span><span class="nb nm">9</span><span class="nb nm">20</span><span class="nb nm">22</span><span class="nb nm">28</span><span class="nb nm">41</span><span class="nb nb-b">30</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">21</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">5</span><span class="nb">8</span><span class="nb">9</span><span class="nb">10</span><span class="nb">11</span><span class="nb">14</span><span class="nb">17</span><span class="nb">21</span><span class="nb">23</span><span class="nb">25</span><span class="nb">26</span><span class="nb">30</span><span class="nb">32</span><span class="nb">33</span><span class="nb">34</span><span class="nb">36</span><span class="nb">38</span><span class="nb">41</span><span class="nb">42</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2075</td>
+  <td class="tc">2026-02-09</td>
+  <td class="nowrap"><span class="nb nm">7</span><span class="nb nm">10</span><span class="nb nm">14</span><span class="nb nm">16</span><span class="nb nm">35</span><span class="nb nm">37</span><span class="nb nb-b">11</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">24</td>
+  <td class="inter-cell"><span class="nb">5</span><span class="nb">6</span><span class="nb">9</span><span class="nb">10</span><span class="nb">11</span><span class="nb">12</span><span class="nb">15</span><span class="nb">17</span><span class="nb">18</span><span class="nb">19</span><span class="nb">20</span><span class="nb">21</span><span class="nb">23</span><span class="nb">25</span><span class="nb">27</span><span class="nb">28</span><span class="nb">29</span><span class="nb">31</span><span class="nb">33</span><span class="nb">37</span><span class="nb">38</span><span class="nb">39</span><span class="nb">40</span><span class="nb">41</span></td>
+</tr><tr class="">
+  <td class="tc">2074</td>
+  <td class="tc">2026-02-05</td>
+  <td class="nowrap"><span class="nb nm">5</span><span class="nb nm">6</span><span class="nb nm">16</span><span class="nb nm">26</span><span class="nb nm">27</span><span class="nb nm">36</span><span class="nb nb-b">11</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">24</td>
+  <td class="inter-cell"><span class="nb">3</span><span class="nb">4</span><span class="nb">6</span><span class="nb">8</span><span class="nb">9</span><span class="nb">10</span><span class="nb">13</span><span class="nb">16</span><span class="nb">18</span><span class="nb">19</span><span class="nb">21</span><span class="nb">22</span><span class="nb">25</span><span class="nb">26</span><span class="nb">28</span><span class="nb">31</span><span class="nb">32</span><span class="nb">34</span><span class="nb">35</span><span class="nb">38</span><span class="nb">39</span><span class="nb">40</span><span class="nb">42</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2073</td>
+  <td class="tc">2026-02-02</td>
+  <td class="nowrap"><span class="nb nm">2</span><span class="nb nm">12</span><span class="nb nm">14</span><span class="nb nm">24</span><span class="nb nm">26</span><span class="nb nm">29</span><span class="nb nb-b">8</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">25</td>
+  <td class="inter-cell"><span class="nb">6</span><span class="nb">7</span><span class="nb">8</span><span class="nb">9</span><span class="nb">11</span><span class="nb">13</span><span class="nb">14</span><span class="nb">16</span><span class="nb">17</span><span class="nb">18</span><span class="nb">19</span><span class="nb">20</span><span class="nb">24</span><span class="nb">26</span><span class="nb">28</span><span class="nb">30</span><span class="nb">31</span><span class="nb">34</span><span class="nb">35</span><span class="nb">36</span><span class="nb">37</span><span class="nb">38</span><span class="nb">39</span><span class="nb">41</span><span class="nb">43</span></td>
+</tr><tr class="hit-row">
+  <td class="tc">2072</td>
+  <td class="tc">2026-01-29</td>
+  <td class="nowrap"><span class="nb nm">8</span><span class="nb nm">18</span><span class="nb nm">24</span><span class="nb nm">36</span><span class="nb nm">40</span><span class="nb nm">42</span><span class="nb nb-b">43</span></td>
+  <td class="tc"><span class="hit-yes">✔ HIT</span></td>
+  <td class="tc">24</td>
+  <td class="inter-cell"><span class="nb">2</span><span class="nb">5</span><span class="nb">7</span><span class="nb nm">8</span><span class="nb">9</span><span class="nb">12</span><span class="nb">13</span><span class="nb">15</span><span class="nb">16</span><span class="nb">17</span><span class="nb nm">18</span><span class="nb">20</span><span class="nb">21</span><span class="nb nm">24</span><span class="nb">25</span><span class="nb">27</span><span class="nb">29</span><span class="nb">31</span><span class="nb">33</span><span class="nb">35</span><span class="nb nm">36</span><span class="nb">38</span><span class="nb nm">40</span><span class="nb nm">42</span></td>
+</tr><tr class="">
+  <td class="tc">2071</td>
+  <td class="tc">2026-01-26</td>
+  <td class="nowrap"><span class="nb nm">15</span><span class="nb nm">24</span><span class="nb nm">29</span><span class="nb nm">32</span><span class="nb nm">33</span><span class="nb nm">35</span><span class="nb nb-b">14</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">24</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">2</span><span class="nb">4</span><span class="nb">7</span><span class="nb">8</span><span class="nb">10</span><span class="nb">12</span><span class="nb">14</span><span class="nb">16</span><span class="nb">17</span><span class="nb">18</span><span class="nb">24</span><span class="nb">25</span><span class="nb">28</span><span class="nb">29</span><span class="nb">30</span><span class="nb">31</span><span class="nb">34</span><span class="nb">35</span><span class="nb">36</span><span class="nb">37</span><span class="nb">38</span><span class="nb">40</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2070</td>
+  <td class="tc">2026-01-22</td>
+  <td class="nowrap"><span class="nb nm">6</span><span class="nb nm">10</span><span class="nb nm">25</span><span class="nb nm">30</span><span class="nb nm">34</span><span class="nb nm">36</span><span class="nb nb-b">12</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">23</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">2</span><span class="nb">5</span><span class="nb">6</span><span class="nb">8</span><span class="nb">9</span><span class="nb">10</span><span class="nb">12</span><span class="nb">13</span><span class="nb">15</span><span class="nb">17</span><span class="nb">19</span><span class="nb">25</span><span class="nb">27</span><span class="nb">28</span><span class="nb">29</span><span class="nb">30</span><span class="nb">31</span><span class="nb">34</span><span class="nb">35</span><span class="nb">37</span><span class="nb">38</span><span class="nb">39</span></td>
+</tr><tr class="">
+  <td class="tc">2069</td>
+  <td class="tc">2026-01-19</td>
+  <td class="nowrap"><span class="nb nm">6</span><span class="nb nm">17</span><span class="nb nm">23</span><span class="nb nm">27</span><span class="nb nm">33</span><span class="nb nm">35</span><span class="nb nb-b">4</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">24</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">5</span><span class="nb">7</span><span class="nb">11</span><span class="nb">12</span><span class="nb">13</span><span class="nb">14</span><span class="nb">17</span><span class="nb">19</span><span class="nb">21</span><span class="nb">22</span><span class="nb">24</span><span class="nb">25</span><span class="nb">26</span><span class="nb">30</span><span class="nb">31</span><span class="nb">32</span><span class="nb">34</span><span class="nb">35</span><span class="nb">36</span><span class="nb">37</span><span class="nb">38</span><span class="nb">39</span><span class="nb">40</span></td>
+</tr><tr class="">
+  <td class="tc">2068</td>
+  <td class="tc">2026-01-15</td>
+  <td class="nowrap"><span class="nb nm">2</span><span class="nb nm">10</span><span class="nb nm">13</span><span class="nb nm">14</span><span class="nb nm">29</span><span class="nb nm">33</span><span class="nb nb-b">32</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">23</td>
+  <td class="inter-cell"><span class="nb">2</span><span class="nb">5</span><span class="nb">7</span><span class="nb">9</span><span class="nb">10</span><span class="nb">13</span><span class="nb">15</span><span class="nb">16</span><span class="nb">19</span><span class="nb">20</span><span class="nb">21</span><span class="nb">24</span><span class="nb">26</span><span class="nb">28</span><span class="nb">29</span><span class="nb">31</span><span class="nb">32</span><span class="nb">33</span><span class="nb">35</span><span class="nb">38</span><span class="nb">39</span><span class="nb">41</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2067</td>
+  <td class="tc">2026-01-12</td>
+  <td class="nowrap"><span class="nb nm">3</span><span class="nb nm">4</span><span class="nb nm">12</span><span class="nb nm">15</span><span class="nb nm">32</span><span class="nb nm">42</span><span class="nb nb-b">31</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">22</td>
+  <td class="inter-cell"><span class="nb">2</span><span class="nb">3</span><span class="nb">5</span><span class="nb">6</span><span class="nb">8</span><span class="nb">12</span><span class="nb">14</span><span class="nb">15</span><span class="nb">17</span><span class="nb">20</span><span class="nb">21</span><span class="nb">22</span><span class="nb">24</span><span class="nb">25</span><span class="nb">27</span><span class="nb">28</span><span class="nb">30</span><span class="nb">33</span><span class="nb">36</span><span class="nb">38</span><span class="nb">39</span><span class="nb">42</span></td>
+</tr><tr class="">
+  <td class="tc">2066</td>
+  <td class="tc">2026-01-08</td>
+  <td class="nowrap"><span class="nb nm">8</span><span class="nb nm">28</span><span class="nb nm">30</span><span class="nb nm">32</span><span class="nb nm">37</span><span class="nb nm">38</span><span class="nb nb-b">5</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">21</td>
+  <td class="inter-cell"><span class="nb">2</span><span class="nb">3</span><span class="nb">6</span><span class="nb">9</span><span class="nb">10</span><span class="nb">11</span><span class="nb">12</span><span class="nb">13</span><span class="nb">16</span><span class="nb">17</span><span class="nb">19</span><span class="nb">20</span><span class="nb">24</span><span class="nb">33</span><span class="nb">35</span><span class="nb">36</span><span class="nb">37</span><span class="nb">38</span><span class="nb">40</span><span class="nb">42</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2065</td>
+  <td class="tc">2026-01-05</td>
+  <td class="nowrap"><span class="nb nm">6</span><span class="nb nm">18</span><span class="nb nm">21</span><span class="nb nm">31</span><span class="nb nm">37</span><span class="nb nm">40</span><span class="nb nb-b">3</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">21</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">2</span><span class="nb">5</span><span class="nb">7</span><span class="nb">10</span><span class="nb">12</span><span class="nb">15</span><span class="nb">17</span><span class="nb">20</span><span class="nb">21</span><span class="nb">22</span><span class="nb">23</span><span class="nb">24</span><span class="nb">25</span><span class="nb">26</span><span class="nb">27</span><span class="nb">34</span><span class="nb">38</span><span class="nb">40</span><span class="nb">42</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2064</td>
+  <td class="tc">2025-12-29</td>
+  <td class="nowrap"><span class="nb nm">2</span><span class="nb nm">7</span><span class="nb nm">24</span><span class="nb nm">37</span><span class="nb nm">39</span><span class="nb nm">41</span><span class="nb nb-b">3</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">22</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">2</span><span class="nb">3</span><span class="nb">4</span><span class="nb">5</span><span class="nb">6</span><span class="nb">8</span><span class="nb">9</span><span class="nb">11</span><span class="nb">14</span><span class="nb">15</span><span class="nb">19</span><span class="nb">24</span><span class="nb">25</span><span class="nb">30</span><span class="nb">31</span><span class="nb">32</span><span class="nb">35</span><span class="nb">36</span><span class="nb">39</span><span class="nb">40</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2063</td>
+  <td class="tc">2025-12-25</td>
+  <td class="nowrap"><span class="nb nm">4</span><span class="nb nm">28</span><span class="nb nm">29</span><span class="nb nm">30</span><span class="nb nm">38</span><span class="nb nm">42</span><span class="nb nb-b">15</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">23</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">2</span><span class="nb">7</span><span class="nb">8</span><span class="nb">10</span><span class="nb">11</span><span class="nb">15</span><span class="nb">16</span><span class="nb">17</span><span class="nb">18</span><span class="nb">19</span><span class="nb">21</span><span class="nb">22</span><span class="nb">23</span><span class="nb">24</span><span class="nb">25</span><span class="nb">27</span><span class="nb">29</span><span class="nb">30</span><span class="nb">32</span><span class="nb">33</span><span class="nb">36</span><span class="nb">37</span></td>
+</tr><tr class="hit-row">
+  <td class="tc">2062</td>
+  <td class="tc">2025-12-22</td>
+  <td class="nowrap"><span class="nb nm">1</span><span class="nb nm">9</span><span class="nb nm">18</span><span class="nb nm">24</span><span class="nb nm">35</span><span class="nb nm">42</span><span class="nb nb-b">8</span></td>
+  <td class="tc"><span class="hit-yes">✔ HIT</span></td>
+  <td class="tc">26</td>
+  <td class="inter-cell"><span class="nb nm">1</span><span class="nb">4</span><span class="nb">7</span><span class="nb">8</span><span class="nb nm">9</span><span class="nb">10</span><span class="nb">11</span><span class="nb">12</span><span class="nb">13</span><span class="nb">15</span><span class="nb nm">18</span><span class="nb">21</span><span class="nb">23</span><span class="nb nm">24</span><span class="nb">25</span><span class="nb">26</span><span class="nb">28</span><span class="nb">31</span><span class="nb">32</span><span class="nb">34</span><span class="nb nm">35</span><span class="nb">36</span><span class="nb">38</span><span class="nb">39</span><span class="nb">41</span><span class="nb nm">42</span></td>
+</tr><tr class="hit-row">
+  <td class="tc">2061</td>
+  <td class="tc">2025-12-18</td>
+  <td class="nowrap"><span class="nb nm">5</span><span class="nb nm">6</span><span class="nb nm">13</span><span class="nb nm">21</span><span class="nb nm">33</span><span class="nb nm">34</span><span class="nb nb-b">40</span></td>
+  <td class="tc"><span class="hit-yes">✔ HIT</span></td>
+  <td class="tc">23</td>
+  <td class="inter-cell"><span class="nb">2</span><span class="nb">3</span><span class="nb nm">5</span><span class="nb nm">6</span><span class="nb">7</span><span class="nb">9</span><span class="nb">10</span><span class="nb">12</span><span class="nb nm">13</span><span class="nb">14</span><span class="nb">16</span><span class="nb">20</span><span class="nb nm">21</span><span class="nb">22</span><span class="nb">23</span><span class="nb">28</span><span class="nb">29</span><span class="nb">30</span><span class="nb">32</span><span class="nb nm">33</span><span class="nb nm">34</span><span class="nb">39</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2060</td>
+  <td class="tc">2025-12-15</td>
+  <td class="nowrap"><span class="nb nm">8</span><span class="nb nm">16</span><span class="nb nm">22</span><span class="nb nm">40</span><span class="nb nm">41</span><span class="nb nm">42</span><span class="nb nb-b">10</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">22</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">3</span><span class="nb">6</span><span class="nb">8</span><span class="nb">9</span><span class="nb">10</span><span class="nb">14</span><span class="nb">16</span><span class="nb">17</span><span class="nb">19</span><span class="nb">20</span><span class="nb">22</span><span class="nb">24</span><span class="nb">26</span><span class="nb">27</span><span class="nb">28</span><span class="nb">29</span><span class="nb">30</span><span class="nb">35</span><span class="nb">39</span><span class="nb">42</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2059</td>
+  <td class="tc">2025-12-11</td>
+  <td class="nowrap"><span class="nb nm">2</span><span class="nb nm">13</span><span class="nb nm">26</span><span class="nb nm">28</span><span class="nb nm">38</span><span class="nb nm">43</span><span class="nb nb-b">3</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">24</td>
+  <td class="inter-cell"><span class="nb">4</span><span class="nb">6</span><span class="nb">8</span><span class="nb">9</span><span class="nb">10</span><span class="nb">11</span><span class="nb">12</span><span class="nb">13</span><span class="nb">14</span><span class="nb">15</span><span class="nb">17</span><span class="nb">20</span><span class="nb">21</span><span class="nb">23</span><span class="nb">24</span><span class="nb">25</span><span class="nb">26</span><span class="nb">31</span><span class="nb">32</span><span class="nb">33</span><span class="nb">34</span><span class="nb">39</span><span class="nb">40</span><span class="nb">42</span></td>
+</tr><tr class="">
+  <td class="tc">2058</td>
+  <td class="tc">2025-12-08</td>
+  <td class="nowrap"><span class="nb nm">9</span><span class="nb nm">12</span><span class="nb nm">14</span><span class="nb nm">16</span><span class="nb nm">19</span><span class="nb nm">42</span><span class="nb nb-b">18</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">23</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">2</span><span class="nb">3</span><span class="nb">5</span><span class="nb">6</span><span class="nb">8</span><span class="nb">10</span><span class="nb">12</span><span class="nb">14</span><span class="nb">15</span><span class="nb">16</span><span class="nb">17</span><span class="nb">19</span><span class="nb">25</span><span class="nb">27</span><span class="nb">29</span><span class="nb">31</span><span class="nb">34</span><span class="nb">35</span><span class="nb">36</span><span class="nb">38</span><span class="nb">42</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2057</td>
+  <td class="tc">2025-12-04</td>
+  <td class="nowrap"><span class="nb nm">5</span><span class="nb nm">7</span><span class="nb nm">21</span><span class="nb nm">22</span><span class="nb nm">38</span><span class="nb nm">41</span><span class="nb nb-b">24</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">24</td>
+  <td class="inter-cell"><span class="nb">3</span><span class="nb">4</span><span class="nb">9</span><span class="nb">13</span><span class="nb">14</span><span class="nb">15</span><span class="nb">17</span><span class="nb">18</span><span class="nb">20</span><span class="nb">22</span><span class="nb">24</span><span class="nb">25</span><span class="nb">26</span><span class="nb">27</span><span class="nb">28</span><span class="nb">31</span><span class="nb">33</span><span class="nb">37</span><span class="nb">38</span><span class="nb">39</span><span class="nb">40</span><span class="nb">41</span><span class="nb">42</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2056</td>
+  <td class="tc">2025-12-01</td>
+  <td class="nowrap"><span class="nb nm">3</span><span class="nb nm">7</span><span class="nb nm">15</span><span class="nb nm">17</span><span class="nb nm">19</span><span class="nb nm">30</span><span class="nb nb-b">38</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">24</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">2</span><span class="nb">6</span><span class="nb">7</span><span class="nb">8</span><span class="nb">10</span><span class="nb">13</span><span class="nb">15</span><span class="nb">16</span><span class="nb">19</span><span class="nb">20</span><span class="nb">21</span><span class="nb">22</span><span class="nb">23</span><span class="nb">27</span><span class="nb">31</span><span class="nb">32</span><span class="nb">34</span><span class="nb">35</span><span class="nb">37</span><span class="nb">38</span><span class="nb">39</span><span class="nb">41</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2055</td>
+  <td class="tc">2025-11-27</td>
+  <td class="nowrap"><span class="nb nm">11</span><span class="nb nm">12</span><span class="nb nm">14</span><span class="nb nm">17</span><span class="nb nm">21</span><span class="nb nm">26</span><span class="nb nb-b">2</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">22</td>
+  <td class="inter-cell"><span class="nb">4</span><span class="nb">5</span><span class="nb">6</span><span class="nb">8</span><span class="nb">9</span><span class="nb">10</span><span class="nb">11</span><span class="nb">15</span><span class="nb">20</span><span class="nb">21</span><span class="nb">22</span><span class="nb">26</span><span class="nb">27</span><span class="nb">28</span><span class="nb">29</span><span class="nb">33</span><span class="nb">36</span><span class="nb">37</span><span class="nb">38</span><span class="nb">39</span><span class="nb">40</span><span class="nb">41</span></td>
+</tr><tr class="">
+  <td class="tc">2054</td>
+  <td class="tc">2025-11-24</td>
+  <td class="nowrap"><span class="nb nm">1</span><span class="nb nm">14</span><span class="nb nm">27</span><span class="nb nm">30</span><span class="nb nm">33</span><span class="nb nm">37</span><span class="nb nb-b">23</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">21</td>
+  <td class="inter-cell"><span class="nb">2</span><span class="nb">4</span><span class="nb">5</span><span class="nb">6</span><span class="nb">7</span><span class="nb">8</span><span class="nb">9</span><span class="nb">10</span><span class="nb">11</span><span class="nb">12</span><span class="nb">17</span><span class="nb">20</span><span class="nb">23</span><span class="nb">28</span><span class="nb">29</span><span class="nb">30</span><span class="nb">33</span><span class="nb">35</span><span class="nb">36</span><span class="nb">38</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2053</td>
+  <td class="tc">2025-11-20</td>
+  <td class="nowrap"><span class="nb nm">20</span><span class="nb nm">28</span><span class="nb nm">31</span><span class="nb nm">35</span><span class="nb nm">37</span><span class="nb nm">41</span><span class="nb nb-b">13</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">27</td>
+  <td class="inter-cell"><span class="nb">3</span><span class="nb">4</span><span class="nb">7</span><span class="nb">9</span><span class="nb">11</span><span class="nb">12</span><span class="nb">13</span><span class="nb">14</span><span class="nb">15</span><span class="nb">17</span><span class="nb">18</span><span class="nb">19</span><span class="nb">21</span><span class="nb">22</span><span class="nb">23</span><span class="nb">24</span><span class="nb">25</span><span class="nb">26</span><span class="nb">28</span><span class="nb">32</span><span class="nb">33</span><span class="nb">34</span><span class="nb">36</span><span class="nb">38</span><span class="nb">39</span><span class="nb">40</span><span class="nb">41</span></td>
+</tr><tr class="">
+  <td class="tc">2052</td>
+  <td class="tc">2025-11-17</td>
+  <td class="nowrap"><span class="nb nm">1</span><span class="nb nm">3</span><span class="nb nm">18</span><span class="nb nm">25</span><span class="nb nm">30</span><span class="nb nm">34</span><span class="nb nb-b">10</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">22</td>
+  <td class="inter-cell"><span class="nb">2</span><span class="nb">3</span><span class="nb">5</span><span class="nb">7</span><span class="nb">11</span><span class="nb">16</span><span class="nb">17</span><span class="nb">18</span><span class="nb">19</span><span class="nb">20</span><span class="nb">22</span><span class="nb">23</span><span class="nb">28</span><span class="nb">29</span><span class="nb">30</span><span class="nb">31</span><span class="nb">34</span><span class="nb">35</span><span class="nb">36</span><span class="nb">37</span><span class="nb">40</span><span class="nb">41</span></td>
+</tr><tr class="">
+  <td class="tc">2051</td>
+  <td class="tc">2025-11-13</td>
+  <td class="nowrap"><span class="nb nm">3</span><span class="nb nm">15</span><span class="nb nm">27</span><span class="nb nm">28</span><span class="nb nm">31</span><span class="nb nm">39</span><span class="nb nb-b">20</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">20</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">2</span><span class="nb">3</span><span class="nb">4</span><span class="nb">5</span><span class="nb">8</span><span class="nb">10</span><span class="nb">12</span><span class="nb">17</span><span class="nb">20</span><span class="nb">21</span><span class="nb">22</span><span class="nb">23</span><span class="nb">25</span><span class="nb">27</span><span class="nb">28</span><span class="nb">32</span><span class="nb">34</span><span class="nb">41</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2050</td>
+  <td class="tc">2025-11-10</td>
+  <td class="nowrap"><span class="nb nm">6</span><span class="nb nm">11</span><span class="nb nm">15</span><span class="nb nm">21</span><span class="nb nm">25</span><span class="nb nm">32</span><span class="nb nb-b">5</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">20</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">2</span><span class="nb">3</span><span class="nb">5</span><span class="nb">6</span><span class="nb">7</span><span class="nb">10</span><span class="nb">12</span><span class="nb">14</span><span class="nb">20</span><span class="nb">28</span><span class="nb">29</span><span class="nb">31</span><span class="nb">32</span><span class="nb">33</span><span class="nb">34</span><span class="nb">35</span><span class="nb">41</span><span class="nb">42</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2049</td>
+  <td class="tc">2025-11-06</td>
+  <td class="nowrap"><span class="nb nm">10</span><span class="nb nm">24</span><span class="nb nm">25</span><span class="nb nm">39</span><span class="nb nm">40</span><span class="nb nm">42</span><span class="nb nb-b">19</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">27</td>
+  <td class="inter-cell"><span class="nb">4</span><span class="nb">8</span><span class="nb">9</span><span class="nb">10</span><span class="nb">11</span><span class="nb">13</span><span class="nb">14</span><span class="nb">15</span><span class="nb">16</span><span class="nb">19</span><span class="nb">20</span><span class="nb">21</span><span class="nb">22</span><span class="nb">23</span><span class="nb">26</span><span class="nb">29</span><span class="nb">30</span><span class="nb">31</span><span class="nb">32</span><span class="nb">34</span><span class="nb">36</span><span class="nb">38</span><span class="nb">39</span><span class="nb">40</span><span class="nb">41</span><span class="nb">42</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2048</td>
+  <td class="tc">2025-11-03</td>
+  <td class="nowrap"><span class="nb nm">8</span><span class="nb nm">13</span><span class="nb nm">18</span><span class="nb nm">32</span><span class="nb nm">37</span><span class="nb nm">43</span><span class="nb nb-b">27</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">23</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">2</span><span class="nb">4</span><span class="nb">6</span><span class="nb">11</span><span class="nb">12</span><span class="nb">13</span><span class="nb">14</span><span class="nb">18</span><span class="nb">19</span><span class="nb">20</span><span class="nb">24</span><span class="nb">25</span><span class="nb">27</span><span class="nb">28</span><span class="nb">29</span><span class="nb">31</span><span class="nb">35</span><span class="nb">36</span><span class="nb">38</span><span class="nb">40</span><span class="nb">41</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2047</td>
+  <td class="tc">2025-10-30</td>
+  <td class="nowrap"><span class="nb nm">10</span><span class="nb nm">11</span><span class="nb nm">16</span><span class="nb nm">19</span><span class="nb nm">37</span><span class="nb nm">39</span><span class="nb nb-b">27</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">23</td>
+  <td class="inter-cell"><span class="nb">2</span><span class="nb">5</span><span class="nb">6</span><span class="nb">7</span><span class="nb">8</span><span class="nb">9</span><span class="nb">13</span><span class="nb">14</span><span class="nb">17</span><span class="nb">18</span><span class="nb">20</span><span class="nb">23</span><span class="nb">24</span><span class="nb">26</span><span class="nb">27</span><span class="nb">30</span><span class="nb">31</span><span class="nb">33</span><span class="nb">37</span><span class="nb">38</span><span class="nb">39</span><span class="nb">40</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2046</td>
+  <td class="tc">2025-10-27</td>
+  <td class="nowrap"><span class="nb nm">2</span><span class="nb nm">5</span><span class="nb nm">10</span><span class="nb nm">22</span><span class="nb nm">25</span><span class="nb nm">38</span><span class="nb nb-b">14</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">25</td>
+  <td class="inter-cell"><span class="nb">3</span><span class="nb">5</span><span class="nb">6</span><span class="nb">9</span><span class="nb">11</span><span class="nb">13</span><span class="nb">14</span><span class="nb">15</span><span class="nb">16</span><span class="nb">18</span><span class="nb">20</span><span class="nb">21</span><span class="nb">23</span><span class="nb">24</span><span class="nb">25</span><span class="nb">27</span><span class="nb">28</span><span class="nb">29</span><span class="nb">34</span><span class="nb">36</span><span class="nb">37</span><span class="nb">39</span><span class="nb">40</span><span class="nb">42</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2045</td>
+  <td class="tc">2025-10-23</td>
+  <td class="nowrap"><span class="nb nm">1</span><span class="nb nm">4</span><span class="nb nm">7</span><span class="nb nm">12</span><span class="nb nm">16</span><span class="nb nm">28</span><span class="nb nb-b">19</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">25</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">3</span><span class="nb">4</span><span class="nb">6</span><span class="nb">7</span><span class="nb">9</span><span class="nb">11</span><span class="nb">13</span><span class="nb">14</span><span class="nb">17</span><span class="nb">18</span><span class="nb">19</span><span class="nb">20</span><span class="nb">21</span><span class="nb">22</span><span class="nb">23</span><span class="nb">24</span><span class="nb">25</span><span class="nb">28</span><span class="nb">29</span><span class="nb">30</span><span class="nb">34</span><span class="nb">38</span><span class="nb">39</span><span class="nb">41</span></td>
+</tr><tr class="">
+  <td class="tc">2044</td>
+  <td class="tc">2025-10-20</td>
+  <td class="nowrap"><span class="nb nm">1</span><span class="nb nm">6</span><span class="nb nm">11</span><span class="nb nm">26</span><span class="nb nm">33</span><span class="nb nm">40</span><span class="nb nb-b">14</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">23</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">2</span><span class="nb">5</span><span class="nb">6</span><span class="nb">10</span><span class="nb">11</span><span class="nb">14</span><span class="nb">15</span><span class="nb">20</span><span class="nb">23</span><span class="nb">24</span><span class="nb">26</span><span class="nb">28</span><span class="nb">29</span><span class="nb">31</span><span class="nb">35</span><span class="nb">36</span><span class="nb">37</span><span class="nb">38</span><span class="nb">40</span><span class="nb">41</span><span class="nb">42</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2043</td>
+  <td class="tc">2025-10-16</td>
+  <td class="nowrap"><span class="nb nm">11</span><span class="nb nm">19</span><span class="nb nm">22</span><span class="nb nm">34</span><span class="nb nm">40</span><span class="nb nm">42</span><span class="nb nb-b">31</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">23</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">4</span><span class="nb">5</span><span class="nb">8</span><span class="nb">10</span><span class="nb">11</span><span class="nb">12</span><span class="nb">15</span><span class="nb">16</span><span class="nb">19</span><span class="nb">20</span><span class="nb">22</span><span class="nb">25</span><span class="nb">27</span><span class="nb">28</span><span class="nb">29</span><span class="nb">30</span><span class="nb">35</span><span class="nb">36</span><span class="nb">37</span><span class="nb">40</span><span class="nb">41</span><span class="nb">42</span></td>
+</tr><tr class="">
+  <td class="tc">2042</td>
+  <td class="tc">2025-10-13</td>
+  <td class="nowrap"><span class="nb nm">9</span><span class="nb nm">14</span><span class="nb nm">29</span><span class="nb nm">38</span><span class="nb nm">41</span><span class="nb nm">43</span><span class="nb nb-b">12</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">22</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">2</span><span class="nb">4</span><span class="nb">6</span><span class="nb">8</span><span class="nb">10</span><span class="nb">12</span><span class="nb">13</span><span class="nb">15</span><span class="nb">16</span><span class="nb">17</span><span class="nb">20</span><span class="nb">22</span><span class="nb">24</span><span class="nb">28</span><span class="nb">30</span><span class="nb">31</span><span class="nb">32</span><span class="nb">34</span><span class="nb">36</span><span class="nb">40</span><span class="nb">42</span></td>
+</tr><tr class="">
+  <td class="tc">2041</td>
+  <td class="tc">2025-10-09</td>
+  <td class="nowrap"><span class="nb nm">4</span><span class="nb nm">19</span><span class="nb nm">22</span><span class="nb nm">24</span><span class="nb nm">32</span><span class="nb nm">38</span><span class="nb nb-b">11</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">24</td>
+  <td class="inter-cell"><span class="nb">4</span><span class="nb">5</span><span class="nb">6</span><span class="nb">9</span><span class="nb">10</span><span class="nb">12</span><span class="nb">14</span><span class="nb">17</span><span class="nb">18</span><span class="nb">20</span><span class="nb">21</span><span class="nb">23</span><span class="nb">27</span><span class="nb">30</span><span class="nb">31</span><span class="nb">32</span><span class="nb">33</span><span class="nb">34</span><span class="nb">35</span><span class="nb">37</span><span class="nb">38</span><span class="nb">39</span><span class="nb">42</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2040</td>
+  <td class="tc">2025-10-06</td>
+  <td class="nowrap"><span class="nb nm">7</span><span class="nb nm">12</span><span class="nb nm">14</span><span class="nb nm">15</span><span class="nb nm">24</span><span class="nb nm">30</span><span class="nb nb-b">32</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">26</td>
+  <td class="inter-cell"><span class="nb">2</span><span class="nb">3</span><span class="nb">7</span><span class="nb">8</span><span class="nb">10</span><span class="nb">11</span><span class="nb">12</span><span class="nb">13</span><span class="nb">14</span><span class="nb">15</span><span class="nb">17</span><span class="nb">20</span><span class="nb">22</span><span class="nb">23</span><span class="nb">24</span><span class="nb">25</span><span class="nb">26</span><span class="nb">27</span><span class="nb">28</span><span class="nb">29</span><span class="nb">34</span><span class="nb">39</span><span class="nb">40</span><span class="nb">41</span><span class="nb">42</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2039</td>
+  <td class="tc">2025-10-02</td>
+  <td class="nowrap"><span class="nb nm">2</span><span class="nb nm">15</span><span class="nb nm">25</span><span class="nb nm">27</span><span class="nb nm">38</span><span class="nb nm">42</span><span class="nb nb-b">22</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">22</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">4</span><span class="nb">5</span><span class="nb">9</span><span class="nb">11</span><span class="nb">13</span><span class="nb">16</span><span class="nb">18</span><span class="nb">19</span><span class="nb">23</span><span class="nb">25</span><span class="nb">26</span><span class="nb">27</span><span class="nb">30</span><span class="nb">31</span><span class="nb">32</span><span class="nb">33</span><span class="nb">35</span><span class="nb">37</span><span class="nb">38</span><span class="nb">39</span><span class="nb">42</span></td>
+</tr><tr class="">
+  <td class="tc">2038</td>
+  <td class="tc">2025-09-29</td>
+  <td class="nowrap"><span class="nb nm">5</span><span class="nb nm">31</span><span class="nb nm">37</span><span class="nb nm">39</span><span class="nb nm">41</span><span class="nb nm">42</span><span class="nb nb-b">33</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">24</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">5</span><span class="nb">6</span><span class="nb">10</span><span class="nb">11</span><span class="nb">12</span><span class="nb">15</span><span class="nb">17</span><span class="nb">19</span><span class="nb">21</span><span class="nb">22</span><span class="nb">23</span><span class="nb">24</span><span class="nb">25</span><span class="nb">26</span><span class="nb">32</span><span class="nb">33</span><span class="nb">34</span><span class="nb">36</span><span class="nb">37</span><span class="nb">38</span><span class="nb">39</span><span class="nb">40</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2037</td>
+  <td class="tc">2025-09-25</td>
+  <td class="nowrap"><span class="nb nm">7</span><span class="nb nm">12</span><span class="nb nm">20</span><span class="nb nm">23</span><span class="nb nm">27</span><span class="nb nm">29</span><span class="nb nb-b">10</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">24</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">2</span><span class="nb">4</span><span class="nb">5</span><span class="nb">6</span><span class="nb">8</span><span class="nb">10</span><span class="nb">13</span><span class="nb">15</span><span class="nb">17</span><span class="nb">18</span><span class="nb">20</span><span class="nb">21</span><span class="nb">22</span><span class="nb">23</span><span class="nb">24</span><span class="nb">25</span><span class="nb">27</span><span class="nb">29</span><span class="nb">32</span><span class="nb">33</span><span class="nb">34</span><span class="nb">35</span><span class="nb">40</span></td>
+</tr><tr class="">
+  <td class="tc">2036</td>
+  <td class="tc">2025-09-22</td>
+  <td class="nowrap"><span class="nb nm">7</span><span class="nb nm">10</span><span class="nb nm">17</span><span class="nb nm">26</span><span class="nb nm">35</span><span class="nb nm">42</span><span class="nb nb-b">33</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">22</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">2</span><span class="nb">3</span><span class="nb">4</span><span class="nb">6</span><span class="nb">7</span><span class="nb">8</span><span class="nb">9</span><span class="nb">18</span><span class="nb">20</span><span class="nb">21</span><span class="nb">25</span><span class="nb">30</span><span class="nb">32</span><span class="nb">33</span><span class="nb">34</span><span class="nb">35</span><span class="nb">37</span><span class="nb">38</span><span class="nb">40</span><span class="nb">41</span><span class="nb">42</span></td>
+</tr><tr class="">
+  <td class="tc">2035</td>
+  <td class="tc">2025-09-18</td>
+  <td class="nowrap"><span class="nb nm">5</span><span class="nb nm">10</span><span class="nb nm">12</span><span class="nb nm">17</span><span class="nb nm">21</span><span class="nb nm">35</span><span class="nb nb-b">9</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">24</td>
+  <td class="inter-cell"><span class="nb">2</span><span class="nb">4</span><span class="nb">6</span><span class="nb">9</span><span class="nb">10</span><span class="nb">11</span><span class="nb">12</span><span class="nb">15</span><span class="nb">17</span><span class="nb">22</span><span class="nb">23</span><span class="nb">28</span><span class="nb">29</span><span class="nb">30</span><span class="nb">31</span><span class="nb">32</span><span class="nb">35</span><span class="nb">36</span><span class="nb">37</span><span class="nb">38</span><span class="nb">39</span><span class="nb">40</span><span class="nb">42</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2034</td>
+  <td class="tc">2025-09-15</td>
+  <td class="nowrap"><span class="nb nm">2</span><span class="nb nm">13</span><span class="nb nm">22</span><span class="nb nm">25</span><span class="nb nm">35</span><span class="nb nm">37</span><span class="nb nb-b">17</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">22</td>
+  <td class="inter-cell"><span class="nb">1</span><span class="nb">3</span><span class="nb">4</span><span class="nb">6</span><span class="nb">7</span><span class="nb">10</span><span class="nb">13</span><span class="nb">14</span><span class="nb">15</span><span class="nb">17</span><span class="nb">21</span><span class="nb">22</span><span class="nb">24</span><span class="nb">26</span><span class="nb">27</span><span class="nb">28</span><span class="nb">29</span><span class="nb">31</span><span class="nb">34</span><span class="nb">39</span><span class="nb">41</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2033</td>
+  <td class="tc">2025-09-11</td>
+  <td class="nowrap"><span class="nb nm">5</span><span class="nb nm">16</span><span class="nb nm">21</span><span class="nb nm">22</span><span class="nb nm">33</span><span class="nb nm">35</span><span class="nb nb-b">26</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">23</td>
+  <td class="inter-cell"><span class="nb">3</span><span class="nb">4</span><span class="nb">6</span><span class="nb">7</span><span class="nb">8</span><span class="nb">9</span><span class="nb">11</span><span class="nb">12</span><span class="nb">16</span><span class="nb">17</span><span class="nb">18</span><span class="nb">24</span><span class="nb">26</span><span class="nb">28</span><span class="nb">30</span><span class="nb">33</span><span class="nb">34</span><span class="nb">35</span><span class="nb">36</span><span class="nb">38</span><span class="nb">39</span><span class="nb">40</span><span class="nb">41</span></td>
+</tr><tr class="">
+  <td class="tc">2032</td>
+  <td class="tc">2025-09-08</td>
+  <td class="nowrap"><span class="nb nm">8</span><span class="nb nm">15</span><span class="nb nm">27</span><span class="nb nm">33</span><span class="nb nm">37</span><span class="nb nm">39</span><span class="nb nb-b">31</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">24</td>
+  <td class="inter-cell"><span class="nb">4</span><span class="nb">5</span><span class="nb">8</span><span class="nb">10</span><span class="nb">11</span><span class="nb">15</span><span class="nb">16</span><span class="nb">17</span><span class="nb">18</span><span class="nb">19</span><span class="nb">20</span><span class="nb">21</span><span class="nb">22</span><span class="nb">23</span><span class="nb">25</span><span class="nb">26</span><span class="nb">29</span><span class="nb">32</span><span class="nb">33</span><span class="nb">36</span><span class="nb">37</span><span class="nb">39</span><span class="nb">40</span><span class="nb">42</span></td>
+</tr><tr class="">
+  <td class="tc">2031</td>
+  <td class="tc">2025-09-04</td>
+  <td class="nowrap"><span class="nb nm">2</span><span class="nb nm">3</span><span class="nb nm">16</span><span class="nb nm">20</span><span class="nb nm">23</span><span class="nb nm">29</span><span class="nb nb-b">27</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">25</td>
+  <td class="inter-cell"><span class="nb">2</span><span class="nb">3</span><span class="nb">6</span><span class="nb">7</span><span class="nb">8</span><span class="nb">9</span><span class="nb">10</span><span class="nb">13</span><span class="nb">14</span><span class="nb">15</span><span class="nb">16</span><span class="nb">17</span><span class="nb">18</span><span class="nb">22</span><span class="nb">23</span><span class="nb">26</span><span class="nb">28</span><span class="nb">29</span><span class="nb">30</span><span class="nb">33</span><span class="nb">34</span><span class="nb">35</span><span class="nb">39</span><span class="nb">41</span><span class="nb">43</span></td>
+</tr><tr class="">
+  <td class="tc">2030</td>
+  <td class="tc">2025-09-01</td>
+  <td class="nowrap"><span class="nb nm">3</span><span class="nb nm">7</span><span class="nb nm">28</span><span class="nb nm">29</span><span class="nb nm">32</span><span class="nb nm">36</span><span class="nb nb-b">13</span></td>
+  <td class="tc"><span class="hit-no">—</span></td>
+  <td class="tc">22</td>
+  <td class="inter-cell"><span class="nb">3</span><span class="nb">6</span><span class="nb">7</span><span class="nb">8</span><span class="nb">10</span><span class="nb">12</span><span class="nb">13</span><span class="nb">14</span><span class="nb">15</span><span class="nb">17</span><span class="nb">19</span><span class="nb">20</span><span class="nb">22</span><span class="nb">23</span><span class="nb">27</span><span class="nb">28</span><span class="nb">35</span><span class="nb">36</span><span class="nb">38</span><span class="nb">39</span><span class="nb">40</span><span class="nb">41</span></td>
+</tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <p class="footer">
+    Xoshiro256** (seeded via SplitMix64): picks = partial Fisher-Yates(range(1,44), 38) with combined seed =
+    seed&times;10&#8311; + draw_serial. Each (seed, draw) pair independent and deterministic.<br>
+    Intersection pool = numbers appearing in ALL 5 seeds' 38-number picks for that specific draw. Hit = actual
+    6-number winner is a full subset of that draw's intersection pool.<br>
+    Data read live from <code>seed_hit_xoshiro_k38</code> in <code>loto6_local.db</code> and directly from the
+    production database for per-draw winning numbers.<br>
+    Formula-based only &middot; Not financial advice &middot; Loto 6 is random.
+  </p>
+</div>
+
+<script>
+(function(){
+  // No client-side seed picking needed on this page -- everything is
+  // precomputed server-side. Just a no-op placeholder for consistency
+  // with the site's other xoshiro pages.
+})();
+</script>
+</body>
+</html>
