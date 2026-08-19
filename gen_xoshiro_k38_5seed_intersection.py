@@ -206,11 +206,11 @@ def render_table_rows(rows):
         actual_html = num_badges(row['actual'], matched=matched) + f'<span class="nb nb-b">{row["bonus"]}</span>'
         inter_html = num_badges(row['inter'], matched=matched)
         html += f"""<tr class="{row_cls}">
-  <td class="tc">{row['s']}</td>
   <td class="tc">{row['d']}</td>
-  <td class="nowrap">{actual_html}</td>
+  <td class="tc">{row['s']}</td>
   <td class="tc">{hit_badge}</td>
   <td class="tc">{match_badge(row['matchCount'])}</td>
+  <td class="nowrap">{actual_html}</td>
   <td class="tc">{row['poolSize']}</td>
   <td class="inter-cell">{inter_html}</td>
 </tr>"""
@@ -360,8 +360,8 @@ tbody td.inter-cell{{max-width:520px;white-space:normal}}
     <div class="tbl-wrap">
       <table>
         <thead><tr>
-          <th class="tc">Draw</th><th class="tc">Date</th><th>Actual (6) + bonus</th>
-          <th class="tc">Hit</th><th class="tc">Match count</th><th class="tc">Pool size</th><th>Intersection numbers</th>
+          <th class="tc">Date</th><th class="tc">Draw</th><th class="tc">Hit</th><th class="tc">Match count</th>
+          <th>Actual (6) + bonus</th><th class="tc">Pool size</th><th>Intersection numbers</th>
         </tr></thead>
         <tbody>{table_rows_html}</tbody>
       </table>
