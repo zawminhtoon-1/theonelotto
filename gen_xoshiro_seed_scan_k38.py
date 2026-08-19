@@ -2,17 +2,19 @@
 gen_xoshiro_seed_scan_k38.py
 --------------------------------
 Static report page for the K=38 xoshiro256** backtest scan: seeds
-0-1,000,000, draws #1000-2127 (1128 draws, the corrected window),
-ranked by hit6b (6-hit + bonus) desc, tiebreak hit6 desc, tiebreak
-hit5 desc.
+0-1,000,000, draws #1000-2129 (1130 draws), ranked by hit6b (6-hit +
+bonus) desc, tiebreak hit6 desc, tiebreak hit5 desc.
 
 Reads live from loto6_local.db's seed_hit_xoshiro_k38 table (populated
 by load_xoshiro_seed_scan_k38_to_db.py from the two-stage scan:
-xoshiro_seed_scan_k38_0_100k.py + xoshiro_seed_scan_k38_100k_to_1m.py)
-for aggregates and the top-N table. The 1128-draw window is embedded
-client-side for the seed-detail modal, so per-draw breakdowns work for
-ANY seed typed in, computed live via the same verified xoshiro256**
-JS port used elsewhere on the site.
+xoshiro_seed_scan_k38_0_100k.py + xoshiro_seed_scan_k38_100k_to_1m.py,
+originally against #1000-2127; extended to #1000-2129 via
+extend_xoshiro_window_2129.py, which folds in #2128/#2129 as an
+incremental per-seed delta rather than a full rescan) for aggregates
+and the top-N table. The draw window is embedded client-side for the
+seed-detail modal, so per-draw breakdowns work for ANY seed typed in,
+computed live via the same verified xoshiro256** JS port used
+elsewhere on the site.
 
 Output: public/xoshiro_seed_scan_k38.html
 Run: python gen_xoshiro_seed_scan_k38.py
@@ -28,8 +30,8 @@ TABLE = "seed_hit_xoshiro_k38"
 
 K_PICKS = 38
 LOTO6_MAX = 43
-DRAW_START, DRAW_END = 1000, 2127
-N_DRAWS = DRAW_END - DRAW_START + 1  # 1128
+DRAW_START, DRAW_END = 1000, 2129
+N_DRAWS = DRAW_END - DRAW_START + 1  # 1130
 TOP_N = 25
 
 # ── Load aggregates + top-N from SQLite ──────────────────────────────────────
@@ -80,7 +82,7 @@ print(f"Loaded {num_seeds:,} seeds from {TABLE}")
 print(f"Best: seed={best[0]} hit6b={best[1]} hit6={best[2]} hit5={best[3]}")
 print(f"Analytical expectation: hit6b~={exp_hit6b:.2f} hit6~={exp_hit6:.2f} hit5~={exp_hit5:.2f} (of {N_DRAWS} draws)")
 
-# ── Load the exact 1000-2127 draw window from the production DB, for the
+# ── Load the exact 1000-2129 draw window from the production DB, for the
 # client-side seed-detail modal. ────────────────────────────────────────────
 if 'DATABASE_URL' not in os.environ:
     with open(ENV_LOCAL, encoding='utf-8') as f:
@@ -313,9 +315,11 @@ tbody td.tr{{text-align:right}}
     other seed-scan pages, but with 38 picks out of 43 (not 33) and the corrected {N_DRAWS}-draw window (#{DRAW_START}–{DRAW_END}),
     used fresh for this scan. Three metrics tracked per seed: <b>hit6b</b> = draws where the 38 picks contain all 6 main
     winning numbers <em>and</em> the bonus number; <b>hit6</b> = draws with all 6 main numbers (any bonus); <b>hit5</b> =
-    draws with exactly 5 of 6 main numbers. Ranking: highest hit6b, tiebreak hit6, tiebreak hit5. Scanned in two stages
-    (0–100,000, then 100,001–1,000,000) — draw records pulled directly from the production database and verified for
-    exactly {N_DRAWS} consecutive rows with no gaps before each stage.
+    draws with exactly 5 of 6 main numbers. Ranking: highest hit6b, tiebreak hit6, tiebreak hit5. Originally scanned in
+    two stages (0–100,000, then 100,001–1,000,000) against draws #1000–2127; extended to #{DRAW_START}–{DRAW_END}
+    ({N_DRAWS} draws) by folding in #2128 and #2129 as an incremental per-seed delta (~46s for all 1,000,001 seeds)
+    rather than a full rescan — draw records pulled directly from the production database and verified for exactly
+    {N_DRAWS} consecutive rows with no gaps.
   </div>
 
   <div class="lookup">
