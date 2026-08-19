@@ -105,33 +105,6 @@ page = f"""<!DOCTYPE html>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
 /* ====== SHARED FIXED NAV (dropdown) ====== */
-.site-nav{{position:fixed;top:0;left:0;right:0;height:52px;background:#0a0f1e;
-  border-bottom:1px solid #1e293b;display:flex;align-items:center;padding:0 20px;
-  gap:0;z-index:9999;box-shadow:0 2px 16px rgba(0,0,0,.6)}}
-.site-nav .nav-logo{{font-size:1rem;font-weight:800;color:#f1f5f9;text-decoration:none;
-  white-space:nowrap;margin-right:24px;flex-shrink:0;letter-spacing:-.01em}}
-.site-nav .nav-logo span{{color:#38bdf8}}
-.nav-groups{{display:flex;gap:4px;align-items:center}}
-.nav-group{{position:relative}}
-.nav-group-btn{{display:flex;align-items:center;gap:5px;padding:7px 14px;border-radius:7px;
-  cursor:pointer;font-size:.82rem;font-weight:600;color:#94a3b8;
-  border:1px solid transparent;transition:.15s;white-space:nowrap;user-select:none}}
-.nav-group-btn:hover,.nav-group:hover .nav-group-btn{{color:#f1f5f9;background:#1e293b;border-color:#334155}}
-.nav-group-btn .arrow{{font-size:.6rem;opacity:.6;transition:transform .2s}}
-.nav-group:hover .nav-group-btn .arrow{{transform:rotate(180deg)}}
-.nav-dropdown{{display:none;position:absolute;top:100%;left:0;
-  background:transparent;padding-top:6px;z-index:10000;min-width:170px}}
-.nav-dropdown-inner{{background:#0d1526;border:1px solid #1e293b;border-radius:10px;
-  padding:6px;box-shadow:0 12px 32px rgba(0,0,0,.7);max-height:70vh;overflow-y:auto}}
-.nav-group:hover .nav-dropdown{{display:block}}
-.nav-dropdown a{{display:flex;align-items:center;gap:8px;padding:8px 12px;
-  border-radius:6px;color:#94a3b8;text-decoration:none;font-size:.82rem;
-  white-space:nowrap;transition:.12s}}
-.nav-dropdown a:hover{{color:#f1f5f9;background:#1e293b}}
-.nav-dropdown a.active{{color:#38bdf8;background:#0c2340}}
-.nav-dd-label{{font-size:.68rem;font-weight:700;color:#475569;padding:6px 12px 2px;
-  text-transform:uppercase;letter-spacing:.06em}}
-.nav-divider{{height:1px;background:#1e293b;margin:4px 0}}
 /* ========================================= */
 
 *{{box-sizing:border-box;margin:0;padding:0}}
@@ -185,60 +158,7 @@ h1{{font-size:1.4rem;font-weight:700;color:#f1f5f9;margin-bottom:4px}}
 </head>
 <body>
 
-<nav class="site-nav">
-  <a class="nav-logo" href="/">\U0001f3b1 The<span>One</span>Lotto</a>
-  <div class="nav-groups">
-    <div class="nav-group">
-      <div class="nav-group-btn">Data <span class="arrow">\u25bc</span></div>
-      <div class="nav-dropdown"><div class="nav-dropdown-inner">
-        <div class="nav-dd-label">Results</div>
-        <a href="/">\U0001f3e0 Latest Draw</a>
-        <a href="/history">\U0001f4cb History</a>
-        <a href="/numbers">\U0001f522 Numbers</a>
-      </div></div>
-    </div>
-    <div class="nav-group">
-      <div class="nav-group-btn">Predict <span class="arrow">\u25bc</span></div>
-      <div class="nav-dropdown"><div class="nav-dropdown-inner">
-        <div class="nav-dd-label">Prediction Tools</div>
-        <a href="/predictions">\U0001f3af Predictions</a>
-        <a href="/backtest.html">\U0001f4ca Backtest</a>
-        <a href="/combo_evo.html">\U0001f9ec Combo Evo</a>
-        <div class="nav-divider"></div>
-        <div class="nav-dd-label">Strategy</div>
-        <a href="/overdue.html">\u23f3 Overdue</a>
-        <a href="/state_machine.html">\U0001f504 State Machine</a>
-        <a href="/modular_cycle.html">\U0001f501 Modular Cycle</a>
-        <a href="/next_relation.html">\U0001f517 Next Relation</a>
-        <a href="/lstm_predict.html">\U0001f9e0 LSTM Neural Net</a>
-        <div class="nav-divider"></div>
-        <div class="nav-dd-label">N-Draw Avg</div>
-        <a href="/avg_hub.html">\u2b21 All N-Draw Avg (2\u201343)</a>
-        <div class="nav-divider"></div>
-        <div class="nav-dd-label">N-Draw Avg Shift</div>
-        <a href="/avg_shift_hub.html">\u21c4 All N-Shift Avg (2\u201343)</a>
-        <div class="nav-divider"></div>
-        <div class="nav-dd-label">Random Seed</div>
-        <a href="/random_seed_backtest.html">\U0001f3b2 Random Seed (1\u20133000)</a>
-        <a href="/k7_seed_coverage.html">\U0001f4c8 K=7 Seed Coverage</a>
-        <a href="/k7_seed_hit_1000.html" class="active">\U0001f5fa K=7 Seed-Hit (1000 draws)</a>
-      </div></div>
-    </div>
-    <div class="nav-group">
-      <div class="nav-group-btn">Analyze <span class="arrow">\u25bc</span></div>
-      <div class="nav-dropdown"><div class="nav-dropdown-inner">
-        <div class="nav-dd-label">Pattern Analysis</div>
-        <a href="/special.html">\u2b50 Special</a>
-        <a href="/consecutive.html">\U0001f517 Consecutive</a>
-        <div class="nav-divider"></div>
-        <div class="nav-dd-label">Position</div>
-        <a href="/position.html">\U0001f4cd Position Freq</a>
-        <a href="/pos_predict.html">\U0001f4ca Pos 1\u20136 Predict</a>
-      </div></div>
-    </div>
-  </div>
-</nav>
-
+<script src="/site-nav.js"></script>
 <div class="wrap">
   <h1>\U0001f5fa K=7 Seed-Hit Scan \u2014 1000 Draws</h1>
   <p class="subtitle">Draws #{DRAW_START}\u2013{DRAW_END} ({total} draws) \u00b7 K=7 picks \u00b7 seeds {SEED_START:,} to {SEED_END:,} ({SEED_END-SEED_START+1:,} values) \u00b7 formula random.Random(seed\u00d710\u2077+draw_serial).sample(range(1,44),7)</p>
@@ -355,17 +275,6 @@ new Chart(document.getElementById('histChart').getContext('2d'), {{
     }}
   }}
 }});
-</script>
-<script>
-(function(){{
-  var path = window.location.pathname;
-  document.querySelectorAll('.nav-dropdown a').forEach(function(a){{
-    var href = a.getAttribute('href');
-    if(!href) return;
-    if(href === path || (href !== '/' && path.startsWith(href.split('#')[0])))
-      a.classList.add('active');
-  }});
-}})();
 </script>
 </body>
 </html>"""

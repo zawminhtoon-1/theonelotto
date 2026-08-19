@@ -6,37 +6,7 @@
 <title>Random Seed Backtest — Loto 6</title>
 <style>
 /* ====== SHARED FIXED NAV (dropdown) ====== */
-.site-nav{position:fixed;top:0;left:0;right:0;height:52px;background:#0a0f1e;
-  border-bottom:1px solid #1e293b;display:flex;align-items:center;padding:0 20px;
-  gap:0;z-index:9999;box-shadow:0 2px 16px rgba(0,0,0,.6)}
-.site-nav .nav-logo{font-size:1rem;font-weight:800;color:#f1f5f9;text-decoration:none;
-  white-space:nowrap;margin-right:24px;flex-shrink:0;letter-spacing:-.01em}
-.site-nav .nav-logo span{color:#38bdf8}
-.nav-groups{display:flex;gap:4px;align-items:center}
-.nav-group{position:relative}
-.nav-group-btn{display:flex;align-items:center;gap:5px;padding:7px 14px;border-radius:7px;
-  cursor:pointer;font-size:.82rem;font-weight:600;color:#94a3b8;
-  border:1px solid transparent;transition:.15s;white-space:nowrap;user-select:none}
-.nav-group-btn:hover,.nav-group:hover .nav-group-btn{color:#f1f5f9;background:#1e293b;border-color:#334155}
-.nav-group-btn .arrow{font-size:.6rem;opacity:.6;transition:transform .2s}
-.nav-group:hover .nav-group-btn .arrow{transform:rotate(180deg)}
-.nav-dropdown{display:none;position:absolute;top:100%;left:0;
-  background:transparent;padding-top:6px;z-index:10000;min-width:170px}
-.nav-dropdown-inner{background:#0d1526;border:1px solid #1e293b;border-radius:10px;
-  padding:6px;box-shadow:0 12px 32px rgba(0,0,0,.7)}
-.nav-group:hover .nav-dropdown{display:block}
-.nav-dropdown a{display:flex;align-items:center;gap:8px;padding:8px 12px;
-  border-radius:6px;color:#94a3b8;text-decoration:none;font-size:.82rem;
-  white-space:nowrap;transition:.12s}
-.nav-dropdown a:hover{color:#f1f5f9;background:#1e293b}
-.nav-dropdown a.active{color:#38bdf8;background:#0c2340}
-.nav-dd-label{font-size:.68rem;font-weight:700;color:#475569;padding:6px 12px 2px;
-  text-transform:uppercase;letter-spacing:.06em}
-.nav-divider{height:1px;background:#1e293b;margin:4px 0}
-
 /* ========================================= */
-
-
 
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#0a0f1e;color:#e2e8f0;font-family:system-ui,sans-serif;padding-top:60px;min-height:100vh}
@@ -100,67 +70,7 @@ tbody td.tr{text-align:right}
 </head>
 <body>
 
-
-<nav class="site-nav">
-  <a class="nav-logo" href="/">🎱 The<span>One</span>Lotto</a>
-  <div class="nav-groups">
-
-    <!-- Data -->
-    <div class="nav-group">
-      <div class="nav-group-btn">Data <span class="arrow">▼</span></div>
-      <div class="nav-dropdown"><div class="nav-dropdown-inner">
-        <div class="nav-dd-label">Results</div>
-        <a href="/">🏠 Latest Draw</a>
-        <a href="/history">📋 History</a>
-        <a href="/numbers">🔢 Numbers</a>
-      </div></div>
-    </div>
-
-    <!-- Predict -->
-    <div class="nav-group">
-      <div class="nav-group-btn">Predict <span class="arrow">▼</span></div>
-      <div class="nav-dropdown"><div class="nav-dropdown-inner">
-        <div class="nav-dd-label">Prediction Tools</div>
-        <a href="/predictions">🎯 Predictions</a>
-        <a href="/backtest.html">📊 Backtest</a>
-        <a href="/combo_evo.html">🧬 Combo Evo</a>
-        <div class="nav-divider"></div>
-        <div class="nav-dd-label">Strategy</div>
-        <a href="/overdue.html">⏳ Overdue</a>
-        <a href="/state_machine.html">🔄 State Machine</a>
-        <a href="/modular_cycle.html">🔁 Modular Cycle</a>
-        <a href="/next_relation.html">🔗 Next Relation</a>
-        <a href="/lstm_predict.html">🧠 LSTM Neural Net</a>
-        <div class="nav-divider"></div>
-        <div class="nav-dd-label">N-Draw Avg</div>
-        <a href="/avg_hub.html">⬡ All N-Draw Avg (2–43)</a>
-        <div class="nav-divider"></div>
-        <div class="nav-dd-label">N-Draw Avg Shift</div>
-        <a href="/avg_shift_hub.html">⇄ All N-Shift Avg (2–43)</a>
-        <div class="nav-divider"></div>
-        <div class="nav-dd-label">Random Seed</div>
-        <a href="/random_seed_backtest.html">🎲 Random Seed (1–2000)</a>
-      </div></div>
-    </div>
-
-    <!-- Analyze -->
-    <div class="nav-group">
-      <div class="nav-group-btn">Analyze <span class="arrow">▼</span></div>
-      <div class="nav-dropdown"><div class="nav-dropdown-inner">
-        <div class="nav-dd-label">Pattern Analysis</div>
-        <a href="/special.html">⭐ Special</a>
-        <a href="/consecutive.html">🔗 Consecutive</a>
-        <div class="nav-divider"></div>
-        <div class="nav-dd-label">Position</div>
-        <a href="/position.html">📍 Position Freq</a>
-        <a href="/pos_predict.html">📊 Pos 1–6 Predict</a>
-      </div></div>
-    </div>
-
-  </div>
-</nav>
-
-
+<script src="/site-nav.js"></script>
 <div class="wrap">
   <h1>🎲 Random Seed Backtest</h1>
   <p class="subtitle">Seeds 1–3000 · 13 picks · last 1000 draws (1130–2129) · random baseline ≈ 1.814 avg hits</p>
@@ -30351,33 +30261,5 @@ document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') document.getElementById('seedModal').style.display = 'none';
 });
 </script>
-<script>
-(function(){
-  var path = window.location.pathname;
-  document.querySelectorAll('.nav-dropdown a').forEach(function(a){
-    var href = a.getAttribute('href');
-    if(!href) return;
-    if(href === path || (href !== '/' && path.startsWith(href.split('#')[0])))
-      a.classList.add('active');
-  });
-})();
-</script>
-
-<script>
-(function(){
-  var path = window.location.pathname + window.location.hash;
-  document.querySelectorAll('.nav-dropdown a').forEach(function(a){
-    var href = a.getAttribute('href');
-    if(!href) return;
-    var hPath = href.split('#')[0];
-    var hHash = href.includes('#') ? href : '';
-    if(href === path) { a.classList.add('active'); return; }
-    if(hPath && hPath !== '/' && path.startsWith(hPath) && !href.includes('#')) {
-      a.classList.add('active');
-    }
-  });
-})();
-</script>
-
 </body>
 </html>
