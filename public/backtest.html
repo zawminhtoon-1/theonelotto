@@ -418,7 +418,10 @@ function buildAll(K) {
     }
   });
 
-  // Summary cards — 1-6 hit counts
+  // Summary cards — 1-6 hit counts, and bonus%/lift (both K-dependent, both
+  // must be recomputed here -- bonus%/lift previously stayed frozen at
+  // whatever K the page was last generated with, since only card-hits was
+  // wired up to buildAll()).
   const hitColors = ['#475569','#94a3b8','#f1f5f9','#f1f5f9','#facc15','#4ade80','#38bdf8'];
   document.querySelectorAll('.card[data-mi]').forEach(card => {
     const mi = parseInt(card.dataset.mi);
@@ -430,6 +433,10 @@ function buildAll(K) {
         '<span class="hv" style="color:'+hitColors[k]+'">'+c[k]+'</span></span>'
       ).join('') +
       '</div>';
+    const bonusPct = bonusCounts[mi] / N * 100;
+    const bonusLift = randBP > 0 ? bonusPct / randBP : 0;
+    card.querySelector('.card-bonus').textContent =
+      bonusPct.toFixed(1) + '% bonus hit  ·  ' + bonusLift.toFixed(2) + '× lift';
   });
 
   // Baseline note
