@@ -78,6 +78,7 @@
             '<div class="nav-dd-label">Predictions</div>' +
             '<a href="/xoshiro_elim_2128.html">✂️ Draw #2128 Elimination</a>' +
             '<a href="/xoshiro_elim_2129.html">✂️ Draw #2129 Elimination</a>' +
+            '<a href="/xoshiro_elim_2130.html">✂️ Draw #2130 Elimination</a>' +
             '<a href="/xoshiro_k38_5seed_intersection.html">✂️ K=38 5-Seed Intersection Backtest</a>' +
             '<a href="/xoshiro_k35_5seed_intersection.html">✂️ K=35 5-Seed Intersection Backtest</a>' +
             '<a href="/xoshiro_k38_x_modularcycle_k28_intersection.html">✂️ Modular Cycle (K=28) × K=38</a>' +
