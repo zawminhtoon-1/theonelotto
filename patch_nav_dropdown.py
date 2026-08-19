@@ -1,4 +1,13 @@
 """
+DEPRECATED -- do not run. Superseded by public/site-nav.js (the shared nav
+module) plus migrate_to_shared_nav.py / migrate_to_shared_nav_html.py.
+Running this script again would re-inject a baked, now-stale nav copy into
+every page and undo that migration -- it is also the likely source of a
+discovered bug where several pages had the active-link-marking IIFE
+duplicated 49 times each (this script, and patch_nav.py, insert before
+</body> unconditionally with no check for an existing copy). Kept only
+for historical reference.
+
 Replace flat site-nav with grouped dropdown nav across all static HTML files.
 Groups:
   Data    -> Latest, History, Numbers
