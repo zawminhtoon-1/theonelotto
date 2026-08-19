@@ -70,7 +70,6 @@
           '<div class="nav-dropdown"><div class="nav-dropdown-inner">' +
             '<div class="nav-dd-label">Xoshiro256** Seed Scans</div>' +
             '<a href="/xoshiro_seed_backtest.html">🌀 K=21, seeds 0–1,000</a>' +
-            '<a href="/xoshiro_seed_scan_100k.html">🔬 K=21, seeds 1–100,000</a>' +
             '<a href="/xoshiro_seed_scan_k33.html">🎯 K=33, seeds 0–1,000,000</a>' +
             '<a href="/xoshiro_seed_scan_k38.html">🔷 K=38, seeds 0–1,000,000</a>' +
             '<a href="/xoshiro_seed_scan_k35.html">🟣 K=35, seeds ±1,623,160</a>' +
