@@ -45,6 +45,12 @@ Pass 3:    xoshiro256** K=21 seeds 0, 1, and 2 -- the same K=21
            Any Pass-2-remaining combo fully contained within ANY single
            one of these 3 picks gets removed.
 
+Pass 4:    historical repeat filter (same "zero repeats in history"
+           pattern used in the earlier #2124 elimination flow). Any
+           Pass-3-remaining combo that exactly matches an actual
+           6-number winning combo from draws #1 through #2129 gets
+           removed. This is the final pass on this page.
+
 Self-checks the xoshiro implementation against a known-good value before
 trusting Base's xoshiro component.
 
@@ -618,6 +624,32 @@ print(f"  Removed by ANY of the {len(PASS3_SEEDS)} xoshiro K={K_PASS3} seeds' co
 print(f"  Before Pass 3: {final_remaining:,}  ->  After Pass 3: {final_remaining_pass3:,}")
 print(f"\nFull elimination sequence: {universe_count:,} -> {final_remaining_pass1:,} (Pass 1) -> {final_remaining:,} (Pass 2) -> {final_remaining_pass3:,} (Pass 3)")
 
+# ── Pass 4: historical repeat filter (same "zero repeats in history" pattern
+# used in the earlier #2124 elimination flow). Any Pass-3-remaining combo
+# that exactly matches an actual 6-number winning combo from draws #1
+# through #2129 is removed. Final pass on this page. ────────────────────────
+print(f"\n=== Pass 4 ===")
+historical_combos = set(tuple(sorted(nums)) for nums in all_main6)
+print(f"Historical winning combos: {len(historical_combos):,} (from {len(all_main6):,} draws, #1-{TARGET_SERIAL-1})")
+
+t0 = time.time()
+remaining_after4 = []
+removed_historical = []
+for combo in remaining_after3:
+    if combo in historical_combos:
+        removed_historical.append(combo)
+        continue
+    remaining_after4.append(combo)
+elapsed4 = time.time() - t0
+final_remaining_pass4 = len(remaining_after4)
+print(f"Pass 4 elimination in {elapsed4:.1f}s")
+print(f"  Removed (exact match to a historical winning combo): {len(removed_historical):,}")
+if removed_historical:
+    print(f"  Matched historical combos: {removed_historical}")
+print(f"  Before Pass 4: {final_remaining_pass3:,}  ->  After Pass 4: {final_remaining_pass4:,}")
+print(f"\nFull elimination sequence: {universe_count:,} -> {final_remaining_pass1:,} (Pass 1) -> {final_remaining:,} (Pass 2) -> "
+      f"{final_remaining_pass3:,} (Pass 3) -> {final_remaining_pass4:,} (Pass 4)")
+
 # ── Save outputs ──────────────────────────────────────────────────────────
 meta = {
     'targetSerial': TARGET_SERIAL,
@@ -641,13 +673,17 @@ meta = {
     'pass3K': K_PASS3,
     'pass3Seeds': [{'seed': seed, 'pick': pick} for seed, pick in zip(PASS3_SEEDS, pass3_picks)],
     'removedByPass3': removed_by_pass3,
-    'finalRemaining': final_remaining_pass3,
+    'finalRemainingPass3': final_remaining_pass3,
     'pass3Overlaps': [bin(m).count('1') for m in pass3_masks],
+    'historicalDrawCount': len(all_main6),
+    'historicalCombos': [sorted(nums) for nums in all_main6],
+    'removedHistorical': [list(c) for c in removed_historical],
+    'finalRemaining': final_remaining_pass4,
 }
 with open(META_OUT, 'w', encoding='utf-8') as f:
     json.dump(meta, f, indent=2)
 print(f"\nSaved {META_OUT}")
 
 with open(COMBOS_OUT, 'w', encoding='utf-8') as f:
-    json.dump(remaining_after3, f, separators=(',', ':'))
-print(f"Saved {COMBOS_OUT} ({len(remaining_after3):,} combos, {os.path.getsize(COMBOS_OUT)//1024:,} KB)")
+    json.dump(remaining_after4, f, separators=(',', ':'))
+print(f"Saved {COMBOS_OUT} ({len(remaining_after4):,} combos, {os.path.getsize(COMBOS_OUT)//1024:,} KB)")

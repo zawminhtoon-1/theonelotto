@@ -59,9 +59,16 @@ pass2_pct_of_pass1 = final_remaining_pass2 / final_remaining_pass1 * 100
 pass3_k = meta['pass3K']
 pass3_seeds = meta['pass3Seeds']
 removed_by_pass3 = meta['removedByPass3']
+final_remaining_pass3 = meta['finalRemainingPass3']
+pass3_pct = final_remaining_pass3 / universe_count * 100
+pass3_pct_of_pass2 = final_remaining_pass3 / final_remaining_pass2 * 100
+
+historical_draw_count = meta['historicalDrawCount']
+historical_combos = meta['historicalCombos']
+removed_historical = meta['removedHistorical']
 final_remaining = meta['finalRemaining']
 final_pct = final_remaining / universe_count * 100
-pass3_pct_of_pass2 = final_remaining / final_remaining_pass2 * 100
+pass4_pct_of_pass3 = final_remaining / final_remaining_pass3 * 100
 
 methods_rows_html = ""
 for name, pool in zip(method_names, method_picks):
@@ -77,6 +84,11 @@ pass3_rows_html = ""
 for p3 in pass3_seeds:
     balls = "".join(f'<span class="nb">{n}</span>' for n in p3['pick'])
     pass3_rows_html += f"""<tr><td class="mname">seed #{p3['seed']}</td><td><div class="balls">{balls}</div></td></tr>"""
+
+historical_rows_html = ""
+for combo in removed_historical:
+    balls = "".join(f'<span class="nb">{n}</span>' for n in combo)
+    historical_rows_html += f"""<tr><td><div class="balls">{balls}</div></td></tr>"""
 
 page = f"""<!DOCTYPE html>
 <html lang="en">
@@ -189,12 +201,19 @@ table.combos tr:hover td{{background:#111827}}
     <p><strong style="color:#e2e8f0">Pass 3</strong> is <a href="/xoshiro_seed_backtest.html" style="color:#a78bfa">xoshiro256**</a>
     K={pass3_k} seeds {', '.join(str(p3['seed']) for p3 in pass3_seeds)} &mdash; the same K=21 algorithm used on the 0&ndash;1,000
     seed page. Each seed's K={pass3_k} pick for draw #{TARGET_SERIAL} uses the same verified xoshiro256** implementation as Base's
-    xoshiro side. Any Pass-2-remaining combo fully contained within ANY single one of these {len(pass3_seeds)} picks gets removed.</p>
+    xoshiro side. Any Pass-2-remaining combo fully contained within ANY single one of these {len(pass3_seeds)} picks gets removed,
+    leaving {final_remaining_pass3:,}.</p>
+    <p><strong style="color:#e2e8f0">Pass 4</strong> (final) is a historical repeat filter &mdash; the same "zero repeats in
+    history" pattern used in the earlier #2124 elimination flow. Any Pass-3-remaining combo that exactly matches an actual 6-number
+    winning combo from any of the {historical_draw_count:,} real draws (#1&ndash;{TARGET_SERIAL-1}) gets removed. No K=6 Loto 6
+    combo has ever repeated across {historical_draw_count:,} draws, so this pass strictly removes exact historical matches, not
+    near-misses.</p>
     <p>The xoshiro side of Base, all {len(random_seeds)} Pass-2 picks, and all {len(pass3_seeds)} Pass-3 picks are recomputed
     <strong>live in your browser</strong> below (bit-exact ports &mdash; BigInt xoshiro256** for Base and Pass 3, the CPython
     MT19937 port from the Random Seed Backtest page for Pass 2) and checked against server-embedded references &mdash; check the
     verification badges. Modular Cycle's pick and Pass 1's 16 statistical/ML methods (ARIMA, Random Forest, HMM, LSTM, etc.) can't
-    run in a browser, so those are precomputed server-side, same as every other draw on this site, and embedded as static data.</p>
+    run in a browser, so those are precomputed server-side, same as every other draw on this site, and embedded as static data.
+    Pass 4's historical combo set is embedded and checked client-side too.</p>
   </div>
 
   <div class="section">
@@ -241,6 +260,13 @@ table.combos tr:hover td{{background:#111827}}
   </div>
 
   <div class="section">
+    <h2>Pass 4 (final) — historical repeat filter <span id="badgeHistorical" class="verify-badge pending">verifying…</span></h2>
+    <p class="desc">Removes any Pass-3-remaining combo that exactly matches a real 6-number winning combo from the {historical_draw_count:,}
+    draws #1&ndash;{TARGET_SERIAL-1}. Checked live in your browser against the same embedded historical combo set. {len(removed_historical)} matches found.</p>
+    {"<table class='methods-table'><thead><tr><th>Removed &mdash; exact match to a historical winning combo</th></tr></thead><tbody>" + historical_rows_html + "</tbody></table>" if removed_historical else "<p style='color:#64748b;font-size:.85rem'>No matches found &mdash; nothing removed by this pass.</p>"}
+  </div>
+
+  <div class="section">
     <h2>Elimination summary</h2>
     <div class="stats-row">
       <div class="stat-card">
@@ -273,10 +299,20 @@ table.combos tr:hover td{{background:#111827}}
         <div class="val">{removed_by_pass3:,}</div>
         <div class="sub">contained in ANY seed's K={pass3_k}</div>
       </div>
+      <div class="stat-card">
+        <div class="lbl">After Pass 3</div>
+        <div class="val">{final_remaining_pass3:,}</div>
+        <div class="sub">{pass3_pct:.1f}% of universe retained</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Removed by historical repeat filter (Pass 4)</div>
+        <div class="val">{len(removed_historical):,}</div>
+        <div class="sub">exact match to a real winning combo</div>
+      </div>
       <div class="stat-card final">
         <div class="lbl">Final remaining</div>
         <div class="val">{final_remaining:,}</div>
-        <div class="sub">{final_pct:.1f}% of universe · {pass3_pct_of_pass2:.1f}% of Pass-2 output</div>
+        <div class="sub">{final_pct:.1f}% of universe · {pass4_pct_of_pass3:.1f}% of Pass-3 output</div>
       </div>
     </div>
     <div class="elim-flow">
@@ -286,7 +322,9 @@ table.combos tr:hover td{{background:#111827}}
       <span class="arrow">&rarr;</span>
       <span class="n">{final_remaining_pass2:,}</span> <span style="color:#64748b;font-size:.7rem">(Pass 2)</span>
       <span class="arrow">&rarr;</span>
-      <span class="n final">{final_remaining:,}</span> <span style="color:#64748b;font-size:.7rem">(Pass 3)</span>
+      <span class="n">{final_remaining_pass3:,}</span> <span style="color:#64748b;font-size:.7rem">(Pass 3)</span>
+      <span class="arrow">&rarr;</span>
+      <span class="n final">{final_remaining:,}</span> <span style="color:#64748b;font-size:.7rem">(Pass 4)</span>
     </div>
   </div>
 
@@ -514,6 +552,15 @@ PASS3_SEEDS_DATA.forEach((p3, i) => {{
   if (!arraysEqual(livePass3Picks[i], p3.pick)) console.error('Pass-3 seed mismatch', p3.seed, livePass3Picks[i], p3.pick);
 }});
 
+// ── Pass 4: historical repeat filter, checked live against the embedded
+// historical combo set. ──────────────────────────────────────────────────
+const HISTORICAL_COMBOS = {json.dumps(historical_combos)};
+const HISTORICAL_SET = new Set(HISTORICAL_COMBOS.map(c => c.join(',')));
+const REMOVED_HISTORICAL = {json.dumps(removed_historical)};
+const liveRemovedHistorical = REMOVED_HISTORICAL.every(c => HISTORICAL_SET.has(c.join(',')));
+renderBadge('badgeHistorical', liveRemovedHistorical);
+if (!liveRemovedHistorical) console.error('Pass-4 historical-match mismatch', REMOVED_HISTORICAL);
+
 // ── Remaining combos: fetch, paginate, filter, download ─────────────────────
 const POOL_BASE = liveBase;
 let REMAINING = [];
@@ -531,6 +578,8 @@ fetch('/xoshiro_elim_{TARGET_SERIAL}_combos.json')
     document.getElementById('comboUI').style.display = 'block';
     buildFilterGrid();
     render();
+    const stillHistorical = REMAINING.filter(c => HISTORICAL_SET.has(c.join(',')));
+    if (stillHistorical.length > 0) console.error('Pass-4 leak: remaining combos still match history', stillHistorical);
   }})
   .catch(err => {{
     document.getElementById('loadingMsg').textContent = 'Failed to load combinations: ' + err;
