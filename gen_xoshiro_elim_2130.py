@@ -208,7 +208,7 @@ table.combos tr:hover td{{background:#111827}}
   <div class="section">
     <h2>Pass 2 — top {len(random_seeds)} worst-coverage random seeds, K={random_k} pick for draw #{TARGET_SERIAL} <span id="badgeRandom" class="verify-badge pending">verifying…</span></h2>
     <p class="desc">Highest 0-hit count from the K=17 <code>seed_hit_random_k17</code> scan (seeds &#177;1,236,700, draws #1001&ndash;2129). Picks recomputed live below via the bit-exact CPython MT19937 port and checked against server-embedded references.</p>
-    <details open>
+    <details>
       <summary>Show all {len(random_seeds)} seeds' picks</summary>
       <table class="methods-table">
         <tbody>{random_seed_rows_html}</tbody>
