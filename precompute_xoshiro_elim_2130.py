@@ -34,8 +34,9 @@ Pass 2:    the top N_WORST_SEEDS worst-coverage seeds (highest 0-hit
            equivalent to expanding each pick to its C(17,6) sub-combos
            and removing any remaining combo present in the union of
            those sub-combo sets, just computed via bitmask containment
-           instead of literal enumeration. (Started at 10 seeds; raised
-           to 100 after projecting the larger set's effect first.)
+           instead of literal enumeration. (Started at 10 seeds, raised
+           to 100, then 500 -- each step projected against the current
+           Pass-1 output first before being applied to the live page.)
 
 Self-checks the xoshiro implementation against a known-good value before
 trusting Base's xoshiro component.
@@ -68,7 +69,7 @@ K_MC = 33
 K_METHODS = 19   # normalized K for all 16 methods (this page's Pass 1)
 K_DEFAULT = 15   # native K most methods produce before normalization
 K_RANDOM = 17    # K for the Pass-2 random.Random seeds
-N_WORST_SEEDS = 100
+N_WORST_SEEDS = 500
 RANDOM_TABLE = "seed_hit_random_k17"
 
 SEED_XO = 692809   # best K=38 seed (0-1,000,000 scan)
