@@ -26,6 +26,12 @@ start), verified for exactly 1129 consecutive rows with no gaps.
 Multiprocessing (7 workers) -- self-checked against a small single-process
 sample before trusting the pool.
 
+"Best seed" ranking: highest hit6b (6-hit + bonus) count first, tiebreak
+highest hit6 (6-hit, any bonus), tiebreak highest hit5 (exactly 5-hit) --
+the same convention used on every xoshiro seed-scan page on this site.
+Previously ranked by highest average hits, which is a different (and, at
+this K/seed-count scale, much noisier) metric.
+
 Output: public/random_seed_backtest.html
 Run: python gen_random_seed_backtest.py
 """
@@ -62,6 +68,7 @@ def process_chunk(seed_chunk):
     for seed in seed_chunk:
         total_hits = 0
         bonus_hits = 0
+        hit6b = 0
         dist = [0, 0, 0, 0, 0, 0, 0]
         for serial, actual_set, bonus in _DATA:
             picks = random_predict(seed, serial)
@@ -69,9 +76,12 @@ def process_chunk(seed_chunk):
             h = len(actual_set & picks_set)
             dist[h] += 1
             total_hits += h
-            if bonus in picks_set:
+            bh = bonus in picks_set
+            if bh:
                 bonus_hits += 1
-        out.append((seed, total_hits, bonus_hits, dist))
+                if h == 6:
+                    hit6b += 1
+        out.append((seed, total_hits, bonus_hits, hit6b, dist))
     return out
 
 def load_data_from_db():
@@ -117,7 +127,7 @@ def main():
         # Re-derive independently without going through process_chunk, as
         # an extra cross-check that process_chunk itself is doing the right
         # aggregation (not just re-running the same code path).
-        th = bh = 0
+        th = bh = h6b = 0
         d = [0]*7
         for row in DATA:
             picks = set(random_predict(ts, row['s']))
@@ -126,7 +136,9 @@ def main():
             th += hh
             if row['b'] in picks:
                 bh += 1
-        assert direct == (ts, th, bh, d), f"Self-check MISMATCH seed={ts}: {direct} vs {(ts, th, bh, d)}"
+                if hh == 6:
+                    h6b += 1
+        assert direct == (ts, th, bh, h6b, d), f"Self-check MISMATCH seed={ts}: {direct} vs {(ts, th, bh, h6b, d)}"
     print(f"Self-check OK: {len(test_seeds)} seeds (incl. negative + boundary) verified consistent.")
 
     # ── Parallel scan ────────────────────────────────────────────────────────
@@ -154,14 +166,16 @@ def main():
     print(f"\nDONE scanning in {elapsed_total:.1f}s ({elapsed_total/60:.1f} min)")
 
     results = []
-    for seed, total_hits, bonus_hits, dist in all_raw:
+    for seed, total_hits, bonus_hits, hit6b, dist in all_raw:
         avg = total_hits / N_DRAWS
         lift = (avg / BASELINE - 1) * 100
         results.append({
             'seed': seed, 'avg': round(avg, 4), 'lift': round(lift, 2), 'dist': dist,
-            'bonus': bonus_hits, 'hit6': dist[6], 'hit5': dist[5], 'hit4': dist[4], 'hit0': dist[0],
+            'bonus': bonus_hits, 'hit6b': hit6b, 'hit6': dist[6], 'hit5': dist[5], 'hit4': dist[4], 'hit0': dist[0],
         })
-    results.sort(key=lambda r: (-r['avg'], r['seed']))
+    # Best-seed ranking: hit6b desc, tiebreak hit6 desc, tiebreak hit5 desc,
+    # tiebreak seed asc -- same convention as every xoshiro seed-scan page.
+    results.sort(key=lambda r: (-r['hit6b'], -r['hit6'], -r['hit5'], r['seed']))
     best = results[0]
 
     worst_coverage_ranked = sorted(results, key=lambda r: (-r['hit0'], r['seed']))
@@ -170,7 +184,7 @@ def main():
     import statistics as st
     hit0_mean = st.mean(hit0_vals)
 
-    print(f"\nBest  seed {best['seed']}: avg={best['avg']:.4f} lift={best['lift']:+.1f}% 6hits={best['hit6']} 5hits={best['hit5']}")
+    print(f"\nBest  seed {best['seed']}: hit6b={best['hit6b']} hit6={best['hit6']} hit5={best['hit5']} avg={best['avg']:.4f} lift={best['lift']:+.1f}%")
     print(f"Worst-coverage seed {worst_coverage['seed']}: hit0={worst_coverage['hit0']} "
           f"(mean hit0 across all seeds: {hit0_mean:.2f}) dist={worst_coverage['dist']} "
           f"avg={worst_coverage['avg']:.4f} lift={worst_coverage['lift']:+.1f}%")
@@ -185,12 +199,13 @@ def main():
         rows_html += f"""<tr class="dr" onclick="selSeed({r['seed']})">
   <td class="tc">{rank}</td>
   <td class="tc">{r['seed']:,}{best_badge}</td>
-  <td class="tr">{r['avg']:.4f}</td>
-  <td class="tr" style="color:{lift_color}">{r['lift']:+.1f}%</td>
+  <td class="tr">{r['hit6b']}</td>
   <td class="tr">{r['hit6']}</td>
   <td class="tr">{r['hit5']}</td>
   <td class="tr">{r['hit4']}</td>
   <td class="tr">{r['hit0']}</td>
+  <td class="tr">{r['avg']:.4f}</td>
+  <td class="tr" style="color:{lift_color}">{r['lift']:+.1f}%</td>
   <td class="tr">{r['bonus']}</td>
 </tr>"""
 
@@ -289,9 +304,9 @@ tbody td.tr{{text-align:right}}
 
   <div class="stats-row">
     <div class="stat-card">
-      <div class="lbl">Best seed</div>
+      <div class="lbl">Best seed (hit6b→hit6→hit5)</div>
       <div class="val">#{best['seed']:,}</div>
-      <div class="sub">avg {best['avg']:.4f} hits · {best['lift']:+.1f}% vs baseline</div>
+      <div class="sub">hit6b {best['hit6b']} · hit6 {best['hit6']} · hit5 {best['hit5']}</div>
     </div>
     <div class="stat-card">
       <div class="lbl">Best 6-hit draws</div>
@@ -326,12 +341,14 @@ tbody td.tr{{text-align:right}}
   <div class="controls" style="margin-top:20px">
     <input id="filterInput" placeholder="Filter by seed number..." oninput="filterTable()">
     <select id="sortSel" onchange="sortTable(this.value)">
-      <option value="rank">Sort: Rank (avg hits)</option>
+      <option value="rank">Sort: Rank (hit6b→hit6→hit5)</option>
       <option value="seed">Sort: Seed</option>
+      <option value="hit6b">Sort: hit6b (6-hit+bonus)</option>
       <option value="hit6">Sort: 6-hit draws</option>
       <option value="hit5">Sort: 5-hit draws</option>
       <option value="hit4">Sort: 4-hit draws</option>
       <option value="hit0">Sort: 0-hit draws ↑</option>
+      <option value="avg">Sort: Avg hits</option>
       <option value="lift">Sort: Lift %</option>
     </select>
   </div>
@@ -342,12 +359,13 @@ tbody td.tr{{text-align:right}}
         <tr>
           <th class="tc" onclick="sortTable('rank')">#</th>
           <th class="tc" onclick="sortTable('seed')">Seed</th>
-          <th onclick="sortTable('rank')">Avg hits ▼</th>
-          <th onclick="sortTable('lift')">Lift %</th>
-          <th onclick="sortTable('hit6')">6-hits</th>
-          <th onclick="sortTable('hit5')">5-hits</th>
+          <th onclick="sortTable('rank')">hit6b ▼</th>
+          <th onclick="sortTable('hit6')">hit6</th>
+          <th onclick="sortTable('hit5')">hit5</th>
           <th onclick="sortTable('hit4')">4-hits</th>
           <th onclick="sortTable('hit0')">0-hits ↑</th>
+          <th onclick="sortTable('avg')">Avg hits</th>
+          <th onclick="sortTable('lift')">Lift %</th>
           <th onclick="sortTable('bonus')">Bonus hits</th>
         </tr>
       </thead>
@@ -407,7 +425,7 @@ function sortTable(key) {{
   sortKey = key;
   const tbody = document.getElementById('tbody');
   const rows = [...tbody.querySelectorAll('tr')];
-  const keyMap = {{rank: 2, seed: 1, lift: 3, hit6: 4, hit5: 5, hit4: 6, hit0: 7, bonus: 8}};
+  const keyMap = {{rank: 2, seed: 1, hit6b: 2, hit6: 3, hit5: 4, hit4: 5, hit0: 6, avg: 7, lift: 8, bonus: 9}};
   const col = keyMap[key] || 2;
   rows.sort((a, b) => {{
     const av = parseFloat(a.cells[col].textContent.replace(/,/g, '')) || 0;
@@ -515,7 +533,7 @@ function selSeed(seed) {{
   const K = {K_PICKS};
   document.getElementById('modalTitle').textContent = 'Seed #' + seed.toLocaleString() + ' — ' + DRAWS.length + ' draws (K=' + K + ')';
 
-  let hit6 = 0, hit5 = 0, hit4 = 0, hit0 = 0, bonusHits = 0, totalHits = 0;
+  let hit6b = 0, hit6 = 0, hit5 = 0, hit4 = 0, hit0 = 0, bonusHits = 0, totalHits = 0;
   const htmlParts = [];
   [...DRAWS].reverse().forEach(row => {{
     const picks = randomPredict(seed, row.s, K);
@@ -524,7 +542,7 @@ function selSeed(seed) {{
     const hits = picks.filter(p => actualSet.has(p)).length;
     const bh   = picksSet.has(row.b);
     totalHits += hits;
-    if (bh) bonusHits++;
+    if (bh) {{ bonusHits++; if (hits === 6) hit6b++; }}
     if (hits === 6) hit6++; else if (hits === 5) hit5++; else if (hits === 4) hit4++; else if (hits === 0) hit0++;
 
     const actualHtml = row.a.map(n =>
@@ -546,7 +564,7 @@ function selSeed(seed) {{
   }});
   const avg = (totalHits / DRAWS.length).toFixed(4);
   document.getElementById('modalStats').innerHTML =
-    'avg: <b>' + avg + '</b> &nbsp;·&nbsp; 6-hit: <b>' + hit6 + '</b> &nbsp;·&nbsp; 5-hit: <b>' + hit5 + '</b> &nbsp;·&nbsp; 4-hit: <b>' + hit4 + '</b> &nbsp;·&nbsp; 0-hit: <b>' + hit0 + '</b> &nbsp;·&nbsp; bonus: <b>' + bonusHits + '</b>';
+    'hit6b: <b>' + hit6b + '</b> &nbsp;·&nbsp; hit6: <b>' + hit6 + '</b> &nbsp;·&nbsp; hit5: <b>' + hit5 + '</b> &nbsp;·&nbsp; avg: <b>' + avg + '</b> &nbsp;·&nbsp; 4-hit: <b>' + hit4 + '</b> &nbsp;·&nbsp; 0-hit: <b>' + hit0 + '</b> &nbsp;·&nbsp; bonus: <b>' + bonusHits + '</b>';
   document.getElementById('modalTbody').innerHTML = htmlParts.join('');
   document.getElementById('seedModal').style.display = 'flex';
 }}
@@ -565,7 +583,7 @@ document.addEventListener('keydown', function(e) {{
     with open(HTML_OUT, 'w', encoding='utf-8') as f:
         f.write(page)
     print(f"\nWrote {HTML_OUT} ({len(page)//1024} KB)")
-    print(f"Best seed: #{best['seed']:,} avg={best['avg']:.4f} lift={best['lift']:+.1f}% 6hits={best['hit6']}")
+    print(f"Best seed: #{best['seed']:,} hit6b={best['hit6b']} hit6={best['hit6']} hit5={best['hit5']} avg={best['avg']:.4f} lift={best['lift']:+.1f}%")
     print(f"Worst-coverage seed: #{worst_coverage['seed']:,} hit0={worst_coverage['hit0']}")
     print(f"Predicted picks for draw #{next_serial}: {next_picks}")
 
