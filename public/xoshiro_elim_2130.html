@@ -105,12 +105,16 @@ table.combos tr:hover td{background:#111827}
     computed via the ground-truth <code>random.Random(seed&times;10&#8311;+draw_serial).sample()</code> formula &mdash; equivalent
     to expanding each pick to its C(17,6) sub-combos and removing anything present in the union of those 500 sets, just
     done via bitmask containment instead of literal enumeration. Any Pass-1-remaining combo fully contained within ANY single one of
-    these 500 picks gets removed.</p>
-    <p>The xoshiro side of Base and all 500 Pass-2 picks are recomputed <strong>live in your browser</strong> below (bit-exact
-    ports &mdash; BigInt xoshiro256** for Base, the CPython MT19937 port from the Random Seed Backtest page for Pass 2) and checked
-    against server-embedded references &mdash; check the verification badges. Modular Cycle's pick and Pass 1's 16 statistical/ML
-    methods (ARIMA, Random Forest, HMM, LSTM, etc.) can't run in a browser, so those are precomputed server-side, same as every
-    other draw on this site, and embedded as static data.</p>
+    these 500 picks gets removed, leaving 119,422.</p>
+    <p><strong style="color:#e2e8f0">Pass 3</strong> is <a href="/xoshiro_seed_backtest.html" style="color:#a78bfa">xoshiro256**</a>
+    K=21 seeds 0, 1, 2 &mdash; the same K=21 algorithm used on the 0&ndash;1,000
+    seed page. Each seed's K=21 pick for draw #2130 uses the same verified xoshiro256** implementation as Base's
+    xoshiro side. Any Pass-2-remaining combo fully contained within ANY single one of these 3 picks gets removed.</p>
+    <p>The xoshiro side of Base, all 500 Pass-2 picks, and all 3 Pass-3 picks are recomputed
+    <strong>live in your browser</strong> below (bit-exact ports &mdash; BigInt xoshiro256** for Base and Pass 3, the CPython
+    MT19937 port from the Random Seed Backtest page for Pass 2) and checked against server-embedded references &mdash; check the
+    verification badges. Modular Cycle's pick and Pass 1's 16 statistical/ML methods (ARIMA, Random Forest, HMM, LSTM, etc.) can't
+    run in a browser, so those are precomputed server-side, same as every other draw on this site, and embedded as static data.</p>
   </div>
 
   <div class="section">
@@ -149,6 +153,14 @@ table.combos tr:hover td{background:#111827}
   </div>
 
   <div class="section">
+    <h2>Pass 3 — xoshiro256** K=21 seeds 0, 1, 2, pick for draw #2130 <span id="badgePass3" class="verify-badge pending">verifying…</span></h2>
+    <p class="desc">Same xoshiro256** implementation as Base's xoshiro side, K=21 (the same K used on <a href="/xoshiro_seed_backtest.html" style="color:#a78bfa">the 0&ndash;1,000 seed page</a>). Picks recomputed live below and checked against server-embedded references.</p>
+    <table class="methods-table">
+      <tbody><tr><td class="mname">seed #0</td><td><div class="balls"><span class="nb">2</span><span class="nb">7</span><span class="nb">11</span><span class="nb">12</span><span class="nb">13</span><span class="nb">15</span><span class="nb">17</span><span class="nb">21</span><span class="nb">22</span><span class="nb">24</span><span class="nb">26</span><span class="nb">27</span><span class="nb">28</span><span class="nb">30</span><span class="nb">32</span><span class="nb">33</span><span class="nb">34</span><span class="nb">35</span><span class="nb">37</span><span class="nb">38</span><span class="nb">41</span></div></td></tr><tr><td class="mname">seed #1</td><td><div class="balls"><span class="nb">1</span><span class="nb">2</span><span class="nb">3</span><span class="nb">5</span><span class="nb">8</span><span class="nb">9</span><span class="nb">16</span><span class="nb">17</span><span class="nb">20</span><span class="nb">23</span><span class="nb">24</span><span class="nb">26</span><span class="nb">27</span><span class="nb">29</span><span class="nb">30</span><span class="nb">31</span><span class="nb">34</span><span class="nb">35</span><span class="nb">38</span><span class="nb">40</span><span class="nb">42</span></div></td></tr><tr><td class="mname">seed #2</td><td><div class="balls"><span class="nb">2</span><span class="nb">3</span><span class="nb">4</span><span class="nb">5</span><span class="nb">6</span><span class="nb">7</span><span class="nb">8</span><span class="nb">9</span><span class="nb">10</span><span class="nb">11</span><span class="nb">15</span><span class="nb">22</span><span class="nb">26</span><span class="nb">28</span><span class="nb">29</span><span class="nb">32</span><span class="nb">33</span><span class="nb">35</span><span class="nb">36</span><span class="nb">37</span><span class="nb">43</span></div></td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="section">
     <h2>Elimination summary</h2>
     <div class="stats-row">
       <div class="stat-card">
@@ -171,10 +183,20 @@ table.combos tr:hover td{background:#111827}
         <div class="val">206,522</div>
         <div class="sub">contained in ANY seed's K=17</div>
       </div>
+      <div class="stat-card">
+        <div class="lbl">After Pass 2</div>
+        <div class="val">119,422</div>
+        <div class="sub">31.7% of universe retained</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Removed by 3 xoshiro K=21 seeds (Pass 3)</div>
+        <div class="val">2,137</div>
+        <div class="sub">contained in ANY seed's K=21</div>
+      </div>
       <div class="stat-card final">
         <div class="lbl">Final remaining</div>
-        <div class="val">119,422</div>
-        <div class="sub">31.7% of universe · 36.6% of Pass-1 output</div>
+        <div class="val">117,285</div>
+        <div class="sub">31.1% of universe · 98.2% of Pass-2 output</div>
       </div>
     </div>
     <div class="elim-flow">
@@ -182,14 +204,16 @@ table.combos tr:hover td{background:#111827}
       <span class="arrow">&rarr;</span>
       <span class="n">325,944</span> <span style="color:#64748b;font-size:.7rem">(Pass 1)</span>
       <span class="arrow">&rarr;</span>
-      <span class="n final">119,422</span> <span style="color:#64748b;font-size:.7rem">(Pass 2)</span>
+      <span class="n">119,422</span> <span style="color:#64748b;font-size:.7rem">(Pass 2)</span>
+      <span class="arrow">&rarr;</span>
+      <span class="n final">117,285</span> <span style="color:#64748b;font-size:.7rem">(Pass 3)</span>
     </div>
   </div>
 
   <div class="section">
     <h2>Browse remaining combinations</h2>
-    <p class="desc">Fetched from a separate JSON asset (not inlined — 119,422 rows is too large for the page itself).</p>
-    <div id="loadingMsg">Loading 119,422 combinations…</div>
+    <p class="desc">Fetched from a separate JSON asset (not inlined — 117,285 rows is too large for the page itself).</p>
+    <div id="loadingMsg">Loading 117,285 combinations…</div>
     <div id="comboUI" style="display:none">
       <div class="lookup">
         <button class="btn" onclick="clearFilter()">Clear filter</button>
@@ -398,6 +422,16 @@ const randomAllMatch = WORST_SEEDS.every((rs, i) => arraysEqual(liveRandomPicks[
 renderBadge('badgeRandom', randomAllMatch);
 WORST_SEEDS.forEach((rs, i) => {
   if (!arraysEqual(liveRandomPicks[i], rs.pick)) console.error('Pass-2 seed mismatch', rs.seed, liveRandomPicks[i], rs.pick);
+});
+
+// ── Pass 3: xoshiro256** K=21 seeds, reusing the same verified
+// BigInt xoshiroPredict() used for Base's xoshiro side above. ───────────────
+const PASS3_SEEDS_DATA = [{"seed": 0, "pick": [2, 7, 11, 12, 13, 15, 17, 21, 22, 24, 26, 27, 28, 30, 32, 33, 34, 35, 37, 38, 41]}, {"seed": 1, "pick": [1, 2, 3, 5, 8, 9, 16, 17, 20, 23, 24, 26, 27, 29, 30, 31, 34, 35, 38, 40, 42]}, {"seed": 2, "pick": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 15, 22, 26, 28, 29, 32, 33, 35, 36, 37, 43]}];
+const livePass3Picks = PASS3_SEEDS_DATA.map(p3 => xoshiroPredict(p3.seed, 2130, 21));
+const pass3AllMatch = PASS3_SEEDS_DATA.every((p3, i) => arraysEqual(livePass3Picks[i], p3.pick));
+renderBadge('badgePass3', pass3AllMatch);
+PASS3_SEEDS_DATA.forEach((p3, i) => {
+  if (!arraysEqual(livePass3Picks[i], p3.pick)) console.error('Pass-3 seed mismatch', p3.seed, livePass3Picks[i], p3.pick);
 });
 
 // ── Remaining combos: fetch, paginate, filter, download ─────────────────────

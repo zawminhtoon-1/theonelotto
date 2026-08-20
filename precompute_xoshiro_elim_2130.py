@@ -38,6 +38,13 @@ Pass 2:    the top N_WORST_SEEDS worst-coverage seeds (highest 0-hit
            to 100, then 500 -- each step projected against the current
            Pass-1 output first before being applied to the live page.)
 
+Pass 3:    xoshiro256** K=21 seeds 0, 1, and 2 -- the same K=21
+           algorithm used on xoshiro_seed_backtest.html. Each seed's
+           K=21 pick for draw #2130 is computed with the same verified
+           xoshiro256** implementation used for Base's xoshiro side.
+           Any Pass-2-remaining combo fully contained within ANY single
+           one of these 3 picks gets removed.
+
 Self-checks the xoshiro implementation against a known-good value before
 trusting Base's xoshiro component.
 
@@ -71,6 +78,8 @@ K_DEFAULT = 15   # native K most methods produce before normalization
 K_RANDOM = 17    # K for the Pass-2 random.Random seeds
 N_WORST_SEEDS = 500
 RANDOM_TABLE = "seed_hit_random_k17"
+K_PASS3 = 21     # xoshiro256** K=21, same as xoshiro_seed_backtest.html
+PASS3_SEEDS = [0, 1, 2]
 
 SEED_XO = 692809   # best K=38 seed (0-1,000,000 scan)
 
@@ -573,6 +582,42 @@ print(f"  Removed by ANY of the {N_WORST_SEEDS} worst-coverage seeds' K={K_RANDO
 print(f"  Before Pass 2: {final_remaining_pass1:,}  ->  After Pass 2: {final_remaining:,}")
 print(f"\nFull elimination sequence: {universe_count:,} -> {final_remaining_pass1:,} (Pass 1) -> {final_remaining:,} (Pass 2)")
 
+# ── Pass 3: xoshiro256** K=21 seeds 0, 1, 2 (same algorithm as
+# xoshiro_seed_backtest.html). Any Pass-2-remaining combo fully contained
+# within ANY of these 3 picks is removed. ───────────────────────────────────
+print(f"\n=== Pass 3 ===")
+pass3_picks = [xoshiro_predict(seed, TARGET_SERIAL, K_PASS3) for seed in PASS3_SEEDS]
+print(f"Xoshiro K={K_PASS3} picks for draw #{TARGET_SERIAL}:")
+pass3_masks = []
+for seed, pick in zip(PASS3_SEEDS, pass3_picks):
+    mmask = restricted_mask(set(pick))
+    overlap = bin(mmask).count('1')
+    pass3_masks.append(mmask)
+    print(f"  seed={seed}: {pick}  [overlap with {K_BASE}-pool: {overlap}]")
+
+t0 = time.time()
+remaining_after3 = []
+removed_by_pass3 = 0
+for combo in remaining_after2:
+    combo_mask = 0
+    for n in combo:
+        combo_mask |= (1 << pos_of[n])
+    removed = False
+    for mmask in pass3_masks:
+        if (combo_mask & ~mmask) & FULLBASE == 0:
+            removed = True
+            break
+    if removed:
+        removed_by_pass3 += 1
+        continue
+    remaining_after3.append(combo)
+elapsed3 = time.time() - t0
+final_remaining_pass3 = len(remaining_after3)
+print(f"\nPass 3 elimination in {elapsed3:.1f}s")
+print(f"  Removed by ANY of the {len(PASS3_SEEDS)} xoshiro K={K_PASS3} seeds' containment: {removed_by_pass3:,}")
+print(f"  Before Pass 3: {final_remaining:,}  ->  After Pass 3: {final_remaining_pass3:,}")
+print(f"\nFull elimination sequence: {universe_count:,} -> {final_remaining_pass1:,} (Pass 1) -> {final_remaining:,} (Pass 2) -> {final_remaining_pass3:,} (Pass 3)")
+
 # ── Save outputs ──────────────────────────────────────────────────────────
 meta = {
     'targetSerial': TARGET_SERIAL,
@@ -591,13 +636,18 @@ meta = {
     'randomSeeds': [{'seed': seed, 'hit0': hit0, 'pick': pick}
                      for (seed, hit0), pick in zip(worst_seeds, random_picks)],
     'removedByRandom': removed_by_random,
-    'finalRemaining': final_remaining,
+    'finalRemainingPass2': final_remaining,
     'randomOverlaps': [bin(m).count('1') for m in random_masks],
+    'pass3K': K_PASS3,
+    'pass3Seeds': [{'seed': seed, 'pick': pick} for seed, pick in zip(PASS3_SEEDS, pass3_picks)],
+    'removedByPass3': removed_by_pass3,
+    'finalRemaining': final_remaining_pass3,
+    'pass3Overlaps': [bin(m).count('1') for m in pass3_masks],
 }
 with open(META_OUT, 'w', encoding='utf-8') as f:
     json.dump(meta, f, indent=2)
 print(f"\nSaved {META_OUT}")
 
 with open(COMBOS_OUT, 'w', encoding='utf-8') as f:
-    json.dump(remaining_after2, f, separators=(',', ':'))
-print(f"Saved {COMBOS_OUT} ({len(remaining_after2):,} combos, {os.path.getsize(COMBOS_OUT)//1024:,} KB)")
+    json.dump(remaining_after3, f, separators=(',', ':'))
+print(f"Saved {COMBOS_OUT} ({len(remaining_after3):,} combos, {os.path.getsize(COMBOS_OUT)//1024:,} KB)")

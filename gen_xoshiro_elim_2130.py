@@ -52,9 +52,16 @@ pass1_pct = final_remaining_pass1 / universe_count * 100
 random_k = meta['randomK']
 random_seeds = meta['randomSeeds']
 removed_by_random = meta['removedByRandom']
+final_remaining_pass2 = meta['finalRemainingPass2']
+pass2_pct = final_remaining_pass2 / universe_count * 100
+pass2_pct_of_pass1 = final_remaining_pass2 / final_remaining_pass1 * 100
+
+pass3_k = meta['pass3K']
+pass3_seeds = meta['pass3Seeds']
+removed_by_pass3 = meta['removedByPass3']
 final_remaining = meta['finalRemaining']
 final_pct = final_remaining / universe_count * 100
-pass2_pct_of_pass1 = final_remaining / final_remaining_pass1 * 100
+pass3_pct_of_pass2 = final_remaining / final_remaining_pass2 * 100
 
 methods_rows_html = ""
 for name, pool in zip(method_names, method_picks):
@@ -65,6 +72,11 @@ random_seed_rows_html = ""
 for rs in random_seeds:
     balls = "".join(f'<span class="nb">{n}</span>' for n in rs['pick'])
     random_seed_rows_html += f"""<tr><td class="mname">#{rs['seed']:,} <span style="color:#64748b;font-weight:400">(0-hit: {rs['hit0']})</span></td><td><div class="balls">{balls}</div></td></tr>"""
+
+pass3_rows_html = ""
+for p3 in pass3_seeds:
+    balls = "".join(f'<span class="nb">{n}</span>' for n in p3['pick'])
+    pass3_rows_html += f"""<tr><td class="mname">seed #{p3['seed']}</td><td><div class="balls">{balls}</div></td></tr>"""
 
 page = f"""<!DOCTYPE html>
 <html lang="en">
@@ -173,12 +185,16 @@ table.combos tr:hover td{{background:#111827}}
     computed via the ground-truth <code>random.Random(seed&times;10&#8311;+draw_serial).sample()</code> formula &mdash; equivalent
     to expanding each pick to its C({random_k},6) sub-combos and removing anything present in the union of those {len(random_seeds)} sets, just
     done via bitmask containment instead of literal enumeration. Any Pass-1-remaining combo fully contained within ANY single one of
-    these {len(random_seeds)} picks gets removed.</p>
-    <p>The xoshiro side of Base and all {len(random_seeds)} Pass-2 picks are recomputed <strong>live in your browser</strong> below (bit-exact
-    ports &mdash; BigInt xoshiro256** for Base, the CPython MT19937 port from the Random Seed Backtest page for Pass 2) and checked
-    against server-embedded references &mdash; check the verification badges. Modular Cycle's pick and Pass 1's 16 statistical/ML
-    methods (ARIMA, Random Forest, HMM, LSTM, etc.) can't run in a browser, so those are precomputed server-side, same as every
-    other draw on this site, and embedded as static data.</p>
+    these {len(random_seeds)} picks gets removed, leaving {final_remaining_pass2:,}.</p>
+    <p><strong style="color:#e2e8f0">Pass 3</strong> is <a href="/xoshiro_seed_backtest.html" style="color:#a78bfa">xoshiro256**</a>
+    K={pass3_k} seeds {', '.join(str(p3['seed']) for p3 in pass3_seeds)} &mdash; the same K=21 algorithm used on the 0&ndash;1,000
+    seed page. Each seed's K={pass3_k} pick for draw #{TARGET_SERIAL} uses the same verified xoshiro256** implementation as Base's
+    xoshiro side. Any Pass-2-remaining combo fully contained within ANY single one of these {len(pass3_seeds)} picks gets removed.</p>
+    <p>The xoshiro side of Base, all {len(random_seeds)} Pass-2 picks, and all {len(pass3_seeds)} Pass-3 picks are recomputed
+    <strong>live in your browser</strong> below (bit-exact ports &mdash; BigInt xoshiro256** for Base and Pass 3, the CPython
+    MT19937 port from the Random Seed Backtest page for Pass 2) and checked against server-embedded references &mdash; check the
+    verification badges. Modular Cycle's pick and Pass 1's 16 statistical/ML methods (ARIMA, Random Forest, HMM, LSTM, etc.) can't
+    run in a browser, so those are precomputed server-side, same as every other draw on this site, and embedded as static data.</p>
   </div>
 
   <div class="section">
@@ -217,6 +233,14 @@ table.combos tr:hover td{{background:#111827}}
   </div>
 
   <div class="section">
+    <h2>Pass 3 — xoshiro256** K={pass3_k} seeds {', '.join(str(p3['seed']) for p3 in pass3_seeds)}, pick for draw #{TARGET_SERIAL} <span id="badgePass3" class="verify-badge pending">verifying…</span></h2>
+    <p class="desc">Same xoshiro256** implementation as Base's xoshiro side, K={pass3_k} (the same K used on <a href="/xoshiro_seed_backtest.html" style="color:#a78bfa">the 0&ndash;1,000 seed page</a>). Picks recomputed live below and checked against server-embedded references.</p>
+    <table class="methods-table">
+      <tbody>{pass3_rows_html}</tbody>
+    </table>
+  </div>
+
+  <div class="section">
     <h2>Elimination summary</h2>
     <div class="stats-row">
       <div class="stat-card">
@@ -239,10 +263,20 @@ table.combos tr:hover td{{background:#111827}}
         <div class="val">{removed_by_random:,}</div>
         <div class="sub">contained in ANY seed's K={random_k}</div>
       </div>
+      <div class="stat-card">
+        <div class="lbl">After Pass 2</div>
+        <div class="val">{final_remaining_pass2:,}</div>
+        <div class="sub">{pass2_pct:.1f}% of universe retained</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Removed by {len(pass3_seeds)} xoshiro K={pass3_k} seeds (Pass 3)</div>
+        <div class="val">{removed_by_pass3:,}</div>
+        <div class="sub">contained in ANY seed's K={pass3_k}</div>
+      </div>
       <div class="stat-card final">
         <div class="lbl">Final remaining</div>
         <div class="val">{final_remaining:,}</div>
-        <div class="sub">{final_pct:.1f}% of universe · {pass2_pct_of_pass1:.1f}% of Pass-1 output</div>
+        <div class="sub">{final_pct:.1f}% of universe · {pass3_pct_of_pass2:.1f}% of Pass-2 output</div>
       </div>
     </div>
     <div class="elim-flow">
@@ -250,7 +284,9 @@ table.combos tr:hover td{{background:#111827}}
       <span class="arrow">&rarr;</span>
       <span class="n">{final_remaining_pass1:,}</span> <span style="color:#64748b;font-size:.7rem">(Pass 1)</span>
       <span class="arrow">&rarr;</span>
-      <span class="n final">{final_remaining:,}</span> <span style="color:#64748b;font-size:.7rem">(Pass 2)</span>
+      <span class="n">{final_remaining_pass2:,}</span> <span style="color:#64748b;font-size:.7rem">(Pass 2)</span>
+      <span class="arrow">&rarr;</span>
+      <span class="n final">{final_remaining:,}</span> <span style="color:#64748b;font-size:.7rem">(Pass 3)</span>
     </div>
   </div>
 
@@ -466,6 +502,16 @@ const randomAllMatch = WORST_SEEDS.every((rs, i) => arraysEqual(liveRandomPicks[
 renderBadge('badgeRandom', randomAllMatch);
 WORST_SEEDS.forEach((rs, i) => {{
   if (!arraysEqual(liveRandomPicks[i], rs.pick)) console.error('Pass-2 seed mismatch', rs.seed, liveRandomPicks[i], rs.pick);
+}});
+
+// ── Pass 3: xoshiro256** K={pass3_k} seeds, reusing the same verified
+// BigInt xoshiroPredict() used for Base's xoshiro side above. ───────────────
+const PASS3_SEEDS_DATA = {json.dumps(pass3_seeds)};
+const livePass3Picks = PASS3_SEEDS_DATA.map(p3 => xoshiroPredict(p3.seed, {TARGET_SERIAL}, {pass3_k}));
+const pass3AllMatch = PASS3_SEEDS_DATA.every((p3, i) => arraysEqual(livePass3Picks[i], p3.pick));
+renderBadge('badgePass3', pass3AllMatch);
+PASS3_SEEDS_DATA.forEach((p3, i) => {{
+  if (!arraysEqual(livePass3Picks[i], p3.pick)) console.error('Pass-3 seed mismatch', p3.seed, livePass3Picks[i], p3.pick);
 }});
 
 // ── Remaining combos: fetch, paginate, filter, download ─────────────────────
