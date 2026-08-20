@@ -23,20 +23,24 @@ Pass 1:    each of the 16 prediction methods' K=19 pick for #2130,
            consensus trim/pad port. Any Base combo fully contained
            within ANY single one of these 16 sets gets removed.
 
-Pass 2:    the top N_WORST_SEEDS worst-coverage seeds (highest 0-hit
-           count) from seed_hit_random_k17 (the K=17 Python
+Pass 2:    the top N_WORST_SEEDS worst-coverage seeds -- ranked by
+           highest 0-hit count in seed_hit_random_k17 (the K=17 Python
            random.Random scan, seeds -1,236,700 to 1,236,700 -- see
-           random_seed_scan_k17_full.py / gen_random_seed_backtest.py).
-           Each seed's K=17 pick for draw #2130 is computed via the
-           ground-truth random.Random(seed*10_000_000+draw_serial)
-           .sample() formula. Any Pass-1-remaining combo fully contained
-           within ANY single one of these picks gets removed --
-           equivalent to expanding each pick to its C(17,6) sub-combos
-           and removing any remaining combo present in the union of
-           those sub-combo sets, just computed via bitmask containment
-           instead of literal enumeration. (Started at 10 seeds, raised
-           to 100, then 500 -- each step projected against the current
-           Pass-1 output first before being applied to the live page.)
+           random_seed_scan_k17_full.py / gen_random_seed_backtest.py),
+           same seed list throughout. Each seed's K=K_RANDOM pick for
+           draw #2130 is computed via the ground-truth
+           random.Random(seed*10_000_000+draw_serial).sample() formula
+           (K=K_RANDOM is independent of the K=17 used for the seed
+           ranking -- started at K=17, switched to K=15 after
+           projecting the effect first). Any Pass-1-remaining combo
+           fully contained within ANY single one of these picks gets
+           removed -- equivalent to expanding each pick to its
+           C(K_RANDOM,6) sub-combos and removing any remaining combo
+           present in the union of those sub-combo sets, just computed
+           via bitmask containment instead of literal enumeration.
+           (Seed count started at 10, raised to 100, then 500 -- each
+           step projected against the current Pass-1 output first
+           before being applied to the live page.)
 
 Pass 3:    xoshiro256** K=21 seeds 0, 1, and 2 -- the same K=21
            algorithm used on xoshiro_seed_backtest.html. Each seed's
@@ -91,7 +95,8 @@ K_XO = 38
 K_MC = 33
 K_METHODS = 19   # normalized K for all 16 methods (this page's Pass 1)
 K_DEFAULT = 15   # native K most methods produce before normalization
-K_RANDOM = 17    # K for the Pass-2 random.Random seeds
+K_RANDOM = 15    # K for the Pass-2 random.Random seeds' picks (independent
+                 # of the K=17 used to rank/select the seed list itself)
 N_WORST_SEEDS = 500
 RANDOM_TABLE = "seed_hit_random_k17"
 K_PASS3 = 21     # xoshiro256** K=21, same as xoshiro_seed_backtest.html
@@ -544,13 +549,15 @@ print(f"  Removed by ANY of the 16 methods' K={K_METHODS} containment: {removed_
 print(f"  Final remaining: {final_remaining_pass1:,}")
 print(f"\nElimination sequence: {universe_count:,} -> {final_remaining_pass1:,} remaining")
 
-# ── Pass 2: top N_WORST_SEEDS worst-coverage seeds (highest 0-hit count) from
-# seed_hit_random_k17 (the K=17 Python random.Random scan, seeds -1,236,700
-# to 1,236,700). Each seed's K=17 pick for #TARGET_SERIAL is computed via the
-# ground-truth random.Random(seed*10_000_000+draw_serial).sample() formula.
-# Any Pass-1-remaining combo fully contained within ANY of these 10 picks is
-# removed -- equivalent to expanding each pick to C(17,6) sub-combos and
-# removing anything present in the union of those 10 sets, just done via
+# ── Pass 2: top N_WORST_SEEDS worst-coverage seeds (highest 0-hit count in
+# seed_hit_random_k17, the K=17 Python random.Random scan, seeds -1,236,700
+# to 1,236,700) -- ranking/seed-selection always uses that K=17 scan's
+# hit0_count column, independent of K_RANDOM below. Each seed's K=K_RANDOM
+# pick for #TARGET_SERIAL is computed via the ground-truth
+# random.Random(seed*10_000_000+draw_serial).sample() formula. Any
+# Pass-1-remaining combo fully contained within ANY of these picks is
+# removed -- equivalent to expanding each pick to C(K_RANDOM,6) sub-combos
+# and removing anything present in the union of those sets, just done via
 # bitmask containment rather than literal enumeration. ─────────────────────
 print(f"\n=== Pass 2 ===")
 conn2 = sqlite3.connect(DB_PATH)
@@ -565,11 +572,11 @@ print(f"Top {N_WORST_SEEDS} worst-coverage seeds from {RANDOM_TABLE} (highest 0-
 for seed, hit0 in worst_seeds:
     print(f"  seed={seed:>10,}  hit0={hit0}")
 
-def random_predict17(seed, draw_serial, k=K_RANDOM):
+def random_predict_pass2(seed, draw_serial, k=K_RANDOM):
     rng = pyrandom.Random(seed * 10_000_000 + draw_serial)
     return sorted(rng.sample(range(1, LOTO6_MAX + 1), k))
 
-random_picks = [random_predict17(seed, TARGET_SERIAL) for seed, _ in worst_seeds]
+random_picks = [random_predict_pass2(seed, TARGET_SERIAL) for seed, _ in worst_seeds]
 print(f"\nRandom-seed K={K_RANDOM} picks for draw #{TARGET_SERIAL}:")
 random_masks = []
 for (seed, hit0), pick in zip(worst_seeds, random_picks):
