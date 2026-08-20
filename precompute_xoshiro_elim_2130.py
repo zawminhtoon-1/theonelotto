@@ -38,9 +38,9 @@ Pass 2:    the top N_WORST_SEEDS worst-coverage seeds -- ranked by
            C(K_RANDOM,6) sub-combos and removing any remaining combo
            present in the union of those sub-combo sets, just computed
            via bitmask containment instead of literal enumeration.
-           (Seed count started at 10, raised to 100, then 500 -- each
-           step projected against the current Pass-1 output first
-           before being applied to the live page.)
+           (Seed count started at 10, raised to 100, then 500, then
+           1000 -- each step projected against the current Pass-1
+           output first before being applied to the live page.)
 
 Pass 3:    xoshiro256** K=21 seeds 0, 1, and 2 -- the same K=21
            algorithm used on xoshiro_seed_backtest.html. Each seed's
@@ -97,7 +97,7 @@ K_METHODS = 19   # normalized K for all 16 methods (this page's Pass 1)
 K_DEFAULT = 15   # native K most methods produce before normalization
 K_RANDOM = 15    # K for the Pass-2 random.Random seeds' picks (independent
                  # of the K=17 used to rank/select the seed list itself)
-N_WORST_SEEDS = 500
+N_WORST_SEEDS = 1000
 RANDOM_TABLE = "seed_hit_random_k17"
 K_PASS3 = 21     # xoshiro256** K=21, same as xoshiro_seed_backtest.html
 PASS3_SEEDS = [0, 1, 2]
