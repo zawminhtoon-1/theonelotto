@@ -66,9 +66,17 @@ pass3_pct_of_pass2 = final_remaining_pass3 / final_remaining_pass2 * 100
 historical_draw_count = meta['historicalDrawCount']
 historical_combos = meta['historicalCombos']
 removed_historical = meta['removedHistorical']
+final_remaining_pass4 = meta['finalRemainingPass4']
+pass4_pct = final_remaining_pass4 / universe_count * 100
+pass4_pct_of_pass3 = final_remaining_pass4 / final_remaining_pass3 * 100
+
+pass5_k = meta['pass5K']
+pass5_pick = meta['pass5Pick']
+pass5_overlap = meta['pass5Overlap']
+removed_by_pass5 = meta['removedByPass5']
 final_remaining = meta['finalRemaining']
 final_pct = final_remaining / universe_count * 100
-pass4_pct_of_pass3 = final_remaining / final_remaining_pass3 * 100
+pass5_pct_of_pass4 = final_remaining / final_remaining_pass4 * 100
 
 methods_rows_html = ""
 for name, pool in zip(method_names, method_picks):
@@ -203,17 +211,22 @@ table.combos tr:hover td{{background:#111827}}
     seed page. Each seed's K={pass3_k} pick for draw #{TARGET_SERIAL} uses the same verified xoshiro256** implementation as Base's
     xoshiro side. Any Pass-2-remaining combo fully contained within ANY single one of these {len(pass3_seeds)} picks gets removed,
     leaving {final_remaining_pass3:,}.</p>
-    <p><strong style="color:#e2e8f0">Pass 4</strong> (final) is a historical repeat filter &mdash; the same "zero repeats in
+    <p><strong style="color:#e2e8f0">Pass 4</strong> is a historical repeat filter &mdash; the same "zero repeats in
     history" pattern used in the earlier #2124 elimination flow. Any Pass-3-remaining combo that exactly matches an actual 6-number
-    winning combo from any of the {historical_draw_count:,} real draws (#1&ndash;{TARGET_SERIAL-1}) gets removed. No K=6 Loto 6
-    combo has ever repeated across {historical_draw_count:,} draws, so this pass strictly removes exact historical matches, not
-    near-misses.</p>
+    winning combo from any of the {historical_draw_count:,} real draws (#1&ndash;{TARGET_SERIAL-1}) gets removed, leaving {final_remaining_pass4:,}.
+    No K=6 Loto 6 combo has ever repeated across {historical_draw_count:,} draws, so this pass strictly removes exact historical
+    matches, not near-misses.</p>
+    <p><strong style="color:#e2e8f0">Pass 5</strong> (final) is the <a href="/predictions" style="color:#a78bfa">Worst Combo
+    (Anti-Pick)</a> K={pass5_k} pick for draw #{TARGET_SERIAL} &mdash; the MA-43 + Exp-weighted + Random Forest + kNN + Apriori
+    Association Rules consensus. Any Pass-4-remaining combo fully contained within this {pass5_k}-number pick gets removed. These 5
+    methods can't all run client-side, so the pick is embedded as static data (same convention as Modular Cycle's pick), read
+    directly off the live /predictions page.</p>
     <p>The xoshiro side of Base, all {len(random_seeds)} Pass-2 picks, and all {len(pass3_seeds)} Pass-3 picks are recomputed
     <strong>live in your browser</strong> below (bit-exact ports &mdash; BigInt xoshiro256** for Base and Pass 3, the CPython
     MT19937 port from the Random Seed Backtest page for Pass 2) and checked against server-embedded references &mdash; check the
-    verification badges. Modular Cycle's pick and Pass 1's 16 statistical/ML methods (ARIMA, Random Forest, HMM, LSTM, etc.) can't
-    run in a browser, so those are precomputed server-side, same as every other draw on this site, and embedded as static data.
-    Pass 4's historical combo set is embedded and checked client-side too.</p>
+    verification badges. Modular Cycle's pick, Pass 1's 16 statistical/ML methods (ARIMA, Random Forest, HMM, LSTM, etc.), and
+    Pass 5's Worst Combo pick can't run in a browser, so those are precomputed server-side, same as every other draw on this site,
+    and embedded as static data. Pass 4's historical combo set is embedded and checked client-side too.</p>
   </div>
 
   <div class="section">
@@ -267,6 +280,13 @@ table.combos tr:hover td{{background:#111827}}
   </div>
 
   <div class="section">
+    <h2>Pass 5 (final) — Worst Combo (Anti-Pick), K={pass5_k} pick for draw #{TARGET_SERIAL} <span class="verify-badge na">server-computed</span></h2>
+    <p class="desc">Read live from the <a href="/predictions" style="color:#a78bfa">Predictions</a> page's Worst Combo panel &mdash;
+    MA-43 + Exp-weighted + Random Forest + kNN + Apriori Association Rules consensus. Overlap with the {base['k']}-pool: {pass5_overlap} numbers.</p>
+    <div class="balls">{"".join(f'<span class="nb">{n}</span>' for n in pass5_pick)}</div>
+  </div>
+
+  <div class="section">
     <h2>Elimination summary</h2>
     <div class="stats-row">
       <div class="stat-card">
@@ -309,10 +329,20 @@ table.combos tr:hover td{{background:#111827}}
         <div class="val">{len(removed_historical):,}</div>
         <div class="sub">exact match to a real winning combo</div>
       </div>
+      <div class="stat-card">
+        <div class="lbl">After Pass 4</div>
+        <div class="val">{final_remaining_pass4:,}</div>
+        <div class="sub">{pass4_pct:.1f}% of universe retained</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Removed by Worst Combo K={pass5_k} (Pass 5)</div>
+        <div class="val">{removed_by_pass5:,}</div>
+        <div class="sub">contained in the anti-pick's K={pass5_k}</div>
+      </div>
       <div class="stat-card final">
         <div class="lbl">Final remaining</div>
         <div class="val">{final_remaining:,}</div>
-        <div class="sub">{final_pct:.1f}% of universe · {pass4_pct_of_pass3:.1f}% of Pass-3 output</div>
+        <div class="sub">{final_pct:.1f}% of universe · {pass5_pct_of_pass4:.1f}% of Pass-4 output</div>
       </div>
     </div>
     <div class="elim-flow">
@@ -324,7 +354,9 @@ table.combos tr:hover td{{background:#111827}}
       <span class="arrow">&rarr;</span>
       <span class="n">{final_remaining_pass3:,}</span> <span style="color:#64748b;font-size:.7rem">(Pass 3)</span>
       <span class="arrow">&rarr;</span>
-      <span class="n final">{final_remaining:,}</span> <span style="color:#64748b;font-size:.7rem">(Pass 4)</span>
+      <span class="n">{final_remaining_pass4:,}</span> <span style="color:#64748b;font-size:.7rem">(Pass 4)</span>
+      <span class="arrow">&rarr;</span>
+      <span class="n final">{final_remaining:,}</span> <span style="color:#64748b;font-size:.7rem">(Pass 5)</span>
     </div>
   </div>
 
@@ -561,6 +593,11 @@ const liveRemovedHistorical = REMOVED_HISTORICAL.every(c => HISTORICAL_SET.has(c
 renderBadge('badgeHistorical', liveRemovedHistorical);
 if (!liveRemovedHistorical) console.error('Pass-4 historical-match mismatch', REMOVED_HISTORICAL);
 
+// ── Pass 5: Worst Combo (Anti-Pick) K={pass5_k} pick -- server-computed,
+// embedded (5 methods including Random Forest/kNN/Apriori can't run
+// client-side). Sanity-checked below against the fetched remaining set. ────
+const PASS5_PICK = {json.dumps(pass5_pick)};
+
 // ── Remaining combos: fetch, paginate, filter, download ─────────────────────
 const POOL_BASE = liveBase;
 let REMAINING = [];
@@ -580,6 +617,9 @@ fetch('/xoshiro_elim_{TARGET_SERIAL}_combos.json')
     render();
     const stillHistorical = REMAINING.filter(c => HISTORICAL_SET.has(c.join(',')));
     if (stillHistorical.length > 0) console.error('Pass-4 leak: remaining combos still match history', stillHistorical);
+    const pass5Set = new Set(PASS5_PICK);
+    const stillInPass5 = REMAINING.filter(c => c.every(n => pass5Set.has(n)));
+    if (stillInPass5.length > 0) console.error('Pass-5 leak: remaining combos still contained in Worst Combo pick', stillInPass5);
   }})
   .catch(err => {{
     document.getElementById('loadingMsg').textContent = 'Failed to load combinations: ' + err;

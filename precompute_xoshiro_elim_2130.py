@@ -49,7 +49,17 @@ Pass 4:    historical repeat filter (same "zero repeats in history"
            pattern used in the earlier #2124 elimination flow). Any
            Pass-3-remaining combo that exactly matches an actual
            6-number winning combo from draws #1 through #2129 gets
-           removed. This is the final pass on this page.
+           removed.
+
+Pass 5:    the "Worst Combo (Anti-Pick)" K=15 pick shown on
+           /predictions (MA-43 + Exp-weighted + Random Forest + kNN +
+           Apriori Association Rules consensus, for draw #2130). Any
+           Pass-4-remaining combo fully contained within this 15-number
+           pick gets removed. This is the final pass on this page
+           unless asked for more. The pick itself is a snapshot read
+           directly off the live /predictions page (those 5 methods
+           can't all run client-side, so it's embedded as static data,
+           same convention as Modular Cycle's pick).
 
 Self-checks the xoshiro implementation against a known-good value before
 trusting Base's xoshiro component.
@@ -86,6 +96,9 @@ N_WORST_SEEDS = 500
 RANDOM_TABLE = "seed_hit_random_k17"
 K_PASS3 = 21     # xoshiro256** K=21, same as xoshiro_seed_backtest.html
 PASS3_SEEDS = [0, 1, 2]
+# Worst Combo (Anti-Pick) K=15 pick, read live off /predictions for draw #2130
+# (MA-43 + Exp-weighted + Random Forest + kNN + Apriori consensus).
+PASS5_PICK = [2, 5, 6, 8, 19, 21, 25, 26, 27, 30, 35, 37, 38, 39, 42]
 
 SEED_XO = 692809   # best K=38 seed (0-1,000,000 scan)
 
@@ -650,6 +663,35 @@ print(f"  Before Pass 4: {final_remaining_pass3:,}  ->  After Pass 4: {final_rem
 print(f"\nFull elimination sequence: {universe_count:,} -> {final_remaining_pass1:,} (Pass 1) -> {final_remaining:,} (Pass 2) -> "
       f"{final_remaining_pass3:,} (Pass 3) -> {final_remaining_pass4:,} (Pass 4)")
 
+# ── Pass 5: Worst Combo (Anti-Pick) K=15 pick from /predictions. Any
+# Pass-4-remaining combo fully contained within this pick is removed. Final
+# pass on this page. ─────────────────────────────────────────────────────
+print(f"\n=== Pass 5 ===")
+K_PASS5 = len(PASS5_PICK)
+print(f"Worst Combo (Anti-Pick) K={K_PASS5} pick for draw #{TARGET_SERIAL}: {PASS5_PICK}")
+pass5_mask = restricted_mask(set(PASS5_PICK))
+pass5_overlap = bin(pass5_mask).count('1')
+print(f"  overlap with {K_BASE}-pool: {pass5_overlap}")
+
+t0 = time.time()
+remaining_after5 = []
+removed_by_pass5 = 0
+for combo in remaining_after4:
+    combo_mask = 0
+    for n in combo:
+        combo_mask |= (1 << pos_of[n])
+    if (combo_mask & ~pass5_mask) & FULLBASE == 0:
+        removed_by_pass5 += 1
+        continue
+    remaining_after5.append(combo)
+elapsed5 = time.time() - t0
+final_remaining_pass5 = len(remaining_after5)
+print(f"Pass 5 elimination in {elapsed5:.1f}s")
+print(f"  Removed (contained within the Worst Combo K={K_PASS5} pick): {removed_by_pass5:,}")
+print(f"  Before Pass 5: {final_remaining_pass4:,}  ->  After Pass 5: {final_remaining_pass5:,}")
+print(f"\nFull elimination sequence: {universe_count:,} -> {final_remaining_pass1:,} (Pass 1) -> {final_remaining:,} (Pass 2) -> "
+      f"{final_remaining_pass3:,} (Pass 3) -> {final_remaining_pass4:,} (Pass 4) -> {final_remaining_pass5:,} (Pass 5)")
+
 # ── Save outputs ──────────────────────────────────────────────────────────
 meta = {
     'targetSerial': TARGET_SERIAL,
@@ -678,12 +720,17 @@ meta = {
     'historicalDrawCount': len(all_main6),
     'historicalCombos': [sorted(nums) for nums in all_main6],
     'removedHistorical': [list(c) for c in removed_historical],
-    'finalRemaining': final_remaining_pass4,
+    'finalRemainingPass4': final_remaining_pass4,
+    'pass5K': K_PASS5,
+    'pass5Pick': PASS5_PICK,
+    'pass5Overlap': pass5_overlap,
+    'removedByPass5': removed_by_pass5,
+    'finalRemaining': final_remaining_pass5,
 }
 with open(META_OUT, 'w', encoding='utf-8') as f:
     json.dump(meta, f, indent=2)
 print(f"\nSaved {META_OUT}")
 
 with open(COMBOS_OUT, 'w', encoding='utf-8') as f:
-    json.dump(remaining_after4, f, separators=(',', ':'))
-print(f"Saved {COMBOS_OUT} ({len(remaining_after4):,} combos, {os.path.getsize(COMBOS_OUT)//1024:,} KB)")
+    json.dump(remaining_after5, f, separators=(',', ':'))
+print(f"Saved {COMBOS_OUT} ({len(remaining_after5):,} combos, {os.path.getsize(COMBOS_OUT)//1024:,} KB)")
