@@ -1,21 +1,30 @@
 """
 gen_xoshiro_elim_2129.py
 ----------------------------
-Generates the "Xoshiro K=38/K=33 + 16-Method Elimination" page for draw
-#2129 (next upcoming Loto6 draw, #2128 having since become a real,
-confirmed draw). Reads xoshiro_elim_2129_meta.json (small: pool picks,
+REBUILT to match #2130's page design. Generates the "Xoshiro K=38 x
+Modular Cycle K=33 + 16-Method Elimination" page for draw #2129 (a
+real, confirmed draw by now -- #2129's original Base was a single-
+source xoshiro K=38 pick, predating the Modular Cycle intersection
+concept; this rebuild replaces it with the same architecture #2130's
+page uses). Reads xoshiro_elim_2129_meta.json (small: pool picks,
 method picks, counts) produced by precompute_xoshiro_elim_2129.py. The
 large remaining-combo list lives separately at
-public/xoshiro_elim_2129_combos.json (already written by the precompute
-script) and is fetched client-side, not inlined -- 1,891,927 combos
-would bloat this HTML page itself to an unusable size.
+public/xoshiro_elim_2129_combos.json and is fetched client-side, not
+inlined.
 
-Base (xoshiro K=38) and Pass 1 (xoshiro K=33) are recomputed LIVE in the
-browser via the same bit-exact BigInt xoshiro256** port used on every
-other xoshiro page -- verifiable, not just displayed. Pass 2 (the 16
-statistical/ML methods, K=26) is precomputed server-side, same as every
-other draw on this site (ARIMA/RandomForest/HMM/LSTM etc. aren't things
-a browser should redundantly recompute) -- embedded as static data.
+Base is Modular Cycle's K=33 pick intersected with xoshiro K=38 seed
+#692,809's pick, both for draw #2129, both walk-forward trained on
+draws #1-2128 ONLY (never #2129 itself, to avoid leaking the answer
+into a prediction that's supposed to be evaluated against it). Only
+the xoshiro component is recomputed live in the browser (bit-exact
+BigInt port, verified against the server-embedded reference); Modular
+Cycle's pick is embedded static data computed server-side.
+
+Since #2129 has already happened, /predictions no longer shows a
+Worst Combo pick for it (that page now targets #2130) -- Pass 5's pick
+is recomputed by faithfully replicating page.tsx's actual JS methods
+in Python (walk-forward through #2128 only) rather than being read
+live off the site.
 
 Output: public/xoshiro_elim_2129.html
 Run: python gen_xoshiro_elim_2129.py
@@ -30,45 +39,46 @@ with open(META_PATH, encoding='utf-8') as f:
     meta = json.load(f)
 
 TARGET_SERIAL = meta['targetSerial']
+TRAIN_THROUGH = TARGET_SERIAL - 1
+xo = meta['xo']
+mc = meta['mc']
 base = meta['base']
-pass1 = meta['pass1']
-pass3 = meta['pass3']
 method_names = meta['methodNames']
 method_picks = meta['methodPicks']
 method_k = meta['methodK']
 universe_count = meta['universeCount']
-removed_by_pass1 = meta['removedByPass1']
-after_pass1 = meta['afterPass1']
 removed_by_methods = meta['removedByMethods']
-before_pass3 = meta['beforePass3']
-removed_by_pass3 = meta['removedByPass3']
-after_pass3 = before_pass3 - removed_by_pass3
-after_pass3_pct = after_pass3 / universe_count * 100
+final_remaining_pass1 = meta['finalRemainingPass1']
+pass1_pct = final_remaining_pass1 / universe_count * 100
 
 random_k = meta['randomK']
 random_seeds = meta['randomSeeds']
-removed_by_random = meta['removedByPass4']
-final_remaining_pass4 = meta['finalRemainingPass4']
-pass4_pct = final_remaining_pass4 / universe_count * 100
+removed_by_random = meta['removedByRandom']
+final_remaining_pass2 = meta['finalRemainingPass2']
+pass2_pct = final_remaining_pass2 / universe_count * 100
+pass2_pct_of_pass1 = final_remaining_pass2 / final_remaining_pass1 * 100
 
-pass5_k = meta['pass5K']
-pass5_seeds = meta['pass5Seeds']
-removed_by_pass5 = meta['removedByPass5']
-final_remaining_pass5 = meta['finalRemainingPass5']
-pass5_pct = final_remaining_pass5 / universe_count * 100
+pass3_k = meta['pass3K']
+pass3_seeds = meta['pass3Seeds']
+removed_by_pass3 = meta['removedByPass3']
+final_remaining_pass3 = meta['finalRemainingPass3']
+pass3_pct = final_remaining_pass3 / universe_count * 100
+pass3_pct_of_pass2 = final_remaining_pass3 / final_remaining_pass2 * 100
 
 historical_draw_count = meta['historicalDrawCount']
 historical_combos = meta['historicalCombos']
 removed_historical = meta['removedHistorical']
-final_remaining_pass6 = meta['finalRemainingPass6']
-pass6_pct = final_remaining_pass6 / universe_count * 100
+final_remaining_pass4 = meta['finalRemainingPass4']
+pass4_pct = final_remaining_pass4 / universe_count * 100
+pass4_pct_of_pass3 = final_remaining_pass4 / final_remaining_pass3 * 100
 
-pass7_k = meta['pass7K']
-pass7_pick = meta['pass7Pick']
-pass7_overlap = meta['pass7Overlap']
-removed_by_pass7 = meta['removedByPass7']
+pass5_k = meta['pass5K']
+pass5_pick = meta['pass5Pick']
+pass5_overlap = meta['pass5Overlap']
+removed_by_pass5 = meta['removedByPass5']
 final_remaining = meta['finalRemaining']
 final_pct = final_remaining / universe_count * 100
+pass5_pct_of_pass4 = final_remaining / final_remaining_pass4 * 100
 
 methods_rows_html = ""
 for name, pool in zip(method_names, method_picks):
@@ -80,10 +90,10 @@ for rs in random_seeds:
     balls = "".join(f'<span class="nb">{n}</span>' for n in rs['pick'])
     random_seed_rows_html += f"""<tr><td class="mname">#{rs['seed']:,} <span style="color:#64748b;font-weight:400">(0-hit: {rs['hit0']})</span></td><td><div class="balls">{balls}</div></td></tr>"""
 
-pass5_rows_html = ""
-for p5 in pass5_seeds:
-    balls = "".join(f'<span class="nb">{n}</span>' for n in p5['pick'])
-    pass5_rows_html += f"""<tr><td class="mname">seed #{p5['seed']}</td><td><div class="balls">{balls}</div></td></tr>"""
+pass3_rows_html = ""
+for p3 in pass3_seeds:
+    balls = "".join(f'<span class="nb">{n}</span>' for n in p3['pick'])
+    pass3_rows_html += f"""<tr><td class="mname">seed #{p3['seed']}</td><td><div class="balls">{balls}</div></td></tr>"""
 
 historical_rows_html = ""
 for combo in removed_historical:
@@ -95,7 +105,7 @@ page = f"""<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Xoshiro K=38/K=33 + 16-Method Elimination — Draw #{TARGET_SERIAL}</title>
+<title>Xoshiro K=38 x Modular Cycle K=33 + 16-Method Elimination — Draw #{TARGET_SERIAL}</title>
 <style>
 
 *{{box-sizing:border-box;margin:0;padding:0}}
@@ -111,6 +121,7 @@ h1{{font-size:1.4rem;font-weight:700;color:#f1f5f9;margin-bottom:4px}}
 
 .section{{background:#0d1526;border:1px solid #1e293b;border-radius:12px;padding:20px;margin-bottom:20px}}
 .section h2{{font-size:1rem;font-weight:700;color:#f1f5f9;margin-bottom:4px;display:flex;align-items:center;gap:8px}}
+.section h3{{font-size:.86rem;font-weight:700;color:#cbd5e1;margin:14px 0 6px}}
 .section .desc{{font-size:.8rem;color:#64748b;margin-bottom:14px}}
 .verify-badge{{font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:10px;text-transform:uppercase;letter-spacing:.04em}}
 .verify-badge.pending{{background:#1e293b;color:#94a3b8}}
@@ -124,6 +135,7 @@ h1{{font-size:1.4rem;font-weight:700;color:#f1f5f9;margin-bottom:4px}}
   border:1px solid #7c3aed55;flex-shrink:0}}
 .nb.b1{{background:#0c2340;color:#7dd3fc;border-color:#38bdf855}}
 .nb.b2{{background:#450a0a;color:#fca5a5;border-color:#ef444455}}
+.nb.b3{{background:#1c1206;color:#fbbf24;border-color:#f59e0b55}}
 
 .stats-row{{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}}
 .stat-card{{background:#0a0f1e;border:1px solid #1e293b;border-radius:10px;padding:14px 18px;flex:1;min-width:150px}}
@@ -176,66 +188,68 @@ table.combos tr:hover td{{background:#111827}}
 
 <script src="/site-nav.js"></script>
 <div class="wrap">
-  <h1>✂️ Xoshiro K=38/K=33 + 16-Method Elimination — Draw #{TARGET_SERIAL}</h1>
-  <p class="subtitle">Combinatorial set-difference: xoshiro256** K=38 pick, minus combos covered by xoshiro K=33's pick and by any of the 16 prediction methods' K={method_k} picks</p>
+  <h1>✂️ Xoshiro K=38 × Modular Cycle K=33 + 16-Method Elimination — Draw #{TARGET_SERIAL}</h1>
+  <p class="subtitle">Combinatorial set-difference: (Modular Cycle K=33 ∩ xoshiro K=38) pick, minus combos covered by any of the 16 prediction methods' K={method_k} picks</p>
 
   <div class="note">
-    <p><strong style="color:#e2e8f0">Base</strong> (below) is seed <strong>#{base['seed']:,}</strong>'s xoshiro256** K={base['k']} pick &mdash;
-    the current overall best seed found in the 0&ndash;1,000,000 K=38 scan (highest hit6b/hit6/hit5 ranking). This defines the working universe:
-    all C(38,6) = {universe_count:,} six-number combinations drawable from its 38-number pool.</p>
-    <p><strong style="color:#e2e8f0">Pass 1</strong> is seed <strong>#{pass1['seed']:,}</strong>'s xoshiro256** K={pass1['k']} pick &mdash;
-    the current overall best seed found in the 0&ndash;1,000,000 K=33 scan. Any of Base's combos fully contained within this
-    {pass1['k']}-number set gets removed.</p>
-    <p><strong style="color:#e2e8f0">Pass 2</strong> is each of the 16 prediction methods' K={method_k} pick for draw #{TARGET_SERIAL}, computed
-    walk-forward (trained on all {TARGET_SERIAL-1:,} real draws through #{TARGET_SERIAL-1}) then normalized to exactly {method_k} numbers via the same
+    <p><strong style="color:#fbbf24">Rebuilt to match #2130's design.</strong> Draw #{TARGET_SERIAL} has already happened for real. This page's
+    original Base was a single-source xoshiro K=38 pick (predating the Modular Cycle intersection concept) with a 3-pass chain ending at
+    1,210,881 remaining. It has been rebuilt from scratch with the same Base/pass architecture as
+    <a href="/xoshiro_elim_2130.html" style="color:#a78bfa">the #2130 elimination page</a>, walk-forward trained on draws #1&ndash;{TRAIN_THROUGH}
+    ONLY for every ML-derived component (Modular Cycle, the 16 methods, the Worst Combo pick) so #{TARGET_SERIAL}'s real result never leaks
+    into its own predictions — while the historical-repeat-filter pass correctly DOES include #{TARGET_SERIAL} in its historical set, since it's
+    a real, confirmed draw by now.</p>
+    <p><strong style="color:#e2e8f0">Base</strong> (below) is <strong>Modular Cycle's K={mc['k']} pick</strong> intersected with
+    <strong>xoshiro256** K={xo['k']} seed #{xo['seed']:,}'s pick</strong> &mdash; both for draw #{TARGET_SERIAL}, both walk-forward trained on
+    draws #1&ndash;{TRAIN_THROUGH} only. It defines the working universe: all C({base['k']},6) = {universe_count:,} six-number combinations
+    drawable from this pool.</p>
+    <p><strong style="color:#e2e8f0">Pass 1</strong> is each of the 16 prediction methods' K={method_k} pick for draw #{TARGET_SERIAL}, computed
+    walk-forward (trained on draws #1&ndash;{TRAIN_THROUGH} only) then normalized to exactly {method_k} numbers via the same
     cross-method-consensus trim/pad algorithm as <a href="/backtest.html" style="color:#a78bfa">backtest.html</a>'s <code>topKNums()</code>.
-    Any of Base's remaining combos fully contained within ANY single one of these 16 sets also gets removed.</p>
-    <p><strong style="color:#e2e8f0">Pass 3</strong> is seed <strong>#{pass3['seed']:,}</strong>'s xoshiro256** K={pass3['k']} pick &mdash;
-    the <em>same seed as Base</em>, just K={pass3['k']} instead of K={base['k']}. Worth knowing: this isn't independent randomness &mdash; partial
-    Fisher-Yates always nests a smaller-K pick inside a larger-K pick from the same seed/draw, so Pass 3's {pass3['k']}-number pool is
-    <strong>guaranteed</strong> to be a full subset of Base's {base['k']}-pool (verified: all {pass3['k']} numbers present). It's literally the
-    "inner core" of Base's own pick that survives even when only {pass3['k']} numbers are kept. Any combo still remaining after Pass 1 &amp; 2
-    that's fully contained within this subset also gets removed, leaving {after_pass3:,}.</p>
-    <p><strong style="color:#e2e8f0">Pass 4</strong> is the top {len(random_seeds)} worst-coverage seeds (highest 0-hit count) from
+    Any of Base's combos fully contained within ANY single one of these 16 sets gets removed, leaving {final_remaining_pass1:,}.</p>
+    <p><strong style="color:#e2e8f0">Pass 2</strong> is the top {len(random_seeds)} worst-coverage seeds (highest 0-hit count) from
     <a href="/random_seed_backtest.html" style="color:#a78bfa">the Random Seed Backtest</a>'s <code>seed_hit_random_k17</code> scan
-    (K=17, Python <code>random.Random</code>, seeds &#177;1,236,700), same passes already applied to
-    <a href="/xoshiro_elim_2130.html" style="color:#a78bfa">the #2130 elimination page</a>. Each seed's K={random_k} pick for draw
-    #{TARGET_SERIAL} is computed via the ground-truth <code>random.Random(seed&times;10&#8311;+draw_serial).sample()</code> formula.
-    Any Pass-3-remaining combo fully contained within ANY single one of these {len(random_seeds)} picks gets removed.</p>
-    <p><strong style="color:#e2e8f0">Pass 5</strong> is <a href="/xoshiro_seed_backtest.html" style="color:#a78bfa">xoshiro256**</a>
-    K={pass5_k} seeds {', '.join(str(p5['seed']) for p5 in pass5_seeds)}. Any Pass-4-remaining combo fully contained within ANY single
-    one of these {len(pass5_seeds)} picks gets removed.</p>
-    <p><strong style="color:#e2e8f0">Pass 6</strong> is a historical repeat filter (same "zero repeats in history" pattern used in the
-    earlier #2124 elimination flow). Any Pass-5-remaining combo that exactly matches an actual 6-number winning combo from any of the
-    {historical_draw_count:,} real draws (#1&ndash;{TARGET_SERIAL}) gets removed &mdash; draw #{TARGET_SERIAL} has since happened for
-    real, so it's correctly included in this historical set.</p>
-    <p><strong style="color:#e2e8f0">Pass 7</strong> (final) is the Worst Combo (Anti-Pick) K={pass7_k} pick for draw #{TARGET_SERIAL} &mdash;
+    (K=17, Python <code>random.Random</code>, seeds &#177;1,236,700), same seed list already used on the #2130 page. Each seed's
+    K={random_k} pick for draw #{TARGET_SERIAL} is computed via the ground-truth
+    <code>random.Random(seed&times;10&#8311;+draw_serial).sample()</code> formula. Any Pass-1-remaining combo fully contained within ANY
+    single one of these {len(random_seeds)} picks gets removed, leaving {final_remaining_pass2:,}.</p>
+    <p><strong style="color:#e2e8f0">Pass 3</strong> is <a href="/xoshiro_seed_backtest.html" style="color:#a78bfa">xoshiro256**</a>
+    K={pass3_k} seeds {', '.join(str(p3['seed']) for p3 in pass3_seeds)}. Any Pass-2-remaining combo fully contained within ANY single one
+    of these {len(pass3_seeds)} picks gets removed, leaving {final_remaining_pass3:,}.</p>
+    <p><strong style="color:#e2e8f0">Pass 4</strong> is a historical repeat filter &mdash; the same "zero repeats in history" pattern used
+    in the earlier #2124 elimination flow. Any Pass-3-remaining combo that exactly matches an actual 6-number winning combo from any of the
+    {historical_draw_count:,} real draws (#1&ndash;{TARGET_SERIAL}) gets removed &mdash; draw #{TARGET_SERIAL} has since happened for real, so
+    it's correctly included in this historical set (unlike the #2130 page, whose target hasn't happened yet).</p>
+    <p><strong style="color:#e2e8f0">Pass 5</strong> (final) is the Worst Combo (Anti-Pick) K={pass5_k} pick for draw #{TARGET_SERIAL} &mdash;
     MA-43 + Exp-weighted + Random Forest + kNN + Apriori Association Rules consensus, the same 5-method combination
-    <a href="/predictions" style="color:#a78bfa">/predictions</a>' Worst Combo panel uses. Since #{TARGET_SERIAL} has already happened,
-    that page no longer shows this pick (it now targets the next upcoming draw), so it's recomputed here by faithfully replicating
-    page.tsx's actual client-side JS methods in Python &mdash; walk-forward, trained on draws #1&ndash;{TARGET_SERIAL-1} only. Any
-    Pass-6-remaining combo fully contained within this {pass7_k}-number pick gets removed.</p>
-    <p>Base, Pass 1, Pass 3 &amp; Pass 5 (all xoshiro), and all {len(random_seeds)} Pass-4 picks are recomputed <strong>live in your
-    browser</strong> below &mdash; check the verification badges. Pass 2's 16 statistical/ML methods, and Pass 7's Worst Combo pick,
-    can't (fully) run in a browser, so those are precomputed server-side and embedded as static data. Pass 6's historical combo set
-    is embedded and checked client-side too.</p>
+    <a href="/predictions" style="color:#a78bfa">/predictions</a>' Worst Combo panel uses. Since #{TARGET_SERIAL} has already happened, that
+    page no longer shows this pick (it now targets the next upcoming draw), so it's recomputed here by faithfully replicating page.tsx's
+    actual client-side JS methods in Python &mdash; walk-forward, trained on draws #1&ndash;{TRAIN_THROUGH} only. Any Pass-4-remaining combo
+    fully contained within this {pass5_k}-number pick gets removed.</p>
+    <p>The xoshiro side of Base, all {len(random_seeds)} Pass-2 picks, and all {len(pass3_seeds)} Pass-3 picks are recomputed
+    <strong>live in your browser</strong> below (bit-exact ports &mdash; BigInt xoshiro256** for Base and Pass 3, the CPython
+    MT19937 port from the Random Seed Backtest page for Pass 2) and checked against server-embedded references &mdash; check the
+    verification badges. Modular Cycle's pick, Pass 1's 16 statistical/ML methods (ARIMA, Random Forest, HMM, LSTM, etc.), and
+    Pass 5's Worst Combo pick can't (fully) run in a browser, so those are precomputed server-side and embedded as static data.
+    Pass 4's historical combo set is embedded and checked client-side too.</p>
   </div>
 
   <div class="section">
-    <h2>Base — xoshiro256** K={base['k']}, seed #{base['seed']:,} <span id="badge1" class="verify-badge pending">verifying…</span></h2>
-    <p class="desc">Current overall best K=38 seed (0–1,000,000 scan, ranked by hit6b→hit6→hit5). This 38-number pool is the elimination universe.</p>
-    <div class="balls" id="block1Balls"></div>
+    <h2>Base — Modular Cycle K={mc['k']} ∩ xoshiro K={xo['k']} seed #{xo['seed']:,} <span id="badgeBase" class="verify-badge pending">verifying…</span></h2>
+    <p class="desc">Modular Cycle: walk-forward pick trained on draws #1–{TRAIN_THROUGH} only, native K=28 normalized to K={mc['k']}
+    (server-computed). Xoshiro: current overall best K=38 seed (0–1,000,000 scan), computed live below. Base = their intersection
+    &mdash; this {base['k']}-number pool is the elimination universe.</p>
+    <h3>Modular Cycle K={mc['k']} pick <span class="verify-badge na">server-computed</span></h3>
+    <div class="balls" id="mcBalls"></div>
+    <h3>Xoshiro K={xo['k']} seed #{xo['seed']:,} pick <span id="badgeXo" class="verify-badge pending">verifying…</span></h3>
+    <div class="balls" id="xoBalls"></div>
+    <h3>Base (intersection)</h3>
+    <div class="balls" id="baseBalls"></div>
   </div>
 
   <div class="section">
-    <h2>Pass 1 — xoshiro256** K={pass1['k']}, seed #{pass1['seed']:,} <span id="badge2" class="verify-badge pending">verifying…</span></h2>
-    <p class="desc">Current overall best K=33 seed (0–1,000,000 scan, ranked by hit6b→hit6→hit5). Combos it fully covers get removed from Base's universe.</p>
-    <div class="balls" id="block2Balls"></div>
-  </div>
-
-  <div class="section">
-    <h2>Pass 2 — 16 prediction methods, K={method_k} pick for draw #{TARGET_SERIAL}</h2>
-    <p class="desc">Precomputed server-side (walk-forward, trained on all real draws through #{TARGET_SERIAL-1}), normalized to K={method_k} via cross-method consensus.</p>
+    <h2>Pass 1 — 16 prediction methods, K={method_k} pick for draw #{TARGET_SERIAL}</h2>
+    <p class="desc">Precomputed server-side (walk-forward, trained on draws #1–{TRAIN_THROUGH} only), normalized to K={method_k} via cross-method consensus.</p>
     <details>
       <summary>Show all 16 methods' picks</summary>
       <table class="methods-table">
@@ -245,13 +259,7 @@ table.combos tr:hover td{{background:#111827}}
   </div>
 
   <div class="section">
-    <h2>Pass 3 — xoshiro256** K={pass3['k']}, seed #{pass3['seed']:,} (same seed as Base) <span id="badge3" class="verify-badge pending">verifying…</span></h2>
-    <p class="desc">Same seed as Base, K={pass3['k']} instead of K={base['k']} — guaranteed subset of Base's pool (partial Fisher-Yates same-seed nesting). Combos it fully covers get removed from what's left after Pass 1 &amp; 2.</p>
-    <div class="balls" id="block3Balls"></div>
-  </div>
-
-  <div class="section">
-    <h2>Pass 4 — top {len(random_seeds)} worst-coverage random seeds, K={random_k} pick for draw #{TARGET_SERIAL} <span id="badgeRandom" class="verify-badge pending">verifying…</span></h2>
+    <h2>Pass 2 — top {len(random_seeds)} worst-coverage random seeds, K={random_k} pick for draw #{TARGET_SERIAL} <span id="badgeRandom" class="verify-badge pending">verifying…</span></h2>
     <p class="desc">Highest 0-hit count from the K=17 <code>seed_hit_random_k17</code> scan (seeds &#177;1,236,700, draws #1001&ndash;2129). Picks recomputed live below via the bit-exact CPython MT19937 port and checked against server-embedded references.</p>
     <details>
       <summary>Show all {len(random_seeds)} seeds' picks</summary>
@@ -262,26 +270,26 @@ table.combos tr:hover td{{background:#111827}}
   </div>
 
   <div class="section">
-    <h2>Pass 5 — xoshiro256** K={pass5_k} seeds {', '.join(str(p5['seed']) for p5 in pass5_seeds)}, pick for draw #{TARGET_SERIAL} <span id="badgePass5" class="verify-badge pending">verifying…</span></h2>
-    <p class="desc">Same xoshiro256** implementation as Base's xoshiro side, K={pass5_k} (the same K used on <a href="/xoshiro_seed_backtest.html" style="color:#a78bfa">the 0&ndash;1,000 seed page</a>). Picks recomputed live below and checked against server-embedded references.</p>
+    <h2>Pass 3 — xoshiro256** K={pass3_k} seeds {', '.join(str(p3['seed']) for p3 in pass3_seeds)}, pick for draw #{TARGET_SERIAL} <span id="badgePass3" class="verify-badge pending">verifying…</span></h2>
+    <p class="desc">Same xoshiro256** implementation as Base's xoshiro side, K={pass3_k} (the same K used on <a href="/xoshiro_seed_backtest.html" style="color:#a78bfa">the 0&ndash;1,000 seed page</a>). Picks recomputed live below and checked against server-embedded references.</p>
     <table class="methods-table">
-      <tbody>{pass5_rows_html}</tbody>
+      <tbody>{pass3_rows_html}</tbody>
     </table>
   </div>
 
   <div class="section">
-    <h2>Pass 6 — historical repeat filter <span id="badgeHistorical" class="verify-badge pending">verifying…</span></h2>
-    <p class="desc">Removes any Pass-5-remaining combo that exactly matches a real 6-number winning combo from the {historical_draw_count:,}
-    draws #1&ndash;{TARGET_SERIAL}. Checked live in your browser against the same embedded historical combo set. {len(removed_historical)} matches found.</p>
+    <h2>Pass 4 — historical repeat filter <span id="badgeHistorical" class="verify-badge pending">verifying…</span></h2>
+    <p class="desc">Removes any Pass-3-remaining combo that exactly matches a real 6-number winning combo from the {historical_draw_count:,}
+    draws #1&ndash;{TARGET_SERIAL} (includes #{TARGET_SERIAL} itself). Checked live in your browser against the same embedded historical combo set. {len(removed_historical)} matches found.</p>
     {"<table class='methods-table'><thead><tr><th>Removed &mdash; exact match to a historical winning combo</th></tr></thead><tbody>" + historical_rows_html + "</tbody></table>" if removed_historical else "<p style='color:#64748b;font-size:.85rem'>No matches found &mdash; nothing removed by this pass.</p>"}
   </div>
 
   <div class="section">
-    <h2>Pass 7 (final) — Worst Combo (Anti-Pick), K={pass7_k} pick for draw #{TARGET_SERIAL} <span class="verify-badge na">server-computed</span></h2>
+    <h2>Pass 5 (final) — Worst Combo (Anti-Pick), K={pass5_k} pick for draw #{TARGET_SERIAL} <span class="verify-badge na">server-computed</span></h2>
     <p class="desc">MA-43 + Exp-weighted + Random Forest + kNN + Apriori Association Rules consensus &mdash; the same 5-method combination
-    <a href="/predictions" style="color:#a78bfa">/predictions</a>' Worst Combo panel uses (recomputed for #{TARGET_SERIAL} since that
-    page now targets the next upcoming draw). Overlap with Base's {base['k']}-pool: {pass7_overlap} numbers.</p>
-    <div class="balls">{"".join(f'<span class="nb">{n}</span>' for n in pass7_pick)}</div>
+    <a href="/predictions" style="color:#a78bfa">/predictions</a>' Worst Combo panel uses, recomputed here for #{TARGET_SERIAL} (walk-forward
+    through #{TRAIN_THROUGH} only) since that page now targets the next upcoming draw. Overlap with the {base['k']}-pool: {pass5_overlap} numbers.</p>
+    <div class="balls">{"".join(f'<span class="nb">{n}</span>' for n in pass5_pick)}</div>
   </div>
 
   <div class="section">
@@ -290,32 +298,42 @@ table.combos tr:hover td{{background:#111827}}
       <div class="stat-card">
         <div class="lbl">Universe (Base)</div>
         <div class="val">{universe_count:,}</div>
-        <div class="sub">C(38,6)</div>
+        <div class="sub">C({base['k']},6)</div>
       </div>
       <div class="stat-card">
-        <div class="lbl">Removed by Pass 1</div>
-        <div class="val">{removed_by_pass1:,}</div>
-        <div class="sub">contained in the {pass1['k']}-set</div>
-      </div>
-      <div class="stat-card">
-        <div class="lbl">Removed by 16 methods (Pass 2)</div>
+        <div class="lbl">Removed by 16 methods (Pass 1)</div>
         <div class="val">{removed_by_methods:,}</div>
         <div class="sub">contained in ANY method's K={method_k}</div>
       </div>
       <div class="stat-card">
-        <div class="lbl">Removed by Pass 3</div>
+        <div class="lbl">After Pass 1</div>
+        <div class="val">{final_remaining_pass1:,}</div>
+        <div class="sub">{pass1_pct:.1f}% of universe retained</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Removed by {len(random_seeds)} worst seeds (Pass 2)</div>
+        <div class="val">{removed_by_random:,}</div>
+        <div class="sub">contained in ANY seed's K={random_k}</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">After Pass 2</div>
+        <div class="val">{final_remaining_pass2:,}</div>
+        <div class="sub">{pass2_pct:.1f}% of universe retained</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Removed by {len(pass3_seeds)} xoshiro K={pass3_k} seeds (Pass 3)</div>
         <div class="val">{removed_by_pass3:,}</div>
-        <div class="sub">contained in the {pass3['k']}-set (Base's core)</div>
+        <div class="sub">contained in ANY seed's K={pass3_k}</div>
       </div>
       <div class="stat-card">
         <div class="lbl">After Pass 3</div>
-        <div class="val">{after_pass3:,}</div>
-        <div class="sub">{after_pass3_pct:.1f}% of universe retained</div>
+        <div class="val">{final_remaining_pass3:,}</div>
+        <div class="sub">{pass3_pct:.1f}% of universe retained</div>
       </div>
       <div class="stat-card">
-        <div class="lbl">Removed by {len(random_seeds)} worst seeds (Pass 4)</div>
-        <div class="val">{removed_by_random:,}</div>
-        <div class="sub">contained in ANY seed's K={random_k}</div>
+        <div class="lbl">Removed by historical repeat filter (Pass 4)</div>
+        <div class="val">{len(removed_historical):,}</div>
+        <div class="sub">exact match to a real winning combo</div>
       </div>
       <div class="stat-card">
         <div class="lbl">After Pass 4</div>
@@ -323,52 +341,28 @@ table.combos tr:hover td{{background:#111827}}
         <div class="sub">{pass4_pct:.1f}% of universe retained</div>
       </div>
       <div class="stat-card">
-        <div class="lbl">Removed by {len(pass5_seeds)} xoshiro K={pass5_k} seeds (Pass 5)</div>
+        <div class="lbl">Removed by Worst Combo K={pass5_k} (Pass 5)</div>
         <div class="val">{removed_by_pass5:,}</div>
-        <div class="sub">contained in ANY seed's K={pass5_k}</div>
-      </div>
-      <div class="stat-card">
-        <div class="lbl">After Pass 5</div>
-        <div class="val">{final_remaining_pass5:,}</div>
-        <div class="sub">{pass5_pct:.1f}% of universe retained</div>
-      </div>
-      <div class="stat-card">
-        <div class="lbl">Removed by historical repeat filter (Pass 6)</div>
-        <div class="val">{len(removed_historical):,}</div>
-        <div class="sub">exact match to a real winning combo</div>
-      </div>
-      <div class="stat-card">
-        <div class="lbl">After Pass 6</div>
-        <div class="val">{final_remaining_pass6:,}</div>
-        <div class="sub">{pass6_pct:.1f}% of universe retained</div>
-      </div>
-      <div class="stat-card">
-        <div class="lbl">Removed by Worst Combo K={pass7_k} (Pass 7)</div>
-        <div class="val">{removed_by_pass7:,}</div>
-        <div class="sub">contained in the anti-pick's K={pass7_k}</div>
+        <div class="sub">contained in the anti-pick's K={pass5_k}</div>
       </div>
       <div class="stat-card final">
         <div class="lbl">Final remaining</div>
         <div class="val">{final_remaining:,}</div>
-        <div class="sub">{final_pct:.1f}% of universe retained</div>
+        <div class="sub">{final_pct:.1f}% of universe · {pass5_pct_of_pass4:.1f}% of Pass-4 output</div>
       </div>
     </div>
     <div class="elim-flow">
       <span class="n">{universe_count:,}</span>
       <span class="arrow">&rarr;</span>
-      <span class="n">{after_pass1:,}</span> <span style="color:#64748b;font-size:.7rem">(Pass 1)</span>
+      <span class="n">{final_remaining_pass1:,}</span> <span style="color:#64748b;font-size:.7rem">(Pass 1)</span>
       <span class="arrow">&rarr;</span>
-      <span class="n">{before_pass3:,}</span> <span style="color:#64748b;font-size:.7rem">(Pass 2)</span>
+      <span class="n">{final_remaining_pass2:,}</span> <span style="color:#64748b;font-size:.7rem">(Pass 2)</span>
       <span class="arrow">&rarr;</span>
-      <span class="n">{after_pass3:,}</span> <span style="color:#64748b;font-size:.7rem">(Pass 3)</span>
+      <span class="n">{final_remaining_pass3:,}</span> <span style="color:#64748b;font-size:.7rem">(Pass 3)</span>
       <span class="arrow">&rarr;</span>
       <span class="n">{final_remaining_pass4:,}</span> <span style="color:#64748b;font-size:.7rem">(Pass 4)</span>
       <span class="arrow">&rarr;</span>
-      <span class="n">{final_remaining_pass5:,}</span> <span style="color:#64748b;font-size:.7rem">(Pass 5)</span>
-      <span class="arrow">&rarr;</span>
-      <span class="n">{final_remaining_pass6:,}</span> <span style="color:#64748b;font-size:.7rem">(Pass 6)</span>
-      <span class="arrow">&rarr;</span>
-      <span class="n final">{final_remaining:,}</span> <span style="color:#64748b;font-size:.7rem">(Pass 7)</span>
+      <span class="n final">{final_remaining:,}</span> <span style="color:#64748b;font-size:.7rem">(Pass 5)</span>
     </div>
   </div>
 
@@ -457,14 +451,16 @@ function xoshiroPredict(seed, drawSerial, k) {{
   return arr.slice(n - k).sort((a, b) => a - b);
 }}
 
-// ── Base, Pass1 & Pass3: compute live + verify against server-embedded reference ────
-const KNOWN_BLOCK1 = {json.dumps(base['pool'])};
-const KNOWN_BLOCK2 = {json.dumps(pass1['pool'])};
-const KNOWN_BLOCK3 = {json.dumps(pass3['pool'])};
+// ── Modular Cycle: server-computed, embedded (can't run ML in the browser) ──
+const MC_POOL = {json.dumps(mc['pool'])};
+const KNOWN_BASE = {json.dumps(base['pool'])};
 
-const liveBlock1 = xoshiroPredict({base['seed']}, {TARGET_SERIAL}, {base['k']});
-const liveBlock2 = xoshiroPredict({pass1['seed']}, {TARGET_SERIAL}, {pass1['k']});
-const liveBlock3 = xoshiroPredict({pass3['seed']}, {TARGET_SERIAL}, {pass3['k']});
+// ── Xoshiro side: compute live + verify against server-embedded reference ──
+const liveXo = xoshiroPredict({xo['seed']}, {TARGET_SERIAL}, {xo['k']});
+const KNOWN_XO = {json.dumps(xo['pool'])};
+
+// ── Base: client-side intersection of live xoshiro + embedded Modular Cycle ─
+const liveBase = liveXo.filter(n => MC_POOL.includes(n)).sort((a, b) => a - b);
 
 function arraysEqual(a, b) {{
   return a.length === b.length && a.every((v, i) => v === b[i]);
@@ -478,27 +474,15 @@ function renderBalls(elId, nums, cls) {{
   document.getElementById(elId).innerHTML = nums.map(n => '<span class="nb ' + cls + '">' + n + '</span>').join('');
 }}
 
-renderBalls('block1Balls', liveBlock1, 'b1');
-renderBalls('block2Balls', liveBlock2, 'b2');
-renderBalls('block3Balls', liveBlock3, 'b2');
-renderBadge('badge1', arraysEqual(liveBlock1, KNOWN_BLOCK1));
-renderBadge('badge2', arraysEqual(liveBlock2, KNOWN_BLOCK2));
-renderBadge('badge3', arraysEqual(liveBlock3, KNOWN_BLOCK3));
-if (!arraysEqual(liveBlock1, KNOWN_BLOCK1)) console.error('Base mismatch', liveBlock1, KNOWN_BLOCK1);
-if (!arraysEqual(liveBlock2, KNOWN_BLOCK2)) console.error('Pass1 mismatch', liveBlock2, KNOWN_BLOCK2);
-if (!arraysEqual(liveBlock3, KNOWN_BLOCK3)) console.error('Pass3 mismatch', liveBlock3, KNOWN_BLOCK3);
+renderBalls('mcBalls', MC_POOL, 'b3');
+renderBalls('xoBalls', liveXo, 'b1');
+renderBalls('baseBalls', liveBase, 'b2');
+renderBadge('badgeXo', arraysEqual(liveXo, KNOWN_XO));
+renderBadge('badgeBase', arraysEqual(liveBase, KNOWN_BASE));
+if (!arraysEqual(liveXo, KNOWN_XO)) console.error('Xoshiro mismatch', liveXo, KNOWN_XO);
+if (!arraysEqual(liveBase, KNOWN_BASE)) console.error('Base mismatch', liveBase, KNOWN_BASE);
 
-// ── Pass 5: xoshiro256** K={pass5_k} seeds, reusing the same verified
-// BigInt xoshiroPredict() used for Base/Pass1/Pass3 above. ──────────────────
-const PASS5_SEEDS_DATA = {json.dumps(pass5_seeds)};
-const livePass5Picks = PASS5_SEEDS_DATA.map(p5 => xoshiroPredict(p5.seed, {TARGET_SERIAL}, {pass5_k}));
-const pass5AllMatch = PASS5_SEEDS_DATA.every((p5, i) => arraysEqual(livePass5Picks[i], p5.pick));
-renderBadge('badgePass5', pass5AllMatch);
-PASS5_SEEDS_DATA.forEach((p5, i) => {{
-  if (!arraysEqual(livePass5Picks[i], p5.pick)) console.error('Pass-5 seed mismatch', p5.seed, livePass5Picks[i], p5.pick);
-}});
-
-// ── Pass 4: CPython-compatible MT19937 port (bit-exact random.Random +
+// ── Pass 2: CPython-compatible MT19937 port (bit-exact random.Random +
 // random.sample) -- identical to the port on the Random Seed Backtest page,
 // verified there against 65+ independently Python-computed reference cases
 // (including negative seeds) before use here. ──────────────────────────────
@@ -593,25 +577,35 @@ const liveRandomPicks = WORST_SEEDS.map(rs => randomPredict(rs.seed, {TARGET_SER
 const randomAllMatch = WORST_SEEDS.every((rs, i) => arraysEqual(liveRandomPicks[i], rs.pick));
 renderBadge('badgeRandom', randomAllMatch);
 WORST_SEEDS.forEach((rs, i) => {{
-  if (!arraysEqual(liveRandomPicks[i], rs.pick)) console.error('Pass-4 seed mismatch', rs.seed, liveRandomPicks[i], rs.pick);
+  if (!arraysEqual(liveRandomPicks[i], rs.pick)) console.error('Pass-2 seed mismatch', rs.seed, liveRandomPicks[i], rs.pick);
 }});
 
-// ── Pass 6: historical repeat filter, checked live against the embedded
+// ── Pass 3: xoshiro256** K={pass3_k} seeds, reusing the same verified
+// BigInt xoshiroPredict() used for Base's xoshiro side above. ───────────────
+const PASS3_SEEDS_DATA = {json.dumps(pass3_seeds)};
+const livePass3Picks = PASS3_SEEDS_DATA.map(p3 => xoshiroPredict(p3.seed, {TARGET_SERIAL}, {pass3_k}));
+const pass3AllMatch = PASS3_SEEDS_DATA.every((p3, i) => arraysEqual(livePass3Picks[i], p3.pick));
+renderBadge('badgePass3', pass3AllMatch);
+PASS3_SEEDS_DATA.forEach((p3, i) => {{
+  if (!arraysEqual(livePass3Picks[i], p3.pick)) console.error('Pass-3 seed mismatch', p3.seed, livePass3Picks[i], p3.pick);
+}});
+
+// ── Pass 4: historical repeat filter, checked live against the embedded
 // historical combo set. ──────────────────────────────────────────────────
 const HISTORICAL_COMBOS = {json.dumps(historical_combos)};
 const HISTORICAL_SET = new Set(HISTORICAL_COMBOS.map(c => c.join(',')));
 const REMOVED_HISTORICAL = {json.dumps(removed_historical)};
 const liveRemovedHistorical = REMOVED_HISTORICAL.every(c => HISTORICAL_SET.has(c.join(',')));
 renderBadge('badgeHistorical', liveRemovedHistorical);
-if (!liveRemovedHistorical) console.error('Pass-6 historical-match mismatch', REMOVED_HISTORICAL);
+if (!liveRemovedHistorical) console.error('Pass-4 historical-match mismatch', REMOVED_HISTORICAL);
 
-// ── Pass 7: Worst Combo (Anti-Pick) K={pass7_k} pick -- server-computed,
+// ── Pass 5: Worst Combo (Anti-Pick) K={pass5_k} pick -- server-computed,
 // embedded (5 methods including Random Forest/kNN/Apriori can't run
 // client-side). Sanity-checked below against the fetched remaining set. ────
-const PASS7_PICK = {json.dumps(pass7_pick)};
+const PASS5_PICK = {json.dumps(pass5_pick)};
 
 // ── Remaining combos: fetch, paginate, filter, download ─────────────────────
-const POOL33 = liveBlock1;
+const POOL_BASE = liveBase;
 let REMAINING = [];
 let filtered = [];
 const PAGE_SIZE = 100;
@@ -629,15 +623,15 @@ fetch('/xoshiro_elim_{TARGET_SERIAL}_combos.json')
     render();
     const sample = REMAINING.slice(0, 5000);
     const stillHistorical = sample.filter(c => HISTORICAL_SET.has(c.join(',')));
-    if (stillHistorical.length > 0) console.error('Pass-6 leak: remaining combos still match history', stillHistorical);
-    const pass7Set = new Set(PASS7_PICK);
-    const stillInPass7 = sample.filter(c => c.every(n => pass7Set.has(n)));
-    if (stillInPass7.length > 0) console.error('Pass-7 leak: remaining combos still contained in Worst Combo pick', stillInPass7);
-    const pass5Sets = livePass5Picks.map(p => new Set(p));
+    if (stillHistorical.length > 0) console.error('Pass-4 leak: remaining combos still match history', stillHistorical);
+    const pass5Set = new Set(PASS5_PICK);
+    const stillInPass5 = sample.filter(c => c.every(n => pass5Set.has(n)));
+    if (stillInPass5.length > 0) console.error('Pass-5 leak: remaining combos still contained in Worst Combo pick', stillInPass5);
+    const pass3Sets = livePass3Picks.map(p => new Set(p));
     const randomSets = liveRandomPicks.map(p => new Set(p));
-    const stillInPass4or5 = sample.filter(c =>
-      randomSets.some(s => c.every(n => s.has(n))) || pass5Sets.some(s => c.every(n => s.has(n))));
-    if (stillInPass4or5.length > 0) console.error('Pass-4/5 leak: remaining combos still contained', stillInPass4or5);
+    const stillInPass2or3 = sample.filter(c =>
+      randomSets.some(s => c.every(n => s.has(n))) || pass3Sets.some(s => c.every(n => s.has(n))));
+    if (stillInPass2or3.length > 0) console.error('Pass-2/3 leak: remaining combos still contained', stillInPass2or3);
   }})
   .catch(err => {{
     document.getElementById('loadingMsg').textContent = 'Failed to load combinations: ' + err;
@@ -654,7 +648,7 @@ function getBallColor(n) {{
 }}
 function buildFilterGrid() {{
   const grid = document.getElementById('filterGrid');
-  grid.innerHTML = POOL33.map(n =>
+  grid.innerHTML = POOL_BASE.map(n =>
     '<button class="num-btn" data-n="' + n + '" style="background:' + getBallColor(n) + '" onclick="toggleNum(' + n + ')">' + n + '</button>'
   ).join('');
 }}
