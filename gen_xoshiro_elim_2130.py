@@ -46,13 +46,25 @@ method_picks = meta['methodPicks']
 method_k = meta['methodK']
 universe_count = meta['universeCount']
 removed_by_methods = meta['removedByMethods']
+final_remaining_pass1 = meta['finalRemainingPass1']
+pass1_pct = final_remaining_pass1 / universe_count * 100
+
+random_k = meta['randomK']
+random_seeds = meta['randomSeeds']
+removed_by_random = meta['removedByRandom']
 final_remaining = meta['finalRemaining']
 final_pct = final_remaining / universe_count * 100
+pass2_pct_of_pass1 = final_remaining / final_remaining_pass1 * 100
 
 methods_rows_html = ""
 for name, pool in zip(method_names, method_picks):
     balls = "".join(f'<span class="nb">{n}</span>' for n in pool)
     methods_rows_html += f"""<tr><td class="mname">{name}</td><td><div class="balls">{balls}</div></td></tr>"""
+
+random_seed_rows_html = ""
+for rs in random_seeds:
+    balls = "".join(f'<span class="nb">{n}</span>' for n in rs['pick'])
+    random_seed_rows_html += f"""<tr><td class="mname">#{rs['seed']:,} <span style="color:#64748b;font-weight:400">(0-hit: {rs['hit0']})</span></td><td><div class="balls">{balls}</div></td></tr>"""
 
 page = f"""<!DOCTYPE html>
 <html lang="en">
@@ -154,11 +166,19 @@ table.combos tr:hover td{{background:#111827}}
     <p><strong style="color:#e2e8f0">Pass 1</strong> is each of the 16 prediction methods' K={method_k} pick for draw #{TARGET_SERIAL}, computed
     walk-forward (trained on all {TARGET_SERIAL-1:,} real draws through #{TARGET_SERIAL-1}) then normalized to exactly {method_k} numbers via the same
     cross-method-consensus trim/pad algorithm as <a href="/backtest.html" style="color:#a78bfa">backtest.html</a>'s <code>topKNums()</code>.
-    Any of Base's combos fully contained within ANY single one of these 16 sets gets removed.</p>
-    <p>The xoshiro side of Base is recomputed <strong>live in your browser</strong> below (bit-exact BigInt port) and Base itself
-    (the intersection) is then computed client-side and checked against a server-embedded reference &mdash; check the verification
-    badges. Modular Cycle's pick and Pass 1's 16 statistical/ML methods (ARIMA, Random Forest, HMM, LSTM, etc.) can't run in a
-    browser, so those are precomputed server-side, same as every other draw on this site, and embedded as static data.</p>
+    Any of Base's combos fully contained within ANY single one of these 16 sets gets removed, leaving {final_remaining_pass1:,}.</p>
+    <p><strong style="color:#e2e8f0">Pass 2</strong> is the top {len(random_seeds)} worst-coverage seeds (highest 0-hit count) from
+    <a href="/random_seed_backtest.html" style="color:#a78bfa">the Random Seed Backtest</a>'s <code>seed_hit_random_k17</code> scan
+    (K=17, Python <code>random.Random</code>, seeds &#177;1,236,700). Each seed's K={random_k} pick for draw #{TARGET_SERIAL} is
+    computed via the ground-truth <code>random.Random(seed&times;10&#8311;+draw_serial).sample()</code> formula &mdash; equivalent
+    to expanding each pick to its C({random_k},6) sub-combos and removing anything present in the union of those {len(random_seeds)} sets, just
+    done via bitmask containment instead of literal enumeration. Any Pass-1-remaining combo fully contained within ANY single one of
+    these {len(random_seeds)} picks gets removed.</p>
+    <p>The xoshiro side of Base and all {len(random_seeds)} Pass-2 picks are recomputed <strong>live in your browser</strong> below (bit-exact
+    ports &mdash; BigInt xoshiro256** for Base, the CPython MT19937 port from the Random Seed Backtest page for Pass 2) and checked
+    against server-embedded references &mdash; check the verification badges. Modular Cycle's pick and Pass 1's 16 statistical/ML
+    methods (ARIMA, Random Forest, HMM, LSTM, etc.) can't run in a browser, so those are precomputed server-side, same as every
+    other draw on this site, and embedded as static data.</p>
   </div>
 
   <div class="section">
@@ -186,6 +206,17 @@ table.combos tr:hover td{{background:#111827}}
   </div>
 
   <div class="section">
+    <h2>Pass 2 — top {len(random_seeds)} worst-coverage random seeds, K={random_k} pick for draw #{TARGET_SERIAL} <span id="badgeRandom" class="verify-badge pending">verifying…</span></h2>
+    <p class="desc">Highest 0-hit count from the K=17 <code>seed_hit_random_k17</code> scan (seeds &#177;1,236,700, draws #1001&ndash;2129). Picks recomputed live below via the bit-exact CPython MT19937 port and checked against server-embedded references.</p>
+    <details open>
+      <summary>Show all {len(random_seeds)} seeds' picks</summary>
+      <table class="methods-table">
+        <tbody>{random_seed_rows_html}</tbody>
+      </table>
+    </details>
+  </div>
+
+  <div class="section">
     <h2>Elimination summary</h2>
     <div class="stats-row">
       <div class="stat-card">
@@ -194,20 +225,32 @@ table.combos tr:hover td{{background:#111827}}
         <div class="sub">C({base['k']},6)</div>
       </div>
       <div class="stat-card">
-        <div class="lbl">Removed by 16 methods</div>
+        <div class="lbl">Removed by 16 methods (Pass 1)</div>
         <div class="val">{removed_by_methods:,}</div>
         <div class="sub">contained in ANY method's K={method_k}</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">After Pass 1</div>
+        <div class="val">{final_remaining_pass1:,}</div>
+        <div class="sub">{pass1_pct:.1f}% of universe retained</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Removed by {len(random_seeds)} worst seeds (Pass 2)</div>
+        <div class="val">{removed_by_random:,}</div>
+        <div class="sub">contained in ANY seed's K={random_k}</div>
       </div>
       <div class="stat-card final">
         <div class="lbl">Final remaining</div>
         <div class="val">{final_remaining:,}</div>
-        <div class="sub">{final_pct:.1f}% of universe retained</div>
+        <div class="sub">{final_pct:.1f}% of universe · {pass2_pct_of_pass1:.1f}% of Pass-1 output</div>
       </div>
     </div>
     <div class="elim-flow">
       <span class="n">{universe_count:,}</span>
       <span class="arrow">&rarr;</span>
-      <span class="n final">{final_remaining:,}</span> remaining
+      <span class="n">{final_remaining_pass1:,}</span> <span style="color:#64748b;font-size:.7rem">(Pass 1)</span>
+      <span class="arrow">&rarr;</span>
+      <span class="n final">{final_remaining:,}</span> <span style="color:#64748b;font-size:.7rem">(Pass 2)</span>
     </div>
   </div>
 
@@ -326,6 +369,104 @@ renderBadge('badgeXo', arraysEqual(liveXo, KNOWN_XO));
 renderBadge('badgeBase', arraysEqual(liveBase, KNOWN_BASE));
 if (!arraysEqual(liveXo, KNOWN_XO)) console.error('Xoshiro mismatch', liveXo, KNOWN_XO);
 if (!arraysEqual(liveBase, KNOWN_BASE)) console.error('Base mismatch', liveBase, KNOWN_BASE);
+
+// ── Pass 2: CPython-compatible MT19937 port (bit-exact random.Random +
+// random.sample) -- identical to the port on the Random Seed Backtest page,
+// verified there against 65+ independently Python-computed reference cases
+// (including negative seeds) before use here. ──────────────────────────────
+function imul32(a, b) {{ return Math.imul(a, b) >>> 0; }}
+const MT_N = 624, MT_M = 397;
+const MATRIX_A = 0x9908b0df, UPPER_MASK = 0x80000000, LOWER_MASK = 0x7fffffff;
+function MT19937() {{ this.mt = new Uint32Array(MT_N); this.mti = MT_N + 1; }}
+MT19937.prototype.initGenrand = function (s) {{
+  this.mt[0] = s >>> 0;
+  for (let i = 1; i < MT_N; i++) {{
+    const prev = this.mt[i - 1] ^ (this.mt[i - 1] >>> 30);
+    this.mt[i] = (imul32(1812433253, prev) + i) >>> 0;
+  }}
+  this.mti = MT_N;
+}};
+MT19937.prototype.initByArray = function (initKey) {{
+  this.initGenrand(19650218);
+  let i = 1, j = 0, k = Math.max(MT_N, initKey.length);
+  for (; k; k--) {{
+    const prev = this.mt[i - 1] ^ (this.mt[i - 1] >>> 30);
+    this.mt[i] = ((this.mt[i] ^ imul32(prev, 1664525)) + initKey[j] + j) >>> 0;
+    i++; j++;
+    if (i >= MT_N) {{ this.mt[0] = this.mt[MT_N - 1]; i = 1; }}
+    if (j >= initKey.length) j = 0;
+  }}
+  for (k = MT_N - 1; k; k--) {{
+    const prev = this.mt[i - 1] ^ (this.mt[i - 1] >>> 30);
+    this.mt[i] = ((this.mt[i] ^ imul32(prev, 1566083941)) - i) >>> 0;
+    i++;
+    if (i >= MT_N) {{ this.mt[0] = this.mt[MT_N - 1]; i = 1; }}
+  }}
+  this.mt[0] = 0x80000000;
+}};
+MT19937.prototype.genrandUint32 = function () {{
+  const mag01 = [0, MATRIX_A]; let y;
+  if (this.mti >= MT_N) {{
+    let kk;
+    for (kk = 0; kk < MT_N - MT_M; kk++) {{
+      y = (this.mt[kk] & UPPER_MASK) | (this.mt[kk + 1] & LOWER_MASK);
+      this.mt[kk] = this.mt[kk + MT_M] ^ (y >>> 1) ^ mag01[y & 1];
+    }}
+    for (; kk < MT_N - 1; kk++) {{
+      y = (this.mt[kk] & UPPER_MASK) | (this.mt[kk + 1] & LOWER_MASK);
+      this.mt[kk] = this.mt[kk + (MT_M - MT_N)] ^ (y >>> 1) ^ mag01[y & 1];
+    }}
+    y = (this.mt[MT_N - 1] & UPPER_MASK) | (this.mt[0] & LOWER_MASK);
+    this.mt[MT_N - 1] = this.mt[MT_M - 1] ^ (y >>> 1) ^ mag01[y & 1];
+    this.mti = 0;
+  }}
+  y = this.mt[this.mti++];
+  y ^= (y >>> 11); y ^= (y << 7) & 0x9d2c5680; y ^= (y << 15) & 0xefc60000; y ^= (y >>> 18);
+  return y >>> 0;
+}};
+function pythonSeedKey(seedBigInt) {{
+  let n = seedBigInt < 0n ? -seedBigInt : seedBigInt;
+  if (n === 0n) return [0];
+  let bits = 0; {{ let tmp = n; while (tmp > 0n) {{ bits++; tmp >>= 1n; }} }}
+  const keymax = Math.floor((bits - 1) / 32) + 1;
+  const words = [];
+  for (let i = 0; i < keymax; i++) {{ words.push(Number(n & 0xffffffffn)); n >>= 32n; }}
+  return words;
+}}
+function pythonRandomSeed(combinedBigInt) {{
+  const key = pythonSeedKey(combinedBigInt);
+  const mt = new MT19937(); mt.initByArray(key); return mt;
+}}
+function bitLength(n) {{ return 32 - Math.clz32(n); }}
+function getrandbits(mt, k) {{ return mt.genrandUint32() >>> (32 - k); }}
+function randbelow(mt, n) {{
+  if (n <= 0) return 0;
+  const k = bitLength(n); let r = getrandbits(mt, k);
+  while (r >= n) r = getrandbits(mt, k);
+  return r;
+}}
+function pythonSample(mt, n, k) {{
+  const pool = Array.from({{ length: n }}, (_, i) => i + 1);
+  const result = new Array(k);
+  for (let i = 0; i < k; i++) {{
+    const j = randbelow(mt, n - i);
+    result[i] = pool[j]; pool[j] = pool[n - i - 1];
+  }}
+  return result;
+}}
+function randomPredict(seed, drawSerial, k) {{
+  const combined = BigInt(seed) * 10000000n + BigInt(drawSerial);
+  const mt = pythonRandomSeed(combined);
+  return pythonSample(mt, 43, k).sort((a, b) => a - b);
+}}
+
+const WORST_SEEDS = {json.dumps(random_seeds)};
+const liveRandomPicks = WORST_SEEDS.map(rs => randomPredict(rs.seed, {TARGET_SERIAL}, {random_k}));
+const randomAllMatch = WORST_SEEDS.every((rs, i) => arraysEqual(liveRandomPicks[i], rs.pick));
+renderBadge('badgeRandom', randomAllMatch);
+WORST_SEEDS.forEach((rs, i) => {{
+  if (!arraysEqual(liveRandomPicks[i], rs.pick)) console.error('Pass-2 seed mismatch', rs.seed, liveRandomPicks[i], rs.pick);
+}});
 
 // ── Remaining combos: fetch, paginate, filter, download ─────────────────────
 const POOL_BASE = liveBase;

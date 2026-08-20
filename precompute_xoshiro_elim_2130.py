@@ -23,6 +23,19 @@ Pass 1:    each of the 16 prediction methods' K=19 pick for #2130,
            consensus trim/pad port. Any Base combo fully contained
            within ANY single one of these 16 sets gets removed.
 
+Pass 2:    the top 10 worst-coverage seeds (highest 0-hit count) from
+           seed_hit_random_k17 (the K=17 Python random.Random scan,
+           seeds -1,236,700 to 1,236,700 -- see
+           random_seed_scan_k17_full.py / gen_random_seed_backtest.py).
+           Each seed's K=17 pick for draw #2130 is computed via the
+           ground-truth random.Random(seed*10_000_000+draw_serial)
+           .sample() formula. Any Pass-1-remaining combo fully contained
+           within ANY single one of these 10 picks gets removed --
+           equivalent to expanding each pick to its C(17,6) sub-combos
+           and removing any remaining combo present in the union of
+           those 10 sub-combo sets, just computed via bitmask
+           containment instead of literal enumeration.
+
 Self-checks the xoshiro implementation against a known-good value before
 trusting Base's xoshiro component.
 
@@ -33,7 +46,7 @@ Outputs:
 
 Run: python precompute_xoshiro_elim_2130.py
 """
-import json, os, re, itertools, time, warnings
+import json, os, re, itertools, time, warnings, sqlite3, random as pyrandom
 import numpy as np
 import psycopg2
 from collections import Counter, defaultdict
@@ -43,6 +56,7 @@ warnings.filterwarnings('ignore')
 
 BASE = r"C:\Users\Zaw Min Htoon\source\repos\theonelotto"
 ENV_LOCAL = BASE + r"\.env.local"
+DB_PATH = BASE + r"\loto6_local.db"
 META_OUT = BASE + r"\xoshiro_elim_2130_meta.json"
 COMBOS_OUT = BASE + r"\public\xoshiro_elim_2130_combos.json"
 
@@ -52,6 +66,9 @@ K_XO = 38
 K_MC = 33
 K_METHODS = 19   # normalized K for all 16 methods (this page's Pass 1)
 K_DEFAULT = 15   # native K most methods produce before normalization
+K_RANDOM = 17    # K for the Pass-2 random.Random seeds
+N_WORST_SEEDS = 10
+RANDOM_TABLE = "seed_hit_random_k17"
 
 SEED_XO = 692809   # best K=38 seed (0-1,000,000 scan)
 
@@ -491,11 +508,68 @@ for combo_positions in itertools.combinations(positions, 6):
     remaining.append(tuple(sorted(base_pool[p] for p in combo_positions)))
 
 elapsed = time.time() - t0
-final_remaining = len(remaining)
+final_remaining_pass1 = len(remaining)
 print(f"Enumerated {universe_count:,} combos in {elapsed:.1f}s")
 print(f"  Removed by ANY of the 16 methods' K={K_METHODS} containment: {removed_by_methods:,}")
-print(f"  Final remaining: {final_remaining:,}")
-print(f"\nElimination sequence: {universe_count:,} -> {final_remaining:,} remaining")
+print(f"  Final remaining: {final_remaining_pass1:,}")
+print(f"\nElimination sequence: {universe_count:,} -> {final_remaining_pass1:,} remaining")
+
+# ── Pass 2: top N_WORST_SEEDS worst-coverage seeds (highest 0-hit count) from
+# seed_hit_random_k17 (the K=17 Python random.Random scan, seeds -1,236,700
+# to 1,236,700). Each seed's K=17 pick for #TARGET_SERIAL is computed via the
+# ground-truth random.Random(seed*10_000_000+draw_serial).sample() formula.
+# Any Pass-1-remaining combo fully contained within ANY of these 10 picks is
+# removed -- equivalent to expanding each pick to C(17,6) sub-combos and
+# removing anything present in the union of those 10 sets, just done via
+# bitmask containment rather than literal enumeration. ─────────────────────
+print(f"\n=== Pass 2 ===")
+conn2 = sqlite3.connect(DB_PATH)
+cur2 = conn2.cursor()
+cur2.execute(f"""SELECT seed, hit0_count FROM {RANDOM_TABLE}
+                 ORDER BY hit0_count DESC, seed ASC LIMIT {N_WORST_SEEDS}""")
+worst_seeds = cur2.fetchall()
+conn2.close()
+if len(worst_seeds) != N_WORST_SEEDS:
+    raise SystemExit(f"Expected {N_WORST_SEEDS} worst-coverage seeds from {RANDOM_TABLE}, got {len(worst_seeds)}")
+print(f"Top {N_WORST_SEEDS} worst-coverage seeds from {RANDOM_TABLE} (highest 0-hit count):")
+for seed, hit0 in worst_seeds:
+    print(f"  seed={seed:>10,}  hit0={hit0}")
+
+def random_predict17(seed, draw_serial, k=K_RANDOM):
+    rng = pyrandom.Random(seed * 10_000_000 + draw_serial)
+    return sorted(rng.sample(range(1, LOTO6_MAX + 1), k))
+
+random_picks = [random_predict17(seed, TARGET_SERIAL) for seed, _ in worst_seeds]
+print(f"\nRandom-seed K={K_RANDOM} picks for draw #{TARGET_SERIAL}:")
+random_masks = []
+for (seed, hit0), pick in zip(worst_seeds, random_picks):
+    mmask = restricted_mask(set(pick))
+    overlap = bin(mmask).count('1')
+    random_masks.append(mmask)
+    print(f"  seed={seed:>10,} (hit0={hit0}): {pick}  [overlap with {K_BASE}-pool: {overlap}]")
+
+t0 = time.time()
+remaining_after2 = []
+removed_by_random = 0
+for combo in remaining:
+    combo_mask = 0
+    for n in combo:
+        combo_mask |= (1 << pos_of[n])
+    removed = False
+    for mmask in random_masks:
+        if (combo_mask & ~mmask) & FULLBASE == 0:
+            removed = True
+            break
+    if removed:
+        removed_by_random += 1
+        continue
+    remaining_after2.append(combo)
+elapsed2 = time.time() - t0
+final_remaining = len(remaining_after2)
+print(f"\nPass 2 elimination in {elapsed2:.1f}s")
+print(f"  Removed by ANY of the {N_WORST_SEEDS} worst-coverage seeds' K={K_RANDOM} containment: {removed_by_random:,}")
+print(f"  Before Pass 2: {final_remaining_pass1:,}  ->  After Pass 2: {final_remaining:,}")
+print(f"\nFull elimination sequence: {universe_count:,} -> {final_remaining_pass1:,} (Pass 1) -> {final_remaining:,} (Pass 2)")
 
 # ── Save outputs ──────────────────────────────────────────────────────────
 meta = {
@@ -509,13 +583,19 @@ meta = {
     'methodK': K_METHODS,
     'universeCount': universe_count,
     'removedByMethods': removed_by_methods,
-    'finalRemaining': final_remaining,
+    'finalRemainingPass1': final_remaining_pass1,
     'methodOverlaps': [bin(m).count('1') for m in method_masks],
+    'randomK': K_RANDOM,
+    'randomSeeds': [{'seed': seed, 'hit0': hit0, 'pick': pick}
+                     for (seed, hit0), pick in zip(worst_seeds, random_picks)],
+    'removedByRandom': removed_by_random,
+    'finalRemaining': final_remaining,
+    'randomOverlaps': [bin(m).count('1') for m in random_masks],
 }
 with open(META_OUT, 'w', encoding='utf-8') as f:
     json.dump(meta, f, indent=2)
 print(f"\nSaved {META_OUT}")
 
 with open(COMBOS_OUT, 'w', encoding='utf-8') as f:
-    json.dump(remaining, f, separators=(',', ':'))
-print(f"Saved {COMBOS_OUT} ({len(remaining):,} combos, {os.path.getsize(COMBOS_OUT)//1024:,} KB)")
+    json.dump(remaining_after2, f, separators=(',', ':'))
+print(f"Saved {COMBOS_OUT} ({len(remaining_after2):,} combos, {os.path.getsize(COMBOS_OUT)//1024:,} KB)")
