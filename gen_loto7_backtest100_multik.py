@@ -140,12 +140,12 @@ page = f"""<!DOCTYPE html>
 <body>
 
 <h1>🎯 Loto 7 — 100-Draw Multi-K Backtest</h1>
-<p class="subtitle">Walk-forward evaluation &middot; Draws #{draw_lo}&ndash;#{draw_hi} &middot; {T} draws &middot; {N_METHODS} methods &middot; K = 7 / 9 / 13 / 17</p>
+<p class="subtitle">Walk-forward evaluation &middot; Draws #{draw_lo}&ndash;#{draw_hi} &middot; {T} draws &middot; {N_METHODS} methods &middot; K = {' / '.join(str(k) for k in K_OPTIONS)}</p>
 
 <div class="note">
   <p>Same architecture as <a href="/backtest.html" style="color:#7dd3fc">Loto6's backtest.html</a>: each method's native
   K=15 candidate pool is computed once per draw, walk-forward (trained on only draws strictly before each target &mdash;
-  no lookahead; LSTM additionally trains online after each prediction). The K toggle below then derives K=7/9/13/17 views
+  no lookahead; LSTM additionally trains online after each prediction). The K toggle below then derives K={'/'.join(str(k) for k in K_OPTIONS)} views
   <strong>live in your browser</strong> via <code>topKNums()</code>, the same generic cross-method-consensus trim/pad
   function used across this site &mdash; not a separate server-side computation per K.</p>
   <p><strong style="color:#e2e8f0">Ranking convention:</strong> within each K, methods are ranked by highest
@@ -158,10 +158,7 @@ page = f"""<!DOCTYPE html>
 
 <div class="ktoggle">
   <span class="lbl">Pick size:</span>
-  <button class="kbtn" data-k="7" onclick="setK(7)">K = 7</button>
-  <button class="kbtn" data-k="9" onclick="setK(9)">K = 9</button>
-  <button class="kbtn" data-k="13" onclick="setK(13)">K = 13</button>
-  <button class="kbtn" data-k="17" onclick="setK(17)">K = 17</button>
+  {"".join(f'<button class="kbtn" data-k="{k}" onclick="setK({k})">K = {k}</button>' for k in K_OPTIONS)}
 </div>
 
 <div class="tabs">

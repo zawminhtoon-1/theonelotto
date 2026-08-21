@@ -48,7 +48,7 @@ if 'DATABASE_URL' not in os.environ:
 LOTO7_MAX = 37
 POOL_K = 15
 N_DRAWS_BACKTEST = 100
-K_OPTIONS = [7, 9, 13, 17]
+K_OPTIONS = [7, 9, 13, 17, 22, 25]
 
 METHOD_NAMES = [
     "Poly deg-2", "MA-37", "Exp-weighted", "Most frequent all", "Markov chain",
