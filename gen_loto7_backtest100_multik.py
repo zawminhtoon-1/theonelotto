@@ -160,20 +160,6 @@ page = f"""<!DOCTYPE html>
 <h1>🎯 Loto 7 — 100-Draw Multi-K Backtest</h1>
 <p class="subtitle">Walk-forward evaluation &middot; Draws #{draw_lo}&ndash;#{draw_hi} &middot; {T} draws &middot; {N_METHODS} methods &middot; K = {' / '.join(str(k) for k in K_OPTIONS)}</p>
 
-<div class="note">
-  <p>Same architecture as <a href="/backtest.html" style="color:#7dd3fc">Loto6's backtest.html</a>: each method's native
-  K=15 candidate pool is computed once per draw, walk-forward (trained on only draws strictly before each target &mdash;
-  no lookahead; LSTM additionally trains online after each prediction). The K toggle below then derives K={'/'.join(str(k) for k in K_OPTIONS)} views
-  <strong>live in your browser</strong> via <code>topKNums()</code>, the same generic cross-method-consensus trim/pad
-  function used across this site &mdash; not a separate server-side computation per K.</p>
-  <p><strong style="color:#e2e8f0">Ranking convention:</strong> within each K, methods are ranked by highest
-  <strong>hit7b</strong> (7-hit + either bonus number) first, then highest <strong>hit7</strong> (7-hit, any bonus), then
-  hit6, then hit5, then hit4 &mdash; the same hitXb-first convention used everywhere else on this site (e.g. Loto6's
-  hit6b&rarr;hit6&rarr;hit5), NOT average hits.</p>
-  <p>Backtest window: the last {T} real draws only (unlike <a href="/loto7_backtest.html" style="color:#7dd3fc">the
-  full-history Loto7 backtest</a>, which covers all {draw_hi} draws at a fixed K=7).</p>
-</div>
-
 <div class="ktoggle">
   <span class="lbl">Pick size:</span>
   {"".join(f'<button class="kbtn" data-k="{k}" onclick="setK({k})">K = {k}</button>' for k in K_OPTIONS)}
@@ -231,6 +217,20 @@ page = f"""<!DOCTYPE html>
       <tbody id="detailBody"></tbody>
     </table>
   </div>
+</div>
+
+<div class="note">
+  <p>Same architecture as <a href="/backtest.html" style="color:#7dd3fc">Loto6's backtest.html</a>: each method's native
+  K=15 candidate pool is computed once per draw, walk-forward (trained on only draws strictly before each target &mdash;
+  no lookahead; LSTM additionally trains online after each prediction). The K toggle above then derives K={'/'.join(str(k) for k in K_OPTIONS)} views
+  <strong>live in your browser</strong> via <code>topKNums()</code>, the same generic cross-method-consensus trim/pad
+  function used across this site &mdash; not a separate server-side computation per K.</p>
+  <p><strong style="color:#e2e8f0">Ranking convention:</strong> within each K, methods are ranked by highest
+  <strong>hit7b</strong> (7-hit + either bonus number) first, then highest <strong>hit7</strong> (7-hit, any bonus), then
+  hit6, then hit5, then hit4 &mdash; the same hitXb-first convention used everywhere else on this site (e.g. Loto6's
+  hit6b&rarr;hit6&rarr;hit5), NOT average hits.</p>
+  <p>Backtest window: the last {T} real draws only (unlike <a href="/loto7_backtest.html" style="color:#7dd3fc">the
+  full-history Loto7 backtest</a>, which covers all {draw_hi} draws at a fixed K=7).</p>
 </div>
 
 <script>
