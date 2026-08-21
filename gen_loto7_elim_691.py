@@ -31,13 +31,26 @@ method_names = meta['methodNames']
 method_k = meta['methodK']
 method_picks = meta['methodPicks']
 removed_by_methods = meta['removedByMethods']
+final_remaining_pass1 = meta['finalRemainingPass1']
+pass1_pct = final_remaining_pass1 / universe_count * 100
+
+pass2_method_names = meta['pass2MethodNames']
+pass2_k = meta['pass2K']
+pass2_picks = meta['pass2Picks']
+removed_by_pass2 = meta['removedByPass2']
 final_remaining = meta['finalRemaining']
 final_pct = final_remaining / universe_count * 100
+pass2_pct_of_pass1 = final_remaining / final_remaining_pass1 * 100
 
 methods_rows_html = ""
 for name, pool in zip(method_names, method_picks):
     balls = "".join(f'<span class="nb" style="width:26px;height:26px;font-size:.7rem">{n}</span>' for n in pool)
     methods_rows_html += f"""<tr><td class="mname">{name}</td><td><div class="balls">{balls}</div></td></tr>"""
+
+pass2_rows_html = ""
+for name, pool in zip(pass2_method_names, pass2_picks):
+    balls = "".join(f'<span class="nb" style="width:26px;height:26px;font-size:.7rem">{n}</span>' for n in pool)
+    pass2_rows_html += f"""<tr><td class="mname">{name}</td><td><div class="balls">{balls}</div></td></tr>"""
 
 page = f"""<!DOCTYPE html>
 <html lang="en">
@@ -117,7 +130,7 @@ table.combos tr:hover td{{background:#111827}}
 
 <div class="wrap">
   <h1>✂️ Loto 7 — Draw #{TARGET_SERIAL} Elimination</h1>
-  <p class="subtitle">Base = ARIMA(2,1,0)'s K={base['k']} prediction pool for draw #{TARGET_SERIAL} &mdash; Pass 1 = 16 methods' K={method_k} picks</p>
+  <p class="subtitle">Base = ARIMA(2,1,0)'s K={base['k']} prediction pool for draw #{TARGET_SERIAL} &mdash; Pass 1 = 16 methods' K={method_k} picks &mdash; Pass 2 = 4 methods' K={pass2_k} picks</p>
 
   <div class="note">
     <p>Base is <strong style="color:#f1f5f9">ARIMA(2,1,0)'s K={base['k']} pick</strong> for draw #{TARGET_SERIAL} (not yet drawn) &mdash;
@@ -131,7 +144,11 @@ table.combos tr:hover td{{background:#111827}}
     <strong>independently</strong> &mdash; NOT a union of raw numbers. Any Base combo fully contained within ANY single
     one of these 16 K={method_k} sets gets removed &mdash; same per-method containment pattern used on the Loto6
     elimination pages (e.g. <a href="/xoshiro_elim_2130.html" style="color:#a78bfa">xoshiro_elim_2130.html</a>'s Pass 1),
-    leaving {final_remaining:,}.</p>
+    leaving {final_remaining_pass1:,}.</p>
+    <p><strong style="color:#f1f5f9">Pass 2</strong> is {len(pass2_method_names)} specific methods' K={pass2_k} pick for draw
+    #{TARGET_SERIAL} &mdash; {', '.join(pass2_method_names)} &mdash; checked <strong>independently</strong>, same as Pass 1
+    (not a union). Any Pass-1-remaining combo fully contained within ANY single one of these {len(pass2_method_names)}
+    K={pass2_k} sets gets removed, leaving {final_remaining:,}.</p>
   </div>
 
   <div class="section">
@@ -152,6 +169,14 @@ table.combos tr:hover td{{background:#111827}}
   </div>
 
   <div class="section">
+    <h2>Pass 2 — {len(pass2_method_names)} methods, K={pass2_k} pick for draw #{TARGET_SERIAL}</h2>
+    <p class="desc">{', '.join(pass2_method_names)} &mdash; native K=15 pools normalized to K={pass2_k}, checked independently against what's left after Pass 1.</p>
+    <table class="methods-table">
+      <tbody>{pass2_rows_html}</tbody>
+    </table>
+  </div>
+
+  <div class="section">
     <h2>Elimination summary</h2>
     <div class="stats-row">
       <div class="stat-card">
@@ -164,16 +189,28 @@ table.combos tr:hover td{{background:#111827}}
         <div class="val">{removed_by_methods:,}</div>
         <div class="sub">contained in ANY method's K={method_k}</div>
       </div>
+      <div class="stat-card">
+        <div class="lbl">After Pass 1</div>
+        <div class="val">{final_remaining_pass1:,}</div>
+        <div class="sub">{pass1_pct:.1f}% of universe retained</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Removed by {len(pass2_method_names)} methods (Pass 2)</div>
+        <div class="val">{removed_by_pass2:,}</div>
+        <div class="sub">contained in ANY method's K={pass2_k}</div>
+      </div>
       <div class="stat-card final">
         <div class="lbl">Final remaining</div>
         <div class="val">{final_remaining:,}</div>
-        <div class="sub">{final_pct:.1f}% of universe retained</div>
+        <div class="sub">{final_pct:.1f}% of universe &middot; {pass2_pct_of_pass1:.1f}% of Pass-1 output</div>
       </div>
     </div>
     <div class="elim-flow">
       <span class="n">{universe_count:,}</span>
       <span class="arrow">&rarr;</span>
-      <span class="n final">{final_remaining:,}</span> <span style="color:#94a3b8;font-size:.7rem">(Pass 1)</span>
+      <span class="n">{final_remaining_pass1:,}</span> <span style="color:#94a3b8;font-size:.7rem">(Pass 1)</span>
+      <span class="arrow">&rarr;</span>
+      <span class="n final">{final_remaining:,}</span> <span style="color:#94a3b8;font-size:.7rem">(Pass 2)</span>
     </div>
   </div>
 
@@ -210,7 +247,9 @@ table.combos tr:hover td{{background:#111827}}
     Base = ARIMA(2,1,0)'s K={base['k']} pick, normalized via <code>topKNums()</code> (cross-method-consensus trim/pad,
     same function used throughout this site). Universe = all C({base['k']},7) combinations drawable from that pool.
     Pass 1 removes any combo fully contained within ANY single one of the 16 methods' K={method_k} picks, checked
-    independently.<br>
+    independently, leaving {final_remaining_pass1:,}. Pass 2 then removes any of those fully contained within ANY
+    single one of {len(pass2_method_names)} methods' K={pass2_k} picks ({', '.join(pass2_method_names)}), also
+    checked independently, leaving {final_remaining:,}.<br>
     16 methods: Poly Regression, Moving Avg-37, Exp-Weighted Avg, Frequency, Markov Chain, ARIMA(2,1,0), Random Forest,
     RL (Linear Q), HMM, k-NN, Modular Cycle, Apriori, Monte Carlo, Naive Bayes, Weighted MA-37, LSTM — same 16 used
     throughout <a href="/loto7_backtest.html" style="color:#64748b">loto7_backtest.html</a> /

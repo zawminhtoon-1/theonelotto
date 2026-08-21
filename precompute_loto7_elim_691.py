@@ -24,6 +24,11 @@ fully contained within ANY single one of these 16 K=22 sets gets
 removed, same per-method containment pattern used on the Loto6
 elimination pages.
 
+Pass 2: 4 specific methods' K=25 pick for draw #691 -- MA-37, Poly
+deg-2, Hidden Markov Model, Weighted MA-37 -- checked independently
+(not a union). Any Pass-1-remaining combo fully contained within ANY
+single one of these 4 K=25 sets gets removed.
+
 Outputs:
   loto7_elim_691_meta.json           -- small: base pool, counts
   public/loto7_elim_691_combos.json  -- large: all combos (fetched
@@ -149,12 +154,62 @@ meta = {
     'methodPicks': method_picks_22,
     'removedByMethods': removed_by_methods,
     'methodOverlaps': [bin(m).count('1') for m in method_masks],
-    'finalRemaining': final_remaining,
+    'finalRemainingPass1': final_remaining,
 }
+
+# ── Pass 2: 4 specific methods' K=25 pick, checked independently ────────────
+print(f"\n=== Pass 2 ===")
+K_PASS2 = 25
+PASS2_METHOD_NAMES = ["MA-37", "Poly deg-2", "Hidden Markov Model", "Weighted MA-37"]
+pass2_native_by_name = {c['method']: c['numbers'] for c in combos_meta}
+for name in PASS2_METHOD_NAMES:
+    if name not in pass2_native_by_name:
+        raise SystemExit(f"Method '{name}' not found in loto7_predictions_data.json's combos.")
+
+pass2_picks = [top_k_nums(pass2_native_by_name[name], all_pools, K_PASS2) for name in PASS2_METHOD_NAMES]
+for name, pool in zip(PASS2_METHOD_NAMES, pass2_picks):
+    assert len(pool) == K_PASS2, f"{name}: got {len(pool)} numbers, expected {K_PASS2}"
+
+pass2_masks = []
+for name, pool in zip(PASS2_METHOD_NAMES, pass2_picks):
+    mmask = restricted_mask(set(pool))
+    overlap = bin(mmask).count('1')
+    pass2_masks.append(mmask)
+    print(f"  {name:24s} K={K_PASS2} pick: {pool}  [overlap with {K_BASE}-pool: {overlap}]")
+
+t0 = time.time()
+remaining_after2 = []
+removed_by_pass2 = 0
+for combo in remaining_after1:
+    combo_mask = 0
+    for n in combo:
+        combo_mask |= (1 << pos_of[n])
+    removed = False
+    for mmask in pass2_masks:
+        if (combo_mask & ~mmask) & FULLBASE == 0:
+            removed = True
+            break
+    if removed:
+        removed_by_pass2 += 1
+    else:
+        remaining_after2.append(combo)
+elapsed2 = time.time() - t0
+final_remaining_pass2 = len(remaining_after2)
+print(f"\nPass 2 elimination in {elapsed2:.1f}s")
+print(f"  Removed by ANY of the 4 methods' K={K_PASS2} containment: {removed_by_pass2:,}")
+print(f"  Before Pass 2: {final_remaining:,}  ->  After Pass 2: {final_remaining_pass2:,}")
+
+meta['pass2MethodNames'] = PASS2_METHOD_NAMES
+meta['pass2K'] = K_PASS2
+meta['pass2Picks'] = pass2_picks
+meta['removedByPass2'] = removed_by_pass2
+meta['pass2Overlaps'] = [bin(m).count('1') for m in pass2_masks]
+meta['finalRemaining'] = final_remaining_pass2
+
 with open(META_OUT, 'w', encoding='utf-8') as f:
     json.dump(meta, f, indent=2)
 print(f"\nSaved {META_OUT}")
 
 with open(COMBOS_OUT, 'w', encoding='utf-8') as f:
-    json.dump(remaining_after1, f, separators=(',', ':'))
-print(f"Saved {COMBOS_OUT} ({len(remaining_after1):,} combos, {os.path.getsize(COMBOS_OUT)//1024:,} KB)")
+    json.dump(remaining_after2, f, separators=(',', ':'))
+print(f"Saved {COMBOS_OUT} ({len(remaining_after2):,} combos, {os.path.getsize(COMBOS_OUT)//1024:,} KB)")
