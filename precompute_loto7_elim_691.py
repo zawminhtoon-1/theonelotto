@@ -17,6 +17,13 @@ matching the JS version exactly).
 Universe = all C(25,7) = 480,700 seven-number combinations drawable
 from the 25-number Base pool.
 
+Pass 1: each of the 16 prediction methods' K=22 pick for draw #691
+(native K=15 pool normalized to K=22 via the same topKNums()),
+checked independently -- NOT a union of raw numbers. Any Base combo
+fully contained within ANY single one of these 16 K=22 sets gets
+removed, same per-method containment pattern used on the Loto6
+elimination pages.
+
 Outputs:
   loto7_elim_691_meta.json           -- small: base pool, counts
   public/loto7_elim_691_combos.json  -- large: all combos (fetched
@@ -24,7 +31,7 @@ Outputs:
 
 Run: python precompute_loto7_elim_691.py
 """
-import json, os, itertools
+import json, os, itertools, time
 from collections import Counter
 from math import comb
 
@@ -80,20 +87,74 @@ universe_count = comb(K_BASE, 7)
 print(f"\nUniverse: C({K_BASE},7) = {universe_count:,}")
 
 print("Enumerating all combinations...")
-combos = [sorted(c) for c in itertools.combinations(base_pool, 7)]
+combos = [tuple(sorted(c)) for c in itertools.combinations(base_pool, 7)]
 if len(combos) != universe_count:
     raise SystemExit(f"Combo count mismatch: got {len(combos)}, expected {universe_count}")
 print(f"Generated {len(combos):,} combos.")
+
+# ── Pass 1: 16 methods' K=22 picks, checked independently ───────────────────
+print(f"\n=== Pass 1 ===")
+K_METHODS = 22
+METHOD_NAMES = [c['method'] for c in combos_meta]
+method_native_pools = [c['numbers'] for c in combos_meta]
+method_picks_22 = [top_k_nums(pool, all_pools, K_METHODS) for pool in method_native_pools]
+for name, pool in zip(METHOD_NAMES, method_picks_22):
+    assert len(pool) == K_METHODS, f"{name}: got {len(pool)} numbers, expected {K_METHODS}"
+
+pos_of = {n: i for i, n in enumerate(base_pool)}
+FULLBASE = (1 << K_BASE) - 1
+
+def restricted_mask(target_set):
+    mask = 0
+    for n in target_set:
+        if n in pos_of:
+            mask |= (1 << pos_of[n])
+    return mask
+
+method_masks = []
+for name, pool in zip(METHOD_NAMES, method_picks_22):
+    mmask = restricted_mask(set(pool))
+    overlap = bin(mmask).count('1')
+    method_masks.append(mmask)
+    print(f"  {name:24s} K={K_METHODS} pick: {pool}  [overlap with {K_BASE}-pool: {overlap}]")
+
+t0 = time.time()
+remaining_after1 = []
+removed_by_methods = 0
+for combo in combos:
+    combo_mask = 0
+    for n in combo:
+        combo_mask |= (1 << pos_of[n])
+    removed = False
+    for mmask in method_masks:
+        if (combo_mask & ~mmask) & FULLBASE == 0:
+            removed = True
+            break
+    if removed:
+        removed_by_methods += 1
+    else:
+        remaining_after1.append(list(combo))
+elapsed1 = time.time() - t0
+final_remaining = len(remaining_after1)
+print(f"\nPass 1 elimination in {elapsed1:.1f}s")
+print(f"  Removed by ANY of the 16 methods' K={K_METHODS} containment: {removed_by_methods:,}")
+print(f"  Before Pass 1: {universe_count:,}  ->  After Pass 1: {final_remaining:,}")
 
 meta = {
     'targetSerial': TARGET_SERIAL,
     'base': {'k': K_BASE, 'pool': base_pool, 'method': 'ARIMA(2,1,0)', 'nativeK': len(arima_native), 'nativePool': sorted(arima_native)},
     'universeCount': universe_count,
+    'methodNames': METHOD_NAMES,
+    'methodK': K_METHODS,
+    'methodPicks': method_picks_22,
+    'removedByMethods': removed_by_methods,
+    'methodOverlaps': [bin(m).count('1') for m in method_masks],
+    'finalRemaining': final_remaining,
 }
 with open(META_OUT, 'w', encoding='utf-8') as f:
     json.dump(meta, f, indent=2)
 print(f"\nSaved {META_OUT}")
 
 with open(COMBOS_OUT, 'w', encoding='utf-8') as f:
-    json.dump(combos, f, separators=(',', ':'))
-print(f"Saved {COMBOS_OUT} ({len(combos):,} combos, {os.path.getsize(COMBOS_OUT)//1024:,} KB)")
+    json.dump(remaining_after1, f, separators=(',', ':'))
+print(f"Saved {COMBOS_OUT} ({len(remaining_after1):,} combos, {os.path.getsize(COMBOS_OUT)//1024:,} KB)")

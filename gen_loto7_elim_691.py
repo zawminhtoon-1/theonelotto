@@ -27,13 +27,24 @@ with open(META_PATH, encoding='utf-8') as f:
 TARGET_SERIAL = meta['targetSerial']
 base = meta['base']
 universe_count = meta['universeCount']
+method_names = meta['methodNames']
+method_k = meta['methodK']
+method_picks = meta['methodPicks']
+removed_by_methods = meta['removedByMethods']
+final_remaining = meta['finalRemaining']
+final_pct = final_remaining / universe_count * 100
+
+methods_rows_html = ""
+for name, pool in zip(method_names, method_picks):
+    balls = "".join(f'<span class="nb" style="width:26px;height:26px;font-size:.7rem">{n}</span>' for n in pool)
+    methods_rows_html += f"""<tr><td class="mname">{name}</td><td><div class="balls">{balls}</div></td></tr>"""
 
 page = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Loto 7 — Draw #{TARGET_SERIAL} Elimination (Base)</title>
+<title>Loto 7 — Draw #{TARGET_SERIAL} Elimination</title>
 <style>
 
 *{{box-sizing:border-box;margin:0;padding:0}}
@@ -60,7 +71,21 @@ h1{{font-size:1.4rem;font-weight:700;color:#f1f5f9;margin-bottom:4px}}
 
 .note{{background:#0f172a;border:1px solid #334155;border-radius:10px;padding:14px 18px;
   font-size:.8rem;color:#94a3b8;margin-bottom:20px;line-height:1.6}}
+.note p+p{{margin-top:8px}}
 .note code{{background:#0a0f1e;padding:1px 5px;border-radius:4px;font-size:.85em}}
+
+.elim-flow{{font-size:1rem;color:#e2e8f0;text-align:center;padding:16px;background:#0f172a;
+  border:1px solid #334155;border-radius:10px;font-weight:600;letter-spacing:.02em;margin-top:16px}}
+.elim-flow .arrow{{color:#94a3b8;margin:0 10px}}
+.elim-flow .n{{color:#f1f5f9}}
+.elim-flow .final{{color:#38bdf8}}
+
+details{{background:#0f172a;border:1px solid #334155;border-radius:10px;padding:12px 16px}}
+summary{{cursor:pointer;font-size:.85rem;font-weight:600;color:#e2e8f0;user-select:none}}
+summary:hover{{color:#f1f5f9}}
+.methods-table{{width:100%;border-collapse:collapse;font-size:.82rem;margin-top:12px}}
+.methods-table td{{padding:7px 10px;border-bottom:1px solid #334155;vertical-align:middle}}
+.methods-table td.mname{{color:#94a3b8;white-space:nowrap;font-weight:600;width:160px}}
 
 .lookup{{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}}
 .lookup .btn{{padding:6px 14px;background:#0f172a;border:1px solid #334155;border-radius:7px;
@@ -91,8 +116,8 @@ table.combos tr:hover td{{background:#111827}}
 <body>
 
 <div class="wrap">
-  <h1>✂️ Loto 7 — Draw #{TARGET_SERIAL} Elimination (Base)</h1>
-  <p class="subtitle">First step only: Base = ARIMA(2,1,0)'s K={base['k']} prediction pool for draw #{TARGET_SERIAL} &mdash; no elimination passes applied yet</p>
+  <h1>✂️ Loto 7 — Draw #{TARGET_SERIAL} Elimination</h1>
+  <p class="subtitle">Base = ARIMA(2,1,0)'s K={base['k']} prediction pool for draw #{TARGET_SERIAL} &mdash; Pass 1 = 16 methods' K={method_k} picks</p>
 
   <div class="note">
     <p>Base is <strong style="color:#f1f5f9">ARIMA(2,1,0)'s K={base['k']} pick</strong> for draw #{TARGET_SERIAL} (not yet drawn) &mdash;
@@ -101,9 +126,12 @@ table.combos tr:hover td{{background:#111827}}
     trim/pad function used throughout this site &mdash; the same method that made ARIMA the top-ranked method at K=25 on
     <a href="/loto7_backtest100_multik.html" style="color:#a78bfa">the 100-draw multi-K backtest</a>). This defines the working
     universe: all C({base['k']},7) = {universe_count:,} seven-number combinations drawable from this {base['k']}-number pool.</p>
-    <p>This is the <strong style="color:#f1f5f9">Base stage only</strong> &mdash; mirroring the first step of the Loto6
-    elimination pages (e.g. <a href="/xoshiro_elim_2130.html" style="color:#a78bfa">xoshiro_elim_2130.html</a>). No elimination
-    passes have been applied yet; every combo drawable from the {base['k']}-number pool is shown below.</p>
+    <p><strong style="color:#f1f5f9">Pass 1</strong> is each of the 16 prediction methods' K={method_k} pick for draw
+    #{TARGET_SERIAL} (native K=15 pool normalized to K={method_k} via the same <code>topKNums()</code>), checked
+    <strong>independently</strong> &mdash; NOT a union of raw numbers. Any Base combo fully contained within ANY single
+    one of these 16 K={method_k} sets gets removed &mdash; same per-method containment pattern used on the Loto6
+    elimination pages (e.g. <a href="/xoshiro_elim_2130.html" style="color:#a78bfa">xoshiro_elim_2130.html</a>'s Pass 1),
+    leaving {final_remaining:,}.</p>
   </div>
 
   <div class="section">
@@ -113,29 +141,46 @@ table.combos tr:hover td{{background:#111827}}
   </div>
 
   <div class="section">
+    <h2>Pass 1 — 16 prediction methods, K={method_k} pick for draw #{TARGET_SERIAL}</h2>
+    <p class="desc">Each method's native K=15 pool normalized to K={method_k}, checked independently against the Base pool.</p>
+    <details>
+      <summary>Show all 16 methods' K={method_k} picks</summary>
+      <table class="methods-table">
+        <tbody>{methods_rows_html}</tbody>
+      </table>
+    </details>
+  </div>
+
+  <div class="section">
+    <h2>Elimination summary</h2>
     <div class="stats-row">
       <div class="stat-card">
-        <div class="lbl">Base pool size</div>
-        <div class="val">{base['k']}</div>
-        <div class="sub">numbers</div>
-      </div>
-      <div class="stat-card final">
-        <div class="lbl">Universe</div>
+        <div class="lbl">Universe (Base)</div>
         <div class="val">{universe_count:,}</div>
         <div class="sub">C({base['k']},7)</div>
       </div>
       <div class="stat-card">
-        <div class="lbl">Elimination passes applied</div>
-        <div class="val">0</div>
-        <div class="sub">Base only, for now</div>
+        <div class="lbl">Removed by 16 methods (Pass 1)</div>
+        <div class="val">{removed_by_methods:,}</div>
+        <div class="sub">contained in ANY method's K={method_k}</div>
       </div>
+      <div class="stat-card final">
+        <div class="lbl">Final remaining</div>
+        <div class="val">{final_remaining:,}</div>
+        <div class="sub">{final_pct:.1f}% of universe retained</div>
+      </div>
+    </div>
+    <div class="elim-flow">
+      <span class="n">{universe_count:,}</span>
+      <span class="arrow">&rarr;</span>
+      <span class="n final">{final_remaining:,}</span> <span style="color:#94a3b8;font-size:.7rem">(Pass 1)</span>
     </div>
   </div>
 
   <div class="section">
-    <h2>Browse all combinations</h2>
-    <p class="desc">Fetched from a separate JSON asset (not inlined — {universe_count:,} rows is too large for the page itself).</p>
-    <div id="loadingMsg">Loading {universe_count:,} combinations…</div>
+    <h2>Browse remaining combinations</h2>
+    <p class="desc">Fetched from a separate JSON asset (not inlined — {final_remaining:,} rows is too large for the page itself).</p>
+    <div id="loadingMsg">Loading {final_remaining:,} combinations…</div>
     <div id="comboUI" style="display:none">
       <div class="lookup">
         <button class="btn" onclick="clearFilter()">Clear filter</button>
@@ -163,8 +208,9 @@ table.combos tr:hover td{{background:#111827}}
 
   <p class="footer">
     Base = ARIMA(2,1,0)'s K={base['k']} pick, normalized via <code>topKNums()</code> (cross-method-consensus trim/pad,
-    same function used throughout this site). Universe = all C({base['k']},7) combinations drawable from that pool &mdash;
-    no elimination passes applied.<br>
+    same function used throughout this site). Universe = all C({base['k']},7) combinations drawable from that pool.
+    Pass 1 removes any combo fully contained within ANY single one of the 16 methods' K={method_k} picks, checked
+    independently.<br>
     16 methods: Poly Regression, Moving Avg-37, Exp-Weighted Avg, Frequency, Markov Chain, ARIMA(2,1,0), Random Forest,
     RL (Linear Q), HMM, k-NN, Modular Cycle, Apriori, Monte Carlo, Naive Bayes, Weighted MA-37, LSTM — same 16 used
     throughout <a href="/loto7_backtest.html" style="color:#64748b">loto7_backtest.html</a> /
@@ -254,7 +300,7 @@ function downloadCSV() {{
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'loto7_draw_{TARGET_SERIAL}_base_combos.csv';
+  a.download = 'loto7_draw_{TARGET_SERIAL}_remaining_combos.csv';
   a.click();
   URL.revokeObjectURL(url);
 }}
