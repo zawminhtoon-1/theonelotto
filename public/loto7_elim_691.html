@@ -76,7 +76,7 @@ table.combos tr:hover td{background:#111827}
 
 <div class="wrap">
   <h1>✂️ Loto 7 — Draw #691 Elimination</h1>
-  <p class="subtitle">Base = ARIMA(2,1,0)'s K=25 prediction pool for draw #691 &mdash; Pass 1 = 16 methods' K=22 picks &mdash; Pass 2 = 4 methods' K=25 picks</p>
+  <p class="subtitle">Base = ARIMA(2,1,0)'s K=25 prediction pool for draw #691 &mdash; Pass 1 = 16 methods' K=22 picks &mdash; Pass 2 = 4 methods' K=25 picks &mdash; Pass 3 = historical repeat filter</p>
 
   <div class="note">
     <p>Base is <strong style="color:#f1f5f9">ARIMA(2,1,0)'s K=25 pick</strong> for draw #691 (not yet drawn) &mdash;
@@ -95,6 +95,10 @@ table.combos tr:hover td{background:#111827}
     #691 &mdash; MA-37, Poly deg-2, Hidden Markov Model, Weighted MA-37 &mdash; checked <strong>independently</strong>, same as Pass 1
     (not a union). Any Pass-1-remaining combo fully contained within ANY single one of these 4
     K=25 sets gets removed, leaving 59,983.</p>
+    <p><strong style="color:#f1f5f9">Pass 3 (final)</strong> is a historical repeat filter, same "zero repeats in history"
+    pattern used on the Loto6 elimination pages. Any Pass-2-remaining combo that exactly matches one of Loto7's
+    690 historical actual winning combos (draws #1&ndash;690, main 7 numbers only,
+    bonus ignored) gets removed, leaving 59,978.</p>
   </div>
 
   <div class="section">
@@ -123,6 +127,14 @@ table.combos tr:hover td{background:#111827}
   </div>
 
   <div class="section">
+    <h2>Pass 3 (final) — historical repeat filter</h2>
+    <p class="desc">Any Pass-2-remaining combo that exactly matches one of Loto7's 690 historical actual winning combos (draws #1&ndash;690, main 7 numbers only, bonus ignored) is removed. 5 matched.</p>
+    <table class="methods-table">
+      <tbody><tr><td><div class="balls"><span class="nb" style="width:26px;height:26px;font-size:.7rem">3</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">9</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">18</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">21</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">23</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">27</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">29</span></div></td></tr><tr><td><div class="balls"><span class="nb" style="width:26px;height:26px;font-size:.7rem">3</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">10</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">20</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">21</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">22</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">26</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">30</span></div></td></tr><tr><td><div class="balls"><span class="nb" style="width:26px;height:26px;font-size:.7rem">3</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">14</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">17</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">21</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">22</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">32</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">35</span></div></td></tr><tr><td><div class="balls"><span class="nb" style="width:26px;height:26px;font-size:.7rem">13</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">15</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">17</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">18</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">20</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">21</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">26</span></div></td></tr><tr><td><div class="balls"><span class="nb" style="width:26px;height:26px;font-size:.7rem">15</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">20</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">21</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">22</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">23</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">26</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">34</span></div></td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="section">
     <h2>Elimination summary</h2>
     <div class="stats-row">
       <div class="stat-card">
@@ -145,10 +157,20 @@ table.combos tr:hover td{background:#111827}
         <div class="val">92,966</div>
         <div class="sub">contained in ANY method's K=25</div>
       </div>
-      <div class="stat-card final">
-        <div class="lbl">Final remaining</div>
+      <div class="stat-card">
+        <div class="lbl">After Pass 2</div>
         <div class="val">59,983</div>
         <div class="sub">12.5% of universe &middot; 39.2% of Pass-1 output</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Removed by historical filter (Pass 3)</div>
+        <div class="val">5</div>
+        <div class="sub">exact match to a real drawn combo</div>
+      </div>
+      <div class="stat-card final">
+        <div class="lbl">Final remaining</div>
+        <div class="val">59,978</div>
+        <div class="sub">12.5% of universe &middot; 100.0% of Pass-2 output</div>
       </div>
     </div>
     <div class="elim-flow">
@@ -156,14 +178,16 @@ table.combos tr:hover td{background:#111827}
       <span class="arrow">&rarr;</span>
       <span class="n">152,949</span> <span style="color:#94a3b8;font-size:.7rem">(Pass 1)</span>
       <span class="arrow">&rarr;</span>
-      <span class="n final">59,983</span> <span style="color:#94a3b8;font-size:.7rem">(Pass 2)</span>
+      <span class="n">59,983</span> <span style="color:#94a3b8;font-size:.7rem">(Pass 2)</span>
+      <span class="arrow">&rarr;</span>
+      <span class="n final">59,978</span> <span style="color:#94a3b8;font-size:.7rem">(Pass 3)</span>
     </div>
   </div>
 
   <div class="section">
     <h2>Browse remaining combinations</h2>
-    <p class="desc">Fetched from a separate JSON asset (not inlined — 59,983 rows is too large for the page itself).</p>
-    <div id="loadingMsg">Loading 59,983 combinations…</div>
+    <p class="desc">Fetched from a separate JSON asset (not inlined — 59,978 rows is too large for the page itself).</p>
+    <div id="loadingMsg">Loading 59,978 combinations…</div>
     <div id="comboUI" style="display:none">
       <div class="lookup">
         <button class="btn" onclick="clearFilter()">Clear filter</button>
@@ -195,7 +219,9 @@ table.combos tr:hover td{background:#111827}
     Pass 1 removes any combo fully contained within ANY single one of the 16 methods' K=22 picks, checked
     independently, leaving 152,949. Pass 2 then removes any of those fully contained within ANY
     single one of 4 methods' K=25 picks (MA-37, Poly deg-2, Hidden Markov Model, Weighted MA-37), also
-    checked independently, leaving 59,983.<br>
+    checked independently, leaving 59,983. Pass 3 (final) removes any of those that exactly
+    matches one of Loto7's 690 historical actual winning combos (draws #1&ndash;690),
+    leaving 59,978.<br>
     16 methods: Poly Regression, Moving Avg-37, Exp-Weighted Avg, Frequency, Markov Chain, ARIMA(2,1,0), Random Forest,
     RL (Linear Q), HMM, k-NN, Modular Cycle, Apriori, Monte Carlo, Naive Bayes, Weighted MA-37, LSTM — same 16 used
     throughout <a href="/loto7_backtest.html" style="color:#64748b">loto7_backtest.html</a> /

@@ -38,9 +38,15 @@ pass2_method_names = meta['pass2MethodNames']
 pass2_k = meta['pass2K']
 pass2_picks = meta['pass2Picks']
 removed_by_pass2 = meta['removedByPass2']
+final_remaining_pass2 = meta['finalRemainingPass2']
+pass2_pct = final_remaining_pass2 / universe_count * 100
+pass2_pct_of_pass1 = final_remaining_pass2 / final_remaining_pass1 * 100
+
+historical_draw_count = meta['historicalDrawCount']
+removed_historical = meta['removedHistorical']
 final_remaining = meta['finalRemaining']
 final_pct = final_remaining / universe_count * 100
-pass2_pct_of_pass1 = final_remaining / final_remaining_pass1 * 100
+pass3_pct_of_pass2 = final_remaining / final_remaining_pass2 * 100
 
 methods_rows_html = ""
 for name, pool in zip(method_names, method_picks):
@@ -51,6 +57,14 @@ pass2_rows_html = ""
 for name, pool in zip(pass2_method_names, pass2_picks):
     balls = "".join(f'<span class="nb" style="width:26px;height:26px;font-size:.7rem">{n}</span>' for n in pool)
     pass2_rows_html += f"""<tr><td class="mname">{name}</td><td><div class="balls">{balls}</div></td></tr>"""
+
+if removed_historical:
+    pass3_rows_html = ""
+    for combo in removed_historical:
+        balls = "".join(f'<span class="nb" style="width:26px;height:26px;font-size:.7rem">{n}</span>' for n in combo)
+        pass3_rows_html += f"""<tr><td><div class="balls">{balls}</div></td></tr>"""
+else:
+    pass3_rows_html = """<tr><td>None &mdash; no Pass-2-remaining combo matched a historical winning combo.</td></tr>"""
 
 page = f"""<!DOCTYPE html>
 <html lang="en">
@@ -130,7 +144,7 @@ table.combos tr:hover td{{background:#111827}}
 
 <div class="wrap">
   <h1>✂️ Loto 7 — Draw #{TARGET_SERIAL} Elimination</h1>
-  <p class="subtitle">Base = ARIMA(2,1,0)'s K={base['k']} prediction pool for draw #{TARGET_SERIAL} &mdash; Pass 1 = 16 methods' K={method_k} picks &mdash; Pass 2 = 4 methods' K={pass2_k} picks</p>
+  <p class="subtitle">Base = ARIMA(2,1,0)'s K={base['k']} prediction pool for draw #{TARGET_SERIAL} &mdash; Pass 1 = 16 methods' K={method_k} picks &mdash; Pass 2 = 4 methods' K={pass2_k} picks &mdash; Pass 3 = historical repeat filter</p>
 
   <div class="note">
     <p>Base is <strong style="color:#f1f5f9">ARIMA(2,1,0)'s K={base['k']} pick</strong> for draw #{TARGET_SERIAL} (not yet drawn) &mdash;
@@ -148,7 +162,11 @@ table.combos tr:hover td{{background:#111827}}
     <p><strong style="color:#f1f5f9">Pass 2</strong> is {len(pass2_method_names)} specific methods' K={pass2_k} pick for draw
     #{TARGET_SERIAL} &mdash; {', '.join(pass2_method_names)} &mdash; checked <strong>independently</strong>, same as Pass 1
     (not a union). Any Pass-1-remaining combo fully contained within ANY single one of these {len(pass2_method_names)}
-    K={pass2_k} sets gets removed, leaving {final_remaining:,}.</p>
+    K={pass2_k} sets gets removed, leaving {final_remaining_pass2:,}.</p>
+    <p><strong style="color:#f1f5f9">Pass 3 (final)</strong> is a historical repeat filter, same "zero repeats in history"
+    pattern used on the Loto6 elimination pages. Any Pass-2-remaining combo that exactly matches one of Loto7's
+    {historical_draw_count:,} historical actual winning combos (draws #1&ndash;{TARGET_SERIAL-1}, main 7 numbers only,
+    bonus ignored) gets removed, leaving {final_remaining:,}.</p>
   </div>
 
   <div class="section">
@@ -177,6 +195,14 @@ table.combos tr:hover td{{background:#111827}}
   </div>
 
   <div class="section">
+    <h2>Pass 3 (final) — historical repeat filter</h2>
+    <p class="desc">Any Pass-2-remaining combo that exactly matches one of Loto7's {historical_draw_count:,} historical actual winning combos (draws #1&ndash;{TARGET_SERIAL-1}, main 7 numbers only, bonus ignored) is removed. {len(removed_historical)} matched.</p>
+    <table class="methods-table">
+      <tbody>{pass3_rows_html}</tbody>
+    </table>
+  </div>
+
+  <div class="section">
     <h2>Elimination summary</h2>
     <div class="stats-row">
       <div class="stat-card">
@@ -199,10 +225,20 @@ table.combos tr:hover td{{background:#111827}}
         <div class="val">{removed_by_pass2:,}</div>
         <div class="sub">contained in ANY method's K={pass2_k}</div>
       </div>
+      <div class="stat-card">
+        <div class="lbl">After Pass 2</div>
+        <div class="val">{final_remaining_pass2:,}</div>
+        <div class="sub">{pass2_pct:.1f}% of universe &middot; {pass2_pct_of_pass1:.1f}% of Pass-1 output</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Removed by historical filter (Pass 3)</div>
+        <div class="val">{len(removed_historical):,}</div>
+        <div class="sub">exact match to a real drawn combo</div>
+      </div>
       <div class="stat-card final">
         <div class="lbl">Final remaining</div>
         <div class="val">{final_remaining:,}</div>
-        <div class="sub">{final_pct:.1f}% of universe &middot; {pass2_pct_of_pass1:.1f}% of Pass-1 output</div>
+        <div class="sub">{final_pct:.1f}% of universe &middot; {pass3_pct_of_pass2:.1f}% of Pass-2 output</div>
       </div>
     </div>
     <div class="elim-flow">
@@ -210,7 +246,9 @@ table.combos tr:hover td{{background:#111827}}
       <span class="arrow">&rarr;</span>
       <span class="n">{final_remaining_pass1:,}</span> <span style="color:#94a3b8;font-size:.7rem">(Pass 1)</span>
       <span class="arrow">&rarr;</span>
-      <span class="n final">{final_remaining:,}</span> <span style="color:#94a3b8;font-size:.7rem">(Pass 2)</span>
+      <span class="n">{final_remaining_pass2:,}</span> <span style="color:#94a3b8;font-size:.7rem">(Pass 2)</span>
+      <span class="arrow">&rarr;</span>
+      <span class="n final">{final_remaining:,}</span> <span style="color:#94a3b8;font-size:.7rem">(Pass 3)</span>
     </div>
   </div>
 
@@ -249,7 +287,9 @@ table.combos tr:hover td{{background:#111827}}
     Pass 1 removes any combo fully contained within ANY single one of the 16 methods' K={method_k} picks, checked
     independently, leaving {final_remaining_pass1:,}. Pass 2 then removes any of those fully contained within ANY
     single one of {len(pass2_method_names)} methods' K={pass2_k} picks ({', '.join(pass2_method_names)}), also
-    checked independently, leaving {final_remaining:,}.<br>
+    checked independently, leaving {final_remaining_pass2:,}. Pass 3 (final) removes any of those that exactly
+    matches one of Loto7's {historical_draw_count:,} historical actual winning combos (draws #1&ndash;{TARGET_SERIAL-1}),
+    leaving {final_remaining:,}.<br>
     16 methods: Poly Regression, Moving Avg-37, Exp-Weighted Avg, Frequency, Markov Chain, ARIMA(2,1,0), Random Forest,
     RL (Linear Q), HMM, k-NN, Modular Cycle, Apriori, Monte Carlo, Naive Bayes, Weighted MA-37, LSTM — same 16 used
     throughout <a href="/loto7_backtest.html" style="color:#64748b">loto7_backtest.html</a> /

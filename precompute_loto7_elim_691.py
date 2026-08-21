@@ -29,6 +29,12 @@ deg-2, Hidden Markov Model, Weighted MA-37 -- checked independently
 (not a union). Any Pass-1-remaining combo fully contained within ANY
 single one of these 4 K=25 sets gets removed.
 
+Pass 3 (final): historical repeat filter, same "zero repeats in
+history" pattern used on the Loto6 elimination pages. Any Pass-2-
+remaining combo that exactly matches one of Loto7's 690 historical
+actual winning combos (main 7 numbers only, bonus ignored) gets
+removed.
+
 Outputs:
   loto7_elim_691_meta.json           -- small: base pool, counts
   public/loto7_elim_691_combos.json  -- large: all combos (fetched
@@ -36,12 +42,14 @@ Outputs:
 
 Run: python precompute_loto7_elim_691.py
 """
-import json, os, itertools, time
+import json, os, re, itertools, time
 from collections import Counter
 from math import comb
+import psycopg2
 
 BASE = r"C:\Users\Zaw Min Htoon\source\repos\theonelotto"
 PREDICTIONS_PATH = BASE + r"\public\loto7_predictions_data.json"
+ENV_LOCAL = BASE + r"\.env.local"
 META_OUT = BASE + r"\loto7_elim_691_meta.json"
 COMBOS_OUT = BASE + r"\public\loto7_elim_691_combos.json"
 
@@ -204,12 +212,58 @@ meta['pass2K'] = K_PASS2
 meta['pass2Picks'] = pass2_picks
 meta['removedByPass2'] = removed_by_pass2
 meta['pass2Overlaps'] = [bin(m).count('1') for m in pass2_masks]
-meta['finalRemaining'] = final_remaining_pass2
+meta['finalRemainingPass2'] = final_remaining_pass2
+
+# ── Pass 3 (final): historical repeat filter ─────────────────────────────────
+print(f"\n=== Pass 3 (final) ===")
+if 'DATABASE_URL' not in os.environ:
+    with open(ENV_LOCAL, encoding='utf-8') as f:
+        env_text = f.read()
+    m = re.search(r'DATABASE_URL=(.+)', env_text)
+    os.environ['DATABASE_URL'] = m.group(1).strip()
+
+conn = psycopg2.connect(os.environ['DATABASE_URL'])
+cur = conn.cursor()
+cur.execute(
+    "SELECT draw_serial, num1,num2,num3,num4,num5,num6,num7 "
+    "FROM loto7_results ORDER BY draw_serial"
+)
+db_rows = cur.fetchall()
+conn.close()
+print(f"Fetched {len(db_rows)} historical draws (#{db_rows[0][0]}-{db_rows[-1][0]}).")
+if db_rows[-1][0] != TARGET_SERIAL - 1:
+    raise SystemExit(f"Expected latest draw #{TARGET_SERIAL-1}, found #{db_rows[-1][0]} -- draw window assumption is stale.")
+
+all_main7 = [sorted([r[1], r[2], r[3], r[4], r[5], r[6], r[7]]) for r in db_rows]
+historical_combos = set(tuple(c) for c in all_main7)
+print(f"Historical winning combos: {len(historical_combos):,} (from {len(all_main7):,} draws, #1-{TARGET_SERIAL-1})")
+if len(historical_combos) != len(all_main7):
+    print(f"  NOTE: {len(all_main7) - len(historical_combos)} duplicate historical combo(s) collapsed by the set.")
+
+t0 = time.time()
+remaining_after3 = []
+removed_historical = []
+for combo in remaining_after2:
+    if tuple(combo) in historical_combos:
+        removed_historical.append(combo)
+    else:
+        remaining_after3.append(combo)
+elapsed3 = time.time() - t0
+final_remaining_pass3 = len(remaining_after3)
+print(f"\nPass 3 elimination in {elapsed3:.1f}s")
+print(f"  Removed (exact match to a historical winning combo): {len(removed_historical):,}")
+if removed_historical:
+    print(f"  Matched historical combos: {removed_historical}")
+print(f"  Before Pass 3: {final_remaining_pass2:,}  ->  After Pass 3: {final_remaining_pass3:,}")
+
+meta['historicalDrawCount'] = len(all_main7)
+meta['removedHistorical'] = [list(c) for c in removed_historical]
+meta['finalRemaining'] = final_remaining_pass3
 
 with open(META_OUT, 'w', encoding='utf-8') as f:
     json.dump(meta, f, indent=2)
 print(f"\nSaved {META_OUT}")
 
 with open(COMBOS_OUT, 'w', encoding='utf-8') as f:
-    json.dump(remaining_after2, f, separators=(',', ':'))
-print(f"Saved {COMBOS_OUT} ({len(remaining_after2):,} combos, {os.path.getsize(COMBOS_OUT)//1024:,} KB)")
+    json.dump(remaining_after3, f, separators=(',', ':'))
+print(f"Saved {COMBOS_OUT} ({len(remaining_after3):,} combos, {os.path.getsize(COMBOS_OUT)//1024:,} KB)")
