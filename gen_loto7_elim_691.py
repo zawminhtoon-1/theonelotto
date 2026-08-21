@@ -1,0 +1,267 @@
+"""
+gen_loto7_elim_691.py
+--------------------------
+Generates the Loto7 draw #691 elimination page's Base stage --
+mirroring the Loto6 elimination-page pattern (e.g.
+xoshiro_elim_2130.html): shows the Base pool, the universe count, and
+a paginated/filterable/CSV-downloadable combo browser over all
+C(25,7) combinations. No elimination passes yet, per explicit
+instruction -- this establishes the Base only.
+
+Reads loto7_elim_691_meta.json (small: base pool, counts). The large
+combo list lives separately at public/loto7_elim_691_combos.json and
+is fetched client-side, not inlined.
+
+Output: public/loto7_elim_691.html
+Run: python gen_loto7_elim_691.py
+"""
+import json
+
+BASE = r"C:\Users\Zaw Min Htoon\source\repos\theonelotto"
+META_PATH = BASE + r"\loto7_elim_691_meta.json"
+HTML_OUT = BASE + r"\public\loto7_elim_691.html"
+
+with open(META_PATH, encoding='utf-8') as f:
+    meta = json.load(f)
+
+TARGET_SERIAL = meta['targetSerial']
+base = meta['base']
+universe_count = meta['universeCount']
+
+page = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Loto 7 — Draw #{TARGET_SERIAL} Elimination (Base)</title>
+<style>
+
+*{{box-sizing:border-box;margin:0;padding:0}}
+body{{background:#0f172a;color:#f1f5f9;font-family:system-ui,sans-serif;padding:24px;min-height:100vh}}
+.wrap{{max-width:1200px;margin:0 auto}}
+h1{{font-size:1.4rem;font-weight:700;color:#f1f5f9;margin-bottom:4px}}
+.subtitle{{font-size:.85rem;color:#94a3b8;margin-bottom:20px}}
+
+.section{{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px;margin-bottom:20px}}
+.section h2{{font-size:1rem;font-weight:700;color:#f1f5f9;margin-bottom:4px}}
+.section .desc{{font-size:.8rem;color:#94a3b8;margin-bottom:14px}}
+
+.balls{{display:flex;flex-wrap:wrap;gap:5px}}
+.nb{{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;
+  border-radius:50%;font-size:.78rem;font-weight:700;background:#312e5f;color:#c4b5fd;
+  border:1px solid #7c3aed55;flex-shrink:0}}
+
+.stats-row{{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}}
+.stat-card{{background:#0f172a;border:1px solid #334155;border-radius:10px;padding:14px 18px;flex:1;min-width:150px}}
+.stat-card .lbl{{font-size:.7rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}}
+.stat-card .val{{font-size:1.35rem;font-weight:700;color:#f1f5f9}}
+.stat-card .sub{{font-size:.75rem;color:#94a3b8;margin-top:2px}}
+.stat-card.final .val{{color:#38bdf8}}
+
+.note{{background:#0f172a;border:1px solid #334155;border-radius:10px;padding:14px 18px;
+  font-size:.8rem;color:#94a3b8;margin-bottom:20px;line-height:1.6}}
+.note code{{background:#0a0f1e;padding:1px 5px;border-radius:4px;font-size:.85em}}
+
+.lookup{{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}}
+.lookup .btn{{padding:6px 14px;background:#0f172a;border:1px solid #334155;border-radius:7px;
+  color:#94a3b8;font-size:.8rem;cursor:pointer}}
+.lookup .btn:hover{{color:#f1f5f9}}
+.lookup .btn.primary{{background:#7c3aed;border-color:#7c3aed;color:#fff}}
+.lookup .btn.primary:hover{{background:#6d28d9}}
+.lookup .btn:disabled{{opacity:.4;cursor:default}}
+.filter-grid{{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}}
+.num-btn{{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;
+  border-radius:50%;font-size:.72rem;font-weight:700;color:#fff;background:#312e5f;
+  border:none;cursor:pointer;opacity:.65;transition:all .12s;flex-shrink:0}}
+.num-btn:hover{{opacity:.9}}
+.num-btn.active{{opacity:1;box-shadow:0 0 0 2px #0f172a,0 0 0 4px #38bdf8;transform:scale(1.08)}}
+.page-info{{font-size:.8rem;color:#94a3b8}}
+.tbl-wrap{{overflow-x:auto;border-radius:10px;border:1px solid #334155}}
+table.combos{{width:100%;border-collapse:collapse;font-size:.83rem}}
+table.combos th{{background:#0f172a;padding:8px 12px;text-align:left;color:#94a3b8;
+  font-weight:600;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;
+  border-bottom:1px solid #334155}}
+table.combos td{{padding:6px 12px;border-bottom:1px solid #0f172a}}
+table.combos tr:hover td{{background:#111827}}
+#loadingMsg{{padding:30px;text-align:center;color:#94a3b8;font-size:.85rem}}
+
+.footer{{margin-top:28px;font-size:.78rem;color:#64748b;padding-bottom:20px;line-height:1.6}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <h1>✂️ Loto 7 — Draw #{TARGET_SERIAL} Elimination (Base)</h1>
+  <p class="subtitle">First step only: Base = ARIMA(2,1,0)'s K={base['k']} prediction pool for draw #{TARGET_SERIAL} &mdash; no elimination passes applied yet</p>
+
+  <div class="note">
+    <p>Base is <strong style="color:#f1f5f9">ARIMA(2,1,0)'s K={base['k']} pick</strong> for draw #{TARGET_SERIAL} (not yet drawn) &mdash;
+    read from <a href="/loto7/predictions" style="color:#a78bfa">the live /loto7/predictions page</a>'s data (ARIMA's native
+    K={base['nativeK']} pool, normalized to K={base['k']} via <code>topKNums()</code>, the same generic cross-method-consensus
+    trim/pad function used throughout this site &mdash; the same method that made ARIMA the top-ranked method at K=25 on
+    <a href="/loto7_backtest100_multik.html" style="color:#a78bfa">the 100-draw multi-K backtest</a>). This defines the working
+    universe: all C({base['k']},7) = {universe_count:,} seven-number combinations drawable from this {base['k']}-number pool.</p>
+    <p>This is the <strong style="color:#f1f5f9">Base stage only</strong> &mdash; mirroring the first step of the Loto6
+    elimination pages (e.g. <a href="/xoshiro_elim_2130.html" style="color:#a78bfa">xoshiro_elim_2130.html</a>). No elimination
+    passes have been applied yet; every combo drawable from the {base['k']}-number pool is shown below.</p>
+  </div>
+
+  <div class="section">
+    <h2>Base — ARIMA(2,1,0) K={base['k']}</h2>
+    <p class="desc">Native K={base['nativeK']} pick normalized to K={base['k']} via cross-method-consensus trim/pad.</p>
+    <div class="balls">{"".join(f'<span class="nb">{n}</span>' for n in base['pool'])}</div>
+  </div>
+
+  <div class="section">
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="lbl">Base pool size</div>
+        <div class="val">{base['k']}</div>
+        <div class="sub">numbers</div>
+      </div>
+      <div class="stat-card final">
+        <div class="lbl">Universe</div>
+        <div class="val">{universe_count:,}</div>
+        <div class="sub">C({base['k']},7)</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Elimination passes applied</div>
+        <div class="val">0</div>
+        <div class="sub">Base only, for now</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Browse all combinations</h2>
+    <p class="desc">Fetched from a separate JSON asset (not inlined — {universe_count:,} rows is too large for the page itself).</p>
+    <div id="loadingMsg">Loading {universe_count:,} combinations…</div>
+    <div id="comboUI" style="display:none">
+      <div class="lookup">
+        <button class="btn" onclick="clearFilter()">Clear filter</button>
+        <button class="btn primary" onclick="downloadCSV()">⬇ Download CSV</button>
+        <span id="filterInfo" class="page-info"></span>
+      </div>
+      <div class="filter-grid" id="filterGrid"></div>
+      <div class="tbl-wrap">
+        <div class="lookup" style="justify-content:space-between;padding:10px 12px;margin-bottom:0">
+          <span id="pageInfo" class="page-info"></span>
+          <div style="display:flex;gap:6px">
+            <button class="btn" id="firstBtn" onclick="goPage(0)">&laquo; First</button>
+            <button class="btn" id="prevBtn" onclick="goPage(curPage-1)">&lsaquo; Prev</button>
+            <button class="btn" id="nextBtn" onclick="goPage(curPage+1)">Next &rsaquo;</button>
+            <button class="btn" id="lastBtn" onclick="goPage(totalPages()-1)">Last &raquo;</button>
+          </div>
+        </div>
+        <table class="combos">
+          <thead><tr><th>#</th><th>Combination</th></tr></thead>
+          <tbody id="comboBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <p class="footer">
+    Base = ARIMA(2,1,0)'s K={base['k']} pick, normalized via <code>topKNums()</code> (cross-method-consensus trim/pad,
+    same function used throughout this site). Universe = all C({base['k']},7) combinations drawable from that pool &mdash;
+    no elimination passes applied.<br>
+    16 methods: Poly Regression, Moving Avg-37, Exp-Weighted Avg, Frequency, Markov Chain, ARIMA(2,1,0), Random Forest,
+    RL (Linear Q), HMM, k-NN, Modular Cycle, Apriori, Monte Carlo, Naive Bayes, Weighted MA-37, LSTM — same 16 used
+    throughout <a href="/loto7_backtest.html" style="color:#64748b">loto7_backtest.html</a> /
+    <a href="/loto7/predictions" style="color:#64748b">predictions</a>.<br>
+    Formula-based only · Not financial advice · Loto 7 is random.
+  </p>
+</div>
+
+<script>
+const POOL_BASE = {json.dumps(base['pool'])};
+let REMAINING = [];
+let filtered = [];
+const PAGE_SIZE = 100;
+let curPage = 0;
+const selectedNums = new Set();
+
+fetch('/loto7_elim_{TARGET_SERIAL}_combos.json')
+  .then(r => r.json())
+  .then(data => {{
+    REMAINING = data;
+    filtered = REMAINING;
+    document.getElementById('loadingMsg').style.display = 'none';
+    document.getElementById('comboUI').style.display = 'block';
+    buildFilterGrid();
+    render();
+  }})
+  .catch(err => {{
+    document.getElementById('loadingMsg').textContent = 'Failed to load combinations: ' + err;
+  }});
+
+function getBallColor(n) {{
+  if (n <= 6) return '#e74c3c';
+  if (n <= 11) return '#e67e22';
+  if (n <= 16) return '#2ecc71';
+  if (n <= 21) return '#3498db';
+  if (n <= 26) return '#9b59b6';
+  if (n <= 31) return '#16a085';
+  return '#e91e8c';
+}}
+function buildFilterGrid() {{
+  const grid = document.getElementById('filterGrid');
+  grid.innerHTML = POOL_BASE.map(n =>
+    '<button class="num-btn" data-n="' + n + '" style="background:' + getBallColor(n) + '" onclick="toggleNum(' + n + ')">' + n + '</button>'
+  ).join('');
+}}
+function toggleNum(n) {{
+  if (selectedNums.has(n)) selectedNums.delete(n); else selectedNums.add(n);
+  document.querySelector('.num-btn[data-n="' + n + '"]').classList.toggle('active', selectedNums.has(n));
+  applyFilter();
+}}
+function clearFilter() {{
+  selectedNums.clear();
+  document.querySelectorAll('.num-btn.active').forEach(b => b.classList.remove('active'));
+  applyFilter();
+}}
+function applyFilter() {{
+  filtered = selectedNums.size === 0 ? REMAINING : REMAINING.filter(c => {{
+    for (const n of selectedNums) if (!c.includes(n)) return false;
+    return true;
+  }});
+  document.getElementById('filterInfo').textContent = selectedNums.size === 0 ? '' :
+    (filtered.length.toLocaleString() + ' / ' + REMAINING.length.toLocaleString() + ' combos contain ' + [...selectedNums].sort((a,b)=>a-b).join(', '));
+  curPage = 0;
+  render();
+}}
+function totalPages() {{ return Math.max(1, Math.ceil(filtered.length / PAGE_SIZE)); }}
+function goPage(p) {{ curPage = Math.max(0, Math.min(p, totalPages()-1)); render(); }}
+function render() {{
+  const start = curPage * PAGE_SIZE;
+  const pageRows = filtered.slice(start, start + PAGE_SIZE);
+  document.getElementById('comboBody').innerHTML = pageRows.map((c, i) => {{
+    const balls = c.map(n => '<span class="nb" style="width:26px;height:26px;font-size:.72rem;background:' + getBallColor(n) + '33;color:#e2e8f0;border:1px solid ' + getBallColor(n) + '">' + n + '</span>').join('');
+    return '<tr><td>' + (start+i+1) + '</td><td><div class="balls">' + balls + '</div></td></tr>';
+  }}).join('');
+  document.getElementById('pageInfo').textContent =
+    filtered.length === 0 ? 'No combinations match' :
+    'Showing ' + (start+1) + '-' + Math.min(start+PAGE_SIZE, filtered.length) + ' of ' + filtered.length.toLocaleString() + ' (page ' + (curPage+1) + ' / ' + totalPages() + ')';
+  document.getElementById('firstBtn').disabled = curPage === 0;
+  document.getElementById('prevBtn').disabled = curPage === 0;
+  document.getElementById('nextBtn').disabled = curPage >= totalPages()-1;
+  document.getElementById('lastBtn').disabled = curPage >= totalPages()-1;
+}}
+function downloadCSV() {{
+  const rows = filtered.length > 0 ? filtered : REMAINING;
+  let csv = 'n1,n2,n3,n4,n5,n6,n7\\n' + rows.map(c => c.join(',')).join('\\n');
+  const blob = new Blob([csv], {{type: 'text/csv'}});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'loto7_draw_{TARGET_SERIAL}_base_combos.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}}
+</script>
+</body>
+</html>"""
+
+with open(HTML_OUT, 'w', encoding='utf-8') as f:
+    f.write(page)
+print(f"Wrote {HTML_OUT} ({len(page)//1024} KB)")

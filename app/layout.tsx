@@ -90,6 +90,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { href: "/loto7/predictions", icon: "🎯", label: "Predictions" },
       { href: "/loto7_backtest.html", icon: "📊", label: "Backtest" },
       { href: "/loto7_backtest100_multik.html", icon: "🎯", label: "100-Draw Multi-K Backtest" },
+      { href: "/loto7_elim_691.html", icon: "✂️", label: "Draw #691 Elimination (Base)" },
     ],
   },
   {
