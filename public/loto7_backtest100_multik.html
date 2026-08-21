@@ -395,6 +395,19 @@ function buildDetail() {
       '<tr><th>#</th><th>Date</th><th>Actual (7)</th>' +
       '<th>'+METHODS[mi]+' — '+curK+' picks</th>' +
       '<th style="text-align:center">Hits</th></tr>';
+
+    // ── Upcoming draw row (same treatment as the All Models view) ───────────
+    const upTrSingle = document.createElement('tr');
+    upTrSingle.className = 'upcoming-row';
+    const upCombo = topKNums(NEXT_POOLS[mi], NEXT_POOLS, curK);
+    upTrSingle.innerHTML =
+      '<td>#'+NEXT_SERIAL+'</td>' +
+      '<td><em>upcoming</em></td>' +
+      '<td><em style="color:#64748b">not yet drawn</em></td>' +
+      '<td><div class="balls">' + upCombo.map(n=>'<span class="ball">'+n+'</span>').join('') + '</div></td>' +
+      '<td style="text-align:center;color:#64748b">&mdash;</td>';
+    body.appendChild(upTrSingle);
+
     REV_DATA.forEach(r => {
       const tr = document.createElement('tr');
       tr.dataset.actual = JSON.stringify(r.a);
