@@ -87,6 +87,54 @@ page = f"""<!DOCTYPE html>
   td.left {{ text-align: left; }}
   tr.best td {{ color: var(--yellow); font-weight: 600; }}
   .baseline-row td {{ color: var(--muted); font-style: italic; }}
+
+  /* Tabs */
+  .tabs {{ display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }}
+  .tab  {{ padding: 8px 18px; border-radius: 6px; border: 1px solid var(--border);
+           background: var(--surface); color: var(--muted); cursor: pointer; font-size: .875rem; }}
+  .tab.active {{ background: var(--accent); color: #0f172a; border-color: var(--accent); font-weight: 600; }}
+  .panel {{ display: none; }}
+  .panel.active {{ display: block; }}
+
+  /* Draw detail */
+  .detail-wrap {{ background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+                  padding: 16px; max-height: 620px; overflow-y: auto; overflow-x: auto; }}
+  #detailTable th {{ position: sticky; top: 0; background: var(--surface); z-index: 1; }}
+  #detailTable td {{ vertical-align: top; }}
+  .balls {{ display: flex; flex-wrap: wrap; gap: 3px; }}
+  .ball {{ display: inline-flex; align-items: center; justify-content: center;
+           width: 26px; height: 26px; border-radius: 50%; font-size: .7rem; font-weight: 700;
+           background: var(--border); color: var(--text); flex-shrink: 0; }}
+  .ball.match  {{ background: var(--green); color: #052e16; }}
+  .ball.bonus  {{ background: var(--orange); color: #431407; }}
+
+  /* Detail controls */
+  .ctrl-row {{ display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }}
+  .ctrl-row label {{ font-size: .8rem; color: var(--muted); }}
+  select.model-sel {{
+    padding: 6px 10px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); font-size: .85rem; cursor: pointer;
+  }}
+  input.pos-filter {{
+    width: 60px; padding: 4px 6px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: .8rem;
+  }}
+  .btn-clear {{
+    padding: 4px 10px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--muted); font-size: .8rem; cursor: pointer;
+  }}
+  /* Sticky first 3 columns in compact (All Models) view */
+  .sticky-cols th:nth-child(1), .sticky-cols td:nth-child(1) {{
+    position: sticky; left: 0; background: var(--surface); z-index: 2; min-width: 48px;
+  }}
+  .sticky-cols th:nth-child(2), .sticky-cols td:nth-child(2) {{
+    position: sticky; left: 48px; background: var(--surface); z-index: 2; min-width: 88px;
+  }}
+  .sticky-cols th:nth-child(3), .sticky-cols td:nth-child(3) {{
+    position: sticky; left: 136px; background: var(--surface); z-index: 2; min-width: 230px;
+    border-right: 1px solid var(--border);
+  }}
+  .scroll-hint {{ font-size: .75rem; color: #64748b; display: none; margin-left: auto; }}
 </style>
 </head>
 <body>
@@ -116,22 +164,58 @@ page = f"""<!DOCTYPE html>
   <button class="kbtn" data-k="17" onclick="setK(17)">K = 17</button>
 </div>
 
-<div class="cards" id="cards"></div>
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('ranking',this)">Ranking</button>
+  <button class="tab" onclick="switchTab('detail',this)">Draw Detail</button>
+</div>
 
-<div class="chart-wrap"><canvas id="distChart" height="110"></canvas></div>
+<div id="tab-ranking" class="panel active">
+  <div class="cards" id="cards"></div>
 
-<div class="chart-wrap">
-  <h2>Full ranking</h2>
-  <p class="desc">Sorted by hit7b &rarr; hit7 &rarr; hit6 &rarr; hit5 &rarr; hit4 (descending). Not average hits.</p>
-  <table>
-    <thead>
-      <tr>
-        <th class="left">Method</th><th>hit7b</th><th>hit7</th><th>hit6</th><th>hit5</th><th>hit4</th>
-        <th>Avg Hits</th><th>vs Random</th><th>Bonus Hit %</th>
-      </tr>
-    </thead>
-    <tbody id="rankBody"></tbody>
-  </table>
+  <div class="chart-wrap"><canvas id="distChart" height="110"></canvas></div>
+
+  <div class="chart-wrap">
+    <h2>Full ranking</h2>
+    <p class="desc">Sorted by hit7b &rarr; hit7 &rarr; hit6 &rarr; hit5 &rarr; hit4 (descending). Not average hits.</p>
+    <table>
+      <thead>
+        <tr>
+          <th class="left">Method</th><th>hit7b</th><th>hit7</th><th>hit6</th><th>hit5</th><th>hit4</th>
+          <th>Avg Hits</th><th>vs Random</th><th>Bonus Hit %</th>
+        </tr>
+      </thead>
+      <tbody id="rankBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div id="tab-detail" class="panel">
+  <div class="ctrl-row">
+    <label>Model:</label>
+    <select id="modelSelect" class="model-sel" onchange="buildDetail()">
+      <option value="-1">All Models (compact)</option>
+      {"".join(f'<option value="{i}">{i+1}: {name}</option>' for i, name in enumerate(METHOD_NAMES))}
+    </select>
+    <span id="scrollHint" class="scroll-hint">&larr; scroll right to see all {N_METHODS} models &rarr;</span>
+  </div>
+  <div class="ctrl-row" id="posFilterRow">
+    <label>Filter actual by position:</label>
+    <input id="f1" class="pos-filter" type="number" min="1" max="37" placeholder="P1" oninput="applyFilter()">
+    <input id="f2" class="pos-filter" type="number" min="1" max="37" placeholder="P2" oninput="applyFilter()">
+    <input id="f3" class="pos-filter" type="number" min="1" max="37" placeholder="P3" oninput="applyFilter()">
+    <input id="f4" class="pos-filter" type="number" min="1" max="37" placeholder="P4" oninput="applyFilter()">
+    <input id="f5" class="pos-filter" type="number" min="1" max="37" placeholder="P5" oninput="applyFilter()">
+    <input id="f6" class="pos-filter" type="number" min="1" max="37" placeholder="P6" oninput="applyFilter()">
+    <input id="f7" class="pos-filter" type="number" min="1" max="37" placeholder="P7" oninput="applyFilter()">
+    <button class="btn-clear" onclick="clearFilters()">Clear</button>
+    <span id="filterCount" style="font-size:.75rem;color:var(--muted);"></span>
+  </div>
+  <div class="detail-wrap">
+    <table id="detailTable">
+      <thead id="detailHead"></thead>
+      <tbody id="detailBody"></tbody>
+    </table>
+  </div>
 </div>
 
 <script>
@@ -199,6 +283,9 @@ function setK(K) {{
   curK = K;
   document.querySelectorAll('.kbtn').forEach(b => b.classList.toggle('active', +b.dataset.k === K));
   render();
+  // Sync Draw Detail to the new K (same pattern as Loto6's backtest.html buildAll())
+  builtModel = -999;
+  if (document.querySelector('#tab-detail.active')) buildDetail();
 }}
 
 function render() {{
@@ -269,6 +356,123 @@ function render() {{
       }}
     }}
   }});
+}}
+
+// ── Draw Detail tab ──────────────────────────────────────────────────────
+const MSHORT = {json.dumps([
+    "Poly-F", "MA-37", "Exp-W", "FreqAll", "Markov", "ARIMA", "RF", "RL-Q",
+    "HMM", "kNN", "ModCyc", "Apriori", "MonteCar", "NaiveBay", "WMA-37", "LSTM",
+])};
+const REV_DATA = [...DATA].reverse();
+let builtModel = -999;
+
+function matchColor(m) {{
+  return m>=5 ? '#4ade80' : m>=4 ? '#86efac' : m>=3 ? '#facc15' : '#94a3b8';
+}}
+
+function buildDetail() {{
+  const mi = parseInt(document.getElementById('modelSelect').value);
+  if (mi === builtModel) {{ applyFilter(); return; }}
+  builtModel = mi;
+
+  const head = document.getElementById('detailHead');
+  const body = document.getElementById('detailBody');
+  body.innerHTML = '';
+  const tbl  = document.getElementById('detailTable');
+  const hint = document.getElementById('scrollHint');
+
+  if (mi === -1) {{
+    tbl.classList.add('sticky-cols');
+    hint.style.display = 'inline';
+    head.innerHTML =
+      '<tr><th>#</th><th>Date</th><th>Actual</th>' +
+      MSHORT.map((s,i) =>
+        '<th style="color:'+COLORS[i]+';text-align:center">'+s+
+        '<br><span style="font-weight:400;font-size:.7rem;color:#64748b">'+curK+'pk</span></th>'
+      ).join('') + '</tr>';
+    REV_DATA.forEach(r => {{
+      const tr = document.createElement('tr');
+      tr.dataset.actual = JSON.stringify(r.a);
+      const actualSet = new Set(r.a);
+      let cells =
+        '<td>'+r.s+'</td>' +
+        '<td>'+(r.d ? r.d.slice(0,10) : '')+'</td>' +
+        '<td><div class="balls">' +
+        r.a.map(n=>'<span class="ball">'+n+'</span>').join('') +
+        '<span class="ball bonus">'+r.b1+'★</span>' +
+        '<span class="ball bonus">'+r.b2+'★</span></div></td>';
+      r.p.forEach((pool,i) => {{
+        const combo = topKNums(pool, r.p, curK);
+        const m = combo.filter(n=>actualSet.has(n)).length;
+        const bh = combo.includes(r.b1) || combo.includes(r.b2);
+        cells += '<td style="text-align:center;font-weight:700;color:'+matchColor(m)+'">'+m+(bh?'✦':'')+'</td>';
+      }});
+      tr.innerHTML = cells;
+      body.appendChild(tr);
+    }});
+  }} else {{
+    tbl.classList.remove('sticky-cols');
+    hint.style.display = 'none';
+    head.innerHTML =
+      '<tr><th>#</th><th>Date</th><th>Actual (7)</th>' +
+      '<th>'+METHODS[mi]+' — '+curK+' picks</th>' +
+      '<th style="text-align:center">Hits</th></tr>';
+    REV_DATA.forEach(r => {{
+      const tr = document.createElement('tr');
+      tr.dataset.actual = JSON.stringify(r.a);
+      const actualSet = new Set(r.a);
+      const pool    = r.p[mi];
+      const combo   = topKNums(pool, r.p, curK);
+      const matched = combo.filter(n=>actualSet.has(n)).length;
+      const b1Hit   = combo.includes(r.b1);
+      const b2Hit   = combo.includes(r.b2);
+      const predSet = new Set(combo);
+      let cells =
+        '<td>'+r.s+'</td>' +
+        '<td>'+(r.d ? r.d.slice(0,10) : '')+'</td>' +
+        '<td><div class="balls">' +
+        r.a.map(n=>'<span class="ball'+(predSet.has(n)?' match':'')+'">'+n+'</span>').join('') +
+        '<span class="ball'+(b1Hit?' bonus':'')+'">'+r.b1+(b1Hit?'★':'')+'</span>' +
+        '<span class="ball'+(b2Hit?' bonus':'')+'">'+r.b2+(b2Hit?'★':'')+'</span></div></td>' +
+        '<td><div class="balls">' +
+        combo.map(n=>'<span class="ball'+(actualSet.has(n)?' match':'')+'">'+n+'</span>').join('') +
+        '</div></td>' +
+        '<td style="text-align:center;font-weight:700;color:'+matchColor(matched)+'">'+matched+'</td>';
+      tr.innerHTML = cells;
+      body.appendChild(tr);
+    }});
+  }}
+  applyFilter();
+}}
+
+function applyFilter() {{
+  const filters = [1,2,3,4,5,6,7].map(i => {{
+    const v = document.getElementById('f'+i).value.trim();
+    return v==='' ? null : parseInt(v);
+  }});
+  const rows = Array.from(document.getElementById('detailBody').rows);
+  let shown = 0;
+  rows.forEach(tr => {{
+    const actual = JSON.parse(tr.dataset.actual);
+    const sorted = [...actual].sort((a,b)=>a-b);
+    const ok = filters.every((f,i) => f===null||sorted[i]===f);
+    tr.style.display = ok ? '' : 'none';
+    if (ok) shown++;
+  }});
+  const active = filters.some(f=>f!==null);
+  document.getElementById('filterCount').textContent = active ? shown+' / '+rows.length+' draws' : '';
+}}
+function clearFilters() {{
+  [1,2,3,4,5,6,7].forEach(i => document.getElementById('f'+i).value='');
+  applyFilter();
+}}
+
+function switchTab(name, btn) {{
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+  if (name==='detail' && builtModel===-999) buildDetail();
 }}
 
 setK(7);
