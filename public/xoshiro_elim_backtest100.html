@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Full Elimination Backtest — Last 100 Draws</title>
+<style>
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0f1e;color:#e2e8f0;font-family:system-ui,sans-serif;padding-top:60px;min-height:100vh}
+.wrap{max-width:1300px;margin:0 auto;padding:24px 16px}
+h1{font-size:1.4rem;font-weight:700;color:#f1f5f9;margin-bottom:4px}
+.subtitle{font-size:.85rem;color:#64748b;margin-bottom:20px}
+
+.note{background:#0d1526;border:1px solid #1e293b;border-radius:10px;padding:14px 18px;
+  font-size:.8rem;color:#94a3b8;margin-bottom:20px;line-height:1.6}
+.note p+p{margin-top:8px}
+.note code{background:#0a0f1e;padding:1px 5px;border-radius:4px;font-size:.85em}
+
+.section{background:#0d1526;border:1px solid #1e293b;border-radius:12px;padding:20px;margin-bottom:20px}
+.section h2{font-size:1rem;font-weight:700;color:#f1f5f9;margin-bottom:4px}
+.section .desc{font-size:.8rem;color:#64748b;margin-bottom:14px}
+
+.balls{display:flex;flex-wrap:wrap;gap:3px}
+.nb{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;
+  border-radius:50%;font-size:.68rem;font-weight:700;background:#312e5f;color:#c4b5fd;
+  border:1px solid #7c3aed55;flex-shrink:0}
+
+.stats-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.stat-card{background:#0a0f1e;border:1px solid #1e293b;border-radius:10px;padding:14px 18px;flex:1;min-width:140px}
+.stat-card .lbl{font-size:.68rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.stat-card .val{font-size:1.3rem;font-weight:700;color:#f1f5f9}
+.stat-card .sub{font-size:.72rem;color:#94a3b8;margin-top:2px}
+.stat-card.hit .val{color:#22c55e}
+.stat-card.neverbase .val{color:#475569}
+
+.funnel{display:flex;flex-direction:column;gap:6px}
+.funnel-row{display:flex;align-items:center;gap:10px;font-size:.82rem}
+.funnel-lbl{width:190px;color:#94a3b8;flex-shrink:0}
+.funnel-bar-wrap{flex:1;background:#0a0f1e;border-radius:6px;overflow:hidden;height:22px;border:1px solid #1e293b}
+.funnel-bar{height:100%;border-radius:6px}
+.funnel-val{width:50px;text-align:right;color:#f1f5f9;font-weight:600;flex-shrink:0}
+
+.controls{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.controls select{background:#0d1526;border:1px solid #334155;border-radius:7px;padding:7px 12px;
+  color:#e2e8f0;font-size:.83rem}
+
+.tbl-wrap{overflow-x:auto;border-radius:10px;border:1px solid #1e293b}
+table.results{width:100%;border-collapse:collapse;font-size:.8rem}
+table.results th{background:#0a0f1e;padding:8px 10px;text-align:right;color:#94a3b8;
+  font-weight:600;font-size:.68rem;text-transform:uppercase;letter-spacing:.04em;
+  border-bottom:1px solid #1e293b;white-space:nowrap}
+table.results th.tc{text-align:center}
+table.results tbody tr{border-bottom:1px solid #1e293b}
+table.results tbody tr:hover{background:#111827}
+table.results td{padding:7px 10px;text-align:right;color:#cbd5e1;white-space:nowrap}
+table.results td.tc{text-align:center}
+.outcome-pill{font-size:.7rem;font-weight:700;padding:3px 9px;border-radius:10px;white-space:nowrap}
+
+.footer{margin-top:28px;font-size:.78rem;color:#475569;padding-bottom:20px;line-height:1.6}
+</style>
+</head>
+<body>
+
+<script src="/site-nav.js"></script>
+<div class="wrap">
+  <h1>🎯 Full Elimination Backtest — Last 100 Draws (#2030–2129)</h1>
+  <p class="subtitle">The complete 5-pass methodology from /xoshiro_elim_2130.html, run retroactively against each real draw — did the actual winning combo survive?</p>
+
+  <div class="note">
+    <p>This applies <a href="/xoshiro_elim_2130.html" style="color:#a78bfa">the #2130 elimination page's full pipeline</a>
+    (Base = Modular Cycle K=33 &cap; xoshiro K=38 seed #692,809 &rarr; Pass 1 = 16 methods K=19 &rarr; Pass 2 = top 1,000
+    worst-coverage <code>seed_hit_random_k17</code> seeds K=15 &rarr; Pass 3 = xoshiro K=21 seeds
+    0, 1, 2 &rarr; Pass 4 = historical repeat filter &rarr; Pass 5 = Worst Combo Anti-Pick K=15)
+    to each of the last 100 real draws, one at a time.</p>
+    <p><strong style="color:#e2e8f0">Strict walk-forward, no leakage:</strong> every ML-derived component (Modular Cycle, the 16
+    methods, the Worst Combo replica) is trained ONLY on draws strictly before the draw being tested. Pass 4's historical-repeat
+    filter is likewise restricted to draws strictly before the target &mdash; NOT including it, unlike the #2129 page's
+    convenience inclusion. This is a genuine blind backtest: including the target draw in its own historical set would trivially
+    eliminate it via exact match and defeat the point.</p>
+    <p><strong style="color:#e2e8f0">The "Never in Base" ceiling:</strong> Base is a fixed ~28-number pool (Modular Cycle &cap;
+    xoshiro), so by pure combinatorics only about C(28,6)/C(43,6) &asymp; 6.2% of possible 6-number combos
+    could ever be contained in it &mdash; before any elimination pass runs. Most real draws are expected to land outside Base
+    entirely; this isn't a pipeline failure, it's a structural ceiling on the whole methodology's best-case hit rate.</p>
+    <p>Full run took 493s (8.2 min) for all 100 draws. Per-draw remaining-combo lists
+    are not stored (100 draws &times; up to ~150K combos each would be far too much data) &mdash; only aggregate counts and each
+    draw's elimination outcome.</p>
+  </div>
+
+  <div class="section">
+    <h2>Summary</h2>
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="lbl">Draws tested</div>
+        <div class="val">100</div>
+        <div class="sub">#2030–2129</div>
+      </div>
+      <div class="stat-card neverbase">
+        <div class="lbl">Never in Base</div>
+        <div class="val">86</div>
+        <div class="sub">86.0% of draws</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Reached elimination passes</div>
+        <div class="val">14</div>
+        <div class="sub">14.0% of draws</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Eliminated (Pass 1–5)</div>
+        <div class="val">7</div>
+        <div class="sub">of 14 that reached Base</div>
+      </div>
+      <div class="stat-card hit">
+        <div class="lbl">Survived all 5 (HIT)</div>
+        <div class="val">7</div>
+        <div class="sub">7.0% of all 100 draws</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Outcome funnel</h2>
+    <p class="desc">Where each of the 100 draws' actual winning combo ended up.</p>
+    <div class="funnel">
+      <div class="funnel-row">
+        <div class="funnel-lbl">Never in Base</div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:86.0%;background:#475569"></div></div>
+        <div class="funnel-val">86</div>
+      </div>
+      <div class="funnel-row">
+        <div class="funnel-lbl">Eliminated — Pass 1</div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:1.0%;background:#f87171"></div></div>
+        <div class="funnel-val">1</div>
+      </div>
+      <div class="funnel-row">
+        <div class="funnel-lbl">Eliminated — Pass 2</div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:6.0%;background:#fb923c"></div></div>
+        <div class="funnel-val">6</div>
+      </div>
+      <div class="funnel-row">
+        <div class="funnel-lbl">Eliminated — Pass 3</div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:0.0%;background:#fbbf24"></div></div>
+        <div class="funnel-val">0</div>
+      </div>
+      <div class="funnel-row">
+        <div class="funnel-lbl">Eliminated — Pass 4</div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:0.0%;background:#a3e635"></div></div>
+        <div class="funnel-val">0</div>
+      </div>
+      <div class="funnel-row">
+        <div class="funnel-lbl">Eliminated — Pass 5</div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:0.0%;background:#38bdf8"></div></div>
+        <div class="funnel-val">0</div>
+      </div>
+      <div class="funnel-row">
+        <div class="funnel-lbl">Survived (HIT)</div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:7.0%;background:#22c55e"></div></div>
+        <div class="funnel-val">7</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Per-draw results</h2>
+    <p class="desc">Newest draw first. "After N" columns show the remaining-combo count after that pass ran for THIS draw's own Base pool — only populated up to the pass that eliminated the combo (or all 5 if it survived).</p>
+    <div class="controls">
+      <select id="filterSel" onchange="applyFilter()">
+        <option value="all">Show: All 100 draws</option>
+        <option value="survived">Show: Survived (HIT) only</option>
+        <option value="never_in_base">Show: Never in Base only</option>
+        <option value="eliminated">Show: Eliminated (any pass) only</option>
+      </select>
+      <span id="filterCount" class="desc" style="margin:0"></span>
+    </div>
+    <div class="tbl-wrap">
+      <table class="results" id="resultsTable">
+        <thead><tr>
+          <th class="tc">Draw</th><th class="tc">Date</th><th>Actual combo</th><th class="tc">Base coverage</th>
+          <th>Outcome</th><th>After 1</th><th>After 2</th><th>After 3</th><th>After 4</th><th>After 5</th>
+        </tr></thead>
+        <tbody id="resultsBody"><tr>
+  <td class="tc">#2129</td>
+  <td class="tc">2026-08-17</td>
+  <td><div class="balls"><span class="nb">2</span><span class="nb">4</span><span class="nb">6</span><span class="nb">16</span><span class="nb">25</span><span class="nb">41</span></div></td>
+  <td class="tc">4/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2128</td>
+  <td class="tc">2026-08-13</td>
+  <td><div class="balls"><span class="nb">13</span><span class="nb">20</span><span class="nb">22</span><span class="nb">27</span><span class="nb">35</span><span class="nb">38</span></div></td>
+  <td class="tc">5/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2127</td>
+  <td class="tc">2026-08-10</td>
+  <td><div class="balls"><span class="nb">7</span><span class="nb">12</span><span class="nb">15</span><span class="nb">29</span><span class="nb">30</span><span class="nb">33</span></div></td>
+  <td class="tc">4/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2126</td>
+  <td class="tc">2026-08-06</td>
+  <td><div class="balls"><span class="nb">18</span><span class="nb">20</span><span class="nb">22</span><span class="nb">35</span><span class="nb">37</span><span class="nb">42</span></div></td>
+  <td class="tc">5/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2125</td>
+  <td class="tc">2026-08-03</td>
+  <td><div class="balls"><span class="nb">3</span><span class="nb">22</span><span class="nb">25</span><span class="nb">28</span><span class="nb">30</span><span class="nb">43</span></div></td>
+  <td class="tc">3/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2124</td>
+  <td class="tc">2026-07-30</td>
+  <td><div class="balls"><span class="nb">6</span><span class="nb">20</span><span class="nb">29</span><span class="nb">36</span><span class="nb">37</span><span class="nb">41</span></div></td>
+  <td class="tc">4/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2123</td>
+  <td class="tc">2026-07-27</td>
+  <td><div class="balls"><span class="nb">1</span><span class="nb">2</span><span class="nb">4</span><span class="nb">25</span><span class="nb">37</span><span class="nb">40</span></div></td>
+  <td class="tc">3/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2122</td>
+  <td class="tc">2026-07-23</td>
+  <td><div class="balls"><span class="nb">12</span><span class="nb">15</span><span class="nb">18</span><span class="nb">21</span><span class="nb">26</span><span class="nb">32</span></div></td>
+  <td class="tc">5/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2121</td>
+  <td class="tc">2026-07-20</td>
+  <td><div class="balls"><span class="nb">1</span><span class="nb">3</span><span class="nb">10</span><span class="nb">17</span><span class="nb">25</span><span class="nb">26</span></div></td>
+  <td class="tc">4/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2120</td>
+  <td class="tc">2026-07-16</td>
+  <td><div class="balls"><span class="nb">3</span><span class="nb">8</span><span class="nb">13</span><span class="nb">14</span><span class="nb">16</span><span class="nb">43</span></div></td>
+  <td class="tc">3/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2119</td>
+  <td class="tc">2026-07-13</td>
+  <td><div class="balls"><span class="nb">15</span><span class="nb">18</span><span class="nb">20</span><span class="nb">22</span><span class="nb">30</span><span class="nb">38</span></div></td>
+  <td class="tc">3/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2118</td>
+  <td class="tc">2026-07-09</td>
+  <td><div class="balls"><span class="nb">1</span><span class="nb">5</span><span class="nb">8</span><span class="nb">35</span><span class="nb">36</span><span class="nb">37</span></div></td>
+  <td class="tc">6/6 in Base ✓</td>
+  <td><span class="outcome-pill" style="background:#22c55e22;color:#22c55e;border:1px solid #22c55e55">Survived all 5 passes (HIT)</span></td>
+  <td class="tr">436,400</td>
+  <td class="tr">192,900</td>
+  <td class="tr">191,659</td>
+  <td class="tr">191,597</td>
+  <td class="tr">191,021</td>
+</tr><tr>
+  <td class="tc">#2117</td>
+  <td class="tc">2026-07-06</td>
+  <td><div class="balls"><span class="nb">4</span><span class="nb">7</span><span class="nb">26</span><span class="nb">27</span><span class="nb">35</span><span class="nb">41</span></div></td>
+  <td class="tc">4/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2116</td>
+  <td class="tc">2026-07-02</td>
+  <td><div class="balls"><span class="nb">2</span><span class="nb">6</span><span class="nb">13</span><span class="nb">14</span><span class="nb">20</span><span class="nb">42</span></div></td>
+  <td class="tc">4/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2115</td>
+  <td class="tc">2026-06-29</td>
+  <td><div class="balls"><span class="nb">1</span><span class="nb">3</span><span class="nb">11</span><span class="nb">34</span><span class="nb">35</span><span class="nb">42</span></div></td>
+  <td class="tc">5/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2114</td>
+  <td class="tc">2026-06-25</td>
+  <td><div class="balls"><span class="nb">2</span><span class="nb">16</span><span class="nb">20</span><span class="nb">21</span><span class="nb">23</span><span class="nb">33</span></div></td>
+  <td class="tc">3/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2113</td>
+  <td class="tc">2026-06-22</td>
+  <td><div class="balls"><span class="nb">2</span><span class="nb">5</span><span class="nb">32</span><span class="nb">36</span><span class="nb">38</span><span class="nb">42</span></div></td>
+  <td class="tc">6/6 in Base ✓</td>
+  <td><span class="outcome-pill" style="background:#fb923c22;color:#fb923c;border:1px solid #fb923c55">Eliminated — Pass 2</span></td>
+  <td class="tr">512,005</td>
+  <td class="tr">230,528</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2112</td>
+  <td class="tc">2026-06-18</td>
+  <td><div class="balls"><span class="nb">3</span><span class="nb">7</span><span class="nb">8</span><span class="nb">27</span><span class="nb">31</span><span class="nb">40</span></div></td>
+  <td class="tc">3/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2111</td>
+  <td class="tc">2026-06-15</td>
+  <td><div class="balls"><span class="nb">1</span><span class="nb">5</span><span class="nb">8</span><span class="nb">12</span><span class="nb">37</span><span class="nb">43</span></div></td>
+  <td class="tc">3/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2110</td>
+  <td class="tc">2026-06-11</td>
+  <td><div class="balls"><span class="nb">3</span><span class="nb">9</span><span class="nb">18</span><span class="nb">35</span><span class="nb">36</span><span class="nb">40</span></div></td>
+  <td class="tc">6/6 in Base ✓</td>
+  <td><span class="outcome-pill" style="background:#fb923c22;color:#fb923c;border:1px solid #fb923c55">Eliminated — Pass 2</span></td>
+  <td class="tr">676,635</td>
+  <td class="tr">280,563</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2109</td>
+  <td class="tc">2026-06-08</td>
+  <td><div class="balls"><span class="nb">6</span><span class="nb">11</span><span class="nb">19</span><span class="nb">31</span><span class="nb">38</span><span class="nb">41</span></div></td>
+  <td class="tc">5/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2108</td>
+  <td class="tc">2026-06-04</td>
+  <td><div class="balls"><span class="nb">2</span><span class="nb">5</span><span class="nb">10</span><span class="nb">15</span><span class="nb">28</span><span class="nb">43</span></div></td>
+  <td class="tc">6/6 in Base ✓</td>
+  <td><span class="outcome-pill" style="background:#22c55e22;color:#22c55e;border:1px solid #22c55e55">Survived all 5 passes (HIT)</span></td>
+  <td class="tr">428,477</td>
+  <td class="tr">191,742</td>
+  <td class="tr">183,870</td>
+  <td class="tr">183,789</td>
+  <td class="tr">183,780</td>
+</tr><tr>
+  <td class="tc">#2107</td>
+  <td class="tc">2026-06-01</td>
+  <td><div class="balls"><span class="nb">5</span><span class="nb">8</span><span class="nb">27</span><span class="nb">32</span><span class="nb">36</span><span class="nb">39</span></div></td>
+  <td class="tc">1/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2106</td>
+  <td class="tc">2026-05-28</td>
+  <td><div class="balls"><span class="nb">1</span><span class="nb">6</span><span class="nb">17</span><span class="nb">27</span><span class="nb">34</span><span class="nb">43</span></div></td>
+  <td class="tc">4/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2105</td>
+  <td class="tc">2026-05-25</td>
+  <td><div class="balls"><span class="nb">5</span><span class="nb">26</span><span class="nb">28</span><span class="nb">30</span><span class="nb">36</span><span class="nb">40</span></div></td>
+  <td class="tc">2/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2104</td>
+  <td class="tc">2026-05-21</td>
+  <td><div class="balls"><span class="nb">18</span><span class="nb">19</span><span class="nb">21</span><span class="nb">25</span><span class="nb">28</span><span class="nb">34</span></div></td>
+  <td class="tc">2/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2103</td>
+  <td class="tc">2026-05-18</td>
+  <td><div class="balls"><span class="nb">1</span><span class="nb">2</span><span class="nb">4</span><span class="nb">5</span><span class="nb">8</span><span class="nb">38</span></div></td>
+  <td class="tc">2/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2102</td>
+  <td class="tc">2026-05-14</td>
+  <td><div class="balls"><span class="nb">18</span><span class="nb">21</span><span class="nb">25</span><span class="nb">28</span><span class="nb">30</span><span class="nb">43</span></div></td>
+  <td class="tc">3/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2101</td>
+  <td class="tc">2026-05-11</td>
+  <td><div class="balls"><span class="nb">1</span><span class="nb">17</span><span class="nb">29</span><span class="nb">33</span><span class="nb">40</span><span class="nb">42</span></div></td>
+  <td class="tc">3/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2100</td>
+  <td class="tc">2026-05-07</td>
+  <td><div class="balls"><span class="nb">8</span><span class="nb">17</span><span class="nb">24</span><span class="nb">32</span><span class="nb">35</span><span class="nb">41</span></div></td>
+  <td class="tc">5/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2099</td>
+  <td class="tc">2026-05-04</td>
+  <td><div class="balls"><span class="nb">19</span><span class="nb">21</span><span class="nb">34</span><span class="nb">36</span><span class="nb">39</span><span class="nb">42</span></div></td>
+  <td class="tc">4/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2098</td>
+  <td class="tc">2026-04-30</td>
+  <td><div class="balls"><span class="nb">1</span><span class="nb">6</span><span class="nb">15</span><span class="nb">18</span><span class="nb">19</span><span class="nb">42</span></div></td>
+  <td class="tc">5/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2097</td>
+  <td class="tc">2026-04-27</td>
+  <td><div class="balls"><span class="nb">3</span><span class="nb">20</span><span class="nb">24</span><span class="nb">27</span><span class="nb">34</span><span class="nb">42</span></div></td>
+  <td class="tc">6/6 in Base ✓</td>
+  <td><span class="outcome-pill" style="background:#22c55e22;color:#22c55e;border:1px solid #22c55e55">Survived all 5 passes (HIT)</span></td>
+  <td class="tr">444,873</td>
+  <td class="tr">201,609</td>
+  <td class="tr">196,847</td>
+  <td class="tr">196,780</td>
+  <td class="tr">196,735</td>
+</tr><tr>
+  <td class="tc">#2096</td>
+  <td class="tc">2026-04-23</td>
+  <td><div class="balls"><span class="nb">8</span><span class="nb">15</span><span class="nb">18</span><span class="nb">21</span><span class="nb">33</span><span class="nb">43</span></div></td>
+  <td class="tc">5/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2095</td>
+  <td class="tc">2026-04-20</td>
+  <td><div class="balls"><span class="nb">13</span><span class="nb">20</span><span class="nb">22</span><span class="nb">23</span><span class="nb">28</span><span class="nb">30</span></div></td>
+  <td class="tc">4/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2094</td>
+  <td class="tc">2026-04-16</td>
+  <td><div class="balls"><span class="nb">3</span><span class="nb">4</span><span class="nb">7</span><span class="nb">11</span><span class="nb">24</span><span class="nb">30</span></div></td>
+  <td class="tc">2/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2093</td>
+  <td class="tc">2026-04-13</td>
+  <td><div class="balls"><span class="nb">2</span><span class="nb">10</span><span class="nb">21</span><span class="nb">26</span><span class="nb">29</span><span class="nb">38</span></div></td>
+  <td class="tc">6/6 in Base ✓</td>
+  <td><span class="outcome-pill" style="background:#f8717122;color:#f87171;border:1px solid #f8717155">Eliminated — Pass 1</span></td>
+  <td class="tr">657,948</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2092</td>
+  <td class="tc">2026-04-09</td>
+  <td><div class="balls"><span class="nb">8</span><span class="nb">13</span><span class="nb">27</span><span class="nb">36</span><span class="nb">37</span><span class="nb">43</span></div></td>
+  <td class="tc">5/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2091</td>
+  <td class="tc">2026-04-06</td>
+  <td><div class="balls"><span class="nb">6</span><span class="nb">16</span><span class="nb">21</span><span class="nb">25</span><span class="nb">28</span><span class="nb">43</span></div></td>
+  <td class="tc">5/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2090</td>
+  <td class="tc">2026-04-02</td>
+  <td><div class="balls"><span class="nb">2</span><span class="nb">3</span><span class="nb">6</span><span class="nb">9</span><span class="nb">24</span><span class="nb">36</span></div></td>
+  <td class="tc">3/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2089</td>
+  <td class="tc">2026-03-30</td>
+  <td><div class="balls"><span class="nb">9</span><span class="nb">16</span><span class="nb">18</span><span class="nb">32</span><span class="nb">37</span><span class="nb">43</span></div></td>
+  <td class="tc">5/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2088</td>
+  <td class="tc">2026-03-26</td>
+  <td><div class="balls"><span class="nb">8</span><span class="nb">16</span><span class="nb">18</span><span class="nb">27</span><span class="nb">37</span><span class="nb">39</span></div></td>
+  <td class="tc">1/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2087</td>
+  <td class="tc">2026-03-23</td>
+  <td><div class="balls"><span class="nb">7</span><span class="nb">10</span><span class="nb">15</span><span class="nb">18</span><span class="nb">26</span><span class="nb">39</span></div></td>
+  <td class="tc">6/6 in Base ✓</td>
+  <td><span class="outcome-pill" style="background:#22c55e22;color:#22c55e;border:1px solid #22c55e55">Survived all 5 passes (HIT)</span></td>
+  <td class="tr">421,798</td>
+  <td class="tr">183,431</td>
+  <td class="tr">177,706</td>
+  <td class="tr">177,646</td>
+  <td class="tr">177,646</td>
+</tr><tr>
+  <td class="tc">#2086</td>
+  <td class="tc">2026-03-19</td>
+  <td><div class="balls"><span class="nb">4</span><span class="nb">11</span><span class="nb">19</span><span class="nb">28</span><span class="nb">39</span><span class="nb">40</span></div></td>
+  <td class="tc">5/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2085</td>
+  <td class="tc">2026-03-16</td>
+  <td><div class="balls"><span class="nb">6</span><span class="nb">8</span><span class="nb">13</span><span class="nb">26</span><span class="nb">35</span><span class="nb">43</span></div></td>
+  <td class="tc">4/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2084</td>
+  <td class="tc">2026-03-12</td>
+  <td><div class="balls"><span class="nb">8</span><span class="nb">17</span><span class="nb">18</span><span class="nb">19</span><span class="nb">30</span><span class="nb">39</span></div></td>
+  <td class="tc">3/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2083</td>
+  <td class="tc">2026-03-09</td>
+  <td><div class="balls"><span class="nb">8</span><span class="nb">10</span><span class="nb">13</span><span class="nb">17</span><span class="nb">26</span><span class="nb">29</span></div></td>
+  <td class="tc">3/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2082</td>
+  <td class="tc">2026-03-05</td>
+  <td><div class="balls"><span class="nb">5</span><span class="nb">11</span><span class="nb">14</span><span class="nb">19</span><span class="nb">25</span><span class="nb">40</span></div></td>
+  <td class="tc">3/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2081</td>
+  <td class="tc">2026-03-02</td>
+  <td><div class="balls"><span class="nb">14</span><span class="nb">31</span><span class="nb">32</span><span class="nb">37</span><span class="nb">41</span><span class="nb">42</span></div></td>
+  <td class="tc">5/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2080</td>
+  <td class="tc">2026-02-26</td>
+  <td><div class="balls"><span class="nb">6</span><span class="nb">12</span><span class="nb">30</span><span class="nb">36</span><span class="nb">37</span><span class="nb">38</span></div></td>
+  <td class="tc">6/6 in Base ✓</td>
+  <td><span class="outcome-pill" style="background:#22c55e22;color:#22c55e;border:1px solid #22c55e55">Survived all 5 passes (HIT)</span></td>
+  <td class="tr">412,852</td>
+  <td class="tr">177,648</td>
+  <td class="tr">174,888</td>
+  <td class="tr">174,822</td>
+  <td class="tr">174,692</td>
+</tr><tr>
+  <td class="tc">#2079</td>
+  <td class="tc">2026-02-23</td>
+  <td><div class="balls"><span class="nb">5</span><span class="nb">11</span><span class="nb">15</span><span class="nb">17</span><span class="nb">24</span><span class="nb">39</span></div></td>
+  <td class="tc">3/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2078</td>
+  <td class="tc">2026-02-19</td>
+  <td><div class="balls"><span class="nb">1</span><span class="nb">10</span><span class="nb">20</span><span class="nb">24</span><span class="nb">30</span><span class="nb">35</span></div></td>
+  <td class="tc">6/6 in Base ✓</td>
+  <td><span class="outcome-pill" style="background:#22c55e22;color:#22c55e;border:1px solid #22c55e55">Survived all 5 passes (HIT)</span></td>
+  <td class="tr">420,651</td>
+  <td class="tr">181,966</td>
+  <td class="tr">179,329</td>
+  <td class="tr">179,272</td>
+  <td class="tr">179,152</td>
+</tr><tr>
+  <td class="tc">#2077</td>
+  <td class="tc">2026-02-16</td>
+  <td><div class="balls"><span class="nb">17</span><span class="nb">18</span><span class="nb">23</span><span class="nb">24</span><span class="nb">26</span><span class="nb">43</span></div></td>
+  <td class="tc">4/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2076</td>
+  <td class="tc">2026-02-12</td>
+  <td><div class="balls"><span class="nb">1</span><span class="nb">9</span><span class="nb">20</span><span class="nb">22</span><span class="nb">28</span><span class="nb">41</span></div></td>
+  <td class="tc">3/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2075</td>
+  <td class="tc">2026-02-09</td>
+  <td><div class="balls"><span class="nb">7</span><span class="nb">10</span><span class="nb">14</span><span class="nb">16</span><span class="nb">35</span><span class="nb">37</span></div></td>
+  <td class="tc">3/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2074</td>
+  <td class="tc">2026-02-05</td>
+  <td><div class="balls"><span class="nb">5</span><span class="nb">6</span><span class="nb">16</span><span class="nb">26</span><span class="nb">27</span><span class="nb">36</span></div></td>
+  <td class="tc">4/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2073</td>
+  <td class="tc">2026-02-02</td>
+  <td><div class="balls"><span class="nb">2</span><span class="nb">12</span><span class="nb">14</span><span class="nb">24</span><span class="nb">26</span><span class="nb">29</span></div></td>
+  <td class="tc">6/6 in Base ✓</td>
+  <td><span class="outcome-pill" style="background:#fb923c22;color:#fb923c;border:1px solid #fb923c55">Eliminated — Pass 2</span></td>
+  <td class="tr">442,284</td>
+  <td class="tr">199,049</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2072</td>
+  <td class="tc">2026-01-29</td>
+  <td><div class="balls"><span class="nb">8</span><span class="nb">18</span><span class="nb">24</span><span class="nb">36</span><span class="nb">40</span><span class="nb">42</span></div></td>
+  <td class="tc">5/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2071</td>
+  <td class="tc">2026-01-26</td>
+  <td><div class="balls"><span class="nb">15</span><span class="nb">24</span><span class="nb">29</span><span class="nb">32</span><span class="nb">33</span><span class="nb">35</span></div></td>
+  <td class="tc">4/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2070</td>
+  <td class="tc">2026-01-22</td>
+  <td><div class="balls"><span class="nb">6</span><span class="nb">10</span><span class="nb">25</span><span class="nb">30</span><span class="nb">34</span><span class="nb">36</span></div></td>
+  <td class="tc">4/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2069</td>
+  <td class="tc">2026-01-19</td>
+  <td><div class="balls"><span class="nb">6</span><span class="nb">17</span><span class="nb">23</span><span class="nb">27</span><span class="nb">33</span><span class="nb">35</span></div></td>
+  <td class="tc">4/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2068</td>
+  <td class="tc">2026-01-15</td>
+  <td><div class="balls"><span class="nb">2</span><span class="nb">10</span><span class="nb">13</span><span class="nb">14</span><span class="nb">29</span><span class="nb">33</span></div></td>
+  <td class="tc">5/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2067</td>
+  <td class="tc">2026-01-12</td>
+  <td><div class="balls"><span class="nb">3</span><span class="nb">4</span><span class="nb">12</span><span class="nb">15</span><span class="nb">32</span><span class="nb">42</span></div></td>
+  <td class="tc">5/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2066</td>
+  <td class="tc">2026-01-08</td>
+  <td><div class="balls"><span class="nb">8</span><span class="nb">28</span><span class="nb">30</span><span class="nb">32</span><span class="nb">37</span><span class="nb">38</span></div></td>
+  <td class="tc">5/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2065</td>
+  <td class="tc">2026-01-05</td>
+  <td><div class="balls"><span class="nb">6</span><span class="nb">18</span><span class="nb">21</span><span class="nb">31</span><span class="nb">37</span><span class="nb">40</span></div></td>
+  <td class="tc">4/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2064</td>
+  <td class="tc">2025-12-29</td>
+  <td><div class="balls"><span class="nb">2</span><span class="nb">7</span><span class="nb">24</span><span class="nb">37</span><span class="nb">39</span><span class="nb">41</span></div></td>
+  <td class="tc">4/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2063</td>
+  <td class="tc">2025-12-25</td>
+  <td><div class="balls"><span class="nb">4</span><span class="nb">28</span><span class="nb">29</span><span class="nb">30</span><span class="nb">38</span><span class="nb">42</span></div></td>
+  <td class="tc">2/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2062</td>
+  <td class="tc">2025-12-22</td>
+  <td><div class="balls"><span class="nb">1</span><span class="nb">9</span><span class="nb">18</span><span class="nb">24</span><span class="nb">35</span><span class="nb">42</span></div></td>
+  <td class="tc">6/6 in Base ✓</td>
+  <td><span class="outcome-pill" style="background:#22c55e22;color:#22c55e;border:1px solid #22c55e55">Survived all 5 passes (HIT)</span></td>
+  <td class="tr">447,197</td>
+  <td class="tr">207,228</td>
+  <td class="tr">204,388</td>
+  <td class="tr">204,319</td>
+  <td class="tr">204,319</td>
+</tr><tr>
+  <td class="tc">#2061</td>
+  <td class="tc">2025-12-18</td>
+  <td><div class="balls"><span class="nb">5</span><span class="nb">6</span><span class="nb">13</span><span class="nb">21</span><span class="nb">33</span><span class="nb">34</span></div></td>
+  <td class="tc">5/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2060</td>
+  <td class="tc">2025-12-15</td>
+  <td><div class="balls"><span class="nb">8</span><span class="nb">16</span><span class="nb">22</span><span class="nb">40</span><span class="nb">41</span><span class="nb">42</span></div></td>
+  <td class="tc">4/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2059</td>
+  <td class="tc">2025-12-11</td>
+  <td><div class="balls"><span class="nb">2</span><span class="nb">13</span><span class="nb">26</span><span class="nb">28</span><span class="nb">38</span><span class="nb">43</span></div></td>
+  <td class="tc">5/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2058</td>
+  <td class="tc">2025-12-08</td>
+  <td><div class="balls"><span class="nb">9</span><span class="nb">12</span><span class="nb">14</span><span class="nb">16</span><span class="nb">19</span><span class="nb">42</span></div></td>
+  <td class="tc">5/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2057</td>
+  <td class="tc">2025-12-04</td>
+  <td><div class="balls"><span class="nb">5</span><span class="nb">7</span><span class="nb">21</span><span class="nb">22</span><span class="nb">38</span><span class="nb">41</span></div></td>
+  <td class="tc">3/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2056</td>
+  <td class="tc">2025-12-01</td>
+  <td><div class="balls"><span class="nb">3</span><span class="nb">7</span><span class="nb">15</span><span class="nb">17</span><span class="nb">19</span><span class="nb">30</span></div></td>
+  <td class="tc">5/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2055</td>
+  <td class="tc">2025-11-27</td>
+  <td><div class="balls"><span class="nb">11</span><span class="nb">12</span><span class="nb">14</span><span class="nb">17</span><span class="nb">21</span><span class="nb">26</span></div></td>
+  <td class="tc">4/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2054</td>
+  <td class="tc">2025-11-24</td>
+  <td><div class="balls"><span class="nb">1</span><span class="nb">14</span><span class="nb">27</span><span class="nb">30</span><span class="nb">33</span><span class="nb">37</span></div></td>
+  <td class="tc">5/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2053</td>
+  <td class="tc">2025-11-20</td>
+  <td><div class="balls"><span class="nb">20</span><span class="nb">28</span><span class="nb">31</span><span class="nb">35</span><span class="nb">37</span><span class="nb">41</span></div></td>
+  <td class="tc">4/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2052</td>
+  <td class="tc">2025-11-17</td>
+  <td><div class="balls"><span class="nb">1</span><span class="nb">3</span><span class="nb">18</span><span class="nb">25</span><span class="nb">30</span><span class="nb">34</span></div></td>
+  <td class="tc">4/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2051</td>
+  <td class="tc">2025-11-13</td>
+  <td><div class="balls"><span class="nb">3</span><span class="nb">15</span><span class="nb">27</span><span class="nb">28</span><span class="nb">31</span><span class="nb">39</span></div></td>
+  <td class="tc">5/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2050</td>
+  <td class="tc">2025-11-10</td>
+  <td><div class="balls"><span class="nb">6</span><span class="nb">11</span><span class="nb">15</span><span class="nb">21</span><span class="nb">25</span><span class="nb">32</span></div></td>
+  <td class="tc">4/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2049</td>
+  <td class="tc">2025-11-06</td>
+  <td><div class="balls"><span class="nb">10</span><span class="nb">24</span><span class="nb">25</span><span class="nb">39</span><span class="nb">40</span><span class="nb">42</span></div></td>
+  <td class="tc">6/6 in Base ✓</td>
+  <td><span class="outcome-pill" style="background:#fb923c22;color:#fb923c;border:1px solid #fb923c55">Eliminated — Pass 2</span></td>
+  <td class="tr">452,666</td>
+  <td class="tr">204,188</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2048</td>
+  <td class="tc">2025-11-03</td>
+  <td><div class="balls"><span class="nb">8</span><span class="nb">13</span><span class="nb">18</span><span class="nb">32</span><span class="nb">37</span><span class="nb">43</span></div></td>
+  <td class="tc">4/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2047</td>
+  <td class="tc">2025-10-30</td>
+  <td><div class="balls"><span class="nb">10</span><span class="nb">11</span><span class="nb">16</span><span class="nb">19</span><span class="nb">37</span><span class="nb">39</span></div></td>
+  <td class="tc">5/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2046</td>
+  <td class="tc">2025-10-27</td>
+  <td><div class="balls"><span class="nb">2</span><span class="nb">5</span><span class="nb">10</span><span class="nb">22</span><span class="nb">25</span><span class="nb">38</span></div></td>
+  <td class="tc">5/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2045</td>
+  <td class="tc">2025-10-23</td>
+  <td><div class="balls"><span class="nb">1</span><span class="nb">4</span><span class="nb">7</span><span class="nb">12</span><span class="nb">16</span><span class="nb">28</span></div></td>
+  <td class="tc">4/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2044</td>
+  <td class="tc">2025-10-20</td>
+  <td><div class="balls"><span class="nb">1</span><span class="nb">6</span><span class="nb">11</span><span class="nb">26</span><span class="nb">33</span><span class="nb">40</span></div></td>
+  <td class="tc">6/6 in Base ✓</td>
+  <td><span class="outcome-pill" style="background:#fb923c22;color:#fb923c;border:1px solid #fb923c55">Eliminated — Pass 2</span></td>
+  <td class="tr">435,348</td>
+  <td class="tr">200,394</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2043</td>
+  <td class="tc">2025-10-16</td>
+  <td><div class="balls"><span class="nb">11</span><span class="nb">19</span><span class="nb">22</span><span class="nb">34</span><span class="nb">40</span><span class="nb">42</span></div></td>
+  <td class="tc">5/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2042</td>
+  <td class="tc">2025-10-13</td>
+  <td><div class="balls"><span class="nb">9</span><span class="nb">14</span><span class="nb">29</span><span class="nb">38</span><span class="nb">41</span><span class="nb">43</span></div></td>
+  <td class="tc">3/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2041</td>
+  <td class="tc">2025-10-09</td>
+  <td><div class="balls"><span class="nb">4</span><span class="nb">19</span><span class="nb">22</span><span class="nb">24</span><span class="nb">32</span><span class="nb">38</span></div></td>
+  <td class="tc">5/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2040</td>
+  <td class="tc">2025-10-06</td>
+  <td><div class="balls"><span class="nb">7</span><span class="nb">12</span><span class="nb">14</span><span class="nb">15</span><span class="nb">24</span><span class="nb">30</span></div></td>
+  <td class="tc">4/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2039</td>
+  <td class="tc">2025-10-02</td>
+  <td><div class="balls"><span class="nb">2</span><span class="nb">15</span><span class="nb">25</span><span class="nb">27</span><span class="nb">38</span><span class="nb">42</span></div></td>
+  <td class="tc">4/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2038</td>
+  <td class="tc">2025-09-29</td>
+  <td><div class="balls"><span class="nb">5</span><span class="nb">31</span><span class="nb">37</span><span class="nb">39</span><span class="nb">41</span><span class="nb">42</span></div></td>
+  <td class="tc">4/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2037</td>
+  <td class="tc">2025-09-25</td>
+  <td><div class="balls"><span class="nb">7</span><span class="nb">12</span><span class="nb">20</span><span class="nb">23</span><span class="nb">27</span><span class="nb">29</span></div></td>
+  <td class="tc">4/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2036</td>
+  <td class="tc">2025-09-22</td>
+  <td><div class="balls"><span class="nb">7</span><span class="nb">10</span><span class="nb">17</span><span class="nb">26</span><span class="nb">35</span><span class="nb">42</span></div></td>
+  <td class="tc">4/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2035</td>
+  <td class="tc">2025-09-18</td>
+  <td><div class="balls"><span class="nb">5</span><span class="nb">10</span><span class="nb">12</span><span class="nb">17</span><span class="nb">21</span><span class="nb">35</span></div></td>
+  <td class="tc">6/6 in Base ✓</td>
+  <td><span class="outcome-pill" style="background:#fb923c22;color:#fb923c;border:1px solid #fb923c55">Eliminated — Pass 2</span></td>
+  <td class="tr">438,548</td>
+  <td class="tr">191,564</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2034</td>
+  <td class="tc">2025-09-15</td>
+  <td><div class="balls"><span class="nb">2</span><span class="nb">13</span><span class="nb">22</span><span class="nb">25</span><span class="nb">35</span><span class="nb">37</span></div></td>
+  <td class="tc">4/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2033</td>
+  <td class="tc">2025-09-11</td>
+  <td><div class="balls"><span class="nb">5</span><span class="nb">16</span><span class="nb">21</span><span class="nb">22</span><span class="nb">33</span><span class="nb">35</span></div></td>
+  <td class="tc">3/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2032</td>
+  <td class="tc">2025-09-08</td>
+  <td><div class="balls"><span class="nb">8</span><span class="nb">15</span><span class="nb">27</span><span class="nb">33</span><span class="nb">37</span><span class="nb">39</span></div></td>
+  <td class="tc">4/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2031</td>
+  <td class="tc">2025-09-04</td>
+  <td><div class="balls"><span class="nb">2</span><span class="nb">3</span><span class="nb">16</span><span class="nb">20</span><span class="nb">23</span><span class="nb">29</span></div></td>
+  <td class="tc">4/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2030</td>
+  <td class="tc">2025-09-01</td>
+  <td><div class="balls"><span class="nb">3</span><span class="nb">7</span><span class="nb">28</span><span class="nb">29</span><span class="nb">32</span><span class="nb">36</span></div></td>
+  <td class="tc">4/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <p class="footer">
+    Same verified xoshiro256** and CPython MT19937 implementations used throughout this site. Modular Cycle, the 16 statistical/ML
+    methods, and the Worst Combo replica are all walk-forward trained strictly on draws before each target &mdash; no draw ever
+    influences its own prediction.<br>
+    Formula-based only · Not financial advice · Loto 6 is random.
+  </p>
+</div>
+
+<script>
+const OUTCOME_DATA = ["never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "eliminated_pass2", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "eliminated_pass2", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "eliminated_pass2", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "survived", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "eliminated_pass2", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "survived", "never_in_base", "survived", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "survived", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "eliminated_pass1", "never_in_base", "never_in_base", "never_in_base", "survived", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "survived", "never_in_base", "eliminated_pass2", "never_in_base", "never_in_base", "eliminated_pass2", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "survived", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base"];
+function applyFilter() {
+  const sel = document.getElementById('filterSel').value;
+  const rows = document.querySelectorAll('#resultsBody tr');
+  const outcomesNewestFirst = [...OUTCOME_DATA].reverse();
+  let shown = 0;
+  rows.forEach((tr, i) => {
+    const o = outcomesNewestFirst[i];
+    let show = true;
+    if (sel === 'survived') show = o === 'survived';
+    else if (sel === 'never_in_base') show = o === 'never_in_base';
+    else if (sel === 'eliminated') show = o && o.startsWith('eliminated');
+    tr.style.display = show ? '' : 'none';
+    if (show) shown++;
+  });
+  document.getElementById('filterCount').textContent = 'Showing ' + shown + ' of ' + rows.length;
+}
+applyFilter();
+</script>
+</body>
+</html>
