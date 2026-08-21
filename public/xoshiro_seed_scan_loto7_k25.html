@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Xoshiro Seed Scan K=25 (0-10,000) — Loto 7</title>
+<title>Xoshiro Seed Scan K=25 (-1,000,000 to 1,000,000) — Loto 7</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
 
@@ -82,14 +82,17 @@ tbody td.tr{text-align:right}
 <body>
 
 <div class="wrap">
-  <h1>🎯 Xoshiro Seed Scan — Loto 7 K=25 (0–10,000)</h1>
-  <p class="subtitle">10,001 seeds &middot; K=25 picks (pool 1&ndash;37) &middot; 500 draws (#1&ndash;500) &middot; xoshiro256** (SplitMix64-seeded)</p>
+  <h1>🎯 Xoshiro Seed Scan — Loto 7 K=25 (&minus;1,000,000 to 1,000,000)</h1>
+  <p class="subtitle">2,000,001 seeds &middot; K=25 picks (pool 1&ndash;37) &middot; 500 draws (#1&ndash;500) &middot; xoshiro256** (SplitMix64-seeded)</p>
 
   <div class="note">
-    First xoshiro256** seed scan for Loto7 &mdash; starting range, seeds 0&ndash;10,000, likely to be extended later
-    (same iterative pattern as the Loto6 xoshiro scans, e.g. <a href="/xoshiro_seed_scan_k33.html" style="color:#a78bfa">the K=33 Loto6 scan</a>,
-    which started at 0&ndash;1,000 and grew to 0&ndash;1,000,000). Same xoshiro256**/SplitMix64 algorithm and combined-seed
-    formula (<code>seed&times;10,000,000 + draw_serial</code>) reused exactly from the Loto6 scans, reparameterized for
+    Extended from Loto7's initial 0&ndash;10,000 starting range to the full -1,000,000 to 1,000,000 range
+    (2,000,001 seeds) &mdash; same staged negative-seed pattern already verified on
+    <a href="/xoshiro_seed_scan_k35.html" style="color:#a78bfa">the Loto6 K=35 scan</a>: run in 4 batches of
+    ~500,000 seeds each (Python's bitwise AND on negative integers correctly produces the same 64-bit two's-complement
+    result as unsigned arithmetic, self-checked against a from-scratch modular reference &mdash; including negative-seed
+    cases &mdash; before each batch). Same xoshiro256**/SplitMix64 algorithm and combined-seed formula
+    (<code>seed&times;10,000,000 + draw_serial</code>) reused exactly from the Loto6 scans, reparameterized for
     Loto7's 37-number pool (not 43) and K=25 picks (not 33). Backtested against the <b>FIRST</b> 500 Loto7
     draws (#1&ndash;500) &mdash; not the most recent.
     <br><br>
@@ -104,9 +107,9 @@ tbody td.tr{text-align:right}
 
   <div class="lookup">
     <span class="lbl">🔍 Seed detail lookup</span>
-    <input id="seedLookupInput" type="number" min="0" step="1" placeholder="Enter any seed number..." onkeydown="if(event.key==='Enter')lookupSeed()">
+    <input id="seedLookupInput" type="number" step="1" placeholder="Enter any seed (negative OK)..." onkeydown="if(event.key==='Enter')lookupSeed()">
     <button onclick="lookupSeed()">View 500-draw breakdown</button>
-    <span class="hint">e.g. try 5,527 (the top-ranked seed) — or any seed 0–10,000. Computed live in your browser.</span>
+    <span class="hint">e.g. try -747,295 (the top-ranked seed) — or any seed -1,000,000 to 1,000,000. Computed live in your browser.</span>
     <span id="lookupErr" class="err" style="display:none"></span>
   </div>
 
@@ -115,16 +118,16 @@ tbody td.tr{text-align:right}
     <p class="desc">Ranked hit7b &rarr; hit7 &rarr; hit6 &rarr; hit5 &rarr; hit4.</p>
     <div class="stats-row"><div class="stat-card final">
       <div class="lbl">#1 seed</div>
-      <div class="val">#5,527</div>
-      <div class="sub">hit7b 39 &middot; hit7 41 &middot; hit6 92 &middot; hit5 169 &middot; hit4 139</div>
+      <div class="val">#-747,295</div>
+      <div class="sub">hit7b 43 &middot; hit7 47 &middot; hit6 118 &middot; hit5 153 &middot; hit4 108</div>
     </div><div class="stat-card">
       <div class="lbl">#2 seed</div>
-      <div class="val">#2,773</div>
-      <div class="sub">hit7b 36 &middot; hit7 42 &middot; hit6 97 &middot; hit5 155 &middot; hit4 142</div>
+      <div class="val">#-950,574</div>
+      <div class="sub">hit7b 43 &middot; hit7 46 &middot; hit6 84 &middot; hit5 159 &middot; hit4 145</div>
     </div><div class="stat-card">
       <div class="lbl">#3 seed</div>
-      <div class="val">#42</div>
-      <div class="sub">hit7b 36 &middot; hit7 39 &middot; hit6 99 &middot; hit5 163 &middot; hit4 134</div>
+      <div class="val">#429,861</div>
+      <div class="sub">hit7b 43 &middot; hit7 44 &middot; hit6 104 &middot; hit5 160 &middot; hit4 122</div>
     </div></div>
   </div>
 
@@ -151,8 +154,8 @@ tbody td.tr{text-align:right}
     </div>
     <div class="stat-card">
       <div class="lbl">Seeds tested</div>
-      <div class="val">10,001</div>
-      <div class="sub">seeds 0–10,000</div>
+      <div class="val">2,000,001</div>
+      <div class="sub">seeds -1,000,000 to 1,000,000</div>
     </div>
   </div>
 
@@ -190,206 +193,206 @@ tbody td.tr{text-align:right}
     <div class="tbl-wrap">
       <table>
         <thead><tr><th class="tc">#</th><th class="tc">Seed</th><th>hit7b</th><th>hit7</th><th>hit6</th><th>hit5</th><th>hit4</th></tr></thead>
-        <tbody><tr class="dr" onclick="openSeedDetail(5527)">
+        <tbody><tr class="dr" onclick="openSeedDetail(-747295)">
   <td class="tc">1</td>
-  <td class="tc">5,527 <span class="badge">BEST</span></td>
-  <td class="tr">39</td>
-  <td class="tr">41</td>
-  <td class="tr">92</td>
-  <td class="tr">169</td>
-  <td class="tr">139</td>
-</tr><tr class="dr" onclick="openSeedDetail(2773)">
-  <td class="tc">2</td>
-  <td class="tc">2,773 <span class="badge3">TOP 3</span></td>
-  <td class="tr">36</td>
-  <td class="tr">42</td>
-  <td class="tr">97</td>
-  <td class="tr">155</td>
-  <td class="tr">142</td>
-</tr><tr class="dr" onclick="openSeedDetail(42)">
-  <td class="tc">3</td>
-  <td class="tc">42 <span class="badge3">TOP 3</span></td>
-  <td class="tr">36</td>
-  <td class="tr">39</td>
-  <td class="tr">99</td>
-  <td class="tr">163</td>
-  <td class="tr">134</td>
-</tr><tr class="dr" onclick="openSeedDetail(517)">
-  <td class="tc">4</td>
-  <td class="tc">517</td>
-  <td class="tr">36</td>
-  <td class="tr">37</td>
-  <td class="tr">107</td>
-  <td class="tr">158</td>
-  <td class="tr">137</td>
-</tr><tr class="dr" onclick="openSeedDetail(5519)">
-  <td class="tc">5</td>
-  <td class="tc">5,519</td>
-  <td class="tr">35</td>
-  <td class="tr">38</td>
-  <td class="tr">108</td>
-  <td class="tr">174</td>
-  <td class="tr">132</td>
-</tr><tr class="dr" onclick="openSeedDetail(1111)">
-  <td class="tc">6</td>
-  <td class="tc">1,111</td>
-  <td class="tr">35</td>
-  <td class="tr">37</td>
-  <td class="tr">96</td>
-  <td class="tr">183</td>
-  <td class="tr">120</td>
-</tr><tr class="dr" onclick="openSeedDetail(1559)">
-  <td class="tc">7</td>
-  <td class="tc">1,559</td>
-  <td class="tr">35</td>
-  <td class="tr">37</td>
-  <td class="tr">94</td>
-  <td class="tr">176</td>
-  <td class="tr">136</td>
-</tr><tr class="dr" onclick="openSeedDetail(944)">
-  <td class="tc">8</td>
-  <td class="tc">944</td>
-  <td class="tr">35</td>
-  <td class="tr">35</td>
-  <td class="tr">101</td>
-  <td class="tr">152</td>
-  <td class="tr">133</td>
-</tr><tr class="dr" onclick="openSeedDetail(8855)">
-  <td class="tc">9</td>
-  <td class="tc">8,855</td>
-  <td class="tr">34</td>
-  <td class="tr">38</td>
-  <td class="tr">82</td>
-  <td class="tr">163</td>
-  <td class="tr">150</td>
-</tr><tr class="dr" onclick="openSeedDetail(4158)">
-  <td class="tc">10</td>
-  <td class="tc">4,158</td>
-  <td class="tr">34</td>
-  <td class="tr">37</td>
-  <td class="tr">102</td>
-  <td class="tr">179</td>
-  <td class="tr">121</td>
-</tr><tr class="dr" onclick="openSeedDetail(1865)">
-  <td class="tc">11</td>
-  <td class="tc">1,865</td>
-  <td class="tr">34</td>
-  <td class="tr">36</td>
-  <td class="tr">103</td>
-  <td class="tr">160</td>
+  <td class="tc">-747,295 <span class="badge">BEST</span></td>
+  <td class="tr">43</td>
+  <td class="tr">47</td>
   <td class="tr">118</td>
-</tr><tr class="dr" onclick="openSeedDetail(5815)">
-  <td class="tc">12</td>
-  <td class="tc">5,815</td>
-  <td class="tr">34</td>
-  <td class="tr">36</td>
-  <td class="tr">90</td>
-  <td class="tr">162</td>
-  <td class="tr">144</td>
-</tr><tr class="dr" onclick="openSeedDetail(3874)">
-  <td class="tc">13</td>
-  <td class="tc">3,874</td>
-  <td class="tr">34</td>
-  <td class="tr">35</td>
-  <td class="tr">105</td>
-  <td class="tr">156</td>
-  <td class="tr">131</td>
-</tr><tr class="dr" onclick="openSeedDetail(2935)">
-  <td class="tc">14</td>
-  <td class="tc">2,935</td>
-  <td class="tr">34</td>
-  <td class="tr">35</td>
-  <td class="tr">98</td>
-  <td class="tr">175</td>
-  <td class="tr">123</td>
-</tr><tr class="dr" onclick="openSeedDetail(783)">
-  <td class="tc">15</td>
-  <td class="tc">783</td>
-  <td class="tr">34</td>
-  <td class="tr">35</td>
-  <td class="tr">92</td>
-  <td class="tr">160</td>
-  <td class="tr">141</td>
-</tr><tr class="dr" onclick="openSeedDetail(2482)">
-  <td class="tc">16</td>
-  <td class="tc">2,482</td>
-  <td class="tr">33</td>
-  <td class="tr">40</td>
-  <td class="tr">89</td>
-  <td class="tr">169</td>
-  <td class="tr">126</td>
-</tr><tr class="dr" onclick="openSeedDetail(6676)">
-  <td class="tc">17</td>
-  <td class="tc">6,676</td>
-  <td class="tr">33</td>
-  <td class="tr">39</td>
-  <td class="tr">107</td>
-  <td class="tr">157</td>
-  <td class="tr">134</td>
-</tr><tr class="dr" onclick="openSeedDetail(851)">
-  <td class="tc">18</td>
-  <td class="tc">851</td>
-  <td class="tr">33</td>
-  <td class="tr">39</td>
-  <td class="tr">105</td>
-  <td class="tr">144</td>
-  <td class="tr">140</td>
-</tr><tr class="dr" onclick="openSeedDetail(7316)">
-  <td class="tc">19</td>
-  <td class="tc">7,316</td>
-  <td class="tr">33</td>
-  <td class="tr">39</td>
+  <td class="tr">153</td>
+  <td class="tr">108</td>
+</tr><tr class="dr" onclick="openSeedDetail(-950574)">
+  <td class="tc">2</td>
+  <td class="tc">-950,574 <span class="badge3">TOP 3</span></td>
+  <td class="tr">43</td>
+  <td class="tr">46</td>
+  <td class="tr">84</td>
+  <td class="tr">159</td>
+  <td class="tr">145</td>
+</tr><tr class="dr" onclick="openSeedDetail(429861)">
+  <td class="tc">3</td>
+  <td class="tc">429,861 <span class="badge3">TOP 3</span></td>
+  <td class="tr">43</td>
+  <td class="tr">44</td>
   <td class="tr">104</td>
+  <td class="tr">160</td>
+  <td class="tr">122</td>
+</tr><tr class="dr" onclick="openSeedDetail(-650002)">
+  <td class="tc">4</td>
+  <td class="tc">-650,002</td>
+  <td class="tr">42</td>
+  <td class="tr">49</td>
+  <td class="tr">86</td>
+  <td class="tr">161</td>
+  <td class="tr">124</td>
+</tr><tr class="dr" onclick="openSeedDetail(992967)">
+  <td class="tc">5</td>
+  <td class="tc">992,967</td>
+  <td class="tr">42</td>
+  <td class="tr">45</td>
+  <td class="tr">97</td>
+  <td class="tr">150</td>
+  <td class="tr">139</td>
+</tr><tr class="dr" onclick="openSeedDetail(-644716)">
+  <td class="tc">6</td>
+  <td class="tc">-644,716</td>
+  <td class="tr">42</td>
+  <td class="tr">45</td>
+  <td class="tr">91</td>
+  <td class="tr">169</td>
+  <td class="tr">132</td>
+</tr><tr class="dr" onclick="openSeedDetail(435569)">
+  <td class="tc">7</td>
+  <td class="tc">435,569</td>
+  <td class="tr">42</td>
+  <td class="tr">45</td>
+  <td class="tr">90</td>
+  <td class="tr">171</td>
+  <td class="tr">135</td>
+</tr><tr class="dr" onclick="openSeedDetail(736455)">
+  <td class="tc">8</td>
+  <td class="tc">736,455</td>
+  <td class="tr">42</td>
+  <td class="tr">45</td>
+  <td class="tr">87</td>
+  <td class="tr">169</td>
+  <td class="tr">143</td>
+</tr><tr class="dr" onclick="openSeedDetail(747553)">
+  <td class="tc">9</td>
+  <td class="tc">747,553</td>
+  <td class="tr">41</td>
+  <td class="tr">47</td>
+  <td class="tr">98</td>
+  <td class="tr">157</td>
+  <td class="tr">123</td>
+</tr><tr class="dr" onclick="openSeedDetail(-813124)">
+  <td class="tc">10</td>
+  <td class="tc">-813,124</td>
+  <td class="tr">41</td>
+  <td class="tr">46</td>
+  <td class="tr">107</td>
+  <td class="tr">145</td>
+  <td class="tr">136</td>
+</tr><tr class="dr" onclick="openSeedDetail(301409)">
+  <td class="tc">11</td>
+  <td class="tc">301,409</td>
+  <td class="tr">41</td>
+  <td class="tr">46</td>
+  <td class="tr">103</td>
   <td class="tr">157</td>
   <td class="tr">135</td>
-</tr><tr class="dr" onclick="openSeedDetail(2654)">
-  <td class="tc">20</td>
-  <td class="tc">2,654</td>
-  <td class="tr">33</td>
-  <td class="tr">39</td>
-  <td class="tr">90</td>
-  <td class="tr">171</td>
+</tr><tr class="dr" onclick="openSeedDetail(-549982)">
+  <td class="tc">12</td>
+  <td class="tc">-549,982</td>
+  <td class="tr">41</td>
+  <td class="tr">46</td>
+  <td class="tr">93</td>
+  <td class="tr">169</td>
   <td class="tr">133</td>
-</tr><tr class="dr" onclick="openSeedDetail(2094)">
-  <td class="tc">21</td>
-  <td class="tc">2,094</td>
-  <td class="tr">33</td>
-  <td class="tr">38</td>
-  <td class="tr">96</td>
-  <td class="tr">171</td>
-  <td class="tr">132</td>
-</tr><tr class="dr" onclick="openSeedDetail(2390)">
-  <td class="tc">22</td>
-  <td class="tc">2,390</td>
-  <td class="tr">33</td>
-  <td class="tr">37</td>
-  <td class="tr">109</td>
-  <td class="tr">171</td>
-  <td class="tr">124</td>
-</tr><tr class="dr" onclick="openSeedDetail(2525)">
-  <td class="tc">23</td>
-  <td class="tc">2,525</td>
-  <td class="tr">33</td>
-  <td class="tr">36</td>
-  <td class="tr">109</td>
-  <td class="tr">154</td>
-  <td class="tr">146</td>
-</tr><tr class="dr" onclick="openSeedDetail(7382)">
-  <td class="tc">24</td>
-  <td class="tc">7,382</td>
-  <td class="tr">33</td>
-  <td class="tr">36</td>
-  <td class="tr">108</td>
-  <td class="tr">148</td>
-  <td class="tr">138</td>
-</tr><tr class="dr" onclick="openSeedDetail(8483)">
-  <td class="tc">25</td>
-  <td class="tc">8,483</td>
-  <td class="tr">33</td>
-  <td class="tr">36</td>
+</tr><tr class="dr" onclick="openSeedDetail(886471)">
+  <td class="tc">13</td>
+  <td class="tc">886,471</td>
+  <td class="tr">41</td>
+  <td class="tr">45</td>
+  <td class="tr">117</td>
+  <td class="tr">179</td>
   <td class="tr">102</td>
-  <td class="tr">162</td>
+</tr><tr class="dr" onclick="openSeedDetail(-581553)">
+  <td class="tc">14</td>
+  <td class="tc">-581,553</td>
+  <td class="tr">41</td>
+  <td class="tr">45</td>
+  <td class="tr">112</td>
+  <td class="tr">152</td>
+  <td class="tr">113</td>
+</tr><tr class="dr" onclick="openSeedDetail(483379)">
+  <td class="tc">15</td>
+  <td class="tc">483,379</td>
+  <td class="tr">41</td>
+  <td class="tr">45</td>
+  <td class="tr">110</td>
+  <td class="tr">169</td>
+  <td class="tr">104</td>
+</tr><tr class="dr" onclick="openSeedDetail(-394290)">
+  <td class="tc">16</td>
+  <td class="tc">-394,290</td>
+  <td class="tr">41</td>
+  <td class="tr">45</td>
+  <td class="tr">92</td>
+  <td class="tr">163</td>
+  <td class="tr">141</td>
+</tr><tr class="dr" onclick="openSeedDetail(-678679)">
+  <td class="tc">17</td>
+  <td class="tc">-678,679</td>
+  <td class="tr">41</td>
+  <td class="tr">44</td>
+  <td class="tr">112</td>
+  <td class="tr">152</td>
+  <td class="tr">133</td>
+</tr><tr class="dr" onclick="openSeedDetail(340175)">
+  <td class="tc">18</td>
+  <td class="tc">340,175</td>
+  <td class="tr">41</td>
+  <td class="tr">44</td>
+  <td class="tr">107</td>
+  <td class="tr">163</td>
+  <td class="tr">117</td>
+</tr><tr class="dr" onclick="openSeedDetail(-971108)">
+  <td class="tc">19</td>
+  <td class="tc">-971,108</td>
+  <td class="tr">41</td>
+  <td class="tr">44</td>
+  <td class="tr">102</td>
+  <td class="tr">167</td>
+  <td class="tr">124</td>
+</tr><tr class="dr" onclick="openSeedDetail(-890416)">
+  <td class="tc">20</td>
+  <td class="tc">-890,416</td>
+  <td class="tr">41</td>
+  <td class="tr">44</td>
+  <td class="tr">99</td>
+  <td class="tr">174</td>
+  <td class="tr">121</td>
+</tr><tr class="dr" onclick="openSeedDetail(-781606)">
+  <td class="tc">21</td>
+  <td class="tc">-781,606</td>
+  <td class="tr">41</td>
+  <td class="tr">44</td>
+  <td class="tr">92</td>
+  <td class="tr">156</td>
+  <td class="tr">139</td>
+</tr><tr class="dr" onclick="openSeedDetail(-438397)">
+  <td class="tc">22</td>
+  <td class="tc">-438,397</td>
+  <td class="tr">41</td>
+  <td class="tr">44</td>
+  <td class="tr">88</td>
+  <td class="tr">163</td>
   <td class="tr">130</td>
+</tr><tr class="dr" onclick="openSeedDetail(-438289)">
+  <td class="tc">23</td>
+  <td class="tc">-438,289</td>
+  <td class="tr">41</td>
+  <td class="tr">43</td>
+  <td class="tr">104</td>
+  <td class="tr">158</td>
+  <td class="tr">124</td>
+</tr><tr class="dr" onclick="openSeedDetail(428638)">
+  <td class="tc">24</td>
+  <td class="tc">428,638</td>
+  <td class="tr">41</td>
+  <td class="tr">43</td>
+  <td class="tr">103</td>
+  <td class="tr">154</td>
+  <td class="tr">133</td>
+</tr><tr class="dr" onclick="openSeedDetail(-285670)">
+  <td class="tc">25</td>
+  <td class="tc">-285,670</td>
+  <td class="tr">41</td>
+  <td class="tr">43</td>
+  <td class="tr">96</td>
+  <td class="tr">167</td>
+  <td class="tr">126</td>
 </tr></tbody>
       </table>
     </div>
@@ -442,11 +445,11 @@ function mkChart(id, labels, values, color) {
     }
   });
 }
-mkChart('hit7bChart', [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39], [2, 7, 12, 32, 51, 99, 189, 258, 392, 507, 680, 782, 874, 921, 882, 855, 771, 668, 510, 409, 355, 234, 170, 124, 92, 68, 26, 16, 7, 4, 3, 0, 0, 1], '#a78bfa');
-mkChart('hit7Chart', [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42], [2, 3, 5, 18, 28, 55, 111, 177, 253, 380, 466, 585, 679, 775, 836, 820, 784, 733, 708, 607, 491, 381, 322, 229, 189, 138, 81, 67, 37, 24, 9, 5, 1, 1, 1], '#38bdf8');
-mkChart('hit6Chart', [67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139], [1, 0, 0, 1, 0, 0, 1, 1, 2, 5, 7, 8, 16, 13, 19, 30, 33, 47, 48, 73, 76, 103, 126, 166, 178, 181, 223, 250, 288, 339, 349, 384, 425, 430, 410, 435, 417, 472, 442, 427, 411, 359, 365, 342, 303, 263, 238, 203, 191, 145, 123, 131, 106, 85, 67, 52, 51, 33, 30, 14, 15, 10, 7, 11, 5, 1, 7, 2, 1, 1, 1, 1, 1], '#22c55e');
-mkChart('hit5Chart', [124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210], [1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 3, 3, 2, 5, 3, 9, 8, 9, 14, 17, 22, 31, 34, 48, 47, 66, 84, 94, 103, 94, 145, 163, 187, 201, 216, 242, 246, 282, 287, 304, 299, 346, 351, 384, 373, 367, 411, 370, 367, 366, 346, 334, 293, 278, 253, 244, 213, 203, 182, 143, 129, 130, 115, 79, 85, 59, 51, 54, 40, 41, 31, 14, 16, 16, 9, 3, 6, 6, 8, 5, 0, 6, 0, 1, 1, 1], '#f59e0b');
-mkChart('hit4Chart', [93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173], [1, 0, 0, 0, 1, 0, 0, 0, 2, 1, 3, 1, 7, 8, 6, 9, 16, 16, 25, 27, 43, 46, 50, 70, 78, 99, 100, 109, 131, 188, 196, 208, 243, 259, 297, 312, 340, 351, 357, 372, 404, 406, 423, 444, 390, 379, 335, 363, 332, 334, 283, 263, 243, 204, 191, 155, 148, 131, 89, 97, 90, 68, 53, 41, 35, 35, 26, 13, 14, 11, 4, 9, 5, 3, 2, 0, 4, 0, 1, 0, 1], '#fb7185');
+mkChart('hit7bChart', [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43], [6, 26, 100, 350, 1003, 2552, 5699, 11570, 21499, 36246, 56077, 80928, 107466, 134722, 157880, 174263, 182369, 181100, 170457, 153335, 131572, 107469, 84750, 63704, 45912, 32530, 21259, 14197, 8727, 5343, 3130, 1776, 1003, 487, 257, 110, 69, 30, 20, 5, 3], '#a78bfa');
+mkChart('hit7Chart', [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49], [3, 5, 15, 82, 263, 729, 1534, 3435, 6972, 12869, 21947, 35258, 52005, 72665, 95446, 118437, 139141, 156504, 166113, 168373, 164848, 153831, 137080, 118448, 97953, 77571, 59802, 44528, 31979, 22215, 14893, 9906, 6345, 3744, 2170, 1317, 730, 407, 209, 109, 60, 37, 13, 7, 2, 1], '#38bdf8');
+mkChart('hit6Chart', [63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160], [1, 1, 2, 13, 17, 23, 31, 52, 97, 143, 240, 374, 486, 760, 1133, 1541, 2184, 3072, 4010, 5350, 6926, 8874, 11318, 14430, 17557, 21572, 25507, 30959, 35800, 41594, 47462, 53824, 59733, 65452, 70297, 75666, 80453, 83255, 86457, 87463, 88208, 87347, 86187, 83677, 79829, 75322, 70997, 65473, 59513, 53771, 48367, 42496, 37247, 31834, 27287, 23277, 19520, 15895, 12840, 10653, 8439, 6610, 5222, 4025, 3117, 2391, 1750, 1317, 970, 655, 486, 352, 265, 162, 119, 93, 51, 33, 27, 16, 14, 8, 3, 1, 1, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], '#22c55e');
+mkChart('hit5Chart', [117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230], [1, 0, 0, 0, 1, 1, 0, 5, 2, 8, 13, 16, 26, 33, 64, 86, 120, 164, 271, 348, 465, 641, 927, 1158, 1574, 1955, 2602, 3331, 4181, 5128, 6525, 8046, 9823, 12040, 14267, 16983, 20011, 23015, 26913, 30599, 34577, 38804, 43020, 47402, 51987, 55868, 60011, 63808, 67041, 70383, 71614, 73935, 74513, 75817, 74742, 73829, 72889, 70490, 68160, 64158, 61303, 57258, 53095, 49169, 44554, 40638, 36565, 32407, 28715, 25007, 21403, 18534, 15978, 13175, 11146, 9388, 7639, 6260, 5015, 4134, 3282, 2630, 1955, 1596, 1173, 892, 714, 511, 402, 304, 210, 149, 135, 81, 48, 44, 28, 24, 9, 14, 11, 4, 5, 3, 2, 0, 0, 0, 0, 0, 0, 0, 0, 1], '#f59e0b');
+mkChart('hit4Chart', [85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184], [1, 0, 0, 1, 1, 1, 3, 8, 5, 5, 15, 22, 24, 44, 83, 111, 171, 221, 337, 451, 684, 902, 1260, 1767, 2270, 3016, 3880, 5073, 6484, 8259, 9909, 12113, 15035, 18247, 21691, 25244, 29138, 33895, 38555, 43430, 48440, 53232, 58786, 63153, 67438, 71167, 74276, 76431, 78804, 80125, 80088, 79896, 78600, 76322, 73724, 70298, 66917, 62549, 57859, 53156, 48357, 43794, 38820, 34517, 29969, 26192, 22582, 19031, 16075, 13407, 10996, 9188, 7252, 5931, 4702, 3669, 2887, 2347, 1721, 1290, 980, 731, 549, 391, 288, 194, 163, 114, 79, 53, 40, 26, 9, 12, 7, 8, 6, 4, 0, 3], '#fb7185');
 </script>
 <script>
 // ── Seed-detail modal: picks computed LIVE for any seed via the same
@@ -486,6 +489,7 @@ function xoshiroNext(s) {
   return result;
 }
 function xoshiroPredict(seed, drawSerial, k) {
+  // BigInt & MASK64 correctly wraps negative BigInts to 64-bit two's complement, same as Python
   const combined = (BigInt(seed) * 10000000n + BigInt(drawSerial)) & MASK64;
   const s = seedState(combined);
   const arr = Array.from({length: 37}, (_, i) => i + 1);
@@ -503,8 +507,8 @@ function lookupSeed() {
   const errEl = document.getElementById('lookupErr');
   const raw = input.value.trim();
   errEl.style.display = 'none';
-  if (raw === '' || !/^\d+$/.test(raw)) {
-    errEl.textContent = 'Enter a non-negative whole number.';
+  if (raw === '' || !/^-?\d+$/.test(raw)) {
+    errEl.textContent = 'Enter a whole number (negative or positive).';
     errEl.style.display = 'inline';
     return;
   }

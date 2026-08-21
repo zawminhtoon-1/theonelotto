@@ -1,11 +1,18 @@
 """
 gen_xoshiro_seed_scan_loto7_k25.py
 --------------------------------------
-Static report page for Loto7's first xoshiro256** seed scan: seeds
-0-10,000, K=25 picks, backtested against the FIRST 500 Loto7 draws
-(#1-500) -- mirroring the Loto6 xoshiro K-value scan pages
-(gen_xoshiro_seed_scan_k33.py) but reparameterized for Loto7's 37-
+Static report page for Loto7's xoshiro256** seed scan: seeds
+-1,000,000 to 1,000,000 (2,000,001 seeds), K=25 picks, backtested
+against the FIRST 500 Loto7 draws (#1-500) -- mirroring the Loto6
+xoshiro K-value scan pages (gen_xoshiro_seed_scan_k33.py /
+gen_xoshiro_seed_scan_k35.py) but reparameterized for Loto7's 37-
 number pool and 2 bonus numbers.
+
+Extended from the initial 0-10,000 starting range to the full
++/-1,000,000 range, staged in 4 ~500,000-seed batches (same staged
+negative-seed pattern as the Loto6 K=35 scan) via
+xoshiro_seed_scan_loto7_k25_stage.py, each stage self-checked
+(including negative seeds) before running.
 
 Reads live from loto7_local.db's seed_hit_xoshiro_k25 table for
 aggregates and the top-N table. Draw records for the client-side
@@ -33,7 +40,8 @@ K_PICKS = 25
 LOTO7_MAX = 37
 DRAW_START, DRAW_END = 1, 500
 N_DRAWS = DRAW_END - DRAW_START + 1  # 500
-NUM_SEEDS_EXPECTED = 10_001
+SEED_LO, SEED_HI = -1_000_000, 1_000_000
+NUM_SEEDS_EXPECTED = 2_000_001
 TOP_N = 25
 
 # ── Load aggregates + top-N from SQLite ──────────────────────────────────────
@@ -155,7 +163,7 @@ page = f"""<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Xoshiro Seed Scan K=25 (0-10,000) — Loto 7</title>
+<title>Xoshiro Seed Scan K=25 (-1,000,000 to 1,000,000) — Loto 7</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
 
@@ -234,14 +242,17 @@ tbody td.tr{{text-align:right}}
 <body>
 
 <div class="wrap">
-  <h1>🎯 Xoshiro Seed Scan — Loto 7 K=25 (0–10,000)</h1>
+  <h1>🎯 Xoshiro Seed Scan — Loto 7 K=25 (&minus;1,000,000 to 1,000,000)</h1>
   <p class="subtitle">{num_seeds:,} seeds &middot; K={K_PICKS} picks (pool 1&ndash;{LOTO7_MAX}) &middot; {N_DRAWS} draws (#{DRAW_START}&ndash;{DRAW_END}) &middot; xoshiro256** (SplitMix64-seeded)</p>
 
   <div class="note">
-    First xoshiro256** seed scan for Loto7 &mdash; starting range, seeds 0&ndash;10,000, likely to be extended later
-    (same iterative pattern as the Loto6 xoshiro scans, e.g. <a href="/xoshiro_seed_scan_k33.html" style="color:#a78bfa">the K=33 Loto6 scan</a>,
-    which started at 0&ndash;1,000 and grew to 0&ndash;1,000,000). Same xoshiro256**/SplitMix64 algorithm and combined-seed
-    formula (<code>seed&times;10,000,000 + draw_serial</code>) reused exactly from the Loto6 scans, reparameterized for
+    Extended from Loto7's initial 0&ndash;10,000 starting range to the full {SEED_LO:,} to {SEED_HI:,} range
+    ({num_seeds:,} seeds) &mdash; same staged negative-seed pattern already verified on
+    <a href="/xoshiro_seed_scan_k35.html" style="color:#a78bfa">the Loto6 K=35 scan</a>: run in 4 batches of
+    ~500,000 seeds each (Python's bitwise AND on negative integers correctly produces the same 64-bit two's-complement
+    result as unsigned arithmetic, self-checked against a from-scratch modular reference &mdash; including negative-seed
+    cases &mdash; before each batch). Same xoshiro256**/SplitMix64 algorithm and combined-seed formula
+    (<code>seed&times;10,000,000 + draw_serial</code>) reused exactly from the Loto6 scans, reparameterized for
     Loto7's 37-number pool (not 43) and K={K_PICKS} picks (not 33). Backtested against the <b>FIRST</b> {N_DRAWS} Loto7
     draws (#{DRAW_START}&ndash;{DRAW_END}) &mdash; not the most recent.
     <br><br>
@@ -256,9 +267,9 @@ tbody td.tr{{text-align:right}}
 
   <div class="lookup">
     <span class="lbl">🔍 Seed detail lookup</span>
-    <input id="seedLookupInput" type="number" min="0" step="1" placeholder="Enter any seed number..." onkeydown="if(event.key==='Enter')lookupSeed()">
+    <input id="seedLookupInput" type="number" step="1" placeholder="Enter any seed (negative OK)..." onkeydown="if(event.key==='Enter')lookupSeed()">
     <button onclick="lookupSeed()">View {N_DRAWS}-draw breakdown</button>
-    <span class="hint">e.g. try {best[0]:,} (the top-ranked seed) — or any seed 0–10,000. Computed live in your browser.</span>
+    <span class="hint">e.g. try {best[0]:,} (the top-ranked seed) — or any seed {SEED_LO:,} to {SEED_HI:,}. Computed live in your browser.</span>
     <span id="lookupErr" class="err" style="display:none"></span>
   </div>
 
@@ -292,7 +303,7 @@ tbody td.tr{{text-align:right}}
     <div class="stat-card">
       <div class="lbl">Seeds tested</div>
       <div class="val">{num_seeds:,}</div>
-      <div class="sub">seeds 0–10,000</div>
+      <div class="sub">seeds {SEED_LO:,} to {SEED_HI:,}</div>
     </div>
   </div>
 
@@ -426,6 +437,7 @@ function xoshiroNext(s) {{
   return result;
 }}
 function xoshiroPredict(seed, drawSerial, k) {{
+  // BigInt & MASK64 correctly wraps negative BigInts to 64-bit two's complement, same as Python
   const combined = (BigInt(seed) * 10000000n + BigInt(drawSerial)) & MASK64;
   const s = seedState(combined);
   const arr = Array.from({{length: {LOTO7_MAX}}}, (_, i) => i + 1);
@@ -443,8 +455,8 @@ function lookupSeed() {{
   const errEl = document.getElementById('lookupErr');
   const raw = input.value.trim();
   errEl.style.display = 'none';
-  if (raw === '' || !/^\\d+$/.test(raw)) {{
-    errEl.textContent = 'Enter a non-negative whole number.';
+  if (raw === '' || !/^-?\\d+$/.test(raw)) {{
+    errEl.textContent = 'Enter a whole number (negative or positive).';
     errEl.style.display = 'inline';
     return;
   }}
