@@ -37,6 +37,21 @@ N_METHODS = len(METHOD_NAMES)
 T = len(DATA)
 draw_lo, draw_hi = DATA[0]['s'], DATA[-1]['s']
 
+# ── Next upcoming draw (#691, not yet drawn) -- same native K=15 pools as
+# the live /loto7/predictions page, read directly from its data file so
+# this stays in sync whenever that page is regenerated. ─────────────────────
+PREDICTIONS_PATH = BASE + r"\public\loto7_predictions_data.json"
+with open(PREDICTIONS_PATH, encoding='utf-8') as f:
+    predictions_payload = json.load(f)
+NEXT_SERIAL = predictions_payload['nextSerial']
+NEXT_POOLS = [c['numbers'] for c in predictions_payload['combos']]
+if NEXT_SERIAL != draw_hi + 1:
+    print(f"WARNING: /loto7/predictions targets #{NEXT_SERIAL} but this backtest's last draw is #{draw_hi} "
+          f"(expected next = #{draw_hi + 1}). The upcoming-draw row will still show #{NEXT_SERIAL}, "
+          f"just flagging the mismatch.")
+if len(NEXT_POOLS) != N_METHODS:
+    raise SystemExit(f"Expected {N_METHODS} method pools from predictions data, got {len(NEXT_POOLS)}")
+
 page = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -107,6 +122,9 @@ page = f"""<!DOCTYPE html>
            background: var(--border); color: var(--text); flex-shrink: 0; }}
   .ball.match  {{ background: var(--green); color: #052e16; }}
   .ball.bonus  {{ background: var(--orange); color: #431407; }}
+  tr.upcoming-row {{ background: rgba(56,189,248,.08); border-bottom: 2px solid var(--accent); }}
+  tr.upcoming-row td {{ color: var(--text); }}
+  tr.upcoming-row td:first-child {{ font-weight: 700; color: var(--accent); }}
 
   /* Detail controls */
   .ctrl-row {{ display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }}
@@ -221,6 +239,8 @@ const COLORS  = {json.dumps(COLORS)};
 const DATA    = {json.dumps(DATA, separators=(',', ':'))};
 const LOTO7_MAX = {LOTO7_MAX};
 const T = {T};
+const NEXT_SERIAL = {NEXT_SERIAL};
+const NEXT_POOLS = {json.dumps(NEXT_POOLS, separators=(',', ':'))};
 
 // ── topKNums: exact JS port used throughout this site (generic, proven for
 // any target K, not just the button presets). ──────────────────────────────
@@ -387,6 +407,24 @@ function buildDetail() {{
         '<th style="color:'+COLORS[i]+';text-align:center">'+s+
         '<br><span style="font-weight:400;font-size:.7rem;color:#64748b">'+curK+'pk</span></th>'
       ).join('') + '</tr>';
+
+    // ── Upcoming draw row (not yet drawn -- no actual result to compare
+    // against, so no hit highlighting). Same native pools as the live
+    // /loto7/predictions page, re-derived to the current K via topKNums(). ──
+    const upTr = document.createElement('tr');
+    upTr.className = 'upcoming-row';
+    let upCells =
+      '<td>#'+NEXT_SERIAL+'</td>' +
+      '<td><em>upcoming</em></td>' +
+      '<td><em style="color:#64748b">not yet drawn</em></td>';
+    NEXT_POOLS.forEach(pool => {{
+      const combo = topKNums(pool, NEXT_POOLS, curK);
+      upCells += '<td style="text-align:center;font-size:.68rem;color:#7dd3fc;white-space:normal;min-width:110px">' +
+        combo.join(', ') + '</td>';
+    }});
+    upTr.innerHTML = upCells;
+    body.appendChild(upTr);
+
     REV_DATA.forEach(r => {{
       const tr = document.createElement('tr');
       tr.dataset.actual = JSON.stringify(r.a);
@@ -449,7 +487,13 @@ function applyFilter() {{
   }});
   const rows = Array.from(document.getElementById('detailBody').rows);
   let shown = 0;
+  let total = 0;
   rows.forEach(tr => {{
+    if (tr.classList.contains('upcoming-row')) {{
+      tr.style.display = '';  // always visible -- no actual result to filter against
+      return;
+    }}
+    total++;
     const actual = JSON.parse(tr.dataset.actual);
     const sorted = [...actual].sort((a,b)=>a-b);
     const ok = filters.every((f,i) => f===null||sorted[i]===f);
@@ -457,7 +501,7 @@ function applyFilter() {{
     if (ok) shown++;
   }});
   const active = filters.some(f=>f!==null);
-  document.getElementById('filterCount').textContent = active ? shown+' / '+rows.length+' draws' : '';
+  document.getElementById('filterCount').textContent = active ? shown+' / '+total+' draws' : '';
 }}
 function clearFilters() {{
   [1,2,3,4,5,6,7].forEach(i => document.getElementById('f'+i).value='');
