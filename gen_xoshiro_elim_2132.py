@@ -180,7 +180,15 @@ summary:hover{{color:#f1f5f9}}
   border-radius:50%;font-size:.72rem;font-weight:700;color:#fff;background:#312e5f;
   border:none;cursor:pointer;opacity:.65;transition:all .12s;flex-shrink:0}}
 .num-btn:hover{{opacity:.9}}
-.num-btn.active{{opacity:1;box-shadow:0 0 0 2px #0a0f1e,0 0 0 4px #38bdf8;transform:scale(1.08)}}
+.num-btn.include{{opacity:1;box-shadow:0 0 0 2px #0a0f1e,0 0 0 4px #22c55e;transform:scale(1.08)}}
+.num-btn.exclude{{opacity:.55;box-shadow:0 0 0 2px #0a0f1e,0 0 0 4px #ef4444;transform:scale(1.08);
+  text-decoration:line-through;text-decoration-thickness:2px}}
+.filter-legend{{font-size:.72rem;color:#64748b;margin-bottom:8px}}
+.filter-legend .swatch{{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;
+  border-radius:50%;font-size:0;margin:0 3px -3px 0}}
+.filter-legend .swatch.neutral{{background:#312e5f;opacity:.65}}
+.filter-legend .swatch.include{{background:#312e5f;box-shadow:0 0 0 1px #0a0f1e,0 0 0 2px #22c55e}}
+.filter-legend .swatch.exclude{{background:#312e5f;opacity:.55;box-shadow:0 0 0 1px #0a0f1e,0 0 0 2px #ef4444}}
 .page-info{{font-size:.8rem;color:#94a3b8}}
 .tbl-wrap{{overflow-x:auto;border-radius:10px;border:1px solid #1e293b}}
 table.combos{{width:100%;border-collapse:collapse;font-size:.83rem}}
@@ -439,6 +447,9 @@ table.combos tr:hover td{{background:#111827}}
         <button class="btn primary" onclick="downloadCSV()">⬇ Download CSV</button>
         <span id="filterInfo" class="page-info"></span>
       </div>
+      <div class="filter-legend">Click a number to cycle: <span class="swatch neutral"></span>neutral (no filter) &rarr;
+        <span class="swatch include"></span>include (must contain) &rarr; <span class="swatch exclude"></span>exclude (must not
+        contain) &rarr; back to neutral. Include and exclude constraints apply together.</div>
       <div class="filter-grid" id="filterGrid"></div>
       <div class="tbl-wrap">
         <div class="lookup" style="justify-content:space-between;padding:10px 12px;margin-bottom:0">
@@ -699,7 +710,10 @@ let REMAINING = [];
 let filtered = [];
 const PAGE_SIZE = 100;
 let curPage = 0;
-const selectedNums = new Set();
+// 3-state per-number filter: 'include' (must contain), 'exclude' (must not
+// contain), or absent (neutral, no constraint). Cycle on click: neutral ->
+// include -> exclude -> neutral. Both constraint types apply simultaneously.
+const numState = new Map();
 
 fetch('/xoshiro_elim_{TARGET_SERIAL}_combos.json')
   .then(r => r.json())
@@ -742,22 +756,32 @@ function buildFilterGrid() {{
   ).join('');
 }}
 function toggleNum(n) {{
-  if (selectedNums.has(n)) selectedNums.delete(n); else selectedNums.add(n);
-  document.querySelector('.num-btn[data-n="' + n + '"]').classList.toggle('active', selectedNums.has(n));
+  const cur = numState.get(n);
+  const next = cur === undefined ? 'include' : cur === 'include' ? 'exclude' : undefined;
+  if (next === undefined) numState.delete(n); else numState.set(n, next);
+  const btn = document.querySelector('.num-btn[data-n="' + n + '"]');
+  btn.classList.remove('include', 'exclude');
+  if (next) btn.classList.add(next);
   applyFilter();
 }}
 function clearFilter() {{
-  selectedNums.clear();
-  document.querySelectorAll('.num-btn.active').forEach(b => b.classList.remove('active'));
+  numState.clear();
+  document.querySelectorAll('.num-btn.include, .num-btn.exclude').forEach(b => b.classList.remove('include', 'exclude'));
   applyFilter();
 }}
 function applyFilter() {{
-  filtered = selectedNums.size === 0 ? REMAINING : REMAINING.filter(c => {{
-    for (const n of selectedNums) if (!c.includes(n)) return false;
+  const includeNums = [...numState.entries()].filter(([n, s]) => s === 'include').map(([n]) => n);
+  const excludeNums = [...numState.entries()].filter(([n, s]) => s === 'exclude').map(([n]) => n);
+  filtered = (includeNums.length === 0 && excludeNums.length === 0) ? REMAINING : REMAINING.filter(c => {{
+    for (const n of includeNums) if (!c.includes(n)) return false;
+    for (const n of excludeNums) if (c.includes(n)) return false;
     return true;
   }});
-  document.getElementById('filterInfo').textContent = selectedNums.size === 0 ? '' :
-    (filtered.length.toLocaleString() + ' / ' + REMAINING.length.toLocaleString() + ' combos contain ' + [...selectedNums].sort((a,b)=>a-b).join(', '));
+  const parts = [];
+  if (includeNums.length) parts.push('contain ' + includeNums.sort((a,b)=>a-b).join(', '));
+  if (excludeNums.length) parts.push('exclude ' + excludeNums.sort((a,b)=>a-b).join(', '));
+  document.getElementById('filterInfo').textContent = parts.length === 0 ? '' :
+    (filtered.length.toLocaleString() + ' / ' + REMAINING.length.toLocaleString() + ' combos ' + parts.join(' and '));
   curPage = 0;
   render();
 }}
