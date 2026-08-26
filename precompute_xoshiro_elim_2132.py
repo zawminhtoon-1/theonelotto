@@ -762,6 +762,45 @@ print(f"\nFull elimination sequence: {universe_count:,} -> {final_remaining_pass
       f"{final_remaining_pass3:,} (Pass 3) -> {final_remaining_pass4:,} (Pass 4) -> {final_remaining_pass5:,} (Pass 5) -> "
       f"{final_remaining_pass6:,} (Pass 6)")
 
+# ── Pass 7: "three consecutive pairs" filter. Removes any Pass-6-remaining
+# combo whose sorted main numbers decompose into exactly three consecutive
+# pairs (each run of exactly 2, no run of 3+, no isolated singles) -- e.g.
+# 1,2,9,10,15,16. Historical basis: only 3 of all 2,131 real Loto6 draws
+# (0.141%) match this exact pattern (#172, #775, #1394). Final pass on
+# this page. ──────────────────────────────────────────────────────────────
+print(f"\n=== Pass 7 ===")
+def is_three_consecutive_pairs(combo):
+    s = sorted(combo)
+    runs = []
+    run = [s[0]]
+    for i in range(1, len(s)):
+        if s[i] == s[i - 1] + 1:
+            run.append(s[i])
+        else:
+            runs.append(run)
+            run = [s[i]]
+    runs.append(run)
+    return len(runs) == 3 and all(len(r) == 2 for r in runs)
+
+t0 = time.time()
+remaining_after7 = []
+removed_by_pass7 = []
+for combo in remaining_after6:
+    if is_three_consecutive_pairs(combo):
+        removed_by_pass7.append(combo)
+        continue
+    remaining_after7.append(combo)
+elapsed7 = time.time() - t0
+final_remaining_pass7 = len(remaining_after7)
+print(f"Pass 7 elimination in {elapsed7:.1f}s")
+print(f"  Removed (three consecutive pairs, e.g. 1,2,9,10,15,16): {len(removed_by_pass7):,}")
+if removed_by_pass7[:10]:
+    print(f"  First 10 removed: {removed_by_pass7[:10]}")
+print(f"  Before Pass 7: {final_remaining_pass6:,}  ->  After Pass 7: {final_remaining_pass7:,}")
+print(f"\nFull elimination sequence: {universe_count:,} -> {final_remaining_pass1:,} (Pass 1) -> {final_remaining:,} (Pass 2) -> "
+      f"{final_remaining_pass3:,} (Pass 3) -> {final_remaining_pass4:,} (Pass 4) -> {final_remaining_pass5:,} (Pass 5) -> "
+      f"{final_remaining_pass6:,} (Pass 6) -> {final_remaining_pass7:,} (Pass 7)")
+
 # ── Save outputs ──────────────────────────────────────────────────────────
 meta = {
     'targetSerial': TARGET_SERIAL,
@@ -799,12 +838,14 @@ meta = {
     'finalRemainingPass5': final_remaining_pass5,
     'removedByPass6': removed_by_pass6,
     'pass6RunDistribution': {str(k): v for k, v in sorted(run_dist.items())},
-    'finalRemaining': final_remaining_pass6,
+    'finalRemainingPass6': final_remaining_pass6,
+    'removedByPass7': [list(c) for c in removed_by_pass7],
+    'finalRemaining': final_remaining_pass7,
 }
 with open(META_OUT, 'w', encoding='utf-8') as f:
     json.dump(meta, f, indent=2)
 print(f"\nSaved {META_OUT}")
 
 with open(COMBOS_OUT, 'w', encoding='utf-8') as f:
-    json.dump(remaining_after6, f, separators=(',', ':'))
-print(f"Saved {COMBOS_OUT} ({len(remaining_after6):,} combos, {os.path.getsize(COMBOS_OUT)//1024:,} KB)")
+    json.dump(remaining_after7, f, separators=(',', ':'))
+print(f"Saved {COMBOS_OUT} ({len(remaining_after7):,} combos, {os.path.getsize(COMBOS_OUT)//1024:,} KB)")
