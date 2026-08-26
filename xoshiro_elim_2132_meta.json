@@ -40584,5 +40584,14 @@
   ],
   "pass5Overlap": 13,
   "removedByPass5": 81,
-  "finalRemaining": 220692
+  "finalRemainingPass5": 220692,
+  "removedByPass6": 14240,
+  "pass6RunDistribution": {
+    "1": 95298,
+    "2": 111154,
+    "3": 13319,
+    "4": 896,
+    "5": 25
+  },
+  "finalRemaining": 206452
 }

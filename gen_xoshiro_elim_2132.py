@@ -75,9 +75,15 @@ pass5_k = meta['pass5K']
 pass5_pick = meta['pass5Pick']
 pass5_overlap = meta['pass5Overlap']
 removed_by_pass5 = meta['removedByPass5']
+final_remaining_pass5 = meta['finalRemainingPass5']
+pass5_pct = final_remaining_pass5 / universe_count * 100
+pass5_pct_of_pass4 = final_remaining_pass5 / final_remaining_pass4 * 100
+
+removed_by_pass6 = meta['removedByPass6']
+pass6_run_distribution = meta['pass6RunDistribution']
 final_remaining = meta['finalRemaining']
 final_pct = final_remaining / universe_count * 100
-pass5_pct_of_pass4 = final_remaining / final_remaining_pass4 * 100
+pass6_pct_of_pass5 = final_remaining / final_remaining_pass5 * 100
 
 methods_rows_html = ""
 for name, pool in zip(method_names, method_picks):
@@ -218,19 +224,24 @@ table.combos tr:hover td{{background:#111827}}
     winning combo from any of the {historical_draw_count:,} real draws (#1&ndash;{TRAINED_THROUGH}) gets removed, leaving {final_remaining_pass4:,}.
     No K=6 Loto 6 combo has ever repeated across {historical_draw_count:,} draws, so this pass strictly removes exact historical
     matches, not near-misses.</p>
-    <p><strong style="color:#e2e8f0">Pass 5</strong> (final) is the Worst Combo (Anti-Pick) K={pass5_k} pick for draw #{TARGET_SERIAL}
+    <p><strong style="color:#e2e8f0">Pass 5</strong> is the Worst Combo (Anti-Pick) K={pass5_k} pick for draw #{TARGET_SERIAL}
     &mdash; the MA-43 + Exp-weighted + Random Forest + kNN + Apriori Association Rules consensus, same 5-method combination as
     <a href="/predictions" style="color:#a78bfa">the Predictions page's</a> Worst Combo panel. Any Pass-4-remaining combo fully
     contained within this {pass5_k}-number pick gets removed. These 5 methods can't all run client-side, so the pick is computed
     directly here (from the same 5 methods' native picks above, indices into Pass 1's 16-method table, using the same
     union-count-desc-then-ascending-number combining rule as the Predictions page's own consensus logic) and embedded as static
     data, same convention as Modular Cycle's pick.</p>
-    <p>The xoshiro side of Base, all {len(random_seeds)} Pass-2 picks, and all {len(pass3_seeds)} Pass-3 picks are recomputed
-    <strong>live in your browser</strong> below (bit-exact ports &mdash; BigInt xoshiro256** for Base and Pass 3, the CPython
-    MT19937 port from the Random Seed Backtest page for Pass 2) and checked against server-embedded references &mdash; check the
-    verification badges. Modular Cycle's pick, Pass 1's 16 statistical/ML methods (ARIMA, Random Forest, HMM, LSTM, etc.), and
-    Pass 5's Worst Combo pick can't run in a browser, so those are precomputed server-side, same as every other draw on this site,
-    and embedded as static data. Pass 4's historical combo set is embedded and checked client-side too.</p>
+    <p><strong style="color:#e2e8f0">Pass 6</strong> (final) removes any Pass-5-remaining combo containing a run of 3 or more
+    consecutive numbers &mdash; based on the historical finding that only 6.62% of all 2,131 real Loto6 draws have such a run
+    (5.96% exactly 3, 0.66% exactly 4, and a run of 5 or 6 has never happened), so this pass removes combos matching that same
+    rare pattern. Any Pass-5-remaining combo with max consecutive run &ge;3 gets removed, leaving {final_remaining:,}.</p>
+    <p>The xoshiro side of Base, all {len(random_seeds)} Pass-2 picks, all {len(pass3_seeds)} Pass-3 picks, and Pass 6's
+    consecutive-run check are recomputed <strong>live in your browser</strong> below (bit-exact ports &mdash; BigInt xoshiro256**
+    for Base and Pass 3, the CPython MT19937 port from the Random Seed Backtest page for Pass 2, plain JS for Pass 6) and, where
+    a server-embedded reference exists, checked against it &mdash; check the verification badges. Modular Cycle's pick, Pass 1's
+    16 statistical/ML methods (ARIMA, Random Forest, HMM, LSTM, etc.), and Pass 5's Worst Combo pick can't run in a browser, so
+    those are precomputed server-side, same as every other draw on this site, and embedded as static data. Pass 4's historical
+    combo set is embedded and checked client-side too.</p>
   </div>
 
   <div class="section">
@@ -284,11 +295,21 @@ table.combos tr:hover td{{background:#111827}}
   </div>
 
   <div class="section">
-    <h2>Pass 5 (final) — Worst Combo (Anti-Pick), K={pass5_k} pick for draw #{TARGET_SERIAL} <span class="verify-badge na">server-computed</span></h2>
+    <h2>Pass 5 — Worst Combo (Anti-Pick), K={pass5_k} pick for draw #{TARGET_SERIAL} <span class="verify-badge na">server-computed</span></h2>
     <p class="desc">Same 5-method combination as <a href="/predictions" style="color:#a78bfa">the Predictions page's</a> Worst Combo
     panel &mdash; MA-43 + Exp-weighted + Random Forest + kNN + Apriori Association Rules consensus &mdash; computed directly here
     for #{TARGET_SERIAL} to keep this script self-contained. Overlap with the {base['k']}-pool: {pass5_overlap} numbers.</p>
     <div class="balls">{"".join(f'<span class="nb">{n}</span>' for n in pass5_pick)}</div>
+  </div>
+
+  <div class="section">
+    <h2>Pass 6 (final) — no 3+/4+/5+/6-length consecutive-run filter <span id="badgePass6" class="verify-badge pending">verifying…</span></h2>
+    <p class="desc">Removes any Pass-5-remaining combo whose sorted main numbers contain a run of 3 or more consecutive integers
+    (e.g. 5,6,7). Historical basis: across all 2,131 real Loto6 draws, 127 (5.96%) have a max run of exactly 3, 14 (0.66%) exactly
+    4, and 0 have ever had a run of 5 or 6 &mdash; runs of 3+ collectively occur in only 6.62% of real draws. Checked live in your
+    browser (pure JS, no server reference needed &mdash; this pass only looks at each combo's own sorted numbers).</p>
+    <p class="desc" style="margin-bottom:0">Max-run distribution among the {final_remaining_pass5:,} Pass-5-remaining combos:
+    {' &middot; '.join(f'run={k}: {int(v):,}' for k, v in pass6_run_distribution.items())}.</p>
   </div>
 
   <div class="section">
@@ -344,10 +365,20 @@ table.combos tr:hover td{{background:#111827}}
         <div class="val">{removed_by_pass5:,}</div>
         <div class="sub">contained in the anti-pick's K={pass5_k}</div>
       </div>
+      <div class="stat-card">
+        <div class="lbl">After Pass 5</div>
+        <div class="val">{final_remaining_pass5:,}</div>
+        <div class="sub">{pass5_pct:.1f}% of universe retained</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Removed by consecutive-run filter (Pass 6)</div>
+        <div class="val">{removed_by_pass6:,}</div>
+        <div class="sub">max run of 3+ consecutive numbers</div>
+      </div>
       <div class="stat-card final">
         <div class="lbl">Final remaining</div>
         <div class="val">{final_remaining:,}</div>
-        <div class="sub">{final_pct:.1f}% of universe · {pass5_pct_of_pass4:.1f}% of Pass-4 output</div>
+        <div class="sub">{final_pct:.1f}% of universe · {pass6_pct_of_pass5:.1f}% of Pass-5 output</div>
       </div>
     </div>
     <div class="elim-flow">
@@ -361,7 +392,9 @@ table.combos tr:hover td{{background:#111827}}
       <span class="arrow">&rarr;</span>
       <span class="n">{final_remaining_pass4:,}</span> <span style="color:#64748b;font-size:.7rem">(Pass 4)</span>
       <span class="arrow">&rarr;</span>
-      <span class="n final">{final_remaining:,}</span> <span style="color:#64748b;font-size:.7rem">(Pass 5)</span>
+      <span class="n">{final_remaining_pass5:,}</span> <span style="color:#64748b;font-size:.7rem">(Pass 5)</span>
+      <span class="arrow">&rarr;</span>
+      <span class="n final">{final_remaining:,}</span> <span style="color:#64748b;font-size:.7rem">(Pass 6)</span>
     </div>
   </div>
 
@@ -603,6 +636,18 @@ if (!liveRemovedHistorical) console.error('Pass-4 historical-match mismatch', RE
 // client-side). Sanity-checked below against the fetched remaining set. ────
 const PASS5_PICK = {json.dumps(pass5_pick)};
 
+// ── Pass 6: no 3+/4+/5+/6-length consecutive-run filter -- pure JS, no
+// server reference needed (only looks at each combo's own numbers). ────────
+function maxConsecutiveRun(combo) {{
+  const s = [...combo].sort((a, b) => a - b);
+  let run = 1, best = 1;
+  for (let i = 1; i < s.length; i++) {{
+    if (s[i] === s[i - 1] + 1) {{ run++; best = Math.max(best, run); }}
+    else {{ run = 1; }}
+  }}
+  return best;
+}}
+
 // ── Remaining combos: fetch, paginate, filter, download ─────────────────────
 const POOL_BASE = liveBase;
 let REMAINING = [];
@@ -625,6 +670,9 @@ fetch('/xoshiro_elim_{TARGET_SERIAL}_combos.json')
     const pass5Set = new Set(PASS5_PICK);
     const stillInPass5 = REMAINING.filter(c => c.every(n => pass5Set.has(n)));
     if (stillInPass5.length > 0) console.error('Pass-5 leak: remaining combos still contained in Worst Combo pick', stillInPass5);
+    const stillHasRun3 = REMAINING.filter(c => maxConsecutiveRun(c) >= 3);
+    renderBadge('badgePass6', stillHasRun3.length === 0);
+    if (stillHasRun3.length > 0) console.error('Pass-6 leak: remaining combos still have a run of 3+', stillHasRun3);
   }})
   .catch(err => {{
     document.getElementById('loadingMsg').textContent = 'Failed to load combinations: ' + err;

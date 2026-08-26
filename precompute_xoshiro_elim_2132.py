@@ -721,6 +721,47 @@ print(f"  Before Pass 5: {final_remaining_pass4:,}  ->  After Pass 5: {final_rem
 print(f"\nFull elimination sequence: {universe_count:,} -> {final_remaining_pass1:,} (Pass 1) -> {final_remaining:,} (Pass 2) -> "
       f"{final_remaining_pass3:,} (Pass 3) -> {final_remaining_pass4:,} (Pass 4) -> {final_remaining_pass5:,} (Pass 5)")
 
+# ── Pass 6: no 3+/4+/5+/6-length consecutive-run filter. Removes any
+# Pass-5-remaining combo whose sorted main numbers contain a run of 3 or
+# more consecutive integers (e.g. 5,6,7). Historical basis: across all
+# 2,131 real Loto6 draws, only 127 (5.96%) have a max run of exactly 3,
+# 14 (0.66%) exactly 4, and 0 have ever had a run of 5 or 6 -- runs of
+# 3+ are collectively rare (6.62% of real draws) and this pass removes
+# combos matching that same rare pattern. Final pass on this page. ─────
+print(f"\n=== Pass 6 ===")
+def max_consecutive_run(combo):
+    s = sorted(combo)
+    run = 1
+    best = 1
+    for i in range(1, len(s)):
+        if s[i] == s[i - 1] + 1:
+            run += 1
+            best = max(best, run)
+        else:
+            run = 1
+    return best
+
+t0 = time.time()
+remaining_after6 = []
+removed_by_pass6 = 0
+run_dist = Counter()
+for combo in remaining_after5:
+    mr = max_consecutive_run(combo)
+    run_dist[mr] += 1
+    if mr >= 3:
+        removed_by_pass6 += 1
+        continue
+    remaining_after6.append(combo)
+elapsed6 = time.time() - t0
+final_remaining_pass6 = len(remaining_after6)
+print(f"Pass 6 elimination in {elapsed6:.1f}s")
+print(f"  Max-run distribution (of Pass-5-remaining combos): " + ", ".join(f"{k}:{v:,}" for k, v in sorted(run_dist.items())))
+print(f"  Removed (max consecutive run >= 3): {removed_by_pass6:,}")
+print(f"  Before Pass 6: {final_remaining_pass5:,}  ->  After Pass 6: {final_remaining_pass6:,}")
+print(f"\nFull elimination sequence: {universe_count:,} -> {final_remaining_pass1:,} (Pass 1) -> {final_remaining:,} (Pass 2) -> "
+      f"{final_remaining_pass3:,} (Pass 3) -> {final_remaining_pass4:,} (Pass 4) -> {final_remaining_pass5:,} (Pass 5) -> "
+      f"{final_remaining_pass6:,} (Pass 6)")
+
 # ── Save outputs ──────────────────────────────────────────────────────────
 meta = {
     'targetSerial': TARGET_SERIAL,
@@ -755,12 +796,15 @@ meta = {
     'pass5Pick': PASS5_PICK,
     'pass5Overlap': pass5_overlap,
     'removedByPass5': removed_by_pass5,
-    'finalRemaining': final_remaining_pass5,
+    'finalRemainingPass5': final_remaining_pass5,
+    'removedByPass6': removed_by_pass6,
+    'pass6RunDistribution': {str(k): v for k, v in sorted(run_dist.items())},
+    'finalRemaining': final_remaining_pass6,
 }
 with open(META_OUT, 'w', encoding='utf-8') as f:
     json.dump(meta, f, indent=2)
 print(f"\nSaved {META_OUT}")
 
 with open(COMBOS_OUT, 'w', encoding='utf-8') as f:
-    json.dump(remaining_after5, f, separators=(',', ':'))
-print(f"Saved {COMBOS_OUT} ({len(remaining_after5):,} combos, {os.path.getsize(COMBOS_OUT)//1024:,} KB)")
+    json.dump(remaining_after6, f, separators=(',', ':'))
+print(f"Saved {COMBOS_OUT} ({len(remaining_after6):,} combos, {os.path.getsize(COMBOS_OUT)//1024:,} KB)")
