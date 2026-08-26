@@ -2,19 +2,22 @@
 gen_xoshiro_seed_scan_k38.py
 --------------------------------
 Static report page for the K=38 xoshiro256** backtest scan: seeds
-0-1,000,000, draws #1000-2129 (1130 draws), ranked by hit6b (6-hit +
+0-1,000,000, draws #1000-2131 (1132 draws), ranked by hit6b (6-hit +
 bonus) desc, tiebreak hit6 desc, tiebreak hit5 desc.
 
 Reads live from loto6_local.db's seed_hit_xoshiro_k38 table (populated
 by load_xoshiro_seed_scan_k38_to_db.py from the two-stage scan:
 xoshiro_seed_scan_k38_0_100k.py + xoshiro_seed_scan_k38_100k_to_1m.py,
 originally against #1000-2127; extended to #1000-2129 via
-extend_xoshiro_window_2129.py, which folds in #2128/#2129 as an
+extend_xoshiro_window_2129.py, then to #1000-2131 via
+extend_xoshiro_k38_window_2131.py -- both fold in the new draws as an
 incremental per-seed delta rather than a full rescan) for aggregates
 and the top-N table. The draw window is embedded client-side for the
 seed-detail modal, so per-draw breakdowns work for ANY seed typed in,
 computed live via the same verified xoshiro256** JS port used
-elsewhere on the site.
+elsewhere on the site -- returned in generation order (the actual
+partial Fisher-Yates finalization sequence), not sorted ascending,
+same as xoshiro_seed_scan_k35.html.
 
 Output: public/xoshiro_seed_scan_k38.html
 Run: python gen_xoshiro_seed_scan_k38.py
@@ -30,8 +33,8 @@ TABLE = "seed_hit_xoshiro_k38"
 
 K_PICKS = 38
 LOTO6_MAX = 43
-DRAW_START, DRAW_END = 1000, 2129
-N_DRAWS = DRAW_END - DRAW_START + 1  # 1130
+DRAW_START, DRAW_END = 1000, 2131
+N_DRAWS = DRAW_END - DRAW_START + 1  # 1132
 TOP_N = 25
 
 # ── Load aggregates + top-N from SQLite ──────────────────────────────────────
@@ -82,7 +85,7 @@ print(f"Loaded {num_seeds:,} seeds from {TABLE}")
 print(f"Best: seed={best[0]} hit6b={best[1]} hit6={best[2]} hit5={best[3]}")
 print(f"Analytical expectation: hit6b~={exp_hit6b:.2f} hit6~={exp_hit6:.2f} hit5~={exp_hit5:.2f} (of {N_DRAWS} draws)")
 
-# ── Load the exact 1000-2129 draw window from the production DB, for the
+# ── Load the exact 1000-2131 draw window from the production DB, for the
 # client-side seed-detail modal. ────────────────────────────────────────────
 if 'DATABASE_URL' not in os.environ:
     with open(ENV_LOCAL, encoding='utf-8') as f:
@@ -220,10 +223,12 @@ tbody td.tr{{text-align:right}}
     used fresh for this scan. Three metrics tracked per seed: <b>hit6b</b> = draws where the 38 picks contain all 6 main
     winning numbers <em>and</em> the bonus number; <b>hit6</b> = draws with all 6 main numbers (any bonus); <b>hit5</b> =
     draws with exactly 5 of 6 main numbers. Ranking: highest hit6b, tiebreak hit6, tiebreak hit5. Originally scanned in
-    two stages (0–100,000, then 100,001–1,000,000) against draws #1000–2127; extended to #{DRAW_START}–{DRAW_END}
-    ({N_DRAWS} draws) by folding in #2128 and #2129 as an incremental per-seed delta (~46s for all 1,000,001 seeds)
-    rather than a full rescan — draw records pulled directly from the production database and verified for exactly
-    {N_DRAWS} consecutive rows with no gaps.
+    two stages (0–100,000, then 100,001–1,000,000) against draws #1000–2127; extended first to #1000–2129 (folding in
+    #2128/#2129, ~46s for all 1,000,001 seeds), then to #{DRAW_START}–{DRAW_END} ({N_DRAWS} draws) by folding in #2130
+    and #2131 (~12.5s) — each extension an incremental per-seed delta rather than a full rescan — draw records pulled
+    directly from the production database and verified for exactly {N_DRAWS} consecutive rows with no gaps. Seed-detail
+    picks below are shown in <b>generation order</b> (the actual sequence the partial Fisher-Yates shuffle produces
+    them in), not sorted ascending — same as <a href="/xoshiro_seed_scan_k35.html" style="color:#a78bfa">the K=35 page</a>.
   </div>
 
   <div class="lookup">
@@ -312,7 +317,7 @@ tbody td.tr{{text-align:right}}
           <thead><tr>
             <th>Draw</th><th>Date</th>
             <th>Actual (6) + bonus</th>
-            <th>Picks ({K_PICKS})</th>
+            <th>Picks ({K_PICKS}) · generation order</th>
             <th style="text-align:center">Hits</th>
           </tr></thead>
           <tbody id="modalTbody"></tbody>
@@ -383,12 +388,20 @@ function xoshiroPredict(seed, drawSerial, k) {{
   const s = seedState(combined);
   const arr = Array.from({{length: 43}}, (_, i) => i + 1);
   const n = arr.length;
+  // Returned in generation order (the order the partial Fisher-Yates shuffle
+  // finalizes each position: i = n-1 first, down to i = n-k last) -- NOT
+  // sorted. Callers that only need set-membership (hit counting) are
+  // unaffected since order doesn't matter there; callers that display the
+  // picks (the seed-detail modal) show the raw generation sequence. Same
+  // change as xoshiro_seed_scan_k35.html.
+  const order = [];
   for (let i = n - 1; i >= n - k; i--) {{
     const r = xoshiroNext(s);
     const j = Number(r % BigInt(i + 1));
     [arr[i], arr[j]] = [arr[j], arr[i]];
+    order.push(arr[i]);
   }}
-  return arr.slice(n - k).sort((a, b) => a - b);
+  return order;
 }}
 
 function lookupSeed() {{
