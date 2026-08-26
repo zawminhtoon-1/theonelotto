@@ -19,6 +19,14 @@ elsewhere on the site -- returned in generation order (the actual
 partial Fisher-Yates finalization sequence), not sorted ascending,
 same as xoshiro_seed_scan_k35.html.
 
+Also shows the current best seed's pick for the next upcoming draw
+(DRAW_END+1, not yet drawn) in a dedicated callout, server-computed
+via a Python port of the same generation-order algorithm -- clearly
+tagged "upcoming / not yet drawn", no hit highlighting (there's no
+result to compare against yet). Same treatment as the upcoming-draw
+rows added on the Loto7 predictions page and the Loto6 elimination
+pages.
+
 Output: public/xoshiro_seed_scan_k38.html
 Run: python gen_xoshiro_seed_scan_k38.py
 """
@@ -109,6 +117,46 @@ DRAWS = [{'s': r[0], 'd': r[1].isoformat(), 'a': list(r[2:8]), 'b': r[8]} for r 
 js_draws = json.dumps(DRAWS, separators=(',', ':'))
 print(f"Loaded {len(DRAWS)} draw records for the client-side modal (#{DRAWS[0]['s']}-{DRAWS[-1]['s']}).")
 
+# ── Best seed's pick for the next upcoming draw (not yet drawn) ─────────────
+# Same xoshiro256**/SplitMix64 implementation as the client-side JS port,
+# returned in GENERATION order (the order the partial Fisher-Yates shuffle
+# actually produces the numbers in), matching the recent modal change --
+# NOT sorted ascending.
+MASK64_PY = 0xFFFFFFFFFFFFFFFF
+def xoshiro_predict_generation_order(seed, draw_serial, k, pool_max=LOTO6_MAX):
+    combined = (seed * 10_000_000 + draw_serial) & MASK64_PY
+    z = combined & MASK64_PY
+    state = []
+    for _ in range(4):
+        z = (z + 0x9E3779B97F4A7C15) & MASK64_PY
+        zz = z
+        zz = ((zz ^ (zz >> 30)) * 0xBF58476D1CE4E5B9) & MASK64_PY
+        zz = ((zz ^ (zz >> 27)) * 0x94D049BB133111EB) & MASK64_PY
+        zz = zz ^ (zz >> 31)
+        state.append(zz)
+    def rotl(x, kk):
+        x &= MASK64_PY
+        return ((x << kk) | (x >> (64 - kk))) & MASK64_PY
+    s = state
+    arr = list(range(1, pool_max + 1))
+    n = len(arr)
+    order = []
+    for i in range(n - 1, n - 1 - k, -1):
+        result = (rotl((s[1] * 5) & MASK64_PY, 7) * 9) & MASK64_PY
+        t = (s[1] << 17) & MASK64_PY
+        s[2] ^= s[0]; s[3] ^= s[1]; s[1] ^= s[2]; s[0] ^= s[3]
+        s[2] ^= t
+        s[3] = rotl(s[3], 45)
+        j = result % (i + 1)
+        arr[i], arr[j] = arr[j], arr[i]
+        order.append(arr[i])
+    return order
+
+NEXT_SERIAL = DRAWS[-1]['s'] + 1
+next_pick = xoshiro_predict_generation_order(best[0], NEXT_SERIAL, K_PICKS)
+assert len(next_pick) == K_PICKS and len(set(next_pick)) == K_PICKS
+print(f"Best seed #{best[0]:,}'s K={K_PICKS} pick for upcoming draw #{NEXT_SERIAL} (generation order): {next_pick}")
+
 # ── Table rows ────────────────────────────────────────────────────────────
 def render_rows(rows, highlight_seed=None):
     html = ""
@@ -155,6 +203,15 @@ h1{{font-size:1.4rem;font-weight:700;color:#f1f5f9;margin-bottom:4px}}
 .stat-card .lbl{{font-size:.72rem;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}}
 .stat-card .val{{font-size:1.4rem;font-weight:700;color:#f1f5f9}}
 .stat-card .sub{{font-size:.78rem;color:#94a3b8;margin-top:2px}}
+
+.next-pred{{background:#0d1526;border:1px solid #f59e0b55;border-radius:10px;padding:16px 18px;margin-bottom:24px}}
+.next-pred .lbl{{font-size:.72rem;color:#f59e0b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;font-weight:700}}
+.next-pred .tag{{display:inline-block;background:#78350f;color:#fde68a;font-size:.66rem;font-weight:700;padding:2px 8px;
+  border-radius:10px;text-transform:uppercase;letter-spacing:.04em;margin-left:8px}}
+.next-pred .order-note{{font-size:.75rem;color:#94a3b8;margin-top:8px}}
+.next-pred .balls{{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}}
+.next-pred .ball{{width:32px;height:32px;border-radius:50%;background:#1e3a5f;display:flex;align-items:center;
+  justify-content:center;font-weight:700;font-size:.8rem;color:#93c5fd;border:1px solid #2563eb55}}
 
 .section{{background:#0d1526;border:1px solid #1e293b;border-radius:12px;padding:20px;margin-bottom:24px}}
 .section h2{{font-size:1rem;font-weight:700;color:#f1f5f9;margin-bottom:4px}}
@@ -265,6 +322,14 @@ tbody td.tr{{text-align:right}}
       <div class="val">{num_seeds:,}</div>
       <div class="sub">seeds 0–1,000,000</div>
     </div>
+  </div>
+
+  <div class="next-pred">
+    <div class="lbl">🏆 Best seed #{best[0]:,} — pick for draw #{NEXT_SERIAL}<span class="tag">upcoming · not yet drawn</span></div>
+    <div class="balls">
+      {''.join(f'<div class="ball">{n}</div>' for n in next_pick)}
+    </div>
+    <div class="order-note">Shown in generation order (not sorted) — same as the seed-detail modal below. No hit highlighting since draw #{NEXT_SERIAL} hasn't happened yet.</div>
   </div>
 
   <div class="three-col">
