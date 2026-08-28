@@ -113,6 +113,7 @@
             '<a href="/loto7_elim_691.html">✂️ Draw #691 Elimination</a>' +
             '<a href="/xoshiro_seed_scan_loto7_k25.html">🌀 Xoshiro Seed Scan K=25 (±1,000,000)</a>' +
             '<a href="/xoshiro_seed_scan_loto7_k28.html">🌀 Xoshiro Seed Scan K=28 (±1,000,000)</a>' +
+            '<a href="/xoshiro_seed_scan_loto7_k30.html">🌀 Xoshiro Seed Scan K=30 (±1,000,000)</a>' +
           '</div></div>' +
         '</div>' +
         '<div class="nav-group">' +
