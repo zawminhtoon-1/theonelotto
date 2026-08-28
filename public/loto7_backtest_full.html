@@ -103,11 +103,11 @@
 <script src="/site-nav.js"></script>
 
 <h1>🎯 Loto 7 — Full-History Backtest</h1>
-<p class="subtitle">Walk-forward evaluation &middot; Draws #3&ndash;#690 &middot; 688 draws &middot; 16 methods &middot; K = 7 / 9 / 13 / 17 / 20 / 22 / 25 (default 20)</p>
+<p class="subtitle">Walk-forward evaluation &middot; Draws #3&ndash;#690 &middot; 688 draws &middot; 16 methods &middot; K = 7 / 9 / 13 / 17 / 20 / 22 / 25 / 28 (default 20)</p>
 
 <div class="ktoggle">
   <span class="lbl">Pick size:</span>
-  <button class="kbtn" data-k="7" onclick="setK(7)">K = 7</button><button class="kbtn" data-k="9" onclick="setK(9)">K = 9</button><button class="kbtn" data-k="13" onclick="setK(13)">K = 13</button><button class="kbtn" data-k="17" onclick="setK(17)">K = 17</button><button class="kbtn active" data-k="20" onclick="setK(20)">K = 20</button><button class="kbtn" data-k="22" onclick="setK(22)">K = 22</button><button class="kbtn" data-k="25" onclick="setK(25)">K = 25</button>
+  <button class="kbtn" data-k="7" onclick="setK(7)">K = 7</button><button class="kbtn" data-k="9" onclick="setK(9)">K = 9</button><button class="kbtn" data-k="13" onclick="setK(13)">K = 13</button><button class="kbtn" data-k="17" onclick="setK(17)">K = 17</button><button class="kbtn active" data-k="20" onclick="setK(20)">K = 20</button><button class="kbtn" data-k="22" onclick="setK(22)">K = 22</button><button class="kbtn" data-k="25" onclick="setK(25)">K = 25</button><button class="kbtn" data-k="28" onclick="setK(28)">K = 28</button>
 </div>
 
 <div class="cards">
@@ -168,7 +168,7 @@
   no lookahead; LSTM additionally trains online after each prediction, with a small 60-draw bootstrap first). Full
   history: EVERY real Loto7 draw (#3&ndash;#690), not a recent window &mdash; unlike Loto6's backtest.html,
   which caps at the last 1,000 draws for cost reasons, Loto7's much shorter history (under 700 draws total) makes a
-  genuinely complete walk-forward affordable. The K toggle above derives K = 7/9/13/17/20/22/25 views
+  genuinely complete walk-forward affordable. The K toggle above derives K = 7/9/13/17/20/22/25/28 views
   <strong>live in your browser</strong> via <code>topKNums()</code>, the same generic cross-method-consensus trim/pad
   function used across this site &mdash; not a separate server-side computation per K. Default/star pick: <strong
   style="color:#e2e8f0">K=20</strong>.</p>
