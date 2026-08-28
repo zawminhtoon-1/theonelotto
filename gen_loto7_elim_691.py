@@ -12,6 +12,16 @@ Reads loto7_elim_691_meta.json (small: base pool, counts). The large
 combo list lives separately at public/loto7_elim_691_combos.json and
 is fetched client-side, not inlined.
 
+Retroactive note (added 2026-08-28, after #691 landed for real):
+draw #691's actual result (main 8,10,20,22,23,27,37, bonus 2,9, drawn
+2026-08-21) is hardcoded below and checked against the Base pool --
+display-only, does NOT touch the original prediction snapshot (Base
+pool / pass counts / combo list are left exactly as originally
+computed, walk-forward, before #691 was drawn). Finding: the actual
+result does NOT survive -- main numbers 8 and 37 aren't even in the
+25-number ARIMA Base pool, so it was never part of the C(25,7)
+elimination universe to begin with (fails before Pass 1 even runs).
+
 Output: public/loto7_elim_691.html
 Run: python gen_loto7_elim_691.py
 """
@@ -23,6 +33,14 @@ HTML_OUT = BASE + r"\public\loto7_elim_691.html"
 
 with open(META_PATH, encoding='utf-8') as f:
     meta = json.load(f)
+
+# ── Retroactive result check (display-only, see note above) ─────────────────
+ACTUAL_MAIN = [8, 10, 20, 22, 23, 27, 37]
+ACTUAL_BONUS = [2, 9]
+ACTUAL_DATE = "2026-08-21"
+_base_pool_set = set(meta['base']['pool'])
+_missing_from_base = sorted(set(ACTUAL_MAIN) - _base_pool_set)
+actual_survives_base = len(_missing_from_base) == 0
 
 TARGET_SERIAL = meta['targetSerial']
 base = meta['base']
@@ -146,8 +164,19 @@ table.combos tr:hover td{{background:#111827}}
   <h1>✂️ Loto 7 — Draw #{TARGET_SERIAL} Elimination</h1>
   <p class="subtitle">Base = ARIMA(2,1,0)'s K={base['k']} prediction pool for draw #{TARGET_SERIAL} &mdash; Pass 1 = 16 methods' K={method_k} picks &mdash; Pass 2 = 4 methods' K={pass2_k} picks &mdash; Pass 3 = historical repeat filter</p>
 
+  <div class="note" style="border-color:{'#ef444455' if not actual_survives_base else '#4ade8055'};background:{'#1c0a0a' if not actual_survives_base else '#0a1c0f'}">
+    <p style="color:{'#fca5a5' if not actual_survives_base else '#86efac'}"><strong>Retroactive result (draw #{TARGET_SERIAL} has since landed):</strong>
+    the actual winning numbers were <strong style="color:#f1f5f9">{', '.join(str(n) for n in ACTUAL_MAIN)}</strong>
+    (bonus {', '.join(str(n) for n in ACTUAL_BONUS)}), drawn {ACTUAL_DATE}.
+    {"This result was <strong>NOT</strong> covered by this page &mdash; it never even entered the elimination universe: " +
+     ', '.join(str(n) for n in _missing_from_base) + (" isn't" if len(_missing_from_base) == 1 else " aren't") +
+     f" in the {base['k']}-number Base pool (ARIMA's K={base['k']} pick, computed walk-forward before #{TARGET_SERIAL} was drawn), "
+     "so it fails before Pass 1 even runs." if not actual_survives_base else
+     "This result <strong>WAS</strong> contained in the Base pool -- check below whether it survived all three elimination passes."}</p>
+  </div>
+
   <div class="note">
-    <p>Base is <strong style="color:#f1f5f9">ARIMA(2,1,0)'s K={base['k']} pick</strong> for draw #{TARGET_SERIAL} (not yet drawn) &mdash;
+    <p>Base is <strong style="color:#f1f5f9">ARIMA(2,1,0)'s K={base['k']} pick</strong> for draw #{TARGET_SERIAL} (walk-forward target, trained on draws before it) &mdash;
     read from <a href="/loto7/predictions" style="color:#a78bfa">the live /loto7/predictions page</a>'s data (ARIMA's native
     K={base['nativeK']} pool, normalized to K={base['k']} via <code>topKNums()</code>, the same generic cross-method-consensus
     trim/pad function used throughout this site &mdash; the same method that made ARIMA the top-ranked method at K=25 on

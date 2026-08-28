@@ -78,8 +78,15 @@ table.combos tr:hover td{background:#111827}
   <h1>✂️ Loto 7 — Draw #691 Elimination</h1>
   <p class="subtitle">Base = ARIMA(2,1,0)'s K=25 prediction pool for draw #691 &mdash; Pass 1 = 16 methods' K=22 picks &mdash; Pass 2 = 4 methods' K=25 picks &mdash; Pass 3 = historical repeat filter</p>
 
+  <div class="note" style="border-color:#ef444455;background:#1c0a0a">
+    <p style="color:#fca5a5"><strong>Retroactive result (draw #691 has since landed):</strong>
+    the actual winning numbers were <strong style="color:#f1f5f9">8, 10, 20, 22, 23, 27, 37</strong>
+    (bonus 2, 9), drawn 2026-08-21.
+    This result was <strong>NOT</strong> covered by this page &mdash; it never even entered the elimination universe: 8, 37 aren't in the 25-number Base pool (ARIMA's K=25 pick, computed walk-forward before #691 was drawn), so it fails before Pass 1 even runs.</p>
+  </div>
+
   <div class="note">
-    <p>Base is <strong style="color:#f1f5f9">ARIMA(2,1,0)'s K=25 pick</strong> for draw #691 (not yet drawn) &mdash;
+    <p>Base is <strong style="color:#f1f5f9">ARIMA(2,1,0)'s K=25 pick</strong> for draw #691 (walk-forward target, trained on draws before it) &mdash;
     read from <a href="/loto7/predictions" style="color:#a78bfa">the live /loto7/predictions page</a>'s data (ARIMA's native
     K=15 pool, normalized to K=25 via <code>topKNums()</code>, the same generic cross-method-consensus
     trim/pad function used throughout this site &mdash; the same method that made ARIMA the top-ranked method at K=25 on
