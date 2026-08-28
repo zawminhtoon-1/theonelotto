@@ -8,6 +8,17 @@ xoshiro_elim_2131.html was built). Standard walk-forward build, same
 methodology as #2130/#2131, trained on all real draws through #2131,
 no leakage.
 
+Rebuilt (2026-08-28) to REMOVE the old Pass 2 (top 1000 worst-coverage
+random seeds, K=15, from seed_hit_random_k17) entirely from the pipeline,
+per explicit user request. Downstream passes renumbered:
+  old Pass 1 (16 methods)                -> Pass 1 (unchanged)
+  old Pass 2 (1000 worst-coverage seeds) -> REMOVED
+  old Pass 3 (xoshiro K=21 seeds 0/1/2)  -> Pass 2
+  old Pass 4 (historical repeat filter)  -> Pass 3
+  old Pass 5 (Worst Combo Anti-Pick)     -> Pass 4
+  old Pass 6 (consecutive-run filter)    -> Pass 5
+  old Pass 7 (three-consecutive-pairs)   -> Pass 6 (final)
+
 Base pool: Modular Cycle's K=33 pick (walk-forward, trained on all real
            draws through #2131, native K=28 pick normalized to K=33 via
            topKNums()) INTERSECTED with xoshiro256** K=38 seed #692,809's
@@ -22,43 +33,23 @@ Pass 1:    each of the 16 prediction methods' K=19 pick for #2132,
            consensus trim/pad port. Any Base combo fully contained
            within ANY single one of these 16 sets gets removed.
 
-Pass 2:    the top N_WORST_SEEDS worst-coverage seeds -- ranked by
-           highest 0-hit count in seed_hit_random_k17 (the K=17 Python
-           random.Random scan, seeds -1,236,700 to 1,236,700 -- see
-           random_seed_scan_k17_full.py / gen_random_seed_backtest.py),
-           same seed list throughout. Each seed's K=K_RANDOM pick for
-           draw #2132 is computed via the ground-truth
-           random.Random(seed*10_000_000+draw_serial).sample() formula
-           (K=K_RANDOM is independent of the K=17 used for the seed
-           ranking -- started at K=17, switched to K=15 after
-           projecting the effect first). Any Pass-1-remaining combo
-           fully contained within ANY single one of these picks gets
-           removed -- equivalent to expanding each pick to its
-           C(K_RANDOM,6) sub-combos and removing any remaining combo
-           present in the union of those sub-combo sets, just computed
-           via bitmask containment instead of literal enumeration.
-           (Seed count started at 10, raised to 100, then 500, then
-           1000 -- each step projected against the current Pass-1
-           output first before being applied to the live page.)
-
-Pass 3:    xoshiro256** K=21 seeds 0, 1, and 2 -- the same K=21
+Pass 2:    xoshiro256** K=21 seeds 0, 1, and 2 -- the same K=21
            algorithm used on xoshiro_seed_backtest.html. Each seed's
            K=21 pick for draw #2132 is computed with the same verified
            xoshiro256** implementation used for Base's xoshiro side.
-           Any Pass-2-remaining combo fully contained within ANY single
+           Any Pass-1-remaining combo fully contained within ANY single
            one of these 3 picks gets removed.
 
-Pass 4:    historical repeat filter (same "zero repeats in history"
+Pass 3:    historical repeat filter (same "zero repeats in history"
            pattern used in the earlier #2124 elimination flow). Any
-           Pass-3-remaining combo that exactly matches an actual
+           Pass-2-remaining combo that exactly matches an actual
            6-number winning combo from draws #1 through #2131 gets
            removed.
 
-Pass 5:    the "Worst Combo (Anti-Pick)" K=15 pick -- MA-43 + Exp-weighted
+Pass 4:    the "Worst Combo (Anti-Pick)" K=15 pick -- MA-43 + Exp-weighted
            + Random Forest + kNN + Apriori Association Rules consensus,
-           for draw #2132. Any Pass-4-remaining combo fully contained
-           within this 15-number pick gets removed. This is the final
-           pass on this page unless asked for more. Computed directly
+           for draw #2132. Any Pass-3-remaining combo fully contained
+           within this 15-number pick gets removed. Computed directly
            here (not screenshotted off /predictions, to keep this script
            self-contained and reproducible, same convention as #2131's
            build) from base_pools[1] (MA-43), base_pools[2] (Exp-weighted),
@@ -68,6 +59,22 @@ Pass 5:    the "Worst Combo (Anti-Pick)" K=15 pick -- MA-43 + Exp-weighted
            used above for Pass 1's 16 methods), same union-count-desc-
            then-ascending-number
            combining rule as PredictionsView.tsx's worstComboNums.
+
+Pass 5:    no 3+/4+/5+/6-length consecutive-run filter. Removes any
+           Pass-4-remaining combo whose sorted main numbers contain a
+           run of 3 or more consecutive integers (e.g. 5,6,7).
+           Historical basis: across all real Loto6 draws, only 5.96%
+           have a max run of exactly 3, 0.66% exactly 4, and 0 have
+           ever had a run of 5 or 6 -- runs of 3+ are collectively rare
+           (6.62% of real draws) and this pass removes combos matching
+           that same rare pattern.
+
+Pass 6:    "three consecutive pairs" filter (final). Removes any
+           Pass-5-remaining combo whose sorted main numbers decompose
+           into exactly three consecutive pairs (each run of exactly 2,
+           no run of 3+, no isolated singles) -- e.g. 1,2,9,10,15,16.
+           Historical basis: only 3 of all 2,131 real Loto6 draws
+           (0.141%) match this exact pattern (#172, #775, #1394).
 
 Self-checks the xoshiro implementation against a known-good value before
 trusting Base's xoshiro component.
@@ -79,7 +86,7 @@ Outputs:
 
 Run: python precompute_xoshiro_elim_2132.py
 """
-import json, os, re, itertools, time, warnings, sqlite3, random as pyrandom
+import json, os, re, itertools, time, warnings
 import numpy as np
 import psycopg2
 from collections import Counter, defaultdict
@@ -89,7 +96,6 @@ warnings.filterwarnings('ignore')
 
 BASE = r"C:\Users\Zaw Min Htoon\source\repos\theonelotto"
 ENV_LOCAL = BASE + r"\.env.local"
-DB_PATH = BASE + r"\loto6_local.db"
 META_OUT = BASE + r"\xoshiro_elim_2132_meta.json"
 COMBOS_OUT = BASE + r"\public\xoshiro_elim_2132_combos.json"
 
@@ -99,15 +105,11 @@ K_XO = 38
 K_MC = 33
 K_METHODS = 19   # normalized K for all 16 methods (this page's Pass 1)
 K_DEFAULT = 15   # native K most methods produce before normalization
-K_RANDOM = 15    # K for the Pass-2 random.Random seeds' picks (independent
-                 # of the K=17 used to rank/select the seed list itself)
-N_WORST_SEEDS = 1000
-RANDOM_TABLE = "seed_hit_random_k17"
-K_PASS3 = 21     # xoshiro256** K=21, same as xoshiro_seed_backtest.html
-PASS3_SEEDS = [0, 1, 2]
-K_PASS5 = 15     # Worst Combo (Anti-Pick) K -- computed below from base_pools
+K_PASS2 = 21     # xoshiro256** K=21, same as xoshiro_seed_backtest.html
+PASS2_SEEDS = [0, 1, 2]
+K_PASS4 = 15     # Worst Combo (Anti-Pick) K -- computed below from base_pools
                  # (MA-43 + Exp-weighted + Random Forest + kNN + Apriori
-                 # consensus), NOT hardcoded -- see Pass 5 docstring above.
+                 # consensus), NOT hardcoded -- see Pass 4 docstring above.
 WORST_COMBO_METHOD_INDICES = [1, 2, 6, 9, 11]  # MA-43, Exp-Weighted, RF, kNN, Apriori
 
 SEED_XO = 692809   # best K=38 seed (0-1,000,000 scan)
@@ -160,7 +162,7 @@ print(f"Self-check OK: xoshiro seed {SEED_XO} K={K_XO} draw #2129 matches known-
 xo_pool = xoshiro_predict(SEED_XO, TARGET_SERIAL, K_XO)
 print(f"Xoshiro K={K_XO} seed #{SEED_XO} pick for draw #{TARGET_SERIAL}: {xo_pool}")
 
-# ── Fetch all real draws through #2130 ───────────────────────────────────────
+# ── Fetch all real draws through #2131 ───────────────────────────────────────
 if 'DATABASE_URL' not in os.environ:
     with open(ENV_LOCAL, encoding='utf-8') as f:
         env_text = f.read()
@@ -470,7 +472,7 @@ print(f"Done in {time.time()-t0:.1f}s")
 for name, pool in zip(METHOD_NAMES, base_pools):
     print(f"  {name:24s} (native K={len(pool)}): {pool}")
 
-# ── Pass 5's Worst Combo (Anti-Pick) K=15, computed here (see docstring) ────
+# ── Pass 4's Worst Combo (Anti-Pick) K=15, computed here (see docstring) ────
 # instead of read off /predictions -- same 5-method consensus (MA-43 +
 # Exp-Weighted + Random Forest + kNN + Apriori), same combining rule as
 # PredictionsView.tsx's worstComboNums: union count across the 5 methods'
@@ -481,9 +483,9 @@ worst_combo_count = Counter()
 for idx in WORST_COMBO_METHOD_INDICES:
     for n in base_pools[idx]:
         worst_combo_count[n] += 1
-PASS5_PICK = sorted(sorted(worst_combo_count.keys(), key=lambda n: (-worst_combo_count[n], n))[:K_PASS5])
-print(f"\nWorst Combo (Anti-Pick) K={K_PASS5} pick for draw #{TARGET_SERIAL} (computed from "
-      f"{[METHOD_NAMES[i] for i in WORST_COMBO_METHOD_INDICES]}): {PASS5_PICK}")
+PASS4_PICK = sorted(sorted(worst_combo_count.keys(), key=lambda n: (-worst_combo_count[n], n))[:K_PASS4])
+print(f"\nWorst Combo (Anti-Pick) K={K_PASS4} pick for draw #{TARGET_SERIAL} (computed from "
+      f"{[METHOD_NAMES[i] for i in WORST_COMBO_METHOD_INDICES]}): {PASS4_PICK}")
 
 # ── topKNums, exact Python port of backtest.html's JS function ─────────────
 def top_k_nums(combo, all_pools, k):
@@ -546,7 +548,7 @@ print(f"\nUniverse: C({K_BASE},6) = {universe_count:,}")
 
 t0 = time.time()
 FULLBASE = (1 << K_BASE) - 1
-remaining = []
+remaining_after1 = []
 removed_by_methods = 0
 positions = list(range(K_BASE))
 
@@ -562,173 +564,113 @@ for combo_positions in itertools.combinations(positions, 6):
     if removed:
         removed_by_methods += 1
         continue
-    remaining.append(tuple(sorted(base_pool[p] for p in combo_positions)))
+    remaining_after1.append(tuple(sorted(base_pool[p] for p in combo_positions)))
 
 elapsed = time.time() - t0
-final_remaining_pass1 = len(remaining)
+final_remaining_pass1 = len(remaining_after1)
 print(f"Enumerated {universe_count:,} combos in {elapsed:.1f}s")
 print(f"  Removed by ANY of the 16 methods' K={K_METHODS} containment: {removed_by_methods:,}")
 print(f"  Final remaining: {final_remaining_pass1:,}")
 print(f"\nElimination sequence: {universe_count:,} -> {final_remaining_pass1:,} remaining")
 
-# ── Pass 2: top N_WORST_SEEDS worst-coverage seeds (highest 0-hit count in
-# seed_hit_random_k17, the K=17 Python random.Random scan, seeds -1,236,700
-# to 1,236,700) -- ranking/seed-selection always uses that K=17 scan's
-# hit0_count column, independent of K_RANDOM below. Each seed's K=K_RANDOM
-# pick for #TARGET_SERIAL is computed via the ground-truth
-# random.Random(seed*10_000_000+draw_serial).sample() formula. Any
-# Pass-1-remaining combo fully contained within ANY of these picks is
-# removed -- equivalent to expanding each pick to C(K_RANDOM,6) sub-combos
-# and removing anything present in the union of those sets, just done via
-# bitmask containment rather than literal enumeration. ─────────────────────
-print(f"\n=== Pass 2 ===")
-conn2 = sqlite3.connect(DB_PATH)
-cur2 = conn2.cursor()
-cur2.execute(f"""SELECT seed, hit0_count FROM {RANDOM_TABLE}
-                 ORDER BY hit0_count DESC, seed ASC LIMIT {N_WORST_SEEDS}""")
-worst_seeds = cur2.fetchall()
-conn2.close()
-if len(worst_seeds) != N_WORST_SEEDS:
-    raise SystemExit(f"Expected {N_WORST_SEEDS} worst-coverage seeds from {RANDOM_TABLE}, got {len(worst_seeds)}")
-print(f"Top {N_WORST_SEEDS} worst-coverage seeds from {RANDOM_TABLE} (highest 0-hit count):")
-for seed, hit0 in worst_seeds:
-    print(f"  seed={seed:>10,}  hit0={hit0}")
-
-def random_predict_pass2(seed, draw_serial, k=K_RANDOM):
-    rng = pyrandom.Random(seed * 10_000_000 + draw_serial)
-    return sorted(rng.sample(range(1, LOTO6_MAX + 1), k))
-
-random_picks = [random_predict_pass2(seed, TARGET_SERIAL) for seed, _ in worst_seeds]
-print(f"\nRandom-seed K={K_RANDOM} picks for draw #{TARGET_SERIAL}:")
-random_masks = []
-for (seed, hit0), pick in zip(worst_seeds, random_picks):
-    mmask = restricted_mask(set(pick))
-    overlap = bin(mmask).count('1')
-    random_masks.append(mmask)
-    print(f"  seed={seed:>10,} (hit0={hit0}): {pick}  [overlap with {K_BASE}-pool: {overlap}]")
-
-t0 = time.time()
-remaining_after2 = []
-removed_by_random = 0
-for combo in remaining:
-    combo_mask = 0
-    for n in combo:
-        combo_mask |= (1 << pos_of[n])
-    removed = False
-    for mmask in random_masks:
-        if (combo_mask & ~mmask) & FULLBASE == 0:
-            removed = True
-            break
-    if removed:
-        removed_by_random += 1
-        continue
-    remaining_after2.append(combo)
-elapsed2 = time.time() - t0
-final_remaining = len(remaining_after2)
-print(f"\nPass 2 elimination in {elapsed2:.1f}s")
-print(f"  Removed by ANY of the {N_WORST_SEEDS} worst-coverage seeds' K={K_RANDOM} containment: {removed_by_random:,}")
-print(f"  Before Pass 2: {final_remaining_pass1:,}  ->  After Pass 2: {final_remaining:,}")
-print(f"\nFull elimination sequence: {universe_count:,} -> {final_remaining_pass1:,} (Pass 1) -> {final_remaining:,} (Pass 2)")
-
-# ── Pass 3: xoshiro256** K=21 seeds 0, 1, 2 (same algorithm as
-# xoshiro_seed_backtest.html). Any Pass-2-remaining combo fully contained
+# ── Pass 2: xoshiro256** K=21 seeds 0, 1, 2 (same algorithm as
+# xoshiro_seed_backtest.html). Any Pass-1-remaining combo fully contained
 # within ANY of these 3 picks is removed. ───────────────────────────────────
-print(f"\n=== Pass 3 ===")
-pass3_picks = [xoshiro_predict(seed, TARGET_SERIAL, K_PASS3) for seed in PASS3_SEEDS]
-print(f"Xoshiro K={K_PASS3} picks for draw #{TARGET_SERIAL}:")
-pass3_masks = []
-for seed, pick in zip(PASS3_SEEDS, pass3_picks):
+print(f"\n=== Pass 2 ===")
+pass2_picks = [xoshiro_predict(seed, TARGET_SERIAL, K_PASS2) for seed in PASS2_SEEDS]
+print(f"Xoshiro K={K_PASS2} picks for draw #{TARGET_SERIAL}:")
+pass2_masks = []
+for seed, pick in zip(PASS2_SEEDS, pass2_picks):
     mmask = restricted_mask(set(pick))
     overlap = bin(mmask).count('1')
-    pass3_masks.append(mmask)
+    pass2_masks.append(mmask)
     print(f"  seed={seed}: {pick}  [overlap with {K_BASE}-pool: {overlap}]")
 
 t0 = time.time()
-remaining_after3 = []
-removed_by_pass3 = 0
-for combo in remaining_after2:
+remaining_after2 = []
+removed_by_pass2 = 0
+for combo in remaining_after1:
     combo_mask = 0
     for n in combo:
         combo_mask |= (1 << pos_of[n])
     removed = False
-    for mmask in pass3_masks:
+    for mmask in pass2_masks:
         if (combo_mask & ~mmask) & FULLBASE == 0:
             removed = True
             break
     if removed:
-        removed_by_pass3 += 1
+        removed_by_pass2 += 1
         continue
-    remaining_after3.append(combo)
-elapsed3 = time.time() - t0
-final_remaining_pass3 = len(remaining_after3)
-print(f"\nPass 3 elimination in {elapsed3:.1f}s")
-print(f"  Removed by ANY of the {len(PASS3_SEEDS)} xoshiro K={K_PASS3} seeds' containment: {removed_by_pass3:,}")
-print(f"  Before Pass 3: {final_remaining:,}  ->  After Pass 3: {final_remaining_pass3:,}")
-print(f"\nFull elimination sequence: {universe_count:,} -> {final_remaining_pass1:,} (Pass 1) -> {final_remaining:,} (Pass 2) -> {final_remaining_pass3:,} (Pass 3)")
+    remaining_after2.append(combo)
+elapsed2 = time.time() - t0
+final_remaining_pass2 = len(remaining_after2)
+print(f"\nPass 2 elimination in {elapsed2:.1f}s")
+print(f"  Removed by ANY of the {len(PASS2_SEEDS)} xoshiro K={K_PASS2} seeds' containment: {removed_by_pass2:,}")
+print(f"  Before Pass 2: {final_remaining_pass1:,}  ->  After Pass 2: {final_remaining_pass2:,}")
+print(f"\nFull elimination sequence: {universe_count:,} -> {final_remaining_pass1:,} (Pass 1) -> {final_remaining_pass2:,} (Pass 2)")
 
-# ── Pass 4: historical repeat filter (same "zero repeats in history" pattern
-# used in the earlier #2124 elimination flow). Any Pass-3-remaining combo
+# ── Pass 3: historical repeat filter (same "zero repeats in history" pattern
+# used in the earlier #2124 elimination flow). Any Pass-2-remaining combo
 # that exactly matches an actual 6-number winning combo from draws #1
-# through #2130 is removed. Final pass on this page. ────────────────────────
-print(f"\n=== Pass 4 ===")
+# through #2131 is removed. ──────────────────────────────────────────────────
+print(f"\n=== Pass 3 ===")
 historical_combos = set(tuple(sorted(nums)) for nums in all_main6)
 print(f"Historical winning combos: {len(historical_combos):,} (from {len(all_main6):,} draws, #1-{train_serials[-1]})")
 
 t0 = time.time()
-remaining_after4 = []
+remaining_after3 = []
 removed_historical = []
-for combo in remaining_after3:
+for combo in remaining_after2:
     if combo in historical_combos:
         removed_historical.append(combo)
+        continue
+    remaining_after3.append(combo)
+elapsed3 = time.time() - t0
+final_remaining_pass3 = len(remaining_after3)
+print(f"Pass 3 elimination in {elapsed3:.1f}s")
+print(f"  Removed (exact match to a historical winning combo): {len(removed_historical):,}")
+if removed_historical:
+    print(f"  Matched historical combos: {removed_historical}")
+print(f"  Before Pass 3: {final_remaining_pass2:,}  ->  After Pass 3: {final_remaining_pass3:,}")
+print(f"\nFull elimination sequence: {universe_count:,} -> {final_remaining_pass1:,} (Pass 1) -> {final_remaining_pass2:,} (Pass 2) -> "
+      f"{final_remaining_pass3:,} (Pass 3)")
+
+# ── Pass 4: Worst Combo (Anti-Pick) K=15 pick. Any Pass-3-remaining combo
+# fully contained within this pick is removed. ──────────────────────────────
+print(f"\n=== Pass 4 ===")
+K_PASS4 = len(PASS4_PICK)
+print(f"Worst Combo (Anti-Pick) K={K_PASS4} pick for draw #{TARGET_SERIAL}: {PASS4_PICK}")
+pass4_mask = restricted_mask(set(PASS4_PICK))
+pass4_overlap = bin(pass4_mask).count('1')
+print(f"  overlap with {K_BASE}-pool: {pass4_overlap}")
+
+t0 = time.time()
+remaining_after4 = []
+removed_by_pass4 = 0
+for combo in remaining_after3:
+    combo_mask = 0
+    for n in combo:
+        combo_mask |= (1 << pos_of[n])
+    if (combo_mask & ~pass4_mask) & FULLBASE == 0:
+        removed_by_pass4 += 1
         continue
     remaining_after4.append(combo)
 elapsed4 = time.time() - t0
 final_remaining_pass4 = len(remaining_after4)
 print(f"Pass 4 elimination in {elapsed4:.1f}s")
-print(f"  Removed (exact match to a historical winning combo): {len(removed_historical):,}")
-if removed_historical:
-    print(f"  Matched historical combos: {removed_historical}")
+print(f"  Removed (contained within the Worst Combo K={K_PASS4} pick): {removed_by_pass4:,}")
 print(f"  Before Pass 4: {final_remaining_pass3:,}  ->  After Pass 4: {final_remaining_pass4:,}")
-print(f"\nFull elimination sequence: {universe_count:,} -> {final_remaining_pass1:,} (Pass 1) -> {final_remaining:,} (Pass 2) -> "
+print(f"\nFull elimination sequence: {universe_count:,} -> {final_remaining_pass1:,} (Pass 1) -> {final_remaining_pass2:,} (Pass 2) -> "
       f"{final_remaining_pass3:,} (Pass 3) -> {final_remaining_pass4:,} (Pass 4)")
 
-# ── Pass 5: Worst Combo (Anti-Pick) K=15 pick from /predictions. Any
-# Pass-4-remaining combo fully contained within this pick is removed. Final
-# pass on this page. ─────────────────────────────────────────────────────
-print(f"\n=== Pass 5 ===")
-K_PASS5 = len(PASS5_PICK)
-print(f"Worst Combo (Anti-Pick) K={K_PASS5} pick for draw #{TARGET_SERIAL}: {PASS5_PICK}")
-pass5_mask = restricted_mask(set(PASS5_PICK))
-pass5_overlap = bin(pass5_mask).count('1')
-print(f"  overlap with {K_BASE}-pool: {pass5_overlap}")
-
-t0 = time.time()
-remaining_after5 = []
-removed_by_pass5 = 0
-for combo in remaining_after4:
-    combo_mask = 0
-    for n in combo:
-        combo_mask |= (1 << pos_of[n])
-    if (combo_mask & ~pass5_mask) & FULLBASE == 0:
-        removed_by_pass5 += 1
-        continue
-    remaining_after5.append(combo)
-elapsed5 = time.time() - t0
-final_remaining_pass5 = len(remaining_after5)
-print(f"Pass 5 elimination in {elapsed5:.1f}s")
-print(f"  Removed (contained within the Worst Combo K={K_PASS5} pick): {removed_by_pass5:,}")
-print(f"  Before Pass 5: {final_remaining_pass4:,}  ->  After Pass 5: {final_remaining_pass5:,}")
-print(f"\nFull elimination sequence: {universe_count:,} -> {final_remaining_pass1:,} (Pass 1) -> {final_remaining:,} (Pass 2) -> "
-      f"{final_remaining_pass3:,} (Pass 3) -> {final_remaining_pass4:,} (Pass 4) -> {final_remaining_pass5:,} (Pass 5)")
-
-# ── Pass 6: no 3+/4+/5+/6-length consecutive-run filter. Removes any
-# Pass-5-remaining combo whose sorted main numbers contain a run of 3 or
+# ── Pass 5: no 3+/4+/5+/6-length consecutive-run filter. Removes any
+# Pass-4-remaining combo whose sorted main numbers contain a run of 3 or
 # more consecutive integers (e.g. 5,6,7). Historical basis: across all
-# 2,131 real Loto6 draws, only 127 (5.96%) have a max run of exactly 3,
-# 14 (0.66%) exactly 4, and 0 have ever had a run of 5 or 6 -- runs of
-# 3+ are collectively rare (6.62% of real draws) and this pass removes
-# combos matching that same rare pattern. Final pass on this page. ─────
-print(f"\n=== Pass 6 ===")
+# real Loto6 draws, only ~5.96% have a max run of exactly 3, ~0.66%
+# exactly 4, and 0 have ever had a run of 5 or 6 -- runs of 3+ are
+# collectively rare (6.62% of real draws) and this pass removes combos
+# matching that same rare pattern. ───────────────────────────────────────
+print(f"\n=== Pass 5 ===")
 def max_consecutive_run(combo):
     s = sorted(combo)
     run = 1
@@ -742,33 +684,32 @@ def max_consecutive_run(combo):
     return best
 
 t0 = time.time()
-remaining_after6 = []
-removed_by_pass6 = 0
+remaining_after5 = []
+removed_by_pass5 = 0
 run_dist = Counter()
-for combo in remaining_after5:
+for combo in remaining_after4:
     mr = max_consecutive_run(combo)
     run_dist[mr] += 1
     if mr >= 3:
-        removed_by_pass6 += 1
+        removed_by_pass5 += 1
         continue
-    remaining_after6.append(combo)
-elapsed6 = time.time() - t0
-final_remaining_pass6 = len(remaining_after6)
-print(f"Pass 6 elimination in {elapsed6:.1f}s")
-print(f"  Max-run distribution (of Pass-5-remaining combos): " + ", ".join(f"{k}:{v:,}" for k, v in sorted(run_dist.items())))
-print(f"  Removed (max consecutive run >= 3): {removed_by_pass6:,}")
-print(f"  Before Pass 6: {final_remaining_pass5:,}  ->  After Pass 6: {final_remaining_pass6:,}")
-print(f"\nFull elimination sequence: {universe_count:,} -> {final_remaining_pass1:,} (Pass 1) -> {final_remaining:,} (Pass 2) -> "
-      f"{final_remaining_pass3:,} (Pass 3) -> {final_remaining_pass4:,} (Pass 4) -> {final_remaining_pass5:,} (Pass 5) -> "
-      f"{final_remaining_pass6:,} (Pass 6)")
+    remaining_after5.append(combo)
+elapsed5 = time.time() - t0
+final_remaining_pass5 = len(remaining_after5)
+print(f"Pass 5 elimination in {elapsed5:.1f}s")
+print(f"  Max-run distribution (of Pass-4-remaining combos): " + ", ".join(f"{k}:{v:,}" for k, v in sorted(run_dist.items())))
+print(f"  Removed (max consecutive run >= 3): {removed_by_pass5:,}")
+print(f"  Before Pass 5: {final_remaining_pass4:,}  ->  After Pass 5: {final_remaining_pass5:,}")
+print(f"\nFull elimination sequence: {universe_count:,} -> {final_remaining_pass1:,} (Pass 1) -> {final_remaining_pass2:,} (Pass 2) -> "
+      f"{final_remaining_pass3:,} (Pass 3) -> {final_remaining_pass4:,} (Pass 4) -> {final_remaining_pass5:,} (Pass 5)")
 
-# ── Pass 7: "three consecutive pairs" filter. Removes any Pass-6-remaining
-# combo whose sorted main numbers decompose into exactly three consecutive
-# pairs (each run of exactly 2, no run of 3+, no isolated singles) -- e.g.
-# 1,2,9,10,15,16. Historical basis: only 3 of all 2,131 real Loto6 draws
-# (0.141%) match this exact pattern (#172, #775, #1394). Final pass on
-# this page. ──────────────────────────────────────────────────────────────
-print(f"\n=== Pass 7 ===")
+# ── Pass 6: "three consecutive pairs" filter (final). Removes any
+# Pass-5-remaining combo whose sorted main numbers decompose into exactly
+# three consecutive pairs (each run of exactly 2, no run of 3+, no
+# isolated singles) -- e.g. 1,2,9,10,15,16. Historical basis: only 3 of
+# all 2,131 real Loto6 draws (0.141%) match this exact pattern (#172,
+# #775, #1394). ──────────────────────────────────────────────────────────
+print(f"\n=== Pass 6 ===")
 def is_three_consecutive_pairs(combo):
     s = sorted(combo)
     runs = []
@@ -783,23 +724,23 @@ def is_three_consecutive_pairs(combo):
     return len(runs) == 3 and all(len(r) == 2 for r in runs)
 
 t0 = time.time()
-remaining_after7 = []
-removed_by_pass7 = []
-for combo in remaining_after6:
+remaining_after6 = []
+removed_by_pass6 = []
+for combo in remaining_after5:
     if is_three_consecutive_pairs(combo):
-        removed_by_pass7.append(combo)
+        removed_by_pass6.append(combo)
         continue
-    remaining_after7.append(combo)
-elapsed7 = time.time() - t0
-final_remaining_pass7 = len(remaining_after7)
-print(f"Pass 7 elimination in {elapsed7:.1f}s")
-print(f"  Removed (three consecutive pairs, e.g. 1,2,9,10,15,16): {len(removed_by_pass7):,}")
-if removed_by_pass7[:10]:
-    print(f"  First 10 removed: {removed_by_pass7[:10]}")
-print(f"  Before Pass 7: {final_remaining_pass6:,}  ->  After Pass 7: {final_remaining_pass7:,}")
-print(f"\nFull elimination sequence: {universe_count:,} -> {final_remaining_pass1:,} (Pass 1) -> {final_remaining:,} (Pass 2) -> "
+    remaining_after6.append(combo)
+elapsed6 = time.time() - t0
+final_remaining_pass6 = len(remaining_after6)
+print(f"Pass 6 elimination in {elapsed6:.1f}s")
+print(f"  Removed (three consecutive pairs, e.g. 1,2,9,10,15,16): {len(removed_by_pass6):,}")
+if removed_by_pass6[:10]:
+    print(f"  First 10 removed: {removed_by_pass6[:10]}")
+print(f"  Before Pass 6: {final_remaining_pass5:,}  ->  After Pass 6: {final_remaining_pass6:,}")
+print(f"\nFull elimination sequence: {universe_count:,} -> {final_remaining_pass1:,} (Pass 1) -> {final_remaining_pass2:,} (Pass 2) -> "
       f"{final_remaining_pass3:,} (Pass 3) -> {final_remaining_pass4:,} (Pass 4) -> {final_remaining_pass5:,} (Pass 5) -> "
-      f"{final_remaining_pass6:,} (Pass 6) -> {final_remaining_pass7:,} (Pass 7)")
+      f"{final_remaining_pass6:,} (Pass 6)")
 
 # ── Save outputs ──────────────────────────────────────────────────────────
 meta = {
@@ -816,36 +757,30 @@ meta = {
     'removedByMethods': removed_by_methods,
     'finalRemainingPass1': final_remaining_pass1,
     'methodOverlaps': [bin(m).count('1') for m in method_masks],
-    'randomK': K_RANDOM,
-    'randomSeeds': [{'seed': seed, 'hit0': hit0, 'pick': pick}
-                     for (seed, hit0), pick in zip(worst_seeds, random_picks)],
-    'removedByRandom': removed_by_random,
-    'finalRemainingPass2': final_remaining,
-    'randomOverlaps': [bin(m).count('1') for m in random_masks],
-    'pass3K': K_PASS3,
-    'pass3Seeds': [{'seed': seed, 'pick': pick} for seed, pick in zip(PASS3_SEEDS, pass3_picks)],
-    'removedByPass3': removed_by_pass3,
-    'finalRemainingPass3': final_remaining_pass3,
-    'pass3Overlaps': [bin(m).count('1') for m in pass3_masks],
+    'pass2K': K_PASS2,
+    'pass2Seeds': [{'seed': seed, 'pick': pick} for seed, pick in zip(PASS2_SEEDS, pass2_picks)],
+    'removedByPass2': removed_by_pass2,
+    'finalRemainingPass2': final_remaining_pass2,
+    'pass2Overlaps': [bin(m).count('1') for m in pass2_masks],
     'historicalDrawCount': len(all_main6),
     'historicalCombos': [sorted(nums) for nums in all_main6],
     'removedHistorical': [list(c) for c in removed_historical],
+    'finalRemainingPass3': final_remaining_pass3,
+    'pass4K': K_PASS4,
+    'pass4Pick': PASS4_PICK,
+    'pass4Overlap': pass4_overlap,
+    'removedByPass4': removed_by_pass4,
     'finalRemainingPass4': final_remaining_pass4,
-    'pass5K': K_PASS5,
-    'pass5Pick': PASS5_PICK,
-    'pass5Overlap': pass5_overlap,
     'removedByPass5': removed_by_pass5,
+    'pass5RunDistribution': {str(k): v for k, v in sorted(run_dist.items())},
     'finalRemainingPass5': final_remaining_pass5,
-    'removedByPass6': removed_by_pass6,
-    'pass6RunDistribution': {str(k): v for k, v in sorted(run_dist.items())},
-    'finalRemainingPass6': final_remaining_pass6,
-    'removedByPass7': [list(c) for c in removed_by_pass7],
-    'finalRemaining': final_remaining_pass7,
+    'removedByPass6': [list(c) for c in removed_by_pass6],
+    'finalRemaining': final_remaining_pass6,
 }
 with open(META_OUT, 'w', encoding='utf-8') as f:
     json.dump(meta, f, indent=2)
 print(f"\nSaved {META_OUT}")
 
 with open(COMBOS_OUT, 'w', encoding='utf-8') as f:
-    json.dump(remaining_after7, f, separators=(',', ':'))
-print(f"Saved {COMBOS_OUT} ({len(remaining_after7):,} combos, {os.path.getsize(COMBOS_OUT)//1024:,} KB)")
+    json.dump(remaining_after6, f, separators=(',', ':'))
+print(f"Saved {COMBOS_OUT} ({len(remaining_after6):,} combos, {os.path.getsize(COMBOS_OUT)//1024:,} KB)")
