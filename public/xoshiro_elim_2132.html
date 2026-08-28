@@ -20,6 +20,9 @@ h1{font-size:1.4rem;font-weight:700;color:#f1f5f9;margin-bottom:4px}
 .section{background:#0d1526;border:1px solid #1e293b;border-radius:12px;padding:20px;margin-bottom:20px}
 .section h2{font-size:1rem;font-weight:700;color:#f1f5f9;margin-bottom:4px;display:flex;align-items:center;gap:8px}
 .section h3{font-size:.86rem;font-weight:700;color:#cbd5e1;margin:14px 0 6px}
+.order-label{font-size:.7rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;
+  margin:10px 0 5px;display:flex;align-items:center;gap:8px}
+.order-hint{font-size:.72rem;font-weight:400;text-transform:none;letter-spacing:normal;color:#475569}
 .section .desc{font-size:.8rem;color:#64748b;margin-bottom:14px}
 .verify-badge{font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:10px;text-transform:uppercase;letter-spacing:.04em}
 .verify-badge.pending{background:#1e293b;color:#94a3b8}
@@ -147,9 +150,15 @@ table.combos tr:hover td{background:#111827}
     (server-computed). Xoshiro: current overall best K=38 seed (0–1,000,000 scan), computed live below. Base = their intersection
     &mdash; this 30-number pool is the elimination universe.</p>
     <h3>Modular Cycle K=33 pick <span class="verify-badge na">server-computed</span></h3>
+    <div class="order-label">Ascending order</div>
     <div class="balls" id="mcBalls"></div>
+    <div class="order-label">Generation order <span class="order-hint">(mod-43-cycle frequency rank, before padding/sort)</span></div>
+    <div class="balls" id="mcBallsOrdered"></div>
     <h3>Xoshiro K=38 seed #692,809 pick <span id="badgeXo" class="verify-badge pending">verifying…</span></h3>
+    <div class="order-label">Ascending order</div>
     <div class="balls" id="xoBalls"></div>
+    <div class="order-label">Generation order <span class="order-hint">(partial Fisher-Yates shuffle order)</span> <span id="badgeXoOrdered" class="verify-badge pending">verifying…</span></div>
+    <div class="balls" id="xoBallsOrdered"></div>
     <h3>Base (intersection)</h3>
     <div class="balls" id="baseBalls"></div>
   </div>
@@ -369,26 +378,38 @@ function xoshiroNext(s) {
   s[3] = rotl(s[3], 45);
   return result;
 }
-function xoshiroPredict(seed, drawSerial, k) {
+function xoshiroPredictRaw(seed, drawSerial, k) {
+  // Generation order -- the order the partial Fisher-Yates shuffle finalizes
+  // each position (i = n-1 first, down to i = n-k last), NOT sorted. Same
+  // convention as xoshiro_seed_scan_k38.html: push arr[i] right after each
+  // swap, in loop order.
   const combined = (BigInt(seed) * 10000000n + BigInt(drawSerial)) & MASK64;
   const s = seedState(combined);
   const arr = Array.from({length: 43}, (_, i) => i + 1);
   const n = arr.length;
+  const order = [];
   for (let i = n - 1; i >= n - k; i--) {
     const r = xoshiroNext(s);
     const j = Number(r % BigInt(i + 1));
     [arr[i], arr[j]] = [arr[j], arr[i]];
+    order.push(arr[i]);
   }
-  return arr.slice(n - k).sort((a, b) => a - b);
+  return order;
+}
+function xoshiroPredict(seed, drawSerial, k) {
+  return xoshiroPredictRaw(seed, drawSerial, k).slice().sort((a, b) => a - b);
 }
 
 // ── Modular Cycle: server-computed, embedded (can't run ML in the browser) ──
 const MC_POOL = [1, 2, 3, 4, 6, 7, 9, 10, 11, 12, 15, 16, 18, 19, 21, 22, 23, 24, 25, 26, 27, 28, 30, 31, 32, 33, 35, 37, 38, 39, 40, 42, 43];
+const MC_POOL_ORDERED = [43, 10, 9, 37, 2, 26, 28, 32, 4, 7, 11, 16, 19, 23, 25, 38, 1, 3, 21, 27, 39, 40, 6, 22, 24, 30, 31, 33, 35, 42, 15, 18, 12];
 const KNOWN_BASE = [1, 2, 3, 4, 6, 9, 10, 11, 12, 15, 16, 18, 19, 21, 22, 23, 24, 25, 26, 27, 28, 30, 31, 32, 33, 37, 38, 39, 40, 43];
 
 // ── Xoshiro side: compute live + verify against server-embedded reference ──
 const liveXo = xoshiroPredict(692809, 2132, 38);
+const liveXoOrdered = xoshiroPredictRaw(692809, 2132, 38);
 const KNOWN_XO = [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 37, 38, 39, 40, 43];
+const KNOWN_XO_ORDERED = [21, 30, 25, 16, 8, 19, 17, 26, 3, 15, 37, 22, 33, 28, 9, 14, 20, 11, 40, 31, 34, 43, 2, 24, 5, 13, 10, 23, 18, 29, 12, 6, 39, 4, 32, 38, 27, 1];
 
 // ── Base: client-side intersection of live xoshiro + embedded Modular Cycle ─
 const liveBase = liveXo.filter(n => MC_POOL.includes(n)).sort((a, b) => a - b);
@@ -406,11 +427,15 @@ function renderBalls(elId, nums, cls) {
 }
 
 renderBalls('mcBalls', MC_POOL, 'b3');
+renderBalls('mcBallsOrdered', MC_POOL_ORDERED, 'b3');
 renderBalls('xoBalls', liveXo, 'b1');
+renderBalls('xoBallsOrdered', liveXoOrdered, 'b1');
 renderBalls('baseBalls', liveBase, 'b2');
 renderBadge('badgeXo', arraysEqual(liveXo, KNOWN_XO));
+renderBadge('badgeXoOrdered', arraysEqual(liveXoOrdered, KNOWN_XO_ORDERED));
 renderBadge('badgeBase', arraysEqual(liveBase, KNOWN_BASE));
 if (!arraysEqual(liveXo, KNOWN_XO)) console.error('Xoshiro mismatch', liveXo, KNOWN_XO);
+if (!arraysEqual(liveXoOrdered, KNOWN_XO_ORDERED)) console.error('Xoshiro (generation order) mismatch', liveXoOrdered, KNOWN_XO_ORDERED);
 if (!arraysEqual(liveBase, KNOWN_BASE)) console.error('Base mismatch', liveBase, KNOWN_BASE);
 
 // ── Pass 2: xoshiro256** K=21 seeds, reusing the same verified

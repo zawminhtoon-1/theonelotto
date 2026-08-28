@@ -142,16 +142,25 @@ def xoshiro_next(s):
     s[2] ^= t
     s[3] = rotl(s[3], 45)
     return result
-def xoshiro_predict(seed, draw_serial, k, pool_max=LOTO6_MAX):
+def xoshiro_predict_raw(seed, draw_serial, k, pool_max=LOTO6_MAX):
+    """Generation order -- the order the partial Fisher-Yates shuffle finalizes
+    each position (i = n-1 first, down to i = n-k last), NOT sorted. Same
+    convention as xoshiro_seed_scan_k38.html's seed-detail picks (built by
+    appending arr[i] right after each swap, in loop order -- NOT the plain
+    arr[n-k:] slice, which comes out reversed relative to this)."""
     combined = (seed * 10_000_000 + draw_serial) & MASK64
     s = seed_state(combined)
     arr = list(range(1, pool_max + 1))
     n = len(arr)
+    order = []
     for i in range(n - 1, n - 1 - k, -1):
         r = xoshiro_next(s)
         j = r % (i + 1)
         arr[i], arr[j] = arr[j], arr[i]
-    return sorted(arr[n - k:])
+        order.append(arr[i])
+    return order
+def xoshiro_predict(seed, draw_serial, k, pool_max=LOTO6_MAX):
+    return sorted(xoshiro_predict_raw(seed, draw_serial, k, pool_max))
 
 # ── Self-check against known-good value before trusting the xoshiro side ────
 # Fixed anchor point (draw #2129, independently verified earlier this
@@ -162,7 +171,9 @@ assert _check == _KNOWN_2129, f"Self-check FAILED: {_check}"
 print(f"Self-check OK: xoshiro seed {SEED_XO} K={K_XO} draw #2129 matches known-good value.")
 
 xo_pool = xoshiro_predict(SEED_XO, TARGET_SERIAL, K_XO)
+xo_pool_ordered = xoshiro_predict_raw(SEED_XO, TARGET_SERIAL, K_XO)
 print(f"Xoshiro K={K_XO} seed #{SEED_XO} pick for draw #{TARGET_SERIAL}: {xo_pool}")
+print(f"  (generation order): {xo_pool_ordered}")
 
 # ── Fetch all real draws through #2129 ───────────────────────────────────────
 if 'DATABASE_URL' not in os.environ:
@@ -382,15 +393,21 @@ def method9_knn(train_main6, k_nn=10, k=K_DEFAULT):
     freq = Counter(n for d in neighbors for n in d)
     return sorted(n for n, _ in freq.most_common(k))
 
-def method10_modular_cycle(train_serials, train_main6, target_serial, k=28):
+def modular_cycle_ranked(train_serials, train_main6, target_serial, k=28):
+    """Generation order -- the mod-43 cycle's own frequency ranking (highest
+    count first, ties broken by ascending number), NOT sorted ascending.
+    This IS the order the method actually produced the pick in, before
+    method10_modular_cycle's final sort() throws it away."""
     target_mod = target_serial % LOTO6_MAX
     freq = Counter()
     for s, d in zip(train_serials, train_main6):
         if s % LOTO6_MAX == target_mod:
             for n in d: freq[n] += 1
     if not freq: freq = Counter(n for d in train_main6 for n in d)
-    top = sorted(range(1, LOTO6_MAX+1), key=lambda x: -freq.get(x, 0))[:k]
-    return sorted(top)
+    return sorted(range(1, LOTO6_MAX+1), key=lambda x: -freq.get(x, 0))[:k]
+
+def method10_modular_cycle(train_serials, train_main6, target_serial, k=28):
+    return sorted(modular_cycle_ranked(train_serials, train_main6, target_serial, k))
 
 def method11_apriori(train_main6, k=K_DEFAULT):
     pair_freq = Counter()
@@ -520,11 +537,36 @@ def top_k_nums(combo, all_pools, k):
     extra = extra[:k - len(combo)]
     return sorted(list(combo) + extra)
 
+def top_k_nums_extend_ordered(combo_ordered, all_pools, k):
+    """Same padding logic as top_k_nums's extend branch (len(combo) < k), but
+    preserves generation order instead of the final sort(): returns
+    combo_ordered followed by the padding numbers in their own selection
+    order (highest cross-method frequency first). Extend-only -- callers
+    must ensure len(combo_ordered) < k."""
+    freq = Counter()
+    for pool in all_pools:
+        for n in pool:
+            freq[n] += 1
+    in_combo = set(combo_ordered)
+    extra = sorted((n for n in freq if n not in in_combo), key=lambda n: -freq.get(n, 0))
+    if len(combo_ordered) + len(extra) < k:
+        have = set(combo_ordered) | set(extra)
+        for n in range(1, LOTO6_MAX + 1):
+            if n not in have:
+                extra.append(n)
+    extra = extra[:k - len(combo_ordered)]
+    return list(combo_ordered) + extra
+
 # ── Base: Modular Cycle K=33 (normalized) ∩ xoshiro K=38 seed #692,809 ───────
 modcycle_native = base_pools[10]
+modcycle_native_ordered = modular_cycle_ranked(train_serials, train_main6, TARGET_SERIAL, k=28)
 mc_pool = top_k_nums(modcycle_native, base_pools, K_MC)
+mc_pool_ordered = top_k_nums_extend_ordered(modcycle_native_ordered, base_pools, K_MC)
 print(f"\nModular Cycle native pick (K={len(modcycle_native)}): {modcycle_native}")
+print(f"  (generation order): {modcycle_native_ordered}")
 print(f"Modular Cycle normalized to K={K_MC}: {mc_pool}")
+print(f"  (generation order): {mc_pool_ordered}")
+assert sorted(mc_pool_ordered) == mc_pool, "mc_pool_ordered is not a reordering of mc_pool!"
 
 base_pool = sorted(set(mc_pool) & set(xo_pool))
 K_BASE = len(base_pool)
@@ -680,8 +722,8 @@ print(f"\nFull elimination sequence: {universe_count:,} -> {final_remaining_pass
 meta = {
     'targetSerial': TARGET_SERIAL,
     'trainedThroughSerial': train_serials[-1],  # 2129 -- NOT TARGET_SERIAL-1 (=2130); see docstring
-    'xo': {'seed': SEED_XO, 'k': K_XO, 'pool': xo_pool},
-    'mc': {'k': K_MC, 'pool': mc_pool},
+    'xo': {'seed': SEED_XO, 'k': K_XO, 'pool': xo_pool, 'poolOrdered': xo_pool_ordered},
+    'mc': {'k': K_MC, 'pool': mc_pool, 'poolOrdered': mc_pool_ordered},
     'base': {'k': K_BASE, 'pool': base_pool},
     'methodNames': METHOD_NAMES,
     'methodBasePools': base_pools,

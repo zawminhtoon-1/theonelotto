@@ -120,6 +120,9 @@ h1{{font-size:1.4rem;font-weight:700;color:#f1f5f9;margin-bottom:4px}}
 .section{{background:#0d1526;border:1px solid #1e293b;border-radius:12px;padding:20px;margin-bottom:20px}}
 .section h2{{font-size:1rem;font-weight:700;color:#f1f5f9;margin-bottom:4px;display:flex;align-items:center;gap:8px}}
 .section h3{{font-size:.86rem;font-weight:700;color:#cbd5e1;margin:14px 0 6px}}
+.order-label{{font-size:.7rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;
+  margin:10px 0 5px;display:flex;align-items:center;gap:8px}}
+.order-hint{{font-size:.72rem;font-weight:400;text-transform:none;letter-spacing:normal;color:#475569}}
 .section .desc{{font-size:.8rem;color:#64748b;margin-bottom:14px}}
 .verify-badge{{font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:10px;text-transform:uppercase;letter-spacing:.04em}}
 .verify-badge.pending{{background:#1e293b;color:#94a3b8}}
@@ -239,9 +242,15 @@ table.combos tr:hover td{{background:#111827}}
     (server-computed). Xoshiro: current overall best K=38 seed (0–1,000,000 scan), computed live below. Base = their intersection
     &mdash; this {base['k']}-number pool is the elimination universe.</p>
     <h3>Modular Cycle K={mc['k']} pick <span class="verify-badge na">server-computed</span></h3>
+    <div class="order-label">Ascending order</div>
     <div class="balls" id="mcBalls"></div>
+    <div class="order-label">Generation order <span class="order-hint">(mod-43-cycle frequency rank, before padding/sort)</span></div>
+    <div class="balls" id="mcBallsOrdered"></div>
     <h3>Xoshiro K={xo['k']} seed #{xo['seed']:,} pick <span id="badgeXo" class="verify-badge pending">verifying…</span></h3>
+    <div class="order-label">Ascending order</div>
     <div class="balls" id="xoBalls"></div>
+    <div class="order-label">Generation order <span class="order-hint">(partial Fisher-Yates shuffle order)</span> <span id="badgeXoOrdered" class="verify-badge pending">verifying…</span></div>
+    <div class="balls" id="xoBallsOrdered"></div>
     <h3>Base (intersection)</h3>
     <div class="balls" id="baseBalls"></div>
   </div>
@@ -415,26 +424,38 @@ function xoshiroNext(s) {{
   s[3] = rotl(s[3], 45);
   return result;
 }}
-function xoshiroPredict(seed, drawSerial, k) {{
+function xoshiroPredictRaw(seed, drawSerial, k) {{
+  // Generation order -- the order the partial Fisher-Yates shuffle finalizes
+  // each position (i = n-1 first, down to i = n-k last), NOT sorted. Same
+  // convention as xoshiro_seed_scan_k38.html: push arr[i] right after each
+  // swap, in loop order.
   const combined = (BigInt(seed) * 10000000n + BigInt(drawSerial)) & MASK64;
   const s = seedState(combined);
   const arr = Array.from({{length: 43}}, (_, i) => i + 1);
   const n = arr.length;
+  const order = [];
   for (let i = n - 1; i >= n - k; i--) {{
     const r = xoshiroNext(s);
     const j = Number(r % BigInt(i + 1));
     [arr[i], arr[j]] = [arr[j], arr[i]];
+    order.push(arr[i]);
   }}
-  return arr.slice(n - k).sort((a, b) => a - b);
+  return order;
+}}
+function xoshiroPredict(seed, drawSerial, k) {{
+  return xoshiroPredictRaw(seed, drawSerial, k).slice().sort((a, b) => a - b);
 }}
 
 // ── Modular Cycle: server-computed, embedded (can't run ML in the browser) ──
 const MC_POOL = {json.dumps(mc['pool'])};
+const MC_POOL_ORDERED = {json.dumps(mc['poolOrdered'])};
 const KNOWN_BASE = {json.dumps(base['pool'])};
 
 // ── Xoshiro side: compute live + verify against server-embedded reference ──
 const liveXo = xoshiroPredict({xo['seed']}, {TARGET_SERIAL}, {xo['k']});
+const liveXoOrdered = xoshiroPredictRaw({xo['seed']}, {TARGET_SERIAL}, {xo['k']});
 const KNOWN_XO = {json.dumps(xo['pool'])};
+const KNOWN_XO_ORDERED = {json.dumps(xo['poolOrdered'])};
 
 // ── Base: client-side intersection of live xoshiro + embedded Modular Cycle ─
 const liveBase = liveXo.filter(n => MC_POOL.includes(n)).sort((a, b) => a - b);
@@ -452,11 +473,15 @@ function renderBalls(elId, nums, cls) {{
 }}
 
 renderBalls('mcBalls', MC_POOL, 'b3');
+renderBalls('mcBallsOrdered', MC_POOL_ORDERED, 'b3');
 renderBalls('xoBalls', liveXo, 'b1');
+renderBalls('xoBallsOrdered', liveXoOrdered, 'b1');
 renderBalls('baseBalls', liveBase, 'b2');
 renderBadge('badgeXo', arraysEqual(liveXo, KNOWN_XO));
+renderBadge('badgeXoOrdered', arraysEqual(liveXoOrdered, KNOWN_XO_ORDERED));
 renderBadge('badgeBase', arraysEqual(liveBase, KNOWN_BASE));
 if (!arraysEqual(liveXo, KNOWN_XO)) console.error('Xoshiro mismatch', liveXo, KNOWN_XO);
+if (!arraysEqual(liveXoOrdered, KNOWN_XO_ORDERED)) console.error('Xoshiro (generation order) mismatch', liveXoOrdered, KNOWN_XO_ORDERED);
 if (!arraysEqual(liveBase, KNOWN_BASE)) console.error('Base mismatch', liveBase, KNOWN_BASE);
 
 // ── Pass 2: xoshiro256** K={pass2_k} seeds, reusing the same verified
