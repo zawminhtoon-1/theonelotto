@@ -79,6 +79,8 @@
             '<a href="/xoshiro_elim_2128.html">✂️ Draw #2128 Elimination</a>' +
             '<a href="/xoshiro_elim_2129.html">✂️ Draw #2129 Elimination</a>' +
             '<a href="/xoshiro_elim_2130.html">✂️ Draw #2130 Elimination</a>' +
+            '<a href="/xoshiro_elim_2131.html">✂️ Draw #2131 Elimination</a>' +
+            '<a href="/xoshiro_elim_2132.html">✂️ Draw #2132 Elimination</a>' +
             '<a href="/xoshiro_k38_5seed_intersection.html">✂️ K=38 5-Seed Intersection Backtest</a>' +
             '<a href="/xoshiro_k35_5seed_intersection.html">✂️ K=35 5-Seed Intersection Backtest</a>' +
             '<a href="/xoshiro_k38_x_modularcycle_k28_intersection.html">✂️ Modular Cycle (K=28) × K=38</a>' +
@@ -96,6 +98,32 @@
             '<div class="nav-dd-label">Position</div>' +
             '<a href="/position.html">📍 Position Freq</a>' +
             '<a href="/pos_predict.html">📊 Pos 1–6 Predict</a>' +
+          '</div></div>' +
+        '</div>' +
+        '<div class="nav-group">' +
+          '<div class="nav-group-btn">Loto7 <span class="arrow">▼</span></div>' +
+          '<div class="nav-dropdown"><div class="nav-dropdown-inner">' +
+            '<div class="nav-dd-label">Loto 7 (7 from 37 + 2 bonus)</div>' +
+            '<a href="/loto7">🏠 Latest Draw</a>' +
+            '<a href="/loto7/history">📋 History</a>' +
+            '<a href="/loto7/predictions">🎯 Predictions</a>' +
+            '<a href="/loto7_backtest.html">📊 Backtest</a>' +
+            '<a href="/loto7_backtest100_multik.html">🎯 100-Draw Multi-K Backtest</a>' +
+            '<a href="/loto7_backtest_full.html">📊 Full-History Backtest</a>' +
+            '<a href="/loto7_elim_691.html">✂️ Draw #691 Elimination</a>' +
+            '<a href="/xoshiro_seed_scan_loto7_k25.html">🌀 Xoshiro Seed Scan K=25 (±1,000,000)</a>' +
+            '<a href="/xoshiro_seed_scan_loto7_k28.html">🌀 Xoshiro Seed Scan K=28 (±1,000,000)</a>' +
+          '</div></div>' +
+        '</div>' +
+        '<div class="nav-group">' +
+          '<div class="nav-group-btn">MiniLoto <span class="arrow">▼</span></div>' +
+          '<div class="nav-dropdown"><div class="nav-dropdown-inner">' +
+            '<div class="nav-dd-label">MiniLoto (5 from 31 + 1 bonus)</div>' +
+            '<a href="/miniloto">🏠 Latest Draw</a>' +
+            '<a href="/miniloto/history">📋 History</a>' +
+            '<a href="/miniloto/predictions">🎯 Predictions</a>' +
+            '<a href="/miniloto_backtest.html">📊 Backtest</a>' +
+            '<a href="/miniloto_rl23_minus_all19.html">🧮 RL K=23 minus All-16 K=19</a>' +
           '</div></div>' +
         '</div>' +
       '</div>' +

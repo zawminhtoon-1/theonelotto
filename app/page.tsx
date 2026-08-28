@@ -92,7 +92,7 @@ export default async function HomePage() {
             href="/history"
             className="inline-flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 hover:underline"
           >
-            View all {2119}+ draws →
+            View all {latest.draw_serial}+ draws →
           </a>
         </div>
       </section>
