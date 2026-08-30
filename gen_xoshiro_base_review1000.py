@@ -375,6 +375,35 @@ for k in [6, 5, 4, 3, 2, 1, 0]:
         <div class="funnel-val">{v}</div>
       </div>"""
 
+# ── Intersection vs standalone: how much 6/6 coverage does requiring BOTH
+# methods (Base = MC ∩ XO) cost, compared to using either pool alone? ───────
+base_6of6 = xo_alone_6of6 = mc_alone_6of6 = 0
+for r in results:
+    actual_set = set(r['actual'])
+    if r['inBase']:
+        base_6of6 += 1
+    if actual_set.issubset(set(r['xoPoolOrdered'])):
+        xo_alone_6of6 += 1
+    if actual_set.issubset(set(r['mcPoolOrdered'])):
+        mc_alone_6of6 += 1
+
+standalone_rows = [
+    ("Base (Modular Cycle ∩ xoshiro)", base_6of6, k_mc, k_xo, '#38bdf8', "intersection -- what this page tracks"),
+    ("xoshiro K=38 alone", xo_alone_6of6, k_xo, None, '#a78bfa', "no intersection with Modular Cycle"),
+    ("Modular Cycle K=33 alone", mc_alone_6of6, k_mc, None, '#7dd3fc', "no intersection with xoshiro"),
+]
+standalone_max = max(base_6of6, xo_alone_6of6, mc_alone_6of6)
+standalone_rows_html = ""
+for label, cnt, k1, k2, color, note in standalone_rows:
+    pct = cnt / n_draws * 100
+    bar_pct = cnt / standalone_max * 100 if standalone_max else 0
+    pool_desc = f"K={k1}" if k2 is None else f"K={k1} &cap; K={k2}"
+    standalone_rows_html += f"""<div class="funnel-row">
+        <div class="funnel-lbl" style="width:230px">{label}</div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:{bar_pct:.1f}%;background:{color}"></div></div>
+        <div class="funnel-val">{cnt:,} <span style="color:#64748b;font-weight:400">({pct:.1f}%)</span></div>
+      </div>"""
+
 page = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -522,6 +551,25 @@ tr.upcoming-row td:first-child{{font-weight:700;color:#38bdf8}}
     <h2>Base coverage distribution</h2>
     <p class="desc">How many of a draw's 6 actual numbers landed in that draw's own walk-forward Base pool.</p>
     <div class="funnel">{funnel_rows}</div>
+  </div>
+
+  <div class="section">
+    <h2>Intersection vs standalone: what does requiring both methods cost?</h2>
+    <p class="desc">6/6 (all-6-numbers-hit) count across all {n_draws} draws, comparing the Base intersection pool (Modular
+    Cycle K={k_mc} &cap; xoshiro K={k_xo}, what this page tracks) against each method's own pool used standalone, with no
+    intersection requirement.</p>
+    <div class="funnel">{standalone_rows_html}</div>
+    <div class="note" style="margin-top:16px">
+      <p><strong style="color:#e2e8f0">Intersecting the two pools costs real coverage.</strong> xoshiro K={k_xo} alone hits
+      6/6 on {xo_alone_6of6:,} of {n_draws} draws ({xo_alone_6of6/n_draws*100:.1f}%) &mdash; over half the time, since a
+      38-number pool out of 43 leaves little room to miss. Modular Cycle K={k_mc} alone hits {mc_alone_6of6:,}
+      ({mc_alone_6of6/n_draws*100:.1f}%). Requiring BOTH (the actual Base pool this whole page analyzes) drops that to just
+      {base_6of6:,} ({base_6of6/n_draws*100:.1f}%) &mdash; {xo_alone_6of6-base_6of6:,} fewer 6/6 draws than xoshiro alone would
+      have covered, and {mc_alone_6of6-base_6of6:,} fewer than Modular Cycle alone. The intersection buys a dramatically smaller
+      elimination universe (~29-30 numbers vs. 33 or 38) at the cost of roughly {(1-base_6of6/xo_alone_6of6)*100:.0f}% of the
+      coverage xoshiro alone would provide, and {(1-base_6of6/mc_alone_6of6)*100:.0f}% of what Modular Cycle alone would provide
+      &mdash; the classic precision/recall tradeoff of narrowing a candidate pool.</p>
+    </div>
   </div>
 
   <div class="section">

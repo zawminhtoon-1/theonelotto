@@ -176,6 +176,37 @@ tr.upcoming-row td:first-child{font-weight:700;color:#38bdf8}
   </div>
 
   <div class="section">
+    <h2>Intersection vs standalone: what does requiring both methods cost?</h2>
+    <p class="desc">6/6 (all-6-numbers-hit) count across all 1000 draws, comparing the Base intersection pool (Modular
+    Cycle K=33 &cap; xoshiro K=38, what this page tracks) against each method's own pool used standalone, with no
+    intersection requirement.</p>
+    <div class="funnel"><div class="funnel-row">
+        <div class="funnel-lbl" style="width:230px">Base (Modular Cycle ∩ xoshiro)</div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:21.9%;background:#38bdf8"></div></div>
+        <div class="funnel-val">113 <span style="color:#64748b;font-weight:400">(11.3%)</span></div>
+      </div><div class="funnel-row">
+        <div class="funnel-lbl" style="width:230px">xoshiro K=38 alone</div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:100.0%;background:#a78bfa"></div></div>
+        <div class="funnel-val">515 <span style="color:#64748b;font-weight:400">(51.5%)</span></div>
+      </div><div class="funnel-row">
+        <div class="funnel-lbl" style="width:230px">Modular Cycle K=33 alone</div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:39.0%;background:#7dd3fc"></div></div>
+        <div class="funnel-val">201 <span style="color:#64748b;font-weight:400">(20.1%)</span></div>
+      </div></div>
+    <div class="note" style="margin-top:16px">
+      <p><strong style="color:#e2e8f0">Intersecting the two pools costs real coverage.</strong> xoshiro K=38 alone hits
+      6/6 on 515 of 1000 draws (51.5%) &mdash; over half the time, since a
+      38-number pool out of 43 leaves little room to miss. Modular Cycle K=33 alone hits 201
+      (20.1%). Requiring BOTH (the actual Base pool this whole page analyzes) drops that to just
+      113 (11.3%) &mdash; 402 fewer 6/6 draws than xoshiro alone would
+      have covered, and 88 fewer than Modular Cycle alone. The intersection buys a dramatically smaller
+      elimination universe (~29-30 numbers vs. 33 or 38) at the cost of roughly 78% of the
+      coverage xoshiro alone would provide, and 44% of what Modular Cycle alone would provide
+      &mdash; the classic precision/recall tradeoff of narrowing a candidate pool.</p>
+    </div>
+  </div>
+
+  <div class="section">
     <h2>Cross-method generation-order findings</h2>
     <p class="desc">Aggregated over all 6,000 actual-number instances (1000 draws &times; 6 numbers) across the review window.</p>
     <div class="stats-row">
