@@ -1,20 +1,20 @@
 """
-gen_xoshiro_elim_2132.py
+gen_xoshiro_elim_2133.py
 ----------------------------
 Generates the "Xoshiro K=38 x Modular Cycle K=33 + 16-Method Elimination"
-page for draw #2132 -- the true next-upcoming Loto6 draw (#2131 is now
+page for draw #2133 -- the true next-upcoming Loto6 draw (#2132 is now
 the latest real/confirmed draw). Standard walk-forward build, same
-methodology as #2130/#2131, trained on all real draws through #2131.
-Reads xoshiro_elim_2132_meta.json (small: pool picks, method picks,
-counts) produced by precompute_xoshiro_elim_2132.py. The large
+methodology as #2130/#2132, trained on all real draws through #2132.
+Reads xoshiro_elim_2133_meta.json (small: pool picks, method picks,
+counts) produced by precompute_xoshiro_elim_2133.py. The large
 remaining-combo list lives separately at
-public/xoshiro_elim_2132_combos.json (already written by the precompute
+public/xoshiro_elim_2133_combos.json (already written by the precompute
 script) and is fetched client-side, not inlined.
 
 Unlike the #2128/#2129 elimination pages (Base = a single xoshiro seed,
 then separate elimination passes), this page's Base is itself an
 intersection of two different pick sources -- Modular Cycle's K=33 pick
-and xoshiro K=38 seed #692,809's pick, both for #2132. Only the xoshiro
+and xoshiro K=38 seed #692,809's pick, both for #2133. Only the xoshiro
 component is recomputed live in the browser (bit-exact BigInt port,
 verified against the server-embedded reference); Modular Cycle's pick is
 embedded static data computed server-side, same as every other ML-based
@@ -28,26 +28,26 @@ same as every other draw on this site -- embedded as static data.
 Rebuilt (2026-08-28) to REMOVE the old Pass 2 (top 1000 worst-coverage
 random seeds, K=15, from seed_hit_random_k17) entirely from the pipeline,
 per explicit user request. Downstream passes renumbered -- see
-precompute_xoshiro_elim_2132.py's docstring for the full mapping. Reads
+precompute_xoshiro_elim_2133.py's docstring for the full mapping. Reads
 directly from the rebuilt meta.json's pass2K/pass2Seeds/... (formerly
 pass3...) / pass4K/pass4Pick/... (formerly pass5...) /
 removedByPass5/pass5RunDistribution (formerly pass6...) /
 removedByPass6/finalRemaining (formerly pass7...) keys.
 
-Output: public/xoshiro_elim_2132.html
-Run: python gen_xoshiro_elim_2132.py
+Output: public/xoshiro_elim_2133.html
+Run: python gen_xoshiro_elim_2133.py
 """
 import json
 
 BASE = r"C:\Users\Zaw Min Htoon\source\repos\theonelotto"
-META_PATH = BASE + r"\xoshiro_elim_2132_meta.json"
-HTML_OUT = BASE + r"\public\xoshiro_elim_2132.html"
+META_PATH = BASE + r"\xoshiro_elim_2133_meta.json"
+HTML_OUT = BASE + r"\public\xoshiro_elim_2133.html"
 
 with open(META_PATH, encoding='utf-8') as f:
     meta = json.load(f)
 
 TARGET_SERIAL = meta['targetSerial']
-TRAINED_THROUGH = meta['trainedThroughSerial']  # 2131 -- equals TARGET_SERIAL-1 for this standard walk-forward build
+TRAINED_THROUGH = meta['trainedThroughSerial']  # 2132 -- equals TARGET_SERIAL-1 for this standard walk-forward build
 xo = meta['xo']
 mc = meta['mc']
 base = meta['base']
@@ -91,76 +91,6 @@ removed_by_pass6 = meta['removedByPass6']
 final_remaining = meta['finalRemaining']
 final_pct = final_remaining / universe_count * 100
 pass6_pct_of_pass5 = final_remaining / final_remaining_pass5 * 100
-
-# ── Retroactive result check (display-only, added 2026-08-30 after #2132
-# landed for real; does NOT touch the original walk-forward precomputation
-# above -- Base pool / all 6 passes' picks and counts are exactly as
-# originally computed, before #2132 was drawn) ───────────────────────────────
-ACTUAL_MAIN = [9, 15, 16, 19, 31, 32]
-ACTUAL_BONUS = 4
-ACTUAL_DATE = "2026-08-27"
-_actual_set = set(ACTUAL_MAIN)
-_base_set = set(base['pool'])
-_actual_survives_base = _actual_set.issubset(_base_set)
-
-_retro_outcome = None  # None until determined below
-_retro_detail = ""
-if not _actual_survives_base:
-    _missing = sorted(_actual_set - _base_set)
-    _retro_outcome = 'never_in_base'
-    _retro_detail = (f"never even entered the elimination universe &mdash; "
-                      f"{', '.join(str(n) for n in _missing)} " +
-                      ("isn't" if len(_missing) == 1 else "aren't") +
-                      f" in the {base['k']}-number Base pool, so it fails before Pass 1 even runs.")
-else:
-    if any(_actual_set.issubset(set(pool)) for pool in method_picks):
-        _retro_outcome = 'eliminated_pass1'
-        _retro_detail = f"was eliminated at <strong>Pass 1</strong> &mdash; fully contained within one of the 16 methods' K={method_k} picks."
-    elif any(_actual_set.issubset(set(p2['pick'])) for p2 in pass2_seeds):
-        _retro_outcome = 'eliminated_pass2'
-        _retro_detail = f"was eliminated at <strong>Pass 2</strong> &mdash; fully contained within one of the xoshiro K={pass2_k} seed picks."
-    elif tuple(sorted(ACTUAL_MAIN)) in set(tuple(c) for c in historical_combos):
-        _retro_outcome = 'eliminated_pass3'
-        _retro_detail = "was eliminated at <strong>Pass 3</strong> &mdash; exact match to a historical winning combo (this shouldn't be possible for a genuinely new draw; flagging for review if seen)."
-    elif _actual_set.issubset(set(pass4_pick)):
-        _retro_outcome = 'eliminated_pass4'
-        _retro_detail = f"was eliminated at <strong>Pass 4</strong> &mdash; fully contained within the Worst Combo (Anti-Pick) K={pass4_k} pick."
-    else:
-        def _max_consecutive_run(combo):
-            s = sorted(combo); run = 1; best = 1
-            for i in range(1, len(s)):
-                if s[i] == s[i-1] + 1:
-                    run += 1; best = max(best, run)
-                else:
-                    run = 1
-            return best
-        _mr = _max_consecutive_run(ACTUAL_MAIN)
-        if _mr >= 3:
-            _retro_outcome = 'eliminated_pass5'
-            _retro_detail = f"was eliminated at <strong>Pass 5</strong> &mdash; max consecutive run of {_mr} (&ge;3 gets removed)."
-        else:
-            def _is_three_consecutive_pairs(combo):
-                s = sorted(combo); runs = []; run = [s[0]]
-                for i in range(1, len(s)):
-                    if s[i] == s[i-1] + 1:
-                        run.append(s[i])
-                    else:
-                        runs.append(run); run = [s[i]]
-                runs.append(run)
-                return len(runs) == 3 and all(len(r) == 2 for r in runs)
-            if _is_three_consecutive_pairs(ACTUAL_MAIN):
-                _retro_outcome = 'eliminated_pass6'
-                _retro_detail = "was eliminated at <strong>Pass 6</strong> (final) &mdash; matches the \"three consecutive pairs\" pattern."
-            else:
-                _retro_outcome = 'survived'
-                _retro_detail = ("<strong>survived all 6 passes</strong> &mdash; it was still one of the "
-                                  f"{final_remaining:,} combos remaining after every pass ran. Independently confirmed present in "
-                                  "the saved final-remaining combo list.")
-
-_retro_is_hit = _retro_outcome == 'survived'
-_retro_color = '#4ade80' if _retro_is_hit else ('#94a3b8' if _retro_outcome == 'never_in_base' else '#fca5a5')
-_retro_bg = '#0a1c0f' if _retro_is_hit else '#1c0a0a'
-_retro_border = '#4ade8055' if _retro_is_hit else '#ef444455'
 
 methods_rows_html = ""
 for name, pool in zip(method_names, method_picks):
@@ -278,12 +208,6 @@ table.combos tr:hover td{{background:#111827}}
 <div class="wrap">
   <h1>✂️ Xoshiro K=38 × Modular Cycle K=33 + 16-Method Elimination — Draw #{TARGET_SERIAL}</h1>
   <p class="subtitle">Combinatorial set-difference: (Modular Cycle K=33 ∩ xoshiro K=38) pick, minus combos covered by any of the 16 prediction methods' K={method_k} picks</p>
-
-  <div class="note" style="border-color:{_retro_border};background:{_retro_bg}">
-    <p style="color:{_retro_color}"><strong>Retroactive result (draw #{TARGET_SERIAL} has since landed):</strong>
-    the actual winning numbers were <strong style="color:#f1f5f9">{', '.join(str(n) for n in ACTUAL_MAIN)}</strong>
-    (bonus {ACTUAL_BONUS}), drawn {ACTUAL_DATE}. This result {_retro_detail}</p>
-  </div>
 
   <div class="note">
     <p><strong style="color:#e2e8f0">Base</strong> (below) is <strong>Modular Cycle's K={mc['k']} pick</strong> intersected with

@@ -5,7 +5,7 @@ Static report page for the Random Seed Backtest: seeds -1,236,700 to
 1,236,700 (2,473,401 seeds -- a 100x expansion of the previous
 -12,376..12,376 range), K=17 picks via Python's seeded random.Random
 (seed*10_000_000+draw_serial -> sorted(rng.sample(range(1,44), 17))),
-draws #1001-2131 (1131 draws).
+draws #1001-2132 (1132 draws).
 
 DB-backed design (mirrors the seed_hit_xoshiro_k33/k35/k38 pages): at
 this scale, embedding every seed as an HTML table row would produce a
@@ -42,8 +42,8 @@ HTML_OUT  = BASE + r"\public\random_seed_backtest.html"
 TABLE     = "seed_hit_random_k17"
 
 K_PICKS   = 17
-DRAW_START, DRAW_END = 1001, 2131
-N_DRAWS   = DRAW_END - DRAW_START + 1  # 1131
+DRAW_START, DRAW_END = 1001, 2132
+N_DRAWS   = DRAW_END - DRAW_START + 1  # 1132
 SEED_LO, SEED_HI = -1_236_700, 1_236_700
 LOTO6_MAX = 43
 TOP_N = 25
@@ -102,7 +102,7 @@ print(f"Loaded {num_seeds:,} seeds from {TABLE}")
 print(f"Best (hit6b>hit6>hit5): seed={best[0]:,} hit6b={best[1]} hit6={best[2]} hit5={best[3]} hit4={best[4]} hit0={best[5]}")
 print(f"Worst-coverage: seed={worst_coverage[0]:,} hit0={worst_coverage[1]} (mean hit0 across all seeds: {hit0_mean:.2f})")
 
-# ── Load the exact #1001-2131 draw window from the production DB, for the
+# ── Load the exact #1001-2132 draw window from the production DB, for the
 # client-side seed-detail lookup / next-draw prediction. ────────────────────
 if 'DATABASE_URL' not in os.environ:
     with open(ENV_LOCAL, encoding='utf-8') as f:
