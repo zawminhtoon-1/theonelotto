@@ -1,5 +1,5 @@
-import { getLatestLoto7Draw, getRecentLoto7Draws, getLoto7Count } from "@/lib/db7";
-import { Loto7BallRow } from "@/components/Loto7BallRow";
+import { getLatestDraw, getRecentDraws } from "@/lib/db";
+import { BallRow } from "@/components/BallRow";
 
 export const revalidate = 300; // revalidate every 5 minutes
 
@@ -14,19 +14,20 @@ function formatDate(d: string | null): string {
 }
 
 const QUICK_LINKS = [
-  { href: "/loto7/predictions", icon: "🎯", label: "Predictions", desc: "16-method consensus picks for the next draw" },
-  { href: "/loto7_backtest_full.html", icon: "📊", label: "Full-History Backtest", desc: "All real draws, K=7–28 toggle, all 16 methods" },
-  { href: "/loto7_backtest100_multik.html", icon: "🎯", label: "100-Draw Multi-K Backtest", desc: "Recent-window backtest with a K-size toggle" },
-  { href: "/loto7_elim_691.html", icon: "✂️", label: "Draw #691 Elimination", desc: "Combinatorial elimination + retroactive result check" },
-  { href: "/xoshiro_seed_scan_loto7_k30.html", icon: "🌀", label: "Xoshiro Seed Scan K=30", desc: "2,000,001 seeds, in-sample vs out-of-sample check" },
-  { href: "/loto7/history", icon: "📋", label: "Full History", desc: "Every Loto 7 draw on record" },
+  { href: "/predictions", icon: "🎯", label: "Predictions", desc: "16-method consensus picks for the next draw" },
+  { href: "/backtest.html", icon: "📊", label: "Backtest", desc: "1000-draw walk-forward evaluation, all 16 methods" },
+  { href: "/xoshiro_elim_2132.html", icon: "✂️", label: "Latest Elimination", desc: "Draw #2132 xoshiro combinatorial elimination" },
+  { href: "/xoshiro_seed_scan_k38.html", icon: "🔷", label: "Xoshiro Seed Scan K=38", desc: "1,000,001 seeds, best-performing scan" },
+  { href: "/modular_cycle.html", icon: "🔁", label: "Modular Cycle", desc: "mod-43 cycle strategy page" },
+  { href: "/combo_evo.html", icon: "🧬", label: "Combo Evo", desc: "Combination evolution / anti-pick analysis" },
+  { href: "/numbers", icon: "🔢", label: "Number Frequency", desc: "All-time number frequency breakdown" },
+  { href: "/history", icon: "📋", label: "Full History", desc: "Every Loto 6 draw on record" },
 ];
 
-export default async function Loto7HomePage() {
-  const [latest, recent, count] = await Promise.all([
-    getLatestLoto7Draw(),
-    getRecentLoto7Draws(10),
-    getLoto7Count(),
+export default async function Loto6HomePage() {
+  const [latest, recent] = await Promise.all([
+    getLatestDraw(),
+    getRecentDraws(10),
   ]);
 
   return (
@@ -36,7 +37,7 @@ export default async function Loto7HomePage() {
         <div className="flex items-start justify-between mb-6">
           <div>
             <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">
-              Loto 7 &middot; Latest Draw
+              Loto 6 &middot; Latest Draw
             </p>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
               Draw #{latest.draw_serial}
@@ -49,10 +50,9 @@ export default async function Loto7HomePage() {
             Latest
           </span>
         </div>
-        <Loto7BallRow draw={latest} size="lg" />
+        <BallRow draw={latest} size="lg" />
         <p className="mt-4 text-xs text-gray-400">
-          Pick 7 from 1&ndash;37, plus 2 bonus numbers (shown in grey) &middot; Drawn weekly on Fridays &middot;
-          Numbers 1&ndash;8 red &middot; 9&ndash;15 orange &middot; 16&ndash;22 green &middot; 23&ndash;29 blue &middot; 30&ndash;37 purple
+          Bonus ball shown in grey · Numbers 1–10 red · 11–19 orange · 20–29 green · 30–38 blue · 39–43 purple
         </p>
       </section>
 
@@ -64,19 +64,19 @@ export default async function Loto7HomePage() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-4">
             <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Draws on Record</p>
-            <p className="text-xl font-bold text-gray-900 dark:text-white">{count.toLocaleString()}</p>
+            <p className="text-xl font-bold text-gray-900 dark:text-white">{latest.draw_serial.toLocaleString()}</p>
           </div>
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-4">
             <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Pool</p>
-            <p className="text-xl font-bold text-gray-900 dark:text-white">7 from 37</p>
+            <p className="text-xl font-bold text-gray-900 dark:text-white">6 from 43</p>
           </div>
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-4">
             <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Bonus</p>
-            <p className="text-xl font-bold text-gray-900 dark:text-white">2 numbers</p>
+            <p className="text-xl font-bold text-gray-900 dark:text-white">1 number</p>
           </div>
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-4">
             <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Drawn</p>
-            <p className="text-xl font-bold text-gray-900 dark:text-white">Fridays</p>
+            <p className="text-xl font-bold text-gray-900 dark:text-white">Mon &amp; Thu</p>
           </div>
         </div>
       </section>
@@ -86,7 +86,7 @@ export default async function Loto7HomePage() {
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
           Explore
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {QUICK_LINKS.map((link) => (
             <a
               key={link.href}
@@ -100,7 +100,7 @@ export default async function Loto7HomePage() {
           ))}
         </div>
         <p className="mt-3 text-xs text-gray-400">
-          Xoshiro Seed Scan K=25 / K=28 (earlier, narrower-window scans) also available via the Loto7 nav menu above.
+          More prediction strategies, xoshiro research, and elimination pages in the Predict / Xoshiro Research nav menus above.
         </p>
       </section>
 
@@ -139,7 +139,7 @@ export default async function Loto7HomePage() {
                     {formatDate(draw.draw_date)}
                   </td>
                   <td className="px-4 py-3">
-                    <Loto7BallRow draw={draw} size="sm" />
+                    <BallRow draw={draw} size="sm" />
                   </td>
                 </tr>
               ))}
@@ -148,10 +148,10 @@ export default async function Loto7HomePage() {
         </div>
         <div className="mt-4 text-center">
           <a
-            href="/loto7/history"
+            href="/history"
             className="inline-flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 hover:underline"
           >
-            View all {count.toLocaleString()}+ draws →
+            View all {latest.draw_serial}+ draws →
           </a>
         </div>
       </section>

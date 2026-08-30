@@ -33,7 +33,7 @@
           '<div class="nav-group-btn">Data <span class="arrow">▼</span></div>' +
           '<div class="nav-dropdown"><div class="nav-dropdown-inner">' +
             '<div class="nav-dd-label">Results</div>' +
-            '<a href="/">🏠 Latest Draw</a>' +
+            '<a href="/loto6">🏠 Loto 6 Home</a>' +
             '<a href="/history">📋 History</a>' +
             '<a href="/numbers">🔢 Numbers</a>' +
           '</div></div>' +
@@ -104,7 +104,7 @@
           '<div class="nav-group-btn">Loto7 <span class="arrow">▼</span></div>' +
           '<div class="nav-dropdown"><div class="nav-dropdown-inner">' +
             '<div class="nav-dd-label">Loto 7 (7 from 37 + 2 bonus)</div>' +
-            '<a href="/loto7">🏠 Latest Draw</a>' +
+            '<a href="/loto7">🏠 Loto 7 Home</a>' +
             '<a href="/loto7/history">📋 History</a>' +
             '<a href="/loto7/predictions">🎯 Predictions</a>' +
             '<a href="/loto7_backtest.html">📊 Backtest</a>' +
