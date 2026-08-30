@@ -63,6 +63,12 @@ table.results td.tc{text-align:center;white-space:nowrap}
 .numchips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
 .numchip{display:flex;flex-direction:column;align-items:center;gap:3px;padding:3px;border-radius:8px}
 .numchip.hit{background:#38bdf814;border:1px solid #38bdf855}
+.nb.up{background:#38bdf822;color:#7dd3fc;border-color:#38bdf866}
+
+tr.upcoming-row{background:rgba(56,189,248,.08);border-bottom:2px solid #38bdf8}
+tr.upcoming-row td{color:#e2e8f0}
+tr.upcoming-row td:first-child{font-weight:700;color:#38bdf8}
+.upcoming-label{font-size:.72rem;font-weight:600;color:#7dd3fc;margin-bottom:8px}
 .hit-tag{font-size:.52rem;font-weight:800;color:#38bdf8;letter-spacing:.03em;white-space:nowrap}
 .idxrow{display:flex;gap:3px}
 .idx-badge{font-size:.6rem;font-weight:700;padding:2px 5px;border-radius:5px;white-space:nowrap}
@@ -206,11 +212,13 @@ table.results td.tc{text-align:center;white-space:nowrap}
 
   <div class="section">
     <h2>Per-draw results</h2>
-    <p class="desc">Newest draw first. Each actual number shows two generation-order badges: MC = position within the Modular
-    Cycle K=33 pick's own build order, XO = position within the xoshiro K=38 pick's own Fisher-Yates finalization order.
-    Numbers that hit Base &mdash; present in BOTH picks, so they're actually inside the intersection &mdash; are highlighted and
-    tagged <strong style="color:#38bdf8">🎯 HIT</strong>, with a one-line summary underneath the combo spelling out each hit
-    number's index in both sources at a glance.</p>
+    <p class="desc">The <strong style="color:#7dd3fc">⏳ upcoming draw</strong> is pinned at the top, showing the Base pool computed
+    for it &mdash; not yet drawn, so there's no actual result to compare against and no hit highlighting. Below it, the 100
+    real historical draws are newest first. Each actual number shows two generation-order badges: MC = position within the
+    Modular Cycle K=33 pick's own build order, XO = position within the xoshiro K=38 pick's own Fisher-Yates
+    finalization order. Numbers that hit Base &mdash; present in BOTH picks, so they're actually inside the intersection
+    &mdash; are highlighted and tagged <strong style="color:#38bdf8">🎯 HIT</strong>, with a one-line summary underneath the
+    combo spelling out each hit number's index in both sources at a glance.</p>
     <div class="legend">
       <span><span class="dot" style="background:#38bdf8"></span>🎯 HIT — number is in Base (present in both MC and XO)</span>
       <span><span class="dot" style="background:#4ade80"></span>Early (top third of that method's K)</span>
@@ -232,7 +240,16 @@ table.results td.tc{text-align:center;white-space:nowrap}
           <th class="tc">Draw</th><th class="tc">Date</th><th>Actual combo &amp; generation-order index (🎯 hit numbers highlighted + summarized)</th>
           <th class="tc">Base coverage</th><th class="tc">|Base|</th>
         </tr></thead>
-        <tbody id="resultsBody"><tr data-overlap="5">
+        <tbody id="resultsBody"><tr class="upcoming-row" data-upcoming="1">
+  <td class="tc">#2132</td>
+  <td class="tc"><em>upcoming</em></td>
+  <td>
+    <div class="upcoming-label">⏳ Base pool for draw #2132 &mdash; not yet drawn, no actual result to compare against yet</div>
+    <div class="numchips"><span class="nb up">1</span><span class="nb up">2</span><span class="nb up">3</span><span class="nb up">4</span><span class="nb up">6</span><span class="nb up">9</span><span class="nb up">10</span><span class="nb up">11</span><span class="nb up">12</span><span class="nb up">15</span><span class="nb up">16</span><span class="nb up">18</span><span class="nb up">19</span><span class="nb up">21</span><span class="nb up">22</span><span class="nb up">23</span><span class="nb up">24</span><span class="nb up">25</span><span class="nb up">26</span><span class="nb up">27</span><span class="nb up">28</span><span class="nb up">30</span><span class="nb up">31</span><span class="nb up">32</span><span class="nb up">33</span><span class="nb up">37</span><span class="nb up">38</span><span class="nb up">39</span><span class="nb up">40</span><span class="nb up">43</span></div>
+  </td>
+  <td class="tc"><em style="color:#64748b">not yet drawn</em></td>
+  <td class="tc">30</td>
+</tr><tr data-overlap="5">
   <td class="tc">#2131</td>
   <td class="tc">2026-08-24</td>
   <td><div class="numchips"><div class="numchip hit">
@@ -3249,8 +3266,13 @@ table.results td.tc{text-align:center;white-space:nowrap}
 function applyFilter() {
   const sel = document.getElementById('filterSel').value;
   const rows = document.querySelectorAll('#resultsBody tr');
-  let shown = 0;
+  let shown = 0, total = 0;
   rows.forEach((tr) => {
+    if (tr.getAttribute('data-upcoming') === '1') {
+      tr.style.display = '';  // always shown, pinned at top, not part of the filter/count
+      return;
+    }
+    total++;
     const overlap = tr.getAttribute('data-overlap');
     let show = true;
     if (sel === '6') show = overlap === '6';
@@ -3259,7 +3281,7 @@ function applyFilter() {
     tr.style.display = show ? '' : 'none';
     if (show) shown++;
   });
-  document.getElementById('filterCount').textContent = 'Showing ' + shown + ' of ' + rows.length;
+  document.getElementById('filterCount').textContent = 'Showing ' + shown + ' of ' + total;
 }
 applyFilter();
 </script>

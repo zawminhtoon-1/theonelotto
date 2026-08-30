@@ -38,6 +38,7 @@ zero = meta['zeroCount']
 overlap_hist = meta['overlapHistogram']
 results = meta['results']
 elapsed_seconds = meta['elapsedSeconds']
+upcoming = meta.get('upcoming')
 
 theoretical_base_rate = comb(29, 6) / comb(43, 6) * 100  # approx, K_BASE hovers ~28-29
 
@@ -108,6 +109,22 @@ for r in reversed(results):  # newest first
   <td><div class="numchips">{balls_html}</div>{hit_summary}</td>
   <td class="tc"><span class="cov-pill {cov_cls}">{cov_label}</span></td>
   <td class="tc">{r['kBase']}</td>
+</tr>"""
+
+# ── Upcoming draw row (not yet drawn -- no actual result to compare against,
+# so no hit highlighting; just the Base pool itself, pinned at the top) ─────
+upcoming_row_html = ""
+if upcoming:
+    up_balls = "".join(f'<span class="nb up">{n}</span>' for n in upcoming['basePool'])
+    upcoming_row_html = f"""<tr class="upcoming-row" data-upcoming="1">
+  <td class="tc">#{upcoming['serial']}</td>
+  <td class="tc"><em>upcoming</em></td>
+  <td>
+    <div class="upcoming-label">⏳ Base pool for draw #{upcoming['serial']} &mdash; not yet drawn, no actual result to compare against yet</div>
+    <div class="numchips">{up_balls}</div>
+  </td>
+  <td class="tc"><em style="color:#64748b">not yet drawn</em></td>
+  <td class="tc">{upcoming['kBase']}</td>
 </tr>"""
 
 OVERLAP_COLORS = {6: '#22c55e', 5: '#4ade80', 4: '#a3e635', 3: '#fbbf24', 2: '#fb923c', 1: '#f87171', 0: '#475569'}
@@ -186,6 +203,12 @@ table.results td.tc{{text-align:center;white-space:nowrap}}
 .numchips{{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}}
 .numchip{{display:flex;flex-direction:column;align-items:center;gap:3px;padding:3px;border-radius:8px}}
 .numchip.hit{{background:#38bdf814;border:1px solid #38bdf855}}
+.nb.up{{background:#38bdf822;color:#7dd3fc;border-color:#38bdf866}}
+
+tr.upcoming-row{{background:rgba(56,189,248,.08);border-bottom:2px solid #38bdf8}}
+tr.upcoming-row td{{color:#e2e8f0}}
+tr.upcoming-row td:first-child{{font-weight:700;color:#38bdf8}}
+.upcoming-label{{font-size:.72rem;font-weight:600;color:#7dd3fc;margin-bottom:8px}}
 .hit-tag{{font-size:.52rem;font-weight:800;color:#38bdf8;letter-spacing:.03em;white-space:nowrap}}
 .idxrow{{display:flex;gap:3px}}
 .idx-badge{{font-size:.6rem;font-weight:700;padding:2px 5px;border-radius:5px;white-space:nowrap}}
@@ -301,11 +324,13 @@ table.results td.tc{{text-align:center;white-space:nowrap}}
 
   <div class="section">
     <h2>Per-draw results</h2>
-    <p class="desc">Newest draw first. Each actual number shows two generation-order badges: MC = position within the Modular
-    Cycle K={k_mc} pick's own build order, XO = position within the xoshiro K={k_xo} pick's own Fisher-Yates finalization order.
-    Numbers that hit Base &mdash; present in BOTH picks, so they're actually inside the intersection &mdash; are highlighted and
-    tagged <strong style="color:#38bdf8">🎯 HIT</strong>, with a one-line summary underneath the combo spelling out each hit
-    number's index in both sources at a glance.</p>
+    <p class="desc">The <strong style="color:#7dd3fc">⏳ upcoming draw</strong> is pinned at the top, showing the Base pool computed
+    for it &mdash; not yet drawn, so there's no actual result to compare against and no hit highlighting. Below it, the {n_draws}
+    real historical draws are newest first. Each actual number shows two generation-order badges: MC = position within the
+    Modular Cycle K={k_mc} pick's own build order, XO = position within the xoshiro K={k_xo} pick's own Fisher-Yates
+    finalization order. Numbers that hit Base &mdash; present in BOTH picks, so they're actually inside the intersection
+    &mdash; are highlighted and tagged <strong style="color:#38bdf8">🎯 HIT</strong>, with a one-line summary underneath the
+    combo spelling out each hit number's index in both sources at a glance.</p>
     <div class="legend">
       <span><span class="dot" style="background:#38bdf8"></span>🎯 HIT — number is in Base (present in both MC and XO)</span>
       <span><span class="dot" style="background:#4ade80"></span>Early (top third of that method's K)</span>
@@ -327,7 +352,7 @@ table.results td.tc{{text-align:center;white-space:nowrap}}
           <th class="tc">Draw</th><th class="tc">Date</th><th>Actual combo &amp; generation-order index (🎯 hit numbers highlighted + summarized)</th>
           <th class="tc">Base coverage</th><th class="tc">|Base|</th>
         </tr></thead>
-        <tbody id="resultsBody">{rows_html}</tbody>
+        <tbody id="resultsBody">{upcoming_row_html}{rows_html}</tbody>
       </table>
     </div>
   </div>
@@ -344,8 +369,13 @@ table.results td.tc{{text-align:center;white-space:nowrap}}
 function applyFilter() {{
   const sel = document.getElementById('filterSel').value;
   const rows = document.querySelectorAll('#resultsBody tr');
-  let shown = 0;
+  let shown = 0, total = 0;
   rows.forEach((tr) => {{
+    if (tr.getAttribute('data-upcoming') === '1') {{
+      tr.style.display = '';  // always shown, pinned at top, not part of the filter/count
+      return;
+    }}
+    total++;
     const overlap = tr.getAttribute('data-overlap');
     let show = true;
     if (sel === '6') show = overlap === '6';
@@ -354,7 +384,7 @@ function applyFilter() {{
     tr.style.display = show ? '' : 'none';
     if (show) shown++;
   }});
-  document.getElementById('filterCount').textContent = 'Showing ' + shown + ' of ' + rows.length;
+  document.getElementById('filterCount').textContent = 'Showing ' + shown + ' of ' + total;
 }}
 applyFilter();
 </script>

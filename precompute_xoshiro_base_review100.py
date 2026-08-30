@@ -385,7 +385,13 @@ def top_k_nums_extend_ordered(combo_ordered, all_pools, k):
     extra = extra[:k - len(combo_ordered)]
     return list(combo_ordered) + extra
 
-def run_for_draw(target_serial, draw_date, actual_main6):
+def compute_base(target_serial):
+    """Shared Base-construction step (Modular Cycle K=33 ∩ xoshiro K=38 seed
+    #692,809), walk-forward trained on draws strictly before target_serial.
+    Used both for real historical draws (run_for_draw) and for the current
+    upcoming/not-yet-drawn draw (compute_upcoming) -- for the latter,
+    target_serial is simply latest_real_serial + 1, so "strictly before"
+    naturally becomes "all real draws to date"."""
     conn = psycopg2.connect(os.environ['DATABASE_URL'])
     cur = conn.cursor()
     cur.execute("SELECT draw_serial, num1,num2,num3,num4,num5,num6, bonus FROM loto6_results "
@@ -426,7 +432,20 @@ def run_for_draw(target_serial, draw_date, actual_main6):
         f"#{target_serial}: mc_pool_ordered mismatch with top_k_nums reference"
 
     base_pool = sorted(set(mc_pool) & set(xo_pool))
-    K_BASE = len(base_pool)
+
+    return {
+        'kBase': len(base_pool),
+        'basePool': base_pool,
+        'mcPoolOrdered': mc_pool_ordered,
+        'xoPoolOrdered': xo_pool_ordered,
+    }
+
+def run_for_draw(target_serial, draw_date, actual_main6):
+    b = compute_base(target_serial)
+    mc_pool_ordered = b['mcPoolOrdered']
+    xo_pool_ordered = b['xoPoolOrdered']
+    base_pool = b['basePool']
+    K_BASE = b['kBase']
 
     actual_t = tuple(sorted(actual_main6))
     actual_set = set(actual_t)
@@ -452,6 +471,18 @@ def run_for_draw(target_serial, draw_date, actual_main6):
         'perNumber': per_number,
         'mcPoolOrdered': mc_pool_ordered,
         'xoPoolOrdered': xo_pool_ordered,
+    }
+
+def compute_upcoming(target_serial):
+    """The current upcoming/not-yet-drawn draw -- Base pool only, no actual
+    result to compare against yet."""
+    b = compute_base(target_serial)
+    return {
+        'serial': target_serial,
+        'kBase': b['kBase'],
+        'basePool': b['basePool'],
+        'mcPoolOrdered': b['mcPoolOrdered'],
+        'xoPoolOrdered': b['xoPoolOrdered'],
     }
 
 def main():
@@ -487,6 +518,11 @@ def main():
     print(f"  Partial (1-5):  {partial}")
     print(f"  Zero in Base:   {zero}")
 
+    upcoming_serial = rows[-1][0] + 1
+    print(f"\nComputing Base for upcoming draw #{upcoming_serial} (not yet drawn)...")
+    upcoming = compute_upcoming(upcoming_serial)
+    print(f"  Base (K={upcoming['kBase']}): {upcoming['basePool']}")
+
     meta = {
         'nDraws': len(results),
         'drawRange': [rows[0][0], rows[-1][0]],
@@ -500,6 +536,7 @@ def main():
         'overlapHistogram': {str(k): v for k, v in sorted(overlap_hist.items())},
         'results': results,
         'elapsedSeconds': elapsed_total,
+        'upcoming': upcoming,
     }
     with open(META_OUT, 'w', encoding='utf-8') as f:
         json.dump(meta, f, indent=2)
