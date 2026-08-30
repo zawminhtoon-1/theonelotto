@@ -1,0 +1,2658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Base Pool Construction Review — Last 100 Draws</title>
+<style>
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0f1e;color:#e2e8f0;font-family:system-ui,sans-serif;padding-top:60px;min-height:100vh}
+.wrap{max-width:1300px;margin:0 auto;padding:24px 16px}
+h1{font-size:1.4rem;font-weight:700;color:#f1f5f9;margin-bottom:4px}
+.subtitle{font-size:.85rem;color:#64748b;margin-bottom:20px}
+
+.note{background:#0d1526;border:1px solid #1e293b;border-radius:10px;padding:14px 18px;
+  font-size:.8rem;color:#94a3b8;margin-bottom:20px;line-height:1.6}
+.note p+p{margin-top:8px}
+.note code{background:#0a0f1e;padding:1px 5px;border-radius:4px;font-size:.85em}
+
+.section{background:#0d1526;border:1px solid #1e293b;border-radius:12px;padding:20px;margin-bottom:20px}
+.section h2{font-size:1rem;font-weight:700;color:#f1f5f9;margin-bottom:4px}
+.section .desc{font-size:.8rem;color:#64748b;margin-bottom:14px}
+
+.nb{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;
+  border-radius:50%;font-size:.68rem;font-weight:700;background:#312e5f;color:#c4b5fd;
+  border:1px solid #7c3aed55;flex-shrink:0}
+
+.stats-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.stat-card{background:#0a0f1e;border:1px solid #1e293b;border-radius:10px;padding:14px 18px;flex:1;min-width:140px}
+.stat-card .lbl{font-size:.68rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.stat-card .val{font-size:1.3rem;font-weight:700;color:#f1f5f9}
+.stat-card .sub{font-size:.72rem;color:#94a3b8;margin-top:2px}
+.stat-card.hit .val{color:#22c55e}
+.stat-card.neverbase .val{color:#475569}
+
+.funnel{display:flex;flex-direction:column;gap:6px}
+.funnel-row{display:flex;align-items:center;gap:10px;font-size:.82rem}
+.funnel-lbl{width:150px;color:#94a3b8;flex-shrink:0}
+.funnel-bar-wrap{flex:1;background:#0a0f1e;border-radius:6px;overflow:hidden;height:22px;border:1px solid #1e293b}
+.funnel-bar{height:100%;border-radius:6px}
+.funnel-val{width:50px;text-align:right;color:#f1f5f9;font-weight:600;flex-shrink:0}
+
+.controls{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.controls select{background:#0d1526;border:1px solid #334155;border-radius:7px;padding:7px 12px;
+  color:#e2e8f0;font-size:.83rem}
+
+.tbl-wrap{overflow-x:auto;border-radius:10px;border:1px solid #1e293b}
+table.results{width:100%;border-collapse:collapse;font-size:.8rem}
+table.results th{background:#0a0f1e;padding:8px 10px;text-align:left;color:#94a3b8;
+  font-weight:600;font-size:.68rem;text-transform:uppercase;letter-spacing:.04em;
+  border-bottom:1px solid #1e293b;white-space:nowrap}
+table.results th.tc{text-align:center}
+table.results tbody tr{border-bottom:1px solid #1e293b}
+table.results tbody tr:hover{background:#111827}
+table.results td{padding:8px 10px;color:#cbd5e1;vertical-align:middle}
+table.results td.tc{text-align:center;white-space:nowrap}
+
+.cov-pill{font-size:.7rem;font-weight:700;padding:3px 9px;border-radius:10px;white-space:nowrap}
+.cov-all{background:#22c55e22;color:#4ade80;border:1px solid #22c55e55}
+.cov-partial{background:#fbbf2422;color:#fbbf24;border:1px solid #fbbf2455}
+.cov-zero{background:#47556922;color:#94a3b8;border:1px solid #47556955}
+
+.numchips{display:flex;flex-wrap:wrap;gap:8px}
+.numchip{display:flex;flex-direction:column;align-items:center;gap:3px}
+.idxrow{display:flex;gap:3px}
+.idx-badge{font-size:.6rem;font-weight:700;padding:2px 5px;border-radius:5px;white-space:nowrap}
+.idx-badge.early{background:#22c55e22;color:#4ade80;border:1px solid #22c55e44}
+.idx-badge.late{background:#fbbf2422;color:#fbbf24;border:1px solid #fbbf2444}
+.idx-badge.absent{background:#47556922;color:#64748b;border:1px solid #47556944}
+
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:.75rem;color:#94a3b8;margin-top:10px}
+.legend span.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle}
+
+.footer{margin-top:28px;font-size:.78rem;color:#475569;padding-bottom:20px;line-height:1.6}
+</style>
+</head>
+<body>
+
+<script src="/site-nav.js"></script>
+<div class="wrap">
+  <h1>🧪 Base Pool Construction Review — Last 100 Draws (#2032–2131)</h1>
+  <p class="subtitle">Narrower than the full 5-pass elimination backtest — just the Base-pool-construction stage, with generation-order detail for both inputs.</p>
+
+  <div class="note">
+    <p>Base = <strong style="color:#e2e8f0">Modular Cycle K=33</strong> (walk-forward, native K=28 padded to 33
+    via cross-method-consensus <code>topKNums()</code>) &cap; <strong style="color:#e2e8f0">xoshiro K=38 seed #692,809</strong>
+    &mdash; the exact same Base construction used on the /xoshiro_elim_2130.html-style elimination pages, run retroactively against
+    each of the last 100 real draws. Every walk-forward-trained component (Modular Cycle's frequency ranking, all 16 methods
+    feeding the cross-method-consensus table used to pad Base to K=33) is trained ONLY on draws strictly before the target draw
+    &mdash; no draw ever sees its own future.</p>
+    <p><strong style="color:#e2e8f0">Generation order:</strong> for each of a draw's 6 actual numbers, this page shows WHERE (if at
+    all) that number fell in each input's own raw pick sequence, before either gets sorted. For xoshiro, that's the order the partial
+    Fisher-Yates shuffle finalizes each position. For Modular Cycle, that's the mod-43 cycle's own frequency ranking (native K=28),
+    followed by the cross-method-consensus padding numbers added to reach K=33 &mdash; the order the pick was actually built in.
+    <span style="color:#4ade80">Green</span> = in the top third of that method's own K (an early/high-confidence pick);
+    <span style="color:#fbbf24">amber</span> = present but later; <span style="color:#64748b">grey "—"</span> = never generated by
+    that method at all.</p>
+    <p><strong style="color:#e2e8f0">This is Base construction only</strong> &mdash; it does NOT run the elimination passes
+    (see <a href="/xoshiro_elim_backtest100.html" style="color:#a78bfa">the full 5-pass elimination backtest</a> for that). Base is
+    a fixed ~29-number pool, so by pure combinatorics only about C(29,6)/C(43,6) &asymp; 7.8%
+    of possible 6-number combos could ever be fully contained in it &mdash; before any elimination logic runs. Full run took
+    300s (5.0 min) for all 100 draws.</p>
+  </div>
+
+  <div class="section">
+    <h2>Summary</h2>
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="lbl">Draws reviewed</div>
+        <div class="val">100</div>
+        <div class="sub">#2032–2131</div>
+      </div>
+      <div class="stat-card hit">
+        <div class="lbl">All 6 in Base</div>
+        <div class="val">15</div>
+        <div class="sub">15.0% of draws</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Partial (1–5 in Base)</div>
+        <div class="val">85</div>
+        <div class="sub">85.0% of draws</div>
+      </div>
+      <div class="stat-card neverbase">
+        <div class="lbl">Zero in Base</div>
+        <div class="val">0</div>
+        <div class="sub">0.0% of draws</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Base coverage distribution</h2>
+    <p class="desc">How many of a draw's 6 actual numbers landed in that draw's own walk-forward Base pool.</p>
+    <div class="funnel"><div class="funnel-row">
+        <div class="funnel-lbl">6/6 in Base</div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:15.0%;background:#22c55e"></div></div>
+        <div class="funnel-val">15</div>
+      </div><div class="funnel-row">
+        <div class="funnel-lbl">5/6 in Base</div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:28.0%;background:#4ade80"></div></div>
+        <div class="funnel-val">28</div>
+      </div><div class="funnel-row">
+        <div class="funnel-lbl">4/6 in Base</div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:31.0%;background:#a3e635"></div></div>
+        <div class="funnel-val">31</div>
+      </div><div class="funnel-row">
+        <div class="funnel-lbl">3/6 in Base</div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:19.0%;background:#fbbf24"></div></div>
+        <div class="funnel-val">19</div>
+      </div><div class="funnel-row">
+        <div class="funnel-lbl">2/6 in Base</div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:5.0%;background:#fb923c"></div></div>
+        <div class="funnel-val">5</div>
+      </div><div class="funnel-row">
+        <div class="funnel-lbl">1/6 in Base</div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:2.0%;background:#f87171"></div></div>
+        <div class="funnel-val">2</div>
+      </div><div class="funnel-row">
+        <div class="funnel-lbl">0/6 in Base</div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:0.0%;background:#475569"></div></div>
+        <div class="funnel-val">0</div>
+      </div></div>
+  </div>
+
+  <div class="section">
+    <h2>Cross-method generation-order findings</h2>
+    <p class="desc">Aggregated over all 600 actual-number instances (100 draws &times; 6 numbers) across the review window.</p>
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="lbl">Generated by Modular Cycle</div>
+        <div class="val">473</div>
+        <div class="sub">78.8% &middot; avg index #16.9 of 33</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Generated by xoshiro</div>
+        <div class="val">537</div>
+        <div class="sub">89.5% &middot; avg index #18.8 of 38</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">In both (&rarr; in Base)</div>
+        <div class="val">423</div>
+        <div class="sub">70.5% of all instances</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">In neither</div>
+        <div class="val">13</div>
+        <div class="sub">2.2% of all instances</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">MC only (xoshiro missed it)</div>
+        <div class="val">50</div>
+        <div class="sub">8.3% of all instances</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">xoshiro only (MC missed it)</div>
+        <div class="val">114</div>
+        <div class="sub">19.0% of all instances</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Per-draw results</h2>
+    <p class="desc">Newest draw first. Each actual number shows two generation-order badges: MC = position within the Modular
+    Cycle K=33 pick's own build order, XO = position within the xoshiro K=38 pick's own Fisher-Yates finalization order.</p>
+    <div class="legend">
+      <span><span class="dot" style="background:#4ade80"></span>Early (top third of that method's K)</span>
+      <span><span class="dot" style="background:#fbbf24"></span>Present, later in the order</span>
+      <span><span class="dot" style="background:#64748b"></span>Never generated by that method</span>
+    </div>
+    <div class="controls" style="margin-top:14px">
+      <select id="filterSel" onchange="applyFilter()">
+        <option value="all">Show: All 100 draws</option>
+        <option value="6">Show: All 6 in Base only</option>
+        <option value="partial">Show: Partial (1–5) only</option>
+        <option value="0">Show: Zero in Base only</option>
+      </select>
+      <span id="filterCount" class="desc" style="margin:0"></span>
+    </div>
+    <div class="tbl-wrap">
+      <table class="results" id="resultsTable">
+        <thead><tr>
+          <th class="tc">Draw</th><th class="tc">Date</th><th>Actual combo (generation-order index per number)</th>
+          <th class="tc">Base coverage</th><th class="tc">|Base|</th>
+        </tr></thead>
+        <tbody id="resultsBody"><tr data-overlap="5">
+  <td class="tc">#2131</td>
+  <td class="tc">2026-08-24</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">25</span>
+        <div class="idxrow"><span class="idx-badge late">MC #12</span><span class="idx-badge early">XO #6</span></div>
+      </div><div class="numchip">
+        <span class="nb">26</span>
+        <div class="idxrow"><span class="idx-badge late">MC #13</span><span class="idx-badge late">XO #30</span></div>
+      </div><div class="numchip">
+        <span class="nb">28</span>
+        <div class="idxrow"><span class="idx-badge late">MC #14</span><span class="idx-badge early">XO #4</span></div>
+      </div><div class="numchip">
+        <span class="nb">33</span>
+        <div class="idxrow"><span class="idx-badge early">MC #8</span><span class="idx-badge late">XO #37</span></div>
+      </div><div class="numchip">
+        <span class="nb">35</span>
+        <div class="idxrow"><span class="idx-badge late">MC #29</span><span class="idx-badge late">XO #24</span></div>
+      </div><div class="numchip">
+        <span class="nb">43</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #20</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">5/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="6">
+  <td class="tc">#2130</td>
+  <td class="tc">2026-08-20</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">12</span>
+        <div class="idxrow"><span class="idx-badge late">MC #18</span><span class="idx-badge late">XO #36</span></div>
+      </div><div class="numchip">
+        <span class="nb">18</span>
+        <div class="idxrow"><span class="idx-badge late">MC #20</span><span class="idx-badge early">XO #12</span></div>
+      </div><div class="numchip">
+        <span class="nb">35</span>
+        <div class="idxrow"><span class="idx-badge early">MC #2</span><span class="idx-badge early">XO #3</span></div>
+      </div><div class="numchip">
+        <span class="nb">40</span>
+        <div class="idxrow"><span class="idx-badge early">MC #5</span><span class="idx-badge late">XO #23</span></div>
+      </div><div class="numchip">
+        <span class="nb">41</span>
+        <div class="idxrow"><span class="idx-badge late">MC #15</span><span class="idx-badge late">XO #32</span></div>
+      </div><div class="numchip">
+        <span class="nb">43</span>
+        <div class="idxrow"><span class="idx-badge early">MC #11</span><span class="idx-badge late">XO #16</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-all">6/6 — All in Base ✓</span></td>
+  <td class="tc">28</td>
+</tr><tr data-overlap="4">
+  <td class="tc">#2129</td>
+  <td class="tc">2026-08-17</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">2</span>
+        <div class="idxrow"><span class="idx-badge late">MC #24</span><span class="idx-badge early">XO #6</span></div>
+      </div><div class="numchip">
+        <span class="nb">4</span>
+        <div class="idxrow"><span class="idx-badge early">MC #3</span><span class="idx-badge late">XO #29</span></div>
+      </div><div class="numchip">
+        <span class="nb">6</span>
+        <div class="idxrow"><span class="idx-badge late">MC #25</span><span class="idx-badge early">XO #8</span></div>
+      </div><div class="numchip">
+        <span class="nb">16</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge early">XO #10</span></div>
+      </div><div class="numchip">
+        <span class="nb">25</span>
+        <div class="idxrow"><span class="idx-badge early">MC #8</span><span class="idx-badge early">XO #3</span></div>
+      </div><div class="numchip">
+        <span class="nb">41</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #35</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">4/6 — Partial</span></td>
+  <td class="tc">28</td>
+</tr><tr data-overlap="5">
+  <td class="tc">#2128</td>
+  <td class="tc">2026-08-13</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">13</span>
+        <div class="idxrow"><span class="idx-badge early">MC #9</span><span class="idx-badge late">XO #15</span></div>
+      </div><div class="numchip">
+        <span class="nb">20</span>
+        <div class="idxrow"><span class="idx-badge late">MC #25</span><span class="idx-badge early">XO #11</span></div>
+      </div><div class="numchip">
+        <span class="nb">22</span>
+        <div class="idxrow"><span class="idx-badge late">MC #15</span><span class="idx-badge early">XO #6</span></div>
+      </div><div class="numchip">
+        <span class="nb">27</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">35</span>
+        <div class="idxrow"><span class="idx-badge late">MC #12</span><span class="idx-badge early">XO #2</span></div>
+      </div><div class="numchip">
+        <span class="nb">38</span>
+        <div class="idxrow"><span class="idx-badge early">MC #5</span><span class="idx-badge early">XO #10</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">5/6 — Partial</span></td>
+  <td class="tc">30</td>
+</tr><tr data-overlap="4">
+  <td class="tc">#2127</td>
+  <td class="tc">2026-08-10</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">7</span>
+        <div class="idxrow"><span class="idx-badge early">MC #7</span><span class="idx-badge late">XO #15</span></div>
+      </div><div class="numchip">
+        <span class="nb">12</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">15</span>
+        <div class="idxrow"><span class="idx-badge late">MC #28</span><span class="idx-badge late">XO #38</span></div>
+      </div><div class="numchip">
+        <span class="nb">29</span>
+        <div class="idxrow"><span class="idx-badge late">MC #23</span><span class="idx-badge late">XO #17</span></div>
+      </div><div class="numchip">
+        <span class="nb">30</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge early">XO #4</span></div>
+      </div><div class="numchip">
+        <span class="nb">33</span>
+        <div class="idxrow"><span class="idx-badge late">MC #25</span><span class="idx-badge early">XO #13</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">4/6 — Partial</span></td>
+  <td class="tc">30</td>
+</tr><tr data-overlap="5">
+  <td class="tc">#2126</td>
+  <td class="tc">2026-08-06</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">18</span>
+        <div class="idxrow"><span class="idx-badge late">MC #21</span><span class="idx-badge late">XO #20</span></div>
+      </div><div class="numchip">
+        <span class="nb">20</span>
+        <div class="idxrow"><span class="idx-badge early">MC #7</span><span class="idx-badge late">XO #15</span></div>
+      </div><div class="numchip">
+        <span class="nb">22</span>
+        <div class="idxrow"><span class="idx-badge late">MC #23</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">35</span>
+        <div class="idxrow"><span class="idx-badge late">MC #33</span><span class="idx-badge early">XO #1</span></div>
+      </div><div class="numchip">
+        <span class="nb">37</span>
+        <div class="idxrow"><span class="idx-badge late">MC #25</span><span class="idx-badge late">XO #23</span></div>
+      </div><div class="numchip">
+        <span class="nb">42</span>
+        <div class="idxrow"><span class="idx-badge late">MC #32</span><span class="idx-badge early">XO #4</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">5/6 — Partial</span></td>
+  <td class="tc">28</td>
+</tr><tr data-overlap="3">
+  <td class="tc">#2125</td>
+  <td class="tc">2026-08-03</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">3</span>
+        <div class="idxrow"><span class="idx-badge late">MC #24</span><span class="idx-badge early">XO #3</span></div>
+      </div><div class="numchip">
+        <span class="nb">22</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #23</span></div>
+      </div><div class="numchip">
+        <span class="nb">25</span>
+        <div class="idxrow"><span class="idx-badge early">MC #7</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">28</span>
+        <div class="idxrow"><span class="idx-badge early">MC #3</span><span class="idx-badge early">XO #11</span></div>
+      </div><div class="numchip">
+        <span class="nb">30</span>
+        <div class="idxrow"><span class="idx-badge late">MC #13</span><span class="idx-badge early">XO #2</span></div>
+      </div><div class="numchip">
+        <span class="nb">43</span>
+        <div class="idxrow"><span class="idx-badge early">MC #5</span><span class="idx-badge absent">XO —</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">3/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="4">
+  <td class="tc">#2124</td>
+  <td class="tc">2026-07-30</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">6</span>
+        <div class="idxrow"><span class="idx-badge late">MC #29</span><span class="idx-badge late">XO #30</span></div>
+      </div><div class="numchip">
+        <span class="nb">20</span>
+        <div class="idxrow"><span class="idx-badge late">MC #18</span><span class="idx-badge early">XO #2</span></div>
+      </div><div class="numchip">
+        <span class="nb">29</span>
+        <div class="idxrow"><span class="idx-badge early">MC #8</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">36</span>
+        <div class="idxrow"><span class="idx-badge late">MC #13</span><span class="idx-badge late">XO #22</span></div>
+      </div><div class="numchip">
+        <span class="nb">37</span>
+        <div class="idxrow"><span class="idx-badge early">MC #2</span><span class="idx-badge late">XO #33</span></div>
+      </div><div class="numchip">
+        <span class="nb">41</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge early">XO #7</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">4/6 — Partial</span></td>
+  <td class="tc">28</td>
+</tr><tr data-overlap="3">
+  <td class="tc">#2123</td>
+  <td class="tc">2026-07-27</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">1</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #29</span></div>
+      </div><div class="numchip">
+        <span class="nb">2</span>
+        <div class="idxrow"><span class="idx-badge late">MC #30</span><span class="idx-badge late">XO #22</span></div>
+      </div><div class="numchip">
+        <span class="nb">4</span>
+        <div class="idxrow"><span class="idx-badge late">MC #12</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">25</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge early">XO #3</span></div>
+      </div><div class="numchip">
+        <span class="nb">37</span>
+        <div class="idxrow"><span class="idx-badge late">MC #27</span><span class="idx-badge late">XO #25</span></div>
+      </div><div class="numchip">
+        <span class="nb">40</span>
+        <div class="idxrow"><span class="idx-badge late">MC #23</span><span class="idx-badge late">XO #21</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">3/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="5">
+  <td class="tc">#2122</td>
+  <td class="tc">2026-07-23</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">12</span>
+        <div class="idxrow"><span class="idx-badge late">MC #18</span><span class="idx-badge early">XO #10</span></div>
+      </div><div class="numchip">
+        <span class="nb">15</span>
+        <div class="idxrow"><span class="idx-badge late">MC #32</span><span class="idx-badge late">XO #37</span></div>
+      </div><div class="numchip">
+        <span class="nb">18</span>
+        <div class="idxrow"><span class="idx-badge late">MC #13</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">21</span>
+        <div class="idxrow"><span class="idx-badge late">MC #14</span><span class="idx-badge late">XO #38</span></div>
+      </div><div class="numchip">
+        <span class="nb">26</span>
+        <div class="idxrow"><span class="idx-badge late">MC #15</span><span class="idx-badge late">XO #32</span></div>
+      </div><div class="numchip">
+        <span class="nb">32</span>
+        <div class="idxrow"><span class="idx-badge late">MC #21</span><span class="idx-badge late">XO #20</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">5/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="4">
+  <td class="tc">#2121</td>
+  <td class="tc">2026-07-20</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">1</span>
+        <div class="idxrow"><span class="idx-badge late">MC #27</span><span class="idx-badge late">XO #32</span></div>
+      </div><div class="numchip">
+        <span class="nb">3</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge early">XO #10</span></div>
+      </div><div class="numchip">
+        <span class="nb">10</span>
+        <div class="idxrow"><span class="idx-badge late">MC #21</span><span class="idx-badge late">XO #20</span></div>
+      </div><div class="numchip">
+        <span class="nb">17</span>
+        <div class="idxrow"><span class="idx-badge late">MC #24</span><span class="idx-badge late">XO #33</span></div>
+      </div><div class="numchip">
+        <span class="nb">25</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #34</span></div>
+      </div><div class="numchip">
+        <span class="nb">26</span>
+        <div class="idxrow"><span class="idx-badge late">MC #26</span><span class="idx-badge late">XO #30</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">4/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="3">
+  <td class="tc">#2120</td>
+  <td class="tc">2026-07-16</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">3</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #24</span></div>
+      </div><div class="numchip">
+        <span class="nb">8</span>
+        <div class="idxrow"><span class="idx-badge early">MC #5</span><span class="idx-badge late">XO #34</span></div>
+      </div><div class="numchip">
+        <span class="nb">13</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge early">XO #3</span></div>
+      </div><div class="numchip">
+        <span class="nb">14</span>
+        <div class="idxrow"><span class="idx-badge late">MC #14</span><span class="idx-badge early">XO #12</span></div>
+      </div><div class="numchip">
+        <span class="nb">16</span>
+        <div class="idxrow"><span class="idx-badge early">MC #4</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">43</span>
+        <div class="idxrow"><span class="idx-badge early">MC #8</span><span class="idx-badge late">XO #35</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">3/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="3">
+  <td class="tc">#2119</td>
+  <td class="tc">2026-07-13</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">15</span>
+        <div class="idxrow"><span class="idx-badge late">MC #31</span><span class="idx-badge late">XO #23</span></div>
+      </div><div class="numchip">
+        <span class="nb">18</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #28</span></div>
+      </div><div class="numchip">
+        <span class="nb">20</span>
+        <div class="idxrow"><span class="idx-badge late">MC #30</span><span class="idx-badge early">XO #13</span></div>
+      </div><div class="numchip">
+        <span class="nb">22</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge early">XO #1</span></div>
+      </div><div class="numchip">
+        <span class="nb">30</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #25</span></div>
+      </div><div class="numchip">
+        <span class="nb">38</span>
+        <div class="idxrow"><span class="idx-badge late">MC #14</span><span class="idx-badge late">XO #27</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">3/6 — Partial</span></td>
+  <td class="tc">28</td>
+</tr><tr data-overlap="6">
+  <td class="tc">#2118</td>
+  <td class="tc">2026-07-09</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">1</span>
+        <div class="idxrow"><span class="idx-badge late">MC #23</span><span class="idx-badge early">XO #8</span></div>
+      </div><div class="numchip">
+        <span class="nb">5</span>
+        <div class="idxrow"><span class="idx-badge late">MC #32</span><span class="idx-badge late">XO #21</span></div>
+      </div><div class="numchip">
+        <span class="nb">8</span>
+        <div class="idxrow"><span class="idx-badge early">MC #9</span><span class="idx-badge late">XO #26</span></div>
+      </div><div class="numchip">
+        <span class="nb">35</span>
+        <div class="idxrow"><span class="idx-badge late">MC #30</span><span class="idx-badge late">XO #22</span></div>
+      </div><div class="numchip">
+        <span class="nb">36</span>
+        <div class="idxrow"><span class="idx-badge late">MC #12</span><span class="idx-badge late">XO #28</span></div>
+      </div><div class="numchip">
+        <span class="nb">37</span>
+        <div class="idxrow"><span class="idx-badge early">MC #1</span><span class="idx-badge early">XO #1</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-all">6/6 — All in Base ✓</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="4">
+  <td class="tc">#2117</td>
+  <td class="tc">2026-07-06</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">4</span>
+        <div class="idxrow"><span class="idx-badge early">MC #4</span><span class="idx-badge early">XO #13</span></div>
+      </div><div class="numchip">
+        <span class="nb">7</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">26</span>
+        <div class="idxrow"><span class="idx-badge late">MC #18</span><span class="idx-badge early">XO #1</span></div>
+      </div><div class="numchip">
+        <span class="nb">27</span>
+        <div class="idxrow"><span class="idx-badge late">MC #25</span><span class="idx-badge late">XO #16</span></div>
+      </div><div class="numchip">
+        <span class="nb">35</span>
+        <div class="idxrow"><span class="idx-badge early">MC #7</span><span class="idx-badge early">XO #2</span></div>
+      </div><div class="numchip">
+        <span class="nb">41</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge early">XO #12</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">4/6 — Partial</span></td>
+  <td class="tc">31</td>
+</tr><tr data-overlap="4">
+  <td class="tc">#2116</td>
+  <td class="tc">2026-07-02</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">2</span>
+        <div class="idxrow"><span class="idx-badge late">MC #28</span><span class="idx-badge early">XO #2</span></div>
+      </div><div class="numchip">
+        <span class="nb">6</span>
+        <div class="idxrow"><span class="idx-badge late">MC #29</span><span class="idx-badge late">XO #31</span></div>
+      </div><div class="numchip">
+        <span class="nb">13</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge early">XO #1</span></div>
+      </div><div class="numchip">
+        <span class="nb">14</span>
+        <div class="idxrow"><span class="idx-badge early">MC #4</span><span class="idx-badge late">XO #18</span></div>
+      </div><div class="numchip">
+        <span class="nb">20</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #14</span></div>
+      </div><div class="numchip">
+        <span class="nb">42</span>
+        <div class="idxrow"><span class="idx-badge late">MC #19</span><span class="idx-badge early">XO #6</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">4/6 — Partial</span></td>
+  <td class="tc">30</td>
+</tr><tr data-overlap="5">
+  <td class="tc">#2115</td>
+  <td class="tc">2026-06-29</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">1</span>
+        <div class="idxrow"><span class="idx-badge late">MC #33</span><span class="idx-badge late">XO #29</span></div>
+      </div><div class="numchip">
+        <span class="nb">3</span>
+        <div class="idxrow"><span class="idx-badge late">MC #23</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">11</span>
+        <div class="idxrow"><span class="idx-badge early">MC #6</span><span class="idx-badge early">XO #5</span></div>
+      </div><div class="numchip">
+        <span class="nb">34</span>
+        <div class="idxrow"><span class="idx-badge late">MC #20</span><span class="idx-badge late">XO #20</span></div>
+      </div><div class="numchip">
+        <span class="nb">35</span>
+        <div class="idxrow"><span class="idx-badge late">MC #32</span><span class="idx-badge late">XO #31</span></div>
+      </div><div class="numchip">
+        <span class="nb">42</span>
+        <div class="idxrow"><span class="idx-badge early">MC #1</span><span class="idx-badge late">XO #14</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">5/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="3">
+  <td class="tc">#2114</td>
+  <td class="tc">2026-06-25</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">2</span>
+        <div class="idxrow"><span class="idx-badge early">MC #2</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">16</span>
+        <div class="idxrow"><span class="idx-badge early">MC #7</span><span class="idx-badge late">XO #35</span></div>
+      </div><div class="numchip">
+        <span class="nb">20</span>
+        <div class="idxrow"><span class="idx-badge late">MC #27</span><span class="idx-badge early">XO #2</span></div>
+      </div><div class="numchip">
+        <span class="nb">21</span>
+        <div class="idxrow"><span class="idx-badge late">MC #28</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">23</span>
+        <div class="idxrow"><span class="idx-badge late">MC #19</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">33</span>
+        <div class="idxrow"><span class="idx-badge late">MC #20</span><span class="idx-badge early">XO #5</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">3/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="6">
+  <td class="tc">#2113</td>
+  <td class="tc">2026-06-22</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">2</span>
+        <div class="idxrow"><span class="idx-badge late">MC #29</span><span class="idx-badge late">XO #27</span></div>
+      </div><div class="numchip">
+        <span class="nb">5</span>
+        <div class="idxrow"><span class="idx-badge late">MC #14</span><span class="idx-badge late">XO #32</span></div>
+      </div><div class="numchip">
+        <span class="nb">32</span>
+        <div class="idxrow"><span class="idx-badge late">MC #22</span><span class="idx-badge late">XO #15</span></div>
+      </div><div class="numchip">
+        <span class="nb">36</span>
+        <div class="idxrow"><span class="idx-badge late">MC #33</span><span class="idx-badge late">XO #17</span></div>
+      </div><div class="numchip">
+        <span class="nb">38</span>
+        <div class="idxrow"><span class="idx-badge late">MC #12</span><span class="idx-badge late">XO #18</span></div>
+      </div><div class="numchip">
+        <span class="nb">42</span>
+        <div class="idxrow"><span class="idx-badge late">MC #23</span><span class="idx-badge late">XO #26</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-all">6/6 — All in Base ✓</span></td>
+  <td class="tc">30</td>
+</tr><tr data-overlap="3">
+  <td class="tc">#2112</td>
+  <td class="tc">2026-06-18</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">3</span>
+        <div class="idxrow"><span class="idx-badge late">MC #28</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">7</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #30</span></div>
+      </div><div class="numchip">
+        <span class="nb">8</span>
+        <div class="idxrow"><span class="idx-badge early">MC #6</span><span class="idx-badge late">XO #26</span></div>
+      </div><div class="numchip">
+        <span class="nb">27</span>
+        <div class="idxrow"><span class="idx-badge late">MC #30</span><span class="idx-badge late">XO #17</span></div>
+      </div><div class="numchip">
+        <span class="nb">31</span>
+        <div class="idxrow"><span class="idx-badge late">MC #15</span><span class="idx-badge early">XO #13</span></div>
+      </div><div class="numchip">
+        <span class="nb">40</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #31</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">3/6 — Partial</span></td>
+  <td class="tc">28</td>
+</tr><tr data-overlap="3">
+  <td class="tc">#2111</td>
+  <td class="tc">2026-06-15</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">1</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #18</span></div>
+      </div><div class="numchip">
+        <span class="nb">5</span>
+        <div class="idxrow"><span class="idx-badge early">MC #5</span><span class="idx-badge late">XO #29</span></div>
+      </div><div class="numchip">
+        <span class="nb">8</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge early">XO #5</span></div>
+      </div><div class="numchip">
+        <span class="nb">12</span>
+        <div class="idxrow"><span class="idx-badge early">MC #6</span><span class="idx-badge early">XO #12</span></div>
+      </div><div class="numchip">
+        <span class="nb">37</span>
+        <div class="idxrow"><span class="idx-badge late">MC #29</span><span class="idx-badge late">XO #21</span></div>
+      </div><div class="numchip">
+        <span class="nb">43</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #36</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">3/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="6">
+  <td class="tc">#2110</td>
+  <td class="tc">2026-06-11</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">3</span>
+        <div class="idxrow"><span class="idx-badge early">MC #2</span><span class="idx-badge late">XO #33</span></div>
+      </div><div class="numchip">
+        <span class="nb">9</span>
+        <div class="idxrow"><span class="idx-badge late">MC #27</span><span class="idx-badge late">XO #27</span></div>
+      </div><div class="numchip">
+        <span class="nb">18</span>
+        <div class="idxrow"><span class="idx-badge late">MC #19</span><span class="idx-badge late">XO #38</span></div>
+      </div><div class="numchip">
+        <span class="nb">35</span>
+        <div class="idxrow"><span class="idx-badge early">MC #8</span><span class="idx-badge late">XO #23</span></div>
+      </div><div class="numchip">
+        <span class="nb">36</span>
+        <div class="idxrow"><span class="idx-badge late">MC #16</span><span class="idx-badge late">XO #36</span></div>
+      </div><div class="numchip">
+        <span class="nb">40</span>
+        <div class="idxrow"><span class="idx-badge late">MC #22</span><span class="idx-badge late">XO #32</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-all">6/6 — All in Base ✓</span></td>
+  <td class="tc">31</td>
+</tr><tr data-overlap="5">
+  <td class="tc">#2109</td>
+  <td class="tc">2026-06-08</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">6</span>
+        <div class="idxrow"><span class="idx-badge late">MC #29</span><span class="idx-badge early">XO #10</span></div>
+      </div><div class="numchip">
+        <span class="nb">11</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #30</span></div>
+      </div><div class="numchip">
+        <span class="nb">19</span>
+        <div class="idxrow"><span class="idx-badge early">MC #10</span><span class="idx-badge early">XO #11</span></div>
+      </div><div class="numchip">
+        <span class="nb">31</span>
+        <div class="idxrow"><span class="idx-badge early">MC #4</span><span class="idx-badge early">XO #12</span></div>
+      </div><div class="numchip">
+        <span class="nb">38</span>
+        <div class="idxrow"><span class="idx-badge late">MC #12</span><span class="idx-badge late">XO #33</span></div>
+      </div><div class="numchip">
+        <span class="nb">41</span>
+        <div class="idxrow"><span class="idx-badge late">MC #15</span><span class="idx-badge late">XO #17</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">5/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="6">
+  <td class="tc">#2108</td>
+  <td class="tc">2026-06-04</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">2</span>
+        <div class="idxrow"><span class="idx-badge early">MC #6</span><span class="idx-badge late">XO #23</span></div>
+      </div><div class="numchip">
+        <span class="nb">5</span>
+        <div class="idxrow"><span class="idx-badge late">MC #32</span><span class="idx-badge early">XO #6</span></div>
+      </div><div class="numchip">
+        <span class="nb">10</span>
+        <div class="idxrow"><span class="idx-badge late">MC #20</span><span class="idx-badge late">XO #31</span></div>
+      </div><div class="numchip">
+        <span class="nb">15</span>
+        <div class="idxrow"><span class="idx-badge late">MC #18</span><span class="idx-badge late">XO #30</span></div>
+      </div><div class="numchip">
+        <span class="nb">28</span>
+        <div class="idxrow"><span class="idx-badge late">MC #12</span><span class="idx-badge late">XO #25</span></div>
+      </div><div class="numchip">
+        <span class="nb">43</span>
+        <div class="idxrow"><span class="idx-badge late">MC #28</span><span class="idx-badge late">XO #34</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-all">6/6 — All in Base ✓</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="1">
+  <td class="tc">#2107</td>
+  <td class="tc">2026-06-01</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">5</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #34</span></div>
+      </div><div class="numchip">
+        <span class="nb">8</span>
+        <div class="idxrow"><span class="idx-badge late">MC #25</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">27</span>
+        <div class="idxrow"><span class="idx-badge late">MC #32</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">32</span>
+        <div class="idxrow"><span class="idx-badge late">MC #21</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">36</span>
+        <div class="idxrow"><span class="idx-badge early">MC #8</span><span class="idx-badge late">XO #26</span></div>
+      </div><div class="numchip">
+        <span class="nb">39</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge absent">XO —</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">1/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="4">
+  <td class="tc">#2106</td>
+  <td class="tc">2026-05-28</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">1</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #25</span></div>
+      </div><div class="numchip">
+        <span class="nb">6</span>
+        <div class="idxrow"><span class="idx-badge early">MC #7</span><span class="idx-badge late">XO #16</span></div>
+      </div><div class="numchip">
+        <span class="nb">17</span>
+        <div class="idxrow"><span class="idx-badge late">MC #28</span><span class="idx-badge early">XO #2</span></div>
+      </div><div class="numchip">
+        <span class="nb">27</span>
+        <div class="idxrow"><span class="idx-badge late">MC #20</span><span class="idx-badge late">XO #32</span></div>
+      </div><div class="numchip">
+        <span class="nb">34</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #23</span></div>
+      </div><div class="numchip">
+        <span class="nb">43</span>
+        <div class="idxrow"><span class="idx-badge late">MC #31</span><span class="idx-badge early">XO #4</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">4/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="2">
+  <td class="tc">#2105</td>
+  <td class="tc">2026-05-25</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">5</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge early">XO #8</span></div>
+      </div><div class="numchip">
+        <span class="nb">26</span>
+        <div class="idxrow"><span class="idx-badge late">MC #21</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">28</span>
+        <div class="idxrow"><span class="idx-badge late">MC #27</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">30</span>
+        <div class="idxrow"><span class="idx-badge early">MC #6</span><span class="idx-badge early">XO #3</span></div>
+      </div><div class="numchip">
+        <span class="nb">36</span>
+        <div class="idxrow"><span class="idx-badge late">MC #33</span><span class="idx-badge late">XO #28</span></div>
+      </div><div class="numchip">
+        <span class="nb">40</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge early">XO #11</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">2/6 — Partial</span></td>
+  <td class="tc">30</td>
+</tr><tr data-overlap="2">
+  <td class="tc">#2104</td>
+  <td class="tc">2026-05-21</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">18</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">19</span>
+        <div class="idxrow"><span class="idx-badge late">MC #12</span><span class="idx-badge late">XO #24</span></div>
+      </div><div class="numchip">
+        <span class="nb">21</span>
+        <div class="idxrow"><span class="idx-badge early">MC #4</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">25</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #38</span></div>
+      </div><div class="numchip">
+        <span class="nb">28</span>
+        <div class="idxrow"><span class="idx-badge late">MC #19</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">34</span>
+        <div class="idxrow"><span class="idx-badge late">MC #27</span><span class="idx-badge early">XO #4</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">2/6 — Partial</span></td>
+  <td class="tc">30</td>
+</tr><tr data-overlap="2">
+  <td class="tc">#2103</td>
+  <td class="tc">2026-05-18</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">1</span>
+        <div class="idxrow"><span class="idx-badge late">MC #28</span><span class="idx-badge late">XO #15</span></div>
+      </div><div class="numchip">
+        <span class="nb">2</span>
+        <div class="idxrow"><span class="idx-badge late">MC #16</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">4</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #27</span></div>
+      </div><div class="numchip">
+        <span class="nb">5</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #23</span></div>
+      </div><div class="numchip">
+        <span class="nb">8</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge early">XO #5</span></div>
+      </div><div class="numchip">
+        <span class="nb">38</span>
+        <div class="idxrow"><span class="idx-badge late">MC #14</span><span class="idx-badge early">XO #3</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">2/6 — Partial</span></td>
+  <td class="tc">30</td>
+</tr><tr data-overlap="3">
+  <td class="tc">#2102</td>
+  <td class="tc">2026-05-14</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">18</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #36</span></div>
+      </div><div class="numchip">
+        <span class="nb">21</span>
+        <div class="idxrow"><span class="idx-badge late">MC #19</span><span class="idx-badge early">XO #5</span></div>
+      </div><div class="numchip">
+        <span class="nb">25</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #37</span></div>
+      </div><div class="numchip">
+        <span class="nb">28</span>
+        <div class="idxrow"><span class="idx-badge early">MC #5</span><span class="idx-badge late">XO #29</span></div>
+      </div><div class="numchip">
+        <span class="nb">30</span>
+        <div class="idxrow"><span class="idx-badge late">MC #28</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">43</span>
+        <div class="idxrow"><span class="idx-badge early">MC #11</span><span class="idx-badge late">XO #33</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">3/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="3">
+  <td class="tc">#2101</td>
+  <td class="tc">2026-05-11</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">1</span>
+        <div class="idxrow"><span class="idx-badge early">MC #11</span><span class="idx-badge late">XO #32</span></div>
+      </div><div class="numchip">
+        <span class="nb">17</span>
+        <div class="idxrow"><span class="idx-badge early">MC #5</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">29</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge early">XO #4</span></div>
+      </div><div class="numchip">
+        <span class="nb">33</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #33</span></div>
+      </div><div class="numchip">
+        <span class="nb">40</span>
+        <div class="idxrow"><span class="idx-badge late">MC #21</span><span class="idx-badge late">XO #38</span></div>
+      </div><div class="numchip">
+        <span class="nb">42</span>
+        <div class="idxrow"><span class="idx-badge late">MC #29</span><span class="idx-badge late">XO #31</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">3/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="5">
+  <td class="tc">#2100</td>
+  <td class="tc">2026-05-07</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">8</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge early">XO #3</span></div>
+      </div><div class="numchip">
+        <span class="nb">17</span>
+        <div class="idxrow"><span class="idx-badge late">MC #27</span><span class="idx-badge late">XO #34</span></div>
+      </div><div class="numchip">
+        <span class="nb">24</span>
+        <div class="idxrow"><span class="idx-badge late">MC #31</span><span class="idx-badge late">XO #18</span></div>
+      </div><div class="numchip">
+        <span class="nb">32</span>
+        <div class="idxrow"><span class="idx-badge early">MC #1</span><span class="idx-badge early">XO #9</span></div>
+      </div><div class="numchip">
+        <span class="nb">35</span>
+        <div class="idxrow"><span class="idx-badge late">MC #32</span><span class="idx-badge late">XO #15</span></div>
+      </div><div class="numchip">
+        <span class="nb">41</span>
+        <div class="idxrow"><span class="idx-badge early">MC #7</span><span class="idx-badge late">XO #33</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">5/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="4">
+  <td class="tc">#2099</td>
+  <td class="tc">2026-05-04</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">19</span>
+        <div class="idxrow"><span class="idx-badge early">MC #9</span><span class="idx-badge late">XO #18</span></div>
+      </div><div class="numchip">
+        <span class="nb">21</span>
+        <div class="idxrow"><span class="idx-badge late">MC #30</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">34</span>
+        <div class="idxrow"><span class="idx-badge early">MC #5</span><span class="idx-badge late">XO #23</span></div>
+      </div><div class="numchip">
+        <span class="nb">36</span>
+        <div class="idxrow"><span class="idx-badge late">MC #22</span><span class="idx-badge early">XO #12</span></div>
+      </div><div class="numchip">
+        <span class="nb">39</span>
+        <div class="idxrow"><span class="idx-badge late">MC #33</span><span class="idx-badge early">XO #1</span></div>
+      </div><div class="numchip">
+        <span class="nb">42</span>
+        <div class="idxrow"><span class="idx-badge late">MC #29</span><span class="idx-badge absent">XO —</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">4/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="5">
+  <td class="tc">#2098</td>
+  <td class="tc">2026-04-30</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">1</span>
+        <div class="idxrow"><span class="idx-badge late">MC #22</span><span class="idx-badge late">XO #28</span></div>
+      </div><div class="numchip">
+        <span class="nb">6</span>
+        <div class="idxrow"><span class="idx-badge late">MC #29</span><span class="idx-badge early">XO #2</span></div>
+      </div><div class="numchip">
+        <span class="nb">15</span>
+        <div class="idxrow"><span class="idx-badge late">MC #15</span><span class="idx-badge late">XO #14</span></div>
+      </div><div class="numchip">
+        <span class="nb">18</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #25</span></div>
+      </div><div class="numchip">
+        <span class="nb">19</span>
+        <div class="idxrow"><span class="idx-badge late">MC #30</span><span class="idx-badge late">XO #32</span></div>
+      </div><div class="numchip">
+        <span class="nb">42</span>
+        <div class="idxrow"><span class="idx-badge early">MC #2</span><span class="idx-badge early">XO #3</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">5/6 — Partial</span></td>
+  <td class="tc">30</td>
+</tr><tr data-overlap="6">
+  <td class="tc">#2097</td>
+  <td class="tc">2026-04-27</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">3</span>
+        <div class="idxrow"><span class="idx-badge late">MC #16</span><span class="idx-badge late">XO #22</span></div>
+      </div><div class="numchip">
+        <span class="nb">20</span>
+        <div class="idxrow"><span class="idx-badge late">MC #19</span><span class="idx-badge late">XO #30</span></div>
+      </div><div class="numchip">
+        <span class="nb">24</span>
+        <div class="idxrow"><span class="idx-badge late">MC #21</span><span class="idx-badge early">XO #9</span></div>
+      </div><div class="numchip">
+        <span class="nb">27</span>
+        <div class="idxrow"><span class="idx-badge late">MC #22</span><span class="idx-badge late">XO #23</span></div>
+      </div><div class="numchip">
+        <span class="nb">34</span>
+        <div class="idxrow"><span class="idx-badge late">MC #14</span><span class="idx-badge early">XO #3</span></div>
+      </div><div class="numchip">
+        <span class="nb">42</span>
+        <div class="idxrow"><span class="idx-badge late">MC #31</span><span class="idx-badge early">XO #10</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-all">6/6 — All in Base ✓</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="5">
+  <td class="tc">#2096</td>
+  <td class="tc">2026-04-23</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">8</span>
+        <div class="idxrow"><span class="idx-badge late">MC #23</span><span class="idx-badge late">XO #30</span></div>
+      </div><div class="numchip">
+        <span class="nb">15</span>
+        <div class="idxrow"><span class="idx-badge late">MC #12</span><span class="idx-badge late">XO #16</span></div>
+      </div><div class="numchip">
+        <span class="nb">18</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge early">XO #7</span></div>
+      </div><div class="numchip">
+        <span class="nb">21</span>
+        <div class="idxrow"><span class="idx-badge late">MC #29</span><span class="idx-badge early">XO #13</span></div>
+      </div><div class="numchip">
+        <span class="nb">33</span>
+        <div class="idxrow"><span class="idx-badge late">MC #14</span><span class="idx-badge early">XO #1</span></div>
+      </div><div class="numchip">
+        <span class="nb">43</span>
+        <div class="idxrow"><span class="idx-badge early">MC #11</span><span class="idx-badge late">XO #36</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">5/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="4">
+  <td class="tc">#2095</td>
+  <td class="tc">2026-04-20</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">13</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #29</span></div>
+      </div><div class="numchip">
+        <span class="nb">20</span>
+        <div class="idxrow"><span class="idx-badge early">MC #8</span><span class="idx-badge early">XO #8</span></div>
+      </div><div class="numchip">
+        <span class="nb">22</span>
+        <div class="idxrow"><span class="idx-badge late">MC #24</span><span class="idx-badge late">XO #37</span></div>
+      </div><div class="numchip">
+        <span class="nb">23</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge early">XO #2</span></div>
+      </div><div class="numchip">
+        <span class="nb">28</span>
+        <div class="idxrow"><span class="idx-badge late">MC #25</span><span class="idx-badge late">XO #26</span></div>
+      </div><div class="numchip">
+        <span class="nb">30</span>
+        <div class="idxrow"><span class="idx-badge late">MC #14</span><span class="idx-badge late">XO #15</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">4/6 — Partial</span></td>
+  <td class="tc">30</td>
+</tr><tr data-overlap="2">
+  <td class="tc">#2094</td>
+  <td class="tc">2026-04-16</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">3</span>
+        <div class="idxrow"><span class="idx-badge early">MC #3</span><span class="idx-badge early">XO #7</span></div>
+      </div><div class="numchip">
+        <span class="nb">4</span>
+        <div class="idxrow"><span class="idx-badge late">MC #18</span><span class="idx-badge early">XO #12</span></div>
+      </div><div class="numchip">
+        <span class="nb">7</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #14</span></div>
+      </div><div class="numchip">
+        <span class="nb">11</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #25</span></div>
+      </div><div class="numchip">
+        <span class="nb">24</span>
+        <div class="idxrow"><span class="idx-badge late">MC #24</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">30</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge absent">XO —</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">2/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="6">
+  <td class="tc">#2093</td>
+  <td class="tc">2026-04-13</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">2</span>
+        <div class="idxrow"><span class="idx-badge late">MC #23</span><span class="idx-badge early">XO #11</span></div>
+      </div><div class="numchip">
+        <span class="nb">10</span>
+        <div class="idxrow"><span class="idx-badge late">MC #19</span><span class="idx-badge early">XO #3</span></div>
+      </div><div class="numchip">
+        <span class="nb">21</span>
+        <div class="idxrow"><span class="idx-badge late">MC #21</span><span class="idx-badge late">XO #36</span></div>
+      </div><div class="numchip">
+        <span class="nb">26</span>
+        <div class="idxrow"><span class="idx-badge late">MC #29</span><span class="idx-badge late">XO #37</span></div>
+      </div><div class="numchip">
+        <span class="nb">29</span>
+        <div class="idxrow"><span class="idx-badge early">MC #5</span><span class="idx-badge late">XO #17</span></div>
+      </div><div class="numchip">
+        <span class="nb">38</span>
+        <div class="idxrow"><span class="idx-badge late">MC #28</span><span class="idx-badge early">XO #9</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-all">6/6 — All in Base ✓</span></td>
+  <td class="tc">31</td>
+</tr><tr data-overlap="5">
+  <td class="tc">#2092</td>
+  <td class="tc">2026-04-09</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">8</span>
+        <div class="idxrow"><span class="idx-badge late">MC #23</span><span class="idx-badge late">XO #16</span></div>
+      </div><div class="numchip">
+        <span class="nb">13</span>
+        <div class="idxrow"><span class="idx-badge early">MC #11</span><span class="idx-badge late">XO #29</span></div>
+      </div><div class="numchip">
+        <span class="nb">27</span>
+        <div class="idxrow"><span class="idx-badge late">MC #26</span><span class="idx-badge late">XO #20</span></div>
+      </div><div class="numchip">
+        <span class="nb">36</span>
+        <div class="idxrow"><span class="idx-badge late">MC #27</span><span class="idx-badge late">XO #35</span></div>
+      </div><div class="numchip">
+        <span class="nb">37</span>
+        <div class="idxrow"><span class="idx-badge late">MC #14</span><span class="idx-badge early">XO #6</span></div>
+      </div><div class="numchip">
+        <span class="nb">43</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge early">XO #10</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">5/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="5">
+  <td class="tc">#2091</td>
+  <td class="tc">2026-04-06</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">6</span>
+        <div class="idxrow"><span class="idx-badge early">MC #1</span><span class="idx-badge early">XO #5</span></div>
+      </div><div class="numchip">
+        <span class="nb">16</span>
+        <div class="idxrow"><span class="idx-badge late">MC #33</span><span class="idx-badge early">XO #12</span></div>
+      </div><div class="numchip">
+        <span class="nb">21</span>
+        <div class="idxrow"><span class="idx-badge late">MC #31</span><span class="idx-badge early">XO #4</span></div>
+      </div><div class="numchip">
+        <span class="nb">25</span>
+        <div class="idxrow"><span class="idx-badge late">MC #25</span><span class="idx-badge early">XO #7</span></div>
+      </div><div class="numchip">
+        <span class="nb">28</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #24</span></div>
+      </div><div class="numchip">
+        <span class="nb">43</span>
+        <div class="idxrow"><span class="idx-badge early">MC #4</span><span class="idx-badge late">XO #29</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">5/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="3">
+  <td class="tc">#2090</td>
+  <td class="tc">2026-04-02</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">2</span>
+        <div class="idxrow"><span class="idx-badge early">MC #7</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">3</span>
+        <div class="idxrow"><span class="idx-badge early">MC #2</span><span class="idx-badge late">XO #18</span></div>
+      </div><div class="numchip">
+        <span class="nb">6</span>
+        <div class="idxrow"><span class="idx-badge early">MC #8</span><span class="idx-badge early">XO #2</span></div>
+      </div><div class="numchip">
+        <span class="nb">9</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #29</span></div>
+      </div><div class="numchip">
+        <span class="nb">24</span>
+        <div class="idxrow"><span class="idx-badge late">MC #32</span><span class="idx-badge late">XO #14</span></div>
+      </div><div class="numchip">
+        <span class="nb">36</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #37</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">3/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="5">
+  <td class="tc">#2089</td>
+  <td class="tc">2026-03-30</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">9</span>
+        <div class="idxrow"><span class="idx-badge early">MC #4</span><span class="idx-badge early">XO #5</span></div>
+      </div><div class="numchip">
+        <span class="nb">16</span>
+        <div class="idxrow"><span class="idx-badge late">MC #18</span><span class="idx-badge late">XO #23</span></div>
+      </div><div class="numchip">
+        <span class="nb">18</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge early">XO #1</span></div>
+      </div><div class="numchip">
+        <span class="nb">32</span>
+        <div class="idxrow"><span class="idx-badge late">MC #14</span><span class="idx-badge late">XO #22</span></div>
+      </div><div class="numchip">
+        <span class="nb">37</span>
+        <div class="idxrow"><span class="idx-badge early">MC #5</span><span class="idx-badge early">XO #9</span></div>
+      </div><div class="numchip">
+        <span class="nb">43</span>
+        <div class="idxrow"><span class="idx-badge early">MC #2</span><span class="idx-badge late">XO #19</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">5/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="1">
+  <td class="tc">#2088</td>
+  <td class="tc">2026-03-26</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">8</span>
+        <div class="idxrow"><span class="idx-badge early">MC #8</span><span class="idx-badge late">XO #26</span></div>
+      </div><div class="numchip">
+        <span class="nb">16</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">18</span>
+        <div class="idxrow"><span class="idx-badge early">MC #2</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">27</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge early">XO #10</span></div>
+      </div><div class="numchip">
+        <span class="nb">37</span>
+        <div class="idxrow"><span class="idx-badge late">MC #30</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">39</span>
+        <div class="idxrow"><span class="idx-badge early">MC #7</span><span class="idx-badge absent">XO —</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">1/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="6">
+  <td class="tc">#2087</td>
+  <td class="tc">2026-03-23</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">7</span>
+        <div class="idxrow"><span class="idx-badge late">MC #22</span><span class="idx-badge late">XO #23</span></div>
+      </div><div class="numchip">
+        <span class="nb">10</span>
+        <div class="idxrow"><span class="idx-badge early">MC #1</span><span class="idx-badge early">XO #13</span></div>
+      </div><div class="numchip">
+        <span class="nb">15</span>
+        <div class="idxrow"><span class="idx-badge late">MC #32</span><span class="idx-badge late">XO #19</span></div>
+      </div><div class="numchip">
+        <span class="nb">18</span>
+        <div class="idxrow"><span class="idx-badge late">MC #23</span><span class="idx-badge late">XO #14</span></div>
+      </div><div class="numchip">
+        <span class="nb">26</span>
+        <div class="idxrow"><span class="idx-badge late">MC #13</span><span class="idx-badge early">XO #8</span></div>
+      </div><div class="numchip">
+        <span class="nb">39</span>
+        <div class="idxrow"><span class="idx-badge late">MC #27</span><span class="idx-badge early">XO #1</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-all">6/6 — All in Base ✓</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="5">
+  <td class="tc">#2086</td>
+  <td class="tc">2026-03-19</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">4</span>
+        <div class="idxrow"><span class="idx-badge early">MC #3</span><span class="idx-badge early">XO #13</span></div>
+      </div><div class="numchip">
+        <span class="nb">11</span>
+        <div class="idxrow"><span class="idx-badge early">MC #2</span><span class="idx-badge late">XO #33</span></div>
+      </div><div class="numchip">
+        <span class="nb">19</span>
+        <div class="idxrow"><span class="idx-badge late">MC #25</span><span class="idx-badge late">XO #29</span></div>
+      </div><div class="numchip">
+        <span class="nb">28</span>
+        <div class="idxrow"><span class="idx-badge late">MC #18</span><span class="idx-badge late">XO #31</span></div>
+      </div><div class="numchip">
+        <span class="nb">39</span>
+        <div class="idxrow"><span class="idx-badge late">MC #21</span><span class="idx-badge late">XO #37</span></div>
+      </div><div class="numchip">
+        <span class="nb">40</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #25</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">5/6 — Partial</span></td>
+  <td class="tc">30</td>
+</tr><tr data-overlap="4">
+  <td class="tc">#2085</td>
+  <td class="tc">2026-03-16</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">6</span>
+        <div class="idxrow"><span class="idx-badge early">MC #6</span><span class="idx-badge late">XO #25</span></div>
+      </div><div class="numchip">
+        <span class="nb">8</span>
+        <div class="idxrow"><span class="idx-badge late">MC #21</span><span class="idx-badge early">XO #1</span></div>
+      </div><div class="numchip">
+        <span class="nb">13</span>
+        <div class="idxrow"><span class="idx-badge late">MC #13</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">26</span>
+        <div class="idxrow"><span class="idx-badge late">MC #26</span><span class="idx-badge late">XO #26</span></div>
+      </div><div class="numchip">
+        <span class="nb">35</span>
+        <div class="idxrow"><span class="idx-badge late">MC #16</span><span class="idx-badge early">XO #13</span></div>
+      </div><div class="numchip">
+        <span class="nb">43</span>
+        <div class="idxrow"><span class="idx-badge early">MC #11</span><span class="idx-badge absent">XO —</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">4/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="3">
+  <td class="tc">#2084</td>
+  <td class="tc">2026-03-12</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">8</span>
+        <div class="idxrow"><span class="idx-badge early">MC #8</span><span class="idx-badge early">XO #8</span></div>
+      </div><div class="numchip">
+        <span class="nb">17</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #15</span></div>
+      </div><div class="numchip">
+        <span class="nb">18</span>
+        <div class="idxrow"><span class="idx-badge late">MC #28</span><span class="idx-badge late">XO #33</span></div>
+      </div><div class="numchip">
+        <span class="nb">19</span>
+        <div class="idxrow"><span class="idx-badge early">MC #4</span><span class="idx-badge late">XO #37</span></div>
+      </div><div class="numchip">
+        <span class="nb">30</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #36</span></div>
+      </div><div class="numchip">
+        <span class="nb">39</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge early">XO #5</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">3/6 — Partial</span></td>
+  <td class="tc">28</td>
+</tr><tr data-overlap="3">
+  <td class="tc">#2083</td>
+  <td class="tc">2026-03-09</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">8</span>
+        <div class="idxrow"><span class="idx-badge late">MC #25</span><span class="idx-badge late">XO #20</span></div>
+      </div><div class="numchip">
+        <span class="nb">10</span>
+        <div class="idxrow"><span class="idx-badge late">MC #31</span><span class="idx-badge early">XO #2</span></div>
+      </div><div class="numchip">
+        <span class="nb">13</span>
+        <div class="idxrow"><span class="idx-badge late">MC #18</span><span class="idx-badge early">XO #4</span></div>
+      </div><div class="numchip">
+        <span class="nb">17</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #36</span></div>
+      </div><div class="numchip">
+        <span class="nb">26</span>
+        <div class="idxrow"><span class="idx-badge late">MC #30</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">29</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #22</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">3/6 — Partial</span></td>
+  <td class="tc">28</td>
+</tr><tr data-overlap="3">
+  <td class="tc">#2082</td>
+  <td class="tc">2026-03-05</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">5</span>
+        <div class="idxrow"><span class="idx-badge late">MC #16</span><span class="idx-badge late">XO #31</span></div>
+      </div><div class="numchip">
+        <span class="nb">11</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #20</span></div>
+      </div><div class="numchip">
+        <span class="nb">14</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">19</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #23</span></div>
+      </div><div class="numchip">
+        <span class="nb">25</span>
+        <div class="idxrow"><span class="idx-badge early">MC #10</span><span class="idx-badge early">XO #7</span></div>
+      </div><div class="numchip">
+        <span class="nb">40</span>
+        <div class="idxrow"><span class="idx-badge early">MC #1</span><span class="idx-badge early">XO #3</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">3/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="5">
+  <td class="tc">#2081</td>
+  <td class="tc">2026-03-02</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">14</span>
+        <div class="idxrow"><span class="idx-badge late">MC #16</span><span class="idx-badge late">XO #35</span></div>
+      </div><div class="numchip">
+        <span class="nb">31</span>
+        <div class="idxrow"><span class="idx-badge early">MC #4</span><span class="idx-badge late">XO #37</span></div>
+      </div><div class="numchip">
+        <span class="nb">32</span>
+        <div class="idxrow"><span class="idx-badge early">MC #1</span><span class="idx-badge early">XO #2</span></div>
+      </div><div class="numchip">
+        <span class="nb">37</span>
+        <div class="idxrow"><span class="idx-badge early">MC #3</span><span class="idx-badge late">XO #17</span></div>
+      </div><div class="numchip">
+        <span class="nb">41</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #34</span></div>
+      </div><div class="numchip">
+        <span class="nb">42</span>
+        <div class="idxrow"><span class="idx-badge late">MC #33</span><span class="idx-badge late">XO #26</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">5/6 — Partial</span></td>
+  <td class="tc">30</td>
+</tr><tr data-overlap="6">
+  <td class="tc">#2080</td>
+  <td class="tc">2026-02-26</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">6</span>
+        <div class="idxrow"><span class="idx-badge early">MC #2</span><span class="idx-badge late">XO #16</span></div>
+      </div><div class="numchip">
+        <span class="nb">12</span>
+        <div class="idxrow"><span class="idx-badge late">MC #14</span><span class="idx-badge late">XO #36</span></div>
+      </div><div class="numchip">
+        <span class="nb">30</span>
+        <div class="idxrow"><span class="idx-badge late">MC #20</span><span class="idx-badge early">XO #7</span></div>
+      </div><div class="numchip">
+        <span class="nb">36</span>
+        <div class="idxrow"><span class="idx-badge late">MC #26</span><span class="idx-badge early">XO #6</span></div>
+      </div><div class="numchip">
+        <span class="nb">37</span>
+        <div class="idxrow"><span class="idx-badge late">MC #30</span><span class="idx-badge late">XO #25</span></div>
+      </div><div class="numchip">
+        <span class="nb">38</span>
+        <div class="idxrow"><span class="idx-badge late">MC #29</span><span class="idx-badge late">XO #19</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-all">6/6 — All in Base ✓</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="3">
+  <td class="tc">#2079</td>
+  <td class="tc">2026-02-23</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">5</span>
+        <div class="idxrow"><span class="idx-badge late">MC #16</span><span class="idx-badge late">XO #18</span></div>
+      </div><div class="numchip">
+        <span class="nb">11</span>
+        <div class="idxrow"><span class="idx-badge late">MC #17</span><span class="idx-badge late">XO #28</span></div>
+      </div><div class="numchip">
+        <span class="nb">15</span>
+        <div class="idxrow"><span class="idx-badge late">MC #32</span><span class="idx-badge late">XO #23</span></div>
+      </div><div class="numchip">
+        <span class="nb">17</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #26</span></div>
+      </div><div class="numchip">
+        <span class="nb">24</span>
+        <div class="idxrow"><span class="idx-badge early">MC #4</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">39</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #34</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">3/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="6">
+  <td class="tc">#2078</td>
+  <td class="tc">2026-02-19</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">1</span>
+        <div class="idxrow"><span class="idx-badge late">MC #33</span><span class="idx-badge early">XO #4</span></div>
+      </div><div class="numchip">
+        <span class="nb">10</span>
+        <div class="idxrow"><span class="idx-badge late">MC #27</span><span class="idx-badge early">XO #10</span></div>
+      </div><div class="numchip">
+        <span class="nb">20</span>
+        <div class="idxrow"><span class="idx-badge late">MC #18</span><span class="idx-badge late">XO #17</span></div>
+      </div><div class="numchip">
+        <span class="nb">24</span>
+        <div class="idxrow"><span class="idx-badge late">MC #24</span><span class="idx-badge late">XO #30</span></div>
+      </div><div class="numchip">
+        <span class="nb">30</span>
+        <div class="idxrow"><span class="idx-badge late">MC #15</span><span class="idx-badge early">XO #8</span></div>
+      </div><div class="numchip">
+        <span class="nb">35</span>
+        <div class="idxrow"><span class="idx-badge early">MC #3</span><span class="idx-badge early">XO #13</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-all">6/6 — All in Base ✓</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="4">
+  <td class="tc">#2077</td>
+  <td class="tc">2026-02-16</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">17</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #23</span></div>
+      </div><div class="numchip">
+        <span class="nb">18</span>
+        <div class="idxrow"><span class="idx-badge late">MC #19</span><span class="idx-badge late">XO #34</span></div>
+      </div><div class="numchip">
+        <span class="nb">23</span>
+        <div class="idxrow"><span class="idx-badge late">MC #28</span><span class="idx-badge late">XO #20</span></div>
+      </div><div class="numchip">
+        <span class="nb">24</span>
+        <div class="idxrow"><span class="idx-badge late">MC #15</span><span class="idx-badge early">XO #9</span></div>
+      </div><div class="numchip">
+        <span class="nb">26</span>
+        <div class="idxrow"><span class="idx-badge late">MC #31</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">43</span>
+        <div class="idxrow"><span class="idx-badge early">MC #11</span><span class="idx-badge late">XO #36</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">4/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="3">
+  <td class="tc">#2076</td>
+  <td class="tc">2026-02-12</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">1</span>
+        <div class="idxrow"><span class="idx-badge late">MC #25</span><span class="idx-badge late">XO #37</span></div>
+      </div><div class="numchip">
+        <span class="nb">9</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #17</span></div>
+      </div><div class="numchip">
+        <span class="nb">20</span>
+        <div class="idxrow"><span class="idx-badge late">MC #30</span><span class="idx-badge late">XO #20</span></div>
+      </div><div class="numchip">
+        <span class="nb">22</span>
+        <div class="idxrow"><span class="idx-badge late">MC #33</span><span class="idx-badge late">XO #30</span></div>
+      </div><div class="numchip">
+        <span class="nb">28</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #31</span></div>
+      </div><div class="numchip">
+        <span class="nb">41</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #16</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">3/6 — Partial</span></td>
+  <td class="tc">28</td>
+</tr><tr data-overlap="3">
+  <td class="tc">#2075</td>
+  <td class="tc">2026-02-09</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">7</span>
+        <div class="idxrow"><span class="idx-badge late">MC #24</span><span class="idx-badge early">XO #3</span></div>
+      </div><div class="numchip">
+        <span class="nb">10</span>
+        <div class="idxrow"><span class="idx-badge early">MC #9</span><span class="idx-badge late">XO #38</span></div>
+      </div><div class="numchip">
+        <span class="nb">14</span>
+        <div class="idxrow"><span class="idx-badge late">MC #26</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">16</span>
+        <div class="idxrow"><span class="idx-badge late">MC #33</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">35</span>
+        <div class="idxrow"><span class="idx-badge late">MC #32</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">37</span>
+        <div class="idxrow"><span class="idx-badge early">MC #2</span><span class="idx-badge late">XO #31</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">3/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="4">
+  <td class="tc">#2074</td>
+  <td class="tc">2026-02-05</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">5</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">6</span>
+        <div class="idxrow"><span class="idx-badge late">MC #21</span><span class="idx-badge late">XO #22</span></div>
+      </div><div class="numchip">
+        <span class="nb">16</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #33</span></div>
+      </div><div class="numchip">
+        <span class="nb">26</span>
+        <div class="idxrow"><span class="idx-badge late">MC #24</span><span class="idx-badge late">XO #26</span></div>
+      </div><div class="numchip">
+        <span class="nb">27</span>
+        <div class="idxrow"><span class="idx-badge late">MC #33</span><span class="idx-badge early">XO #3</span></div>
+      </div><div class="numchip">
+        <span class="nb">36</span>
+        <div class="idxrow"><span class="idx-badge early">MC #10</span><span class="idx-badge late">XO #38</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">4/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="6">
+  <td class="tc">#2073</td>
+  <td class="tc">2026-02-02</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">2</span>
+        <div class="idxrow"><span class="idx-badge late">MC #30</span><span class="idx-badge late">XO #15</span></div>
+      </div><div class="numchip">
+        <span class="nb">12</span>
+        <div class="idxrow"><span class="idx-badge early">MC #2</span><span class="idx-badge early">XO #3</span></div>
+      </div><div class="numchip">
+        <span class="nb">14</span>
+        <div class="idxrow"><span class="idx-badge early">MC #9</span><span class="idx-badge late">XO #35</span></div>
+      </div><div class="numchip">
+        <span class="nb">24</span>
+        <div class="idxrow"><span class="idx-badge late">MC #23</span><span class="idx-badge late">XO #36</span></div>
+      </div><div class="numchip">
+        <span class="nb">26</span>
+        <div class="idxrow"><span class="idx-badge late">MC #16</span><span class="idx-badge early">XO #7</span></div>
+      </div><div class="numchip">
+        <span class="nb">29</span>
+        <div class="idxrow"><span class="idx-badge early">MC #11</span><span class="idx-badge early">XO #6</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-all">6/6 — All in Base ✓</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="5">
+  <td class="tc">#2072</td>
+  <td class="tc">2026-01-29</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">8</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge early">XO #12</span></div>
+      </div><div class="numchip">
+        <span class="nb">18</span>
+        <div class="idxrow"><span class="idx-badge early">MC #6</span><span class="idx-badge late">XO #21</span></div>
+      </div><div class="numchip">
+        <span class="nb">24</span>
+        <div class="idxrow"><span class="idx-badge early">MC #11</span><span class="idx-badge late">XO #32</span></div>
+      </div><div class="numchip">
+        <span class="nb">36</span>
+        <div class="idxrow"><span class="idx-badge late">MC #28</span><span class="idx-badge late">XO #16</span></div>
+      </div><div class="numchip">
+        <span class="nb">40</span>
+        <div class="idxrow"><span class="idx-badge late">MC #21</span><span class="idx-badge late">XO #36</span></div>
+      </div><div class="numchip">
+        <span class="nb">42</span>
+        <div class="idxrow"><span class="idx-badge early">MC #1</span><span class="idx-badge early">XO #5</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">5/6 — Partial</span></td>
+  <td class="tc">31</td>
+</tr><tr data-overlap="4">
+  <td class="tc">#2071</td>
+  <td class="tc">2026-01-26</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">15</span>
+        <div class="idxrow"><span class="idx-badge late">MC #18</span><span class="idx-badge late">XO #15</span></div>
+      </div><div class="numchip">
+        <span class="nb">24</span>
+        <div class="idxrow"><span class="idx-badge early">MC #11</span><span class="idx-badge early">XO #6</span></div>
+      </div><div class="numchip">
+        <span class="nb">29</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #22</span></div>
+      </div><div class="numchip">
+        <span class="nb">32</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #26</span></div>
+      </div><div class="numchip">
+        <span class="nb">33</span>
+        <div class="idxrow"><span class="idx-badge late">MC #28</span><span class="idx-badge late">XO #37</span></div>
+      </div><div class="numchip">
+        <span class="nb">35</span>
+        <div class="idxrow"><span class="idx-badge late">MC #32</span><span class="idx-badge late">XO #38</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">4/6 — Partial</span></td>
+  <td class="tc">28</td>
+</tr><tr data-overlap="4">
+  <td class="tc">#2070</td>
+  <td class="tc">2026-01-22</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">6</span>
+        <div class="idxrow"><span class="idx-badge early">MC #1</span><span class="idx-badge late">XO #16</span></div>
+      </div><div class="numchip">
+        <span class="nb">10</span>
+        <div class="idxrow"><span class="idx-badge late">MC #26</span><span class="idx-badge late">XO #25</span></div>
+      </div><div class="numchip">
+        <span class="nb">25</span>
+        <div class="idxrow"><span class="idx-badge late">MC #13</span><span class="idx-badge early">XO #13</span></div>
+      </div><div class="numchip">
+        <span class="nb">30</span>
+        <div class="idxrow"><span class="idx-badge late">MC #14</span><span class="idx-badge late">XO #21</span></div>
+      </div><div class="numchip">
+        <span class="nb">34</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #15</span></div>
+      </div><div class="numchip">
+        <span class="nb">36</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge early">XO #3</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">4/6 — Partial</span></td>
+  <td class="tc">28</td>
+</tr><tr data-overlap="4">
+  <td class="tc">#2069</td>
+  <td class="tc">2026-01-19</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">6</span>
+        <div class="idxrow"><span class="idx-badge early">MC #5</span><span class="idx-badge early">XO #12</span></div>
+      </div><div class="numchip">
+        <span class="nb">17</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge early">XO #5</span></div>
+      </div><div class="numchip">
+        <span class="nb">23</span>
+        <div class="idxrow"><span class="idx-badge early">MC #4</span><span class="idx-badge late">XO #26</span></div>
+      </div><div class="numchip">
+        <span class="nb">27</span>
+        <div class="idxrow"><span class="idx-badge late">MC #31</span><span class="idx-badge late">XO #20</span></div>
+      </div><div class="numchip">
+        <span class="nb">33</span>
+        <div class="idxrow"><span class="idx-badge late">MC #32</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">35</span>
+        <div class="idxrow"><span class="idx-badge late">MC #33</span><span class="idx-badge early">XO #9</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">4/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="5">
+  <td class="tc">#2068</td>
+  <td class="tc">2026-01-15</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">2</span>
+        <div class="idxrow"><span class="idx-badge late">MC #30</span><span class="idx-badge late">XO #30</span></div>
+      </div><div class="numchip">
+        <span class="nb">10</span>
+        <div class="idxrow"><span class="idx-badge late">MC #27</span><span class="idx-badge early">XO #5</span></div>
+      </div><div class="numchip">
+        <span class="nb">13</span>
+        <div class="idxrow"><span class="idx-badge late">MC #33</span><span class="idx-badge late">XO #38</span></div>
+      </div><div class="numchip">
+        <span class="nb">14</span>
+        <div class="idxrow"><span class="idx-badge late">MC #21</span><span class="idx-badge late">XO #21</span></div>
+      </div><div class="numchip">
+        <span class="nb">29</span>
+        <div class="idxrow"><span class="idx-badge early">MC #11</span><span class="idx-badge early">XO #4</span></div>
+      </div><div class="numchip">
+        <span class="nb">33</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #17</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">5/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="5">
+  <td class="tc">#2067</td>
+  <td class="tc">2026-01-12</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">3</span>
+        <div class="idxrow"><span class="idx-badge early">MC #5</span><span class="idx-badge late">XO #17</span></div>
+      </div><div class="numchip">
+        <span class="nb">4</span>
+        <div class="idxrow"><span class="idx-badge late">MC #16</span><span class="idx-badge late">XO #25</span></div>
+      </div><div class="numchip">
+        <span class="nb">12</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge early">XO #3</span></div>
+      </div><div class="numchip">
+        <span class="nb">15</span>
+        <div class="idxrow"><span class="idx-badge early">MC #1</span><span class="idx-badge early">XO #13</span></div>
+      </div><div class="numchip">
+        <span class="nb">32</span>
+        <div class="idxrow"><span class="idx-badge late">MC #32</span><span class="idx-badge early">XO #7</span></div>
+      </div><div class="numchip">
+        <span class="nb">42</span>
+        <div class="idxrow"><span class="idx-badge late">MC #30</span><span class="idx-badge early">XO #11</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">5/6 — Partial</span></td>
+  <td class="tc">30</td>
+</tr><tr data-overlap="5">
+  <td class="tc">#2066</td>
+  <td class="tc">2026-01-08</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">8</span>
+        <div class="idxrow"><span class="idx-badge early">MC #7</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">28</span>
+        <div class="idxrow"><span class="idx-badge late">MC #26</span><span class="idx-badge early">XO #13</span></div>
+      </div><div class="numchip">
+        <span class="nb">30</span>
+        <div class="idxrow"><span class="idx-badge late">MC #12</span><span class="idx-badge early">XO #4</span></div>
+      </div><div class="numchip">
+        <span class="nb">32</span>
+        <div class="idxrow"><span class="idx-badge late">MC #27</span><span class="idx-badge early">XO #12</span></div>
+      </div><div class="numchip">
+        <span class="nb">37</span>
+        <div class="idxrow"><span class="idx-badge early">MC #10</span><span class="idx-badge late">XO #35</span></div>
+      </div><div class="numchip">
+        <span class="nb">38</span>
+        <div class="idxrow"><span class="idx-badge late">MC #14</span><span class="idx-badge early">XO #8</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">5/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="4">
+  <td class="tc">#2065</td>
+  <td class="tc">2026-01-05</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">6</span>
+        <div class="idxrow"><span class="idx-badge early">MC #10</span><span class="idx-badge late">XO #26</span></div>
+      </div><div class="numchip">
+        <span class="nb">18</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #25</span></div>
+      </div><div class="numchip">
+        <span class="nb">21</span>
+        <div class="idxrow"><span class="idx-badge early">MC #1</span><span class="idx-badge late">XO #29</span></div>
+      </div><div class="numchip">
+        <span class="nb">31</span>
+        <div class="idxrow"><span class="idx-badge late">MC #12</span><span class="idx-badge early">XO #3</span></div>
+      </div><div class="numchip">
+        <span class="nb">37</span>
+        <div class="idxrow"><span class="idx-badge early">MC #5</span><span class="idx-badge late">XO #14</span></div>
+      </div><div class="numchip">
+        <span class="nb">40</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #34</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">4/6 — Partial</span></td>
+  <td class="tc">30</td>
+</tr><tr data-overlap="4">
+  <td class="tc">#2064</td>
+  <td class="tc">2025-12-29</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">2</span>
+        <div class="idxrow"><span class="idx-badge early">MC #2</span><span class="idx-badge early">XO #9</span></div>
+      </div><div class="numchip">
+        <span class="nb">7</span>
+        <div class="idxrow"><span class="idx-badge early">MC #6</span><span class="idx-badge early">XO #11</span></div>
+      </div><div class="numchip">
+        <span class="nb">24</span>
+        <div class="idxrow"><span class="idx-badge late">MC #18</span><span class="idx-badge early">XO #13</span></div>
+      </div><div class="numchip">
+        <span class="nb">37</span>
+        <div class="idxrow"><span class="idx-badge late">MC #29</span><span class="idx-badge early">XO #3</span></div>
+      </div><div class="numchip">
+        <span class="nb">39</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #31</span></div>
+      </div><div class="numchip">
+        <span class="nb">41</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #28</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">4/6 — Partial</span></td>
+  <td class="tc">30</td>
+</tr><tr data-overlap="2">
+  <td class="tc">#2063</td>
+  <td class="tc">2025-12-25</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">4</span>
+        <div class="idxrow"><span class="idx-badge early">MC #1</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">28</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #26</span></div>
+      </div><div class="numchip">
+        <span class="nb">29</span>
+        <div class="idxrow"><span class="idx-badge late">MC #14</span><span class="idx-badge late">XO #37</span></div>
+      </div><div class="numchip">
+        <span class="nb">30</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge early">XO #10</span></div>
+      </div><div class="numchip">
+        <span class="nb">38</span>
+        <div class="idxrow"><span class="idx-badge late">MC #28</span><span class="idx-badge early">XO #9</span></div>
+      </div><div class="numchip">
+        <span class="nb">42</span>
+        <div class="idxrow"><span class="idx-badge late">MC #17</span><span class="idx-badge absent">XO —</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">2/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="6">
+  <td class="tc">#2062</td>
+  <td class="tc">2025-12-22</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">1</span>
+        <div class="idxrow"><span class="idx-badge early">MC #4</span><span class="idx-badge early">XO #2</span></div>
+      </div><div class="numchip">
+        <span class="nb">9</span>
+        <div class="idxrow"><span class="idx-badge late">MC #24</span><span class="idx-badge late">XO #18</span></div>
+      </div><div class="numchip">
+        <span class="nb">18</span>
+        <div class="idxrow"><span class="idx-badge early">MC #3</span><span class="idx-badge early">XO #8</span></div>
+      </div><div class="numchip">
+        <span class="nb">24</span>
+        <div class="idxrow"><span class="idx-badge late">MC #18</span><span class="idx-badge early">XO #9</span></div>
+      </div><div class="numchip">
+        <span class="nb">35</span>
+        <div class="idxrow"><span class="idx-badge early">MC #1</span><span class="idx-badge late">XO #36</span></div>
+      </div><div class="numchip">
+        <span class="nb">42</span>
+        <div class="idxrow"><span class="idx-badge late">MC #13</span><span class="idx-badge late">XO #20</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-all">6/6 — All in Base ✓</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="5">
+  <td class="tc">#2061</td>
+  <td class="tc">2025-12-18</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">5</span>
+        <div class="idxrow"><span class="idx-badge late">MC #28</span><span class="idx-badge early">XO #10</span></div>
+      </div><div class="numchip">
+        <span class="nb">6</span>
+        <div class="idxrow"><span class="idx-badge late">MC #14</span><span class="idx-badge late">XO #30</span></div>
+      </div><div class="numchip">
+        <span class="nb">13</span>
+        <div class="idxrow"><span class="idx-badge late">MC #17</span><span class="idx-badge early">XO #5</span></div>
+      </div><div class="numchip">
+        <span class="nb">21</span>
+        <div class="idxrow"><span class="idx-badge early">MC #4</span><span class="idx-badge late">XO #19</span></div>
+      </div><div class="numchip">
+        <span class="nb">33</span>
+        <div class="idxrow"><span class="idx-badge early">MC #11</span><span class="idx-badge early">XO #1</span></div>
+      </div><div class="numchip">
+        <span class="nb">34</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge early">XO #13</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">5/6 — Partial</span></td>
+  <td class="tc">28</td>
+</tr><tr data-overlap="4">
+  <td class="tc">#2060</td>
+  <td class="tc">2025-12-15</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">8</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #19</span></div>
+      </div><div class="numchip">
+        <span class="nb">16</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #21</span></div>
+      </div><div class="numchip">
+        <span class="nb">22</span>
+        <div class="idxrow"><span class="idx-badge early">MC #10</span><span class="idx-badge late">XO #33</span></div>
+      </div><div class="numchip">
+        <span class="nb">40</span>
+        <div class="idxrow"><span class="idx-badge late">MC #27</span><span class="idx-badge late">XO #22</span></div>
+      </div><div class="numchip">
+        <span class="nb">41</span>
+        <div class="idxrow"><span class="idx-badge late">MC #19</span><span class="idx-badge early">XO #4</span></div>
+      </div><div class="numchip">
+        <span class="nb">42</span>
+        <div class="idxrow"><span class="idx-badge early">MC #3</span><span class="idx-badge late">XO #24</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">4/6 — Partial</span></td>
+  <td class="tc">28</td>
+</tr><tr data-overlap="5">
+  <td class="tc">#2059</td>
+  <td class="tc">2025-12-11</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">2</span>
+        <div class="idxrow"><span class="idx-badge late">MC #23</span><span class="idx-badge early">XO #11</span></div>
+      </div><div class="numchip">
+        <span class="nb">13</span>
+        <div class="idxrow"><span class="idx-badge early">MC #10</span><span class="idx-badge early">XO #8</span></div>
+      </div><div class="numchip">
+        <span class="nb">26</span>
+        <div class="idxrow"><span class="idx-badge early">MC #6</span><span class="idx-badge early">XO #13</span></div>
+      </div><div class="numchip">
+        <span class="nb">28</span>
+        <div class="idxrow"><span class="idx-badge early">MC #8</span><span class="idx-badge early">XO #7</span></div>
+      </div><div class="numchip">
+        <span class="nb">38</span>
+        <div class="idxrow"><span class="idx-badge early">MC #9</span><span class="idx-badge late">XO #20</span></div>
+      </div><div class="numchip">
+        <span class="nb">43</span>
+        <div class="idxrow"><span class="idx-badge late">MC #14</span><span class="idx-badge absent">XO —</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">5/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="5">
+  <td class="tc">#2058</td>
+  <td class="tc">2025-12-08</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">9</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #33</span></div>
+      </div><div class="numchip">
+        <span class="nb">12</span>
+        <div class="idxrow"><span class="idx-badge early">MC #6</span><span class="idx-badge late">XO #37</span></div>
+      </div><div class="numchip">
+        <span class="nb">14</span>
+        <div class="idxrow"><span class="idx-badge early">MC #11</span><span class="idx-badge early">XO #8</span></div>
+      </div><div class="numchip">
+        <span class="nb">16</span>
+        <div class="idxrow"><span class="idx-badge late">MC #24</span><span class="idx-badge early">XO #5</span></div>
+      </div><div class="numchip">
+        <span class="nb">19</span>
+        <div class="idxrow"><span class="idx-badge early">MC #4</span><span class="idx-badge early">XO #11</span></div>
+      </div><div class="numchip">
+        <span class="nb">42</span>
+        <div class="idxrow"><span class="idx-badge late">MC #31</span><span class="idx-badge early">XO #10</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">5/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="3">
+  <td class="tc">#2057</td>
+  <td class="tc">2025-12-04</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">5</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #14</span></div>
+      </div><div class="numchip">
+        <span class="nb">7</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #20</span></div>
+      </div><div class="numchip">
+        <span class="nb">21</span>
+        <div class="idxrow"><span class="idx-badge late">MC #13</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">22</span>
+        <div class="idxrow"><span class="idx-badge early">MC #8</span><span class="idx-badge late">XO #17</span></div>
+      </div><div class="numchip">
+        <span class="nb">38</span>
+        <div class="idxrow"><span class="idx-badge late">MC #30</span><span class="idx-badge early">XO #4</span></div>
+      </div><div class="numchip">
+        <span class="nb">41</span>
+        <div class="idxrow"><span class="idx-badge early">MC #10</span><span class="idx-badge late">XO #24</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">3/6 — Partial</span></td>
+  <td class="tc">28</td>
+</tr><tr data-overlap="5">
+  <td class="tc">#2056</td>
+  <td class="tc">2025-12-01</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">3</span>
+        <div class="idxrow"><span class="idx-badge late">MC #23</span><span class="idx-badge late">XO #34</span></div>
+      </div><div class="numchip">
+        <span class="nb">7</span>
+        <div class="idxrow"><span class="idx-badge late">MC #16</span><span class="idx-badge late">XO #28</span></div>
+      </div><div class="numchip">
+        <span class="nb">15</span>
+        <div class="idxrow"><span class="idx-badge early">MC #8</span><span class="idx-badge late">XO #29</span></div>
+      </div><div class="numchip">
+        <span class="nb">17</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge early">XO #12</span></div>
+      </div><div class="numchip">
+        <span class="nb">19</span>
+        <div class="idxrow"><span class="idx-badge early">MC #11</span><span class="idx-badge early">XO #4</span></div>
+      </div><div class="numchip">
+        <span class="nb">30</span>
+        <div class="idxrow"><span class="idx-badge early">MC #3</span><span class="idx-badge early">XO #1</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">5/6 — Partial</span></td>
+  <td class="tc">30</td>
+</tr><tr data-overlap="4">
+  <td class="tc">#2055</td>
+  <td class="tc">2025-11-27</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">11</span>
+        <div class="idxrow"><span class="idx-badge late">MC #17</span><span class="idx-badge early">XO #8</span></div>
+      </div><div class="numchip">
+        <span class="nb">12</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #17</span></div>
+      </div><div class="numchip">
+        <span class="nb">14</span>
+        <div class="idxrow"><span class="idx-badge early">MC #6</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">17</span>
+        <div class="idxrow"><span class="idx-badge late">MC #13</span><span class="idx-badge early">XO #13</span></div>
+      </div><div class="numchip">
+        <span class="nb">21</span>
+        <div class="idxrow"><span class="idx-badge late">MC #19</span><span class="idx-badge late">XO #18</span></div>
+      </div><div class="numchip">
+        <span class="nb">26</span>
+        <div class="idxrow"><span class="idx-badge late">MC #15</span><span class="idx-badge early">XO #1</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">4/6 — Partial</span></td>
+  <td class="tc">30</td>
+</tr><tr data-overlap="5">
+  <td class="tc">#2054</td>
+  <td class="tc">2025-11-24</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">1</span>
+        <div class="idxrow"><span class="idx-badge early">MC #8</span><span class="idx-badge early">XO #5</span></div>
+      </div><div class="numchip">
+        <span class="nb">14</span>
+        <div class="idxrow"><span class="idx-badge early">MC #10</span><span class="idx-badge early">XO #2</span></div>
+      </div><div class="numchip">
+        <span class="nb">27</span>
+        <div class="idxrow"><span class="idx-badge late">MC #26</span><span class="idx-badge late">XO #21</span></div>
+      </div><div class="numchip">
+        <span class="nb">30</span>
+        <div class="idxrow"><span class="idx-badge late">MC #21</span><span class="idx-badge late">XO #27</span></div>
+      </div><div class="numchip">
+        <span class="nb">33</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge early">XO #1</span></div>
+      </div><div class="numchip">
+        <span class="nb">37</span>
+        <div class="idxrow"><span class="idx-badge early">MC #7</span><span class="idx-badge early">XO #9</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">5/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="4">
+  <td class="tc">#2053</td>
+  <td class="tc">2025-11-20</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">20</span>
+        <div class="idxrow"><span class="idx-badge late">MC #12</span><span class="idx-badge late">XO #17</span></div>
+      </div><div class="numchip">
+        <span class="nb">28</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #15</span></div>
+      </div><div class="numchip">
+        <span class="nb">31</span>
+        <div class="idxrow"><span class="idx-badge early">MC #9</span><span class="idx-badge early">XO #10</span></div>
+      </div><div class="numchip">
+        <span class="nb">35</span>
+        <div class="idxrow"><span class="idx-badge late">MC #18</span><span class="idx-badge late">XO #24</span></div>
+      </div><div class="numchip">
+        <span class="nb">37</span>
+        <div class="idxrow"><span class="idx-badge late">MC #29</span><span class="idx-badge early">XO #2</span></div>
+      </div><div class="numchip">
+        <span class="nb">41</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #34</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">4/6 — Partial</span></td>
+  <td class="tc">28</td>
+</tr><tr data-overlap="4">
+  <td class="tc">#2052</td>
+  <td class="tc">2025-11-17</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">1</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge early">XO #7</span></div>
+      </div><div class="numchip">
+        <span class="nb">3</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #22</span></div>
+      </div><div class="numchip">
+        <span class="nb">18</span>
+        <div class="idxrow"><span class="idx-badge early">MC #11</span><span class="idx-badge late">XO #27</span></div>
+      </div><div class="numchip">
+        <span class="nb">25</span>
+        <div class="idxrow"><span class="idx-badge late">MC #20</span><span class="idx-badge late">XO #33</span></div>
+      </div><div class="numchip">
+        <span class="nb">30</span>
+        <div class="idxrow"><span class="idx-badge late">MC #21</span><span class="idx-badge late">XO #24</span></div>
+      </div><div class="numchip">
+        <span class="nb">34</span>
+        <div class="idxrow"><span class="idx-badge early">MC #1</span><span class="idx-badge early">XO #8</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">4/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="5">
+  <td class="tc">#2051</td>
+  <td class="tc">2025-11-13</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">3</span>
+        <div class="idxrow"><span class="idx-badge early">MC #4</span><span class="idx-badge late">XO #20</span></div>
+      </div><div class="numchip">
+        <span class="nb">15</span>
+        <div class="idxrow"><span class="idx-badge early">MC #5</span><span class="idx-badge late">XO #27</span></div>
+      </div><div class="numchip">
+        <span class="nb">27</span>
+        <div class="idxrow"><span class="idx-badge late">MC #20</span><span class="idx-badge late">XO #29</span></div>
+      </div><div class="numchip">
+        <span class="nb">28</span>
+        <div class="idxrow"><span class="idx-badge early">MC #7</span><span class="idx-badge early">XO #5</span></div>
+      </div><div class="numchip">
+        <span class="nb">31</span>
+        <div class="idxrow"><span class="idx-badge early">MC #3</span><span class="idx-badge late">XO #26</span></div>
+      </div><div class="numchip">
+        <span class="nb">39</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge absent">XO —</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">5/6 — Partial</span></td>
+  <td class="tc">30</td>
+</tr><tr data-overlap="4">
+  <td class="tc">#2050</td>
+  <td class="tc">2025-11-10</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">6</span>
+        <div class="idxrow"><span class="idx-badge late">MC #16</span><span class="idx-badge early">XO #2</span></div>
+      </div><div class="numchip">
+        <span class="nb">11</span>
+        <div class="idxrow"><span class="idx-badge late">MC #13</span><span class="idx-badge early">XO #4</span></div>
+      </div><div class="numchip">
+        <span class="nb">15</span>
+        <div class="idxrow"><span class="idx-badge early">MC #8</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">21</span>
+        <div class="idxrow"><span class="idx-badge late">MC #25</span><span class="idx-badge early">XO #7</span></div>
+      </div><div class="numchip">
+        <span class="nb">25</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #19</span></div>
+      </div><div class="numchip">
+        <span class="nb">32</span>
+        <div class="idxrow"><span class="idx-badge late">MC #14</span><span class="idx-badge late">XO #30</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">4/6 — Partial</span></td>
+  <td class="tc">28</td>
+</tr><tr data-overlap="6">
+  <td class="tc">#2049</td>
+  <td class="tc">2025-11-06</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">10</span>
+        <div class="idxrow"><span class="idx-badge early">MC #9</span><span class="idx-badge late">XO #18</span></div>
+      </div><div class="numchip">
+        <span class="nb">24</span>
+        <div class="idxrow"><span class="idx-badge late">MC #12</span><span class="idx-badge late">XO #26</span></div>
+      </div><div class="numchip">
+        <span class="nb">25</span>
+        <div class="idxrow"><span class="idx-badge late">MC #18</span><span class="idx-badge late">XO #16</span></div>
+      </div><div class="numchip">
+        <span class="nb">39</span>
+        <div class="idxrow"><span class="idx-badge late">MC #21</span><span class="idx-badge early">XO #5</span></div>
+      </div><div class="numchip">
+        <span class="nb">40</span>
+        <div class="idxrow"><span class="idx-badge late">MC #27</span><span class="idx-badge late">XO #23</span></div>
+      </div><div class="numchip">
+        <span class="nb">42</span>
+        <div class="idxrow"><span class="idx-badge late">MC #32</span><span class="idx-badge late">XO #31</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-all">6/6 — All in Base ✓</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="4">
+  <td class="tc">#2048</td>
+  <td class="tc">2025-11-03</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">8</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #35</span></div>
+      </div><div class="numchip">
+        <span class="nb">13</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge early">XO #8</span></div>
+      </div><div class="numchip">
+        <span class="nb">18</span>
+        <div class="idxrow"><span class="idx-badge early">MC #9</span><span class="idx-badge late">XO #25</span></div>
+      </div><div class="numchip">
+        <span class="nb">32</span>
+        <div class="idxrow"><span class="idx-badge early">MC #3</span><span class="idx-badge early">XO #2</span></div>
+      </div><div class="numchip">
+        <span class="nb">37</span>
+        <div class="idxrow"><span class="idx-badge late">MC #20</span><span class="idx-badge late">XO #33</span></div>
+      </div><div class="numchip">
+        <span class="nb">43</span>
+        <div class="idxrow"><span class="idx-badge early">MC #8</span><span class="idx-badge late">XO #16</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">4/6 — Partial</span></td>
+  <td class="tc">30</td>
+</tr><tr data-overlap="5">
+  <td class="tc">#2047</td>
+  <td class="tc">2025-10-30</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">10</span>
+        <div class="idxrow"><span class="idx-badge early">MC #7</span><span class="idx-badge early">XO #9</span></div>
+      </div><div class="numchip">
+        <span class="nb">11</span>
+        <div class="idxrow"><span class="idx-badge late">MC #15</span><span class="idx-badge late">XO #21</span></div>
+      </div><div class="numchip">
+        <span class="nb">16</span>
+        <div class="idxrow"><span class="idx-badge early">MC #8</span><span class="idx-badge late">XO #25</span></div>
+      </div><div class="numchip">
+        <span class="nb">19</span>
+        <div class="idxrow"><span class="idx-badge late">MC #30</span><span class="idx-badge late">XO #17</span></div>
+      </div><div class="numchip">
+        <span class="nb">37</span>
+        <div class="idxrow"><span class="idx-badge late">MC #29</span><span class="idx-badge late">XO #37</span></div>
+      </div><div class="numchip">
+        <span class="nb">39</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #36</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">5/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="5">
+  <td class="tc">#2046</td>
+  <td class="tc">2025-10-27</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">2</span>
+        <div class="idxrow"><span class="idx-badge early">MC #5</span><span class="idx-badge early">XO #8</span></div>
+      </div><div class="numchip">
+        <span class="nb">5</span>
+        <div class="idxrow"><span class="idx-badge late">MC #32</span><span class="idx-badge early">XO #1</span></div>
+      </div><div class="numchip">
+        <span class="nb">10</span>
+        <div class="idxrow"><span class="idx-badge early">MC #2</span><span class="idx-badge early">XO #11</span></div>
+      </div><div class="numchip">
+        <span class="nb">22</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge early">XO #12</span></div>
+      </div><div class="numchip">
+        <span class="nb">25</span>
+        <div class="idxrow"><span class="idx-badge late">MC #18</span><span class="idx-badge late">XO #31</span></div>
+      </div><div class="numchip">
+        <span class="nb">38</span>
+        <div class="idxrow"><span class="idx-badge late">MC #20</span><span class="idx-badge early">XO #5</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">5/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="4">
+  <td class="tc">#2045</td>
+  <td class="tc">2025-10-23</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">1</span>
+        <div class="idxrow"><span class="idx-badge late">MC #20</span><span class="idx-badge late">XO #35</span></div>
+      </div><div class="numchip">
+        <span class="nb">4</span>
+        <div class="idxrow"><span class="idx-badge early">MC #7</span><span class="idx-badge late">XO #20</span></div>
+      </div><div class="numchip">
+        <span class="nb">7</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #30</span></div>
+      </div><div class="numchip">
+        <span class="nb">12</span>
+        <div class="idxrow"><span class="idx-badge late">MC #24</span><span class="idx-badge early">XO #2</span></div>
+      </div><div class="numchip">
+        <span class="nb">16</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">28</span>
+        <div class="idxrow"><span class="idx-badge late">MC #18</span><span class="idx-badge late">XO #28</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">4/6 — Partial</span></td>
+  <td class="tc">30</td>
+</tr><tr data-overlap="6">
+  <td class="tc">#2044</td>
+  <td class="tc">2025-10-20</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">1</span>
+        <div class="idxrow"><span class="idx-badge late">MC #13</span><span class="idx-badge early">XO #9</span></div>
+      </div><div class="numchip">
+        <span class="nb">6</span>
+        <div class="idxrow"><span class="idx-badge late">MC #32</span><span class="idx-badge late">XO #28</span></div>
+      </div><div class="numchip">
+        <span class="nb">11</span>
+        <div class="idxrow"><span class="idx-badge late">MC #15</span><span class="idx-badge late">XO #17</span></div>
+      </div><div class="numchip">
+        <span class="nb">26</span>
+        <div class="idxrow"><span class="idx-badge late">MC #19</span><span class="idx-badge late">XO #35</span></div>
+      </div><div class="numchip">
+        <span class="nb">33</span>
+        <div class="idxrow"><span class="idx-badge early">MC #11</span><span class="idx-badge late">XO #24</span></div>
+      </div><div class="numchip">
+        <span class="nb">40</span>
+        <div class="idxrow"><span class="idx-badge early">MC #5</span><span class="idx-badge late">XO #33</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-all">6/6 — All in Base ✓</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="5">
+  <td class="tc">#2043</td>
+  <td class="tc">2025-10-16</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">11</span>
+        <div class="idxrow"><span class="idx-badge early">MC #2</span><span class="idx-badge early">XO #12</span></div>
+      </div><div class="numchip">
+        <span class="nb">19</span>
+        <div class="idxrow"><span class="idx-badge late">MC #29</span><span class="idx-badge early">XO #11</span></div>
+      </div><div class="numchip">
+        <span class="nb">22</span>
+        <div class="idxrow"><span class="idx-badge early">MC #1</span><span class="idx-badge late">XO #33</span></div>
+      </div><div class="numchip">
+        <span class="nb">34</span>
+        <div class="idxrow"><span class="idx-badge late">MC #19</span><span class="idx-badge late">XO #34</span></div>
+      </div><div class="numchip">
+        <span class="nb">40</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #31</span></div>
+      </div><div class="numchip">
+        <span class="nb">42</span>
+        <div class="idxrow"><span class="idx-badge late">MC #27</span><span class="idx-badge late">XO #37</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">5/6 — Partial</span></td>
+  <td class="tc">31</td>
+</tr><tr data-overlap="3">
+  <td class="tc">#2042</td>
+  <td class="tc">2025-10-13</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">9</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">14</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">29</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #22</span></div>
+      </div><div class="numchip">
+        <span class="nb">38</span>
+        <div class="idxrow"><span class="idx-badge early">MC #8</span><span class="idx-badge late">XO #24</span></div>
+      </div><div class="numchip">
+        <span class="nb">41</span>
+        <div class="idxrow"><span class="idx-badge early">MC #9</span><span class="idx-badge late">XO #32</span></div>
+      </div><div class="numchip">
+        <span class="nb">43</span>
+        <div class="idxrow"><span class="idx-badge late">MC #16</span><span class="idx-badge late">XO #16</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">3/6 — Partial</span></td>
+  <td class="tc">30</td>
+</tr><tr data-overlap="5">
+  <td class="tc">#2041</td>
+  <td class="tc">2025-10-09</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">4</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #15</span></div>
+      </div><div class="numchip">
+        <span class="nb">19</span>
+        <div class="idxrow"><span class="idx-badge early">MC #6</span><span class="idx-badge late">XO #29</span></div>
+      </div><div class="numchip">
+        <span class="nb">22</span>
+        <div class="idxrow"><span class="idx-badge early">MC #7</span><span class="idx-badge early">XO #5</span></div>
+      </div><div class="numchip">
+        <span class="nb">24</span>
+        <div class="idxrow"><span class="idx-badge late">MC #16</span><span class="idx-badge late">XO #18</span></div>
+      </div><div class="numchip">
+        <span class="nb">32</span>
+        <div class="idxrow"><span class="idx-badge late">MC #22</span><span class="idx-badge late">XO #26</span></div>
+      </div><div class="numchip">
+        <span class="nb">38</span>
+        <div class="idxrow"><span class="idx-badge late">MC #25</span><span class="idx-badge late">XO #35</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">5/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="4">
+  <td class="tc">#2040</td>
+  <td class="tc">2025-10-06</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">7</span>
+        <div class="idxrow"><span class="idx-badge early">MC #1</span><span class="idx-badge late">XO #30</span></div>
+      </div><div class="numchip">
+        <span class="nb">12</span>
+        <div class="idxrow"><span class="idx-badge early">MC #6</span><span class="idx-badge late">XO #37</span></div>
+      </div><div class="numchip">
+        <span class="nb">14</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge early">XO #1</span></div>
+      </div><div class="numchip">
+        <span class="nb">15</span>
+        <div class="idxrow"><span class="idx-badge late">MC #26</span><span class="idx-badge late">XO #28</span></div>
+      </div><div class="numchip">
+        <span class="nb">24</span>
+        <div class="idxrow"><span class="idx-badge late">MC #14</span><span class="idx-badge late">XO #19</span></div>
+      </div><div class="numchip">
+        <span class="nb">30</span>
+        <div class="idxrow"><span class="idx-badge late">MC #15</span><span class="idx-badge absent">XO —</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">4/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="4">
+  <td class="tc">#2039</td>
+  <td class="tc">2025-10-02</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">2</span>
+        <div class="idxrow"><span class="idx-badge late">MC #21</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">15</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #24</span></div>
+      </div><div class="numchip">
+        <span class="nb">25</span>
+        <div class="idxrow"><span class="idx-badge late">MC #16</span><span class="idx-badge early">XO #3</span></div>
+      </div><div class="numchip">
+        <span class="nb">27</span>
+        <div class="idxrow"><span class="idx-badge late">MC #25</span><span class="idx-badge late">XO #33</span></div>
+      </div><div class="numchip">
+        <span class="nb">38</span>
+        <div class="idxrow"><span class="idx-badge late">MC #29</span><span class="idx-badge early">XO #10</span></div>
+      </div><div class="numchip">
+        <span class="nb">42</span>
+        <div class="idxrow"><span class="idx-badge late">MC #26</span><span class="idx-badge late">XO #19</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">4/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="4">
+  <td class="tc">#2038</td>
+  <td class="tc">2025-09-29</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">5</span>
+        <div class="idxrow"><span class="idx-badge late">MC #23</span><span class="idx-badge late">XO #18</span></div>
+      </div><div class="numchip">
+        <span class="nb">31</span>
+        <div class="idxrow"><span class="idx-badge early">MC #9</span><span class="idx-badge early">XO #6</span></div>
+      </div><div class="numchip">
+        <span class="nb">37</span>
+        <div class="idxrow"><span class="idx-badge early">MC #4</span><span class="idx-badge early">XO #7</span></div>
+      </div><div class="numchip">
+        <span class="nb">39</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge early">XO #2</span></div>
+      </div><div class="numchip">
+        <span class="nb">41</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #14</span></div>
+      </div><div class="numchip">
+        <span class="nb">42</span>
+        <div class="idxrow"><span class="idx-badge late">MC #33</span><span class="idx-badge late">XO #15</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">4/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="4">
+  <td class="tc">#2037</td>
+  <td class="tc">2025-09-25</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">7</span>
+        <div class="idxrow"><span class="idx-badge late">MC #27</span><span class="idx-badge late">XO #33</span></div>
+      </div><div class="numchip">
+        <span class="nb">12</span>
+        <div class="idxrow"><span class="idx-badge late">MC #15</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">20</span>
+        <div class="idxrow"><span class="idx-badge late">MC #18</span><span class="idx-badge late">XO #17</span></div>
+      </div><div class="numchip">
+        <span class="nb">23</span>
+        <div class="idxrow"><span class="idx-badge early">MC #6</span><span class="idx-badge early">XO #8</span></div>
+      </div><div class="numchip">
+        <span class="nb">27</span>
+        <div class="idxrow"><span class="idx-badge late">MC #14</span><span class="idx-badge late">XO #35</span></div>
+      </div><div class="numchip">
+        <span class="nb">29</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge early">XO #9</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">4/6 — Partial</span></td>
+  <td class="tc">30</td>
+</tr><tr data-overlap="4">
+  <td class="tc">#2036</td>
+  <td class="tc">2025-09-22</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">7</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #16</span></div>
+      </div><div class="numchip">
+        <span class="nb">10</span>
+        <div class="idxrow"><span class="idx-badge late">MC #32</span><span class="idx-badge late">XO #28</span></div>
+      </div><div class="numchip">
+        <span class="nb">17</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #33</span></div>
+      </div><div class="numchip">
+        <span class="nb">26</span>
+        <div class="idxrow"><span class="idx-badge late">MC #19</span><span class="idx-badge late">XO #32</span></div>
+      </div><div class="numchip">
+        <span class="nb">35</span>
+        <div class="idxrow"><span class="idx-badge late">MC #29</span><span class="idx-badge late">XO #38</span></div>
+      </div><div class="numchip">
+        <span class="nb">42</span>
+        <div class="idxrow"><span class="idx-badge late">MC #13</span><span class="idx-badge late">XO #30</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">4/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="6">
+  <td class="tc">#2035</td>
+  <td class="tc">2025-09-18</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">5</span>
+        <div class="idxrow"><span class="idx-badge early">MC #1</span><span class="idx-badge late">XO #32</span></div>
+      </div><div class="numchip">
+        <span class="nb">10</span>
+        <div class="idxrow"><span class="idx-badge late">MC #29</span><span class="idx-badge late">XO #34</span></div>
+      </div><div class="numchip">
+        <span class="nb">12</span>
+        <div class="idxrow"><span class="idx-badge late">MC #25</span><span class="idx-badge early">XO #2</span></div>
+      </div><div class="numchip">
+        <span class="nb">17</span>
+        <div class="idxrow"><span class="idx-badge late">MC #26</span><span class="idx-badge early">XO #3</span></div>
+      </div><div class="numchip">
+        <span class="nb">21</span>
+        <div class="idxrow"><span class="idx-badge early">MC #7</span><span class="idx-badge late">XO #33</span></div>
+      </div><div class="numchip">
+        <span class="nb">35</span>
+        <div class="idxrow"><span class="idx-badge early">MC #5</span><span class="idx-badge late">XO #19</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-all">6/6 — All in Base ✓</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="4">
+  <td class="tc">#2034</td>
+  <td class="tc">2025-09-15</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">2</span>
+        <div class="idxrow"><span class="idx-badge late">MC #29</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">13</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge early">XO #4</span></div>
+      </div><div class="numchip">
+        <span class="nb">22</span>
+        <div class="idxrow"><span class="idx-badge early">MC #8</span><span class="idx-badge late">XO #28</span></div>
+      </div><div class="numchip">
+        <span class="nb">25</span>
+        <div class="idxrow"><span class="idx-badge early">MC #4</span><span class="idx-badge late">XO #16</span></div>
+      </div><div class="numchip">
+        <span class="nb">35</span>
+        <div class="idxrow"><span class="idx-badge late">MC #31</span><span class="idx-badge late">XO #31</span></div>
+      </div><div class="numchip">
+        <span class="nb">37</span>
+        <div class="idxrow"><span class="idx-badge late">MC #30</span><span class="idx-badge early">XO #2</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">4/6 — Partial</span></td>
+  <td class="tc">28</td>
+</tr><tr data-overlap="3">
+  <td class="tc">#2033</td>
+  <td class="tc">2025-09-11</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">5</span>
+        <div class="idxrow"><span class="idx-badge late">MC #30</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip">
+        <span class="nb">16</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge early">XO #8</span></div>
+      </div><div class="numchip">
+        <span class="nb">21</span>
+        <div class="idxrow"><span class="idx-badge early">MC #7</span><span class="idx-badge late">XO #19</span></div>
+      </div><div class="numchip">
+        <span class="nb">22</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge early">XO #12</span></div>
+      </div><div class="numchip">
+        <span class="nb">33</span>
+        <div class="idxrow"><span class="idx-badge early">MC #2</span><span class="idx-badge early">XO #11</span></div>
+      </div><div class="numchip">
+        <span class="nb">35</span>
+        <div class="idxrow"><span class="idx-badge late">MC #32</span><span class="idx-badge late">XO #38</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">3/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="4">
+  <td class="tc">#2032</td>
+  <td class="tc">2025-09-08</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">8</span>
+        <div class="idxrow"><span class="idx-badge late">MC #13</span><span class="idx-badge early">XO #7</span></div>
+      </div><div class="numchip">
+        <span class="nb">15</span>
+        <div class="idxrow"><span class="idx-badge late">MC #26</span><span class="idx-badge late">XO #35</span></div>
+      </div><div class="numchip">
+        <span class="nb">27</span>
+        <div class="idxrow"><span class="idx-badge late">MC #30</span><span class="idx-badge early">XO #2</span></div>
+      </div><div class="numchip">
+        <span class="nb">33</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge early">XO #10</span></div>
+      </div><div class="numchip">
+        <span class="nb">37</span>
+        <div class="idxrow"><span class="idx-badge early">MC #3</span><span class="idx-badge early">XO #13</span></div>
+      </div><div class="numchip">
+        <span class="nb">39</span>
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #33</span></div>
+      </div></div></td>
+  <td class="tc"><span class="cov-pill cov-partial">4/6 — Partial</span></td>
+  <td class="tc">29</td>
+</tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <p class="footer">
+    Same verified xoshiro256** implementation and mod-43 cycle logic used throughout this site. Modular Cycle and all 16
+    cross-method-consensus-feeding methods are walk-forward trained strictly on draws before each target &mdash; no draw ever
+    influences its own prediction.<br>
+    Formula-based only · Not financial advice · Loto 6 is random.
+  </p>
+</div>
+
+<script>
+function applyFilter() {
+  const sel = document.getElementById('filterSel').value;
+  const rows = document.querySelectorAll('#resultsBody tr');
+  let shown = 0;
+  rows.forEach((tr) => {
+    const overlap = tr.getAttribute('data-overlap');
+    let show = true;
+    if (sel === '6') show = overlap === '6';
+    else if (sel === '0') show = overlap === '0';
+    else if (sel === 'partial') show = overlap !== '6' && overlap !== '0';
+    tr.style.display = show ? '' : 'none';
+    if (show) shown++;
+  });
+  document.getElementById('filterCount').textContent = 'Showing ' + shown + ' of ' + rows.length;
+}
+applyFilter();
+</script>
+</body>
+</html>
