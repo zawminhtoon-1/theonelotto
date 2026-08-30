@@ -404,6 +404,58 @@ for label, cnt, k1, k2, color, note in standalone_rows:
         <div class="funnel-val">{cnt:,} <span style="color:#64748b;font-weight:400">({pct:.1f}%)</span></div>
       </div>"""
 
+# ── xoshiro K=38 standalone: full index-pattern analysis (same treatment as
+# the Base-intersection analysis above, but for xoshiro used alone -- no
+# intersection with Modular Cycle). ─────────────────────────────────────────
+xo_std_tier_counts = Counter()
+xo_std_all_indices = []
+xo_std_tier6_sets = []  # (serial, date, tuple(sorted xoIdx))
+for r in results:
+    xo_pool = set(r['xoPoolOrdered'])
+    xo_pos = {n: i + 1 for i, n in enumerate(r['xoPoolOrdered'])}
+    hit_nums = [n for n in r['actual'] if n in xo_pool]
+    tier = len(hit_nums)
+    xo_std_tier_counts[tier] += 1
+    idx_set = tuple(sorted(xo_pos[n] for n in hit_nums))
+    if tier > 0:
+        xo_std_all_indices.extend(idx_set)
+    if tier == 6:
+        xo_std_tier6_sets.append((r['serial'], r['date'], idx_set))
+
+xo_std_tier_rows_html = ""
+_xo_std_max = max(xo_std_tier_counts.values())
+for t in [6, 5, 4, 3, 2, 1, 0]:
+    v = xo_std_tier_counts.get(t, 0)
+    pct = v / n_draws * 100
+    bar_pct = v / _xo_std_max * 100 if _xo_std_max else 0
+    xo_std_tier_rows_html += f"""<div class="funnel-row">
+        <div class="funnel-lbl">{t}/6 hits</div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:{bar_pct:.1f}%;background:{OVERLAP_COLORS[t]}"></div></div>
+        <div class="funnel-val">{v:,} <span style="color:#64748b;font-weight:400">({pct:.1f}%)</span></div>
+      </div>"""
+
+xo_std_ranked, xo_std_expected, xo_std_chi2, xo_std_dof, xo_std_pvalue = exact_index_ranking(xo_std_all_indices, k_xo)
+xo_std_n_hits = len(xo_std_all_indices)
+xo_std_hit_diff = xo_std_n_hits - n_hits_total
+xo_std_top15_html = ranking_table_html(xo_std_ranked, xo_std_expected, limit=15)
+xo_std_full_list = full_list_text(xo_std_ranked)
+
+# Repeat check at the 6/6 tier
+_xo_std_tier6_counts = Counter(s for _, _, s in xo_std_tier6_sets)
+xo_std_tier6_n = len(xo_std_tier6_sets)
+xo_std_tier6_distinct = len(_xo_std_tier6_counts)
+xo_std_tier6_universe = comb(k_xo, 6)
+xo_std_tier6_expected_collisions = xo_std_tier6_n * (xo_std_tier6_n - 1) / (2 * xo_std_tier6_universe)
+xo_std_tier6_repeats = [(s, c) for s, c in _xo_std_tier6_counts.items() if c > 1]
+
+xo_std_tier6_rows_html = ""
+for serial, date, idx_set in reversed(xo_std_tier6_sets):  # newest first
+    xo_std_tier6_rows_html += f"""<tr>
+  <td class="tc">#{serial}</td>
+  <td class="tc">{date}</td>
+  <td style="color:#c4b5fd;font-family:monospace;font-size:.8rem">{set_str(idx_set)}</td>
+</tr>"""
+
 page = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -569,6 +621,61 @@ tr.upcoming-row td:first-child{{font-weight:700;color:#38bdf8}}
       elimination universe (~29-30 numbers vs. 33 or 38) at the cost of roughly {(1-base_6of6/xo_alone_6of6)*100:.0f}% of the
       coverage xoshiro alone would provide, and {(1-base_6of6/mc_alone_6of6)*100:.0f}% of what Modular Cycle alone would provide
       &mdash; the classic precision/recall tradeoff of narrowing a candidate pool.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>xoshiro K={k_xo} standalone: hit patterns (no Base intersection)</h2>
+    <p class="desc">Same index-pattern analysis as the sections below, but for xoshiro used alone &mdash; every actual number
+    checked against just the {k_xo}-number xoshiro pool for its own draw, with no Modular Cycle intersection requirement. Much
+    higher coverage than Base (51.5% vs 11.3% at 6/6), so this asks: does the larger sample size or higher hit rate reveal any
+    structure the smaller intersection sample couldn't?</p>
+
+    <h3 style="font-size:.85rem;color:#c4b5fd;margin-bottom:8px">Hit-count tier breakdown</h3>
+    <div class="funnel" style="margin-bottom:22px">{xo_std_tier_rows_html}</div>
+
+    <h3 style="font-size:.85rem;color:#c4b5fd;margin-bottom:8px">Exact-index frequency ranking</h3>
+    <p class="desc">{xo_std_n_hits:,} hit instances (vs. {n_hits_total:,} for the Base-intersection analysis) &mdash; top 15 by hit
+    count, full list below.</p>
+    <div class="note" style="border-color:#fbbf2455;background:#1c1608;margin-bottom:16px">
+      <p style="color:#fbbf24"><strong>⚠️ Still not statistically significant.</strong> Chi-square goodness-of-fit against a
+      uniform distribution: <strong style="color:#f1f5f9">&chi;&sup2;={xo_std_chi2:.2f}, df={xo_std_dof}, p={xo_std_pvalue:.3f}</strong>
+      (expected count per index &asymp;{xo_std_expected:.1f}). Despite {xo_std_hit_diff:,}
+      more hit instances than the smaller Base-intersection sample, the larger sample size did NOT surface a hidden pattern
+      &mdash; the p-value stays comfortably in "consistent with uniform" territory. More data made the ranking more stable, not
+      more meaningful.</p>
+    </div>
+    <div class="tbl-wrap" style="margin-bottom:10px">
+      <table class="results">
+        <thead><tr><th class="tc">Index</th><th class="tc">Hits</th><th class="tc">%</th><th class="tc">vs. expected</th></tr></thead>
+        <tbody>{xo_std_top15_html}</tbody>
+      </table>
+    </div>
+    <details style="margin-bottom:22px">
+      <summary style="cursor:pointer;color:#94a3b8;font-size:.78rem;padding:6px 0">Show full ranked list (all {k_xo} indices)</summary>
+      <p style="font-size:.75rem;color:#94a3b8;line-height:1.8;margin-top:8px;font-family:monospace">{xo_std_full_list}</p>
+    </details>
+
+    <h3 style="font-size:.85rem;color:#c4b5fd;margin-bottom:8px">Repeat-pattern check at 6/6</h3>
+    <div class="note" style="margin-bottom:16px">
+      <p><strong style="color:#e2e8f0">Still zero repeats, exactly as expected.</strong> {xo_std_tier6_n} draws hit 6/6 on
+      xoshiro standalone (vs. {base_6of6} for the Base intersection) &mdash; {xo_std_tier6_distinct} distinct 6-index sets,
+      <strong style="color:#f1f5f9">{len(xo_std_tier6_repeats)} repeats</strong>. Universe: C({k_xo},6) =
+      {xo_std_tier6_universe:,}. Expected collisions under pure chance (birthday-paradox math):
+      <strong style="color:#f1f5f9">{xo_std_tier6_expected_collisions:.4f}</strong>. Even with {xo_std_tier6_n} draws
+      (4.6&times; the intersection sample's 113), the expected collision count barely moved &mdash; it scales with n&sup2;, not
+      n. You'd need on the order of 2,000+ draws at this tier before a genuine coincidental repeat becomes even a coin-flip
+      proposition. Zero observed repeats is the null expectation confirmed at a larger scale, not a new finding.</p>
+    </div>
+
+    <h3 style="font-size:.85rem;color:#c4b5fd;margin-bottom:8px">Full list: all {xo_std_tier6_n} six-index sets at 6/6</h3>
+    <p class="desc">Every draw where all 6 actual numbers landed in the xoshiro K={k_xo} pool standalone, with the exact
+    generation-order index each landed at.</p>
+    <div class="tbl-wrap">
+      <table class="results">
+        <thead><tr><th class="tc">Draw</th><th class="tc">Date</th><th>xoshiro index-set</th></tr></thead>
+        <tbody>{xo_std_tier6_rows_html}</tbody>
+      </table>
     </div>
   </div>
 
