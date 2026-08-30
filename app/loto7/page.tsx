@@ -1,4 +1,5 @@
 import { getLatestLoto7Draw, getRecentLoto7Draws, getLoto7Count } from "@/lib/db7";
+import { getLatestLoto7ElimPage } from "@/lib/elimPages";
 import { Loto7BallRow } from "@/components/Loto7BallRow";
 
 export const revalidate = 300; // revalidate every 5 minutes
@@ -13,11 +14,10 @@ function formatDate(d: string | null): string {
   });
 }
 
-const QUICK_LINKS = [
+const BASE_QUICK_LINKS = [
   { href: "/loto7/predictions", icon: "🎯", label: "Predictions", desc: "16-method consensus picks for the next draw" },
   { href: "/loto7_backtest_full.html", icon: "📊", label: "Full-History Backtest", desc: "All real draws, K=7–28 toggle, all 16 methods" },
   { href: "/loto7_backtest100_multik.html", icon: "🎯", label: "100-Draw Multi-K Backtest", desc: "Recent-window backtest with a K-size toggle" },
-  { href: "/loto7_elim_691.html", icon: "✂️", label: "Draw #691 Elimination", desc: "Combinatorial elimination + retroactive result check" },
   { href: "/xoshiro_seed_scan_loto7_k30.html", icon: "🌀", label: "Xoshiro Seed Scan K=30", desc: "2,000,001 seeds, in-sample vs out-of-sample check" },
   { href: "/loto7/history", icon: "📋", label: "Full History", desc: "Every Loto 7 draw on record" },
 ];
@@ -28,6 +28,20 @@ export default async function Loto7HomePage() {
     getRecentLoto7Draws(10),
     getLoto7Count(),
   ]);
+  // Auto-discovered from /public — no manual edit needed when a new
+  // loto7_elim_NNN.html lands.
+  const latestElim = getLatestLoto7ElimPage();
+  const QUICK_LINKS = latestElim
+    ? [
+        {
+          href: latestElim.href,
+          icon: "✂️",
+          label: `Draw #${latestElim.drawSerial} Elimination`,
+          desc: "Combinatorial elimination + retroactive result check",
+        },
+        ...BASE_QUICK_LINKS,
+      ]
+    : BASE_QUICK_LINKS;
 
   return (
     <div className="space-y-10">
@@ -45,9 +59,19 @@ export default async function Loto7HomePage() {
               {formatDate(latest.draw_date)}
             </p>
           </div>
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-            Latest
-          </span>
+          <div className="flex flex-col items-end gap-2">
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+              Latest
+            </span>
+            {latestElim && (
+              <a
+                href={latestElim.href}
+                className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                ✂️ Draw #{latestElim.drawSerial} Elimination →
+              </a>
+            )}
+          </div>
         </div>
         <Loto7BallRow draw={latest} size="lg" />
         <p className="mt-4 text-xs text-gray-400">

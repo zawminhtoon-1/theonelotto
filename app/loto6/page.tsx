@@ -1,4 +1,5 @@
 import { getLatestDraw, getRecentDraws } from "@/lib/db";
+import { getLatestLoto6ElimPage } from "@/lib/elimPages";
 import { BallRow } from "@/components/BallRow";
 
 export const revalidate = 300; // revalidate every 5 minutes
@@ -13,10 +14,9 @@ function formatDate(d: string | null): string {
   });
 }
 
-const QUICK_LINKS = [
+const BASE_QUICK_LINKS = [
   { href: "/predictions", icon: "🎯", label: "Predictions", desc: "16-method consensus picks for the next draw" },
   { href: "/backtest.html", icon: "📊", label: "Backtest", desc: "1000-draw walk-forward evaluation, all 16 methods" },
-  { href: "/xoshiro_elim_2132.html", icon: "✂️", label: "Latest Elimination", desc: "Draw #2132 xoshiro combinatorial elimination" },
   { href: "/xoshiro_seed_scan_k38.html", icon: "🔷", label: "Xoshiro Seed Scan K=38", desc: "1,000,001 seeds, best-performing scan" },
   { href: "/modular_cycle.html", icon: "🔁", label: "Modular Cycle", desc: "mod-43 cycle strategy page" },
   { href: "/combo_evo.html", icon: "🧬", label: "Combo Evo", desc: "Combination evolution / anti-pick analysis" },
@@ -29,6 +29,20 @@ export default async function Loto6HomePage() {
     getLatestDraw(),
     getRecentDraws(10),
   ]);
+  // Auto-discovered from /public — no manual edit needed when a new
+  // xoshiro_elim_NNNN.html lands.
+  const latestElim = getLatestLoto6ElimPage();
+  const QUICK_LINKS = latestElim
+    ? [
+        {
+          href: latestElim.href,
+          icon: "✂️",
+          label: "Latest Elimination",
+          desc: `Draw #${latestElim.drawSerial} xoshiro combinatorial elimination`,
+        },
+        ...BASE_QUICK_LINKS,
+      ]
+    : BASE_QUICK_LINKS;
 
   return (
     <div className="space-y-10">
@@ -46,9 +60,19 @@ export default async function Loto6HomePage() {
               {formatDate(latest.draw_date)}
             </p>
           </div>
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-            Latest
-          </span>
+          <div className="flex flex-col items-end gap-2">
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+              Latest
+            </span>
+            {latestElim && (
+              <a
+                href={latestElim.href}
+                className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                ✂️ Draw #{latestElim.drawSerial} Elimination →
+              </a>
+            )}
+          </div>
         </div>
         <BallRow draw={latest} size="lg" />
         <p className="mt-4 text-xs text-gray-400">
