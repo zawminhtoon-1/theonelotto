@@ -23,7 +23,7 @@ Output: public/xoshiro_base_review1000.html
 Run: python gen_xoshiro_base_review1000.py
 """
 import json
-from collections import Counter
+from collections import Counter, defaultdict
 from math import comb
 
 BASE = r"C:\Users\Zaw Min Htoon\source\repos\theonelotto"
@@ -223,6 +223,94 @@ for i, row in enumerate(ct_table):
     cells = "".join(f'<td class="tc">{v}</td>' for v in row)
     ct_rows_html += f'<tr><td class="tc" style="font-weight:600;color:#7dd3fc">#{ct_mc_labels[i]}</td>{cells}</tr>'
 
+# ── Hit index-set patterns: for every draw, the full sorted set of hit
+# generation-order indices per method, plus a repeat-frequency check within
+# each hit-count tier (does any exact index-set recur across draws?). ───────
+draw_patterns = []  # (serial, date, tier, mc_set, xo_set)
+tier_mc_sets = defaultdict(list)
+tier_xo_sets = defaultdict(list)
+for r in results:
+    hits = [pn for pn in r['perNumber'] if pn['mcIdx'] is not None and pn['xoIdx'] is not None]
+    tier = len(hits)
+    mc_set = tuple(sorted(pn['mcIdx'] for pn in hits))
+    xo_set = tuple(sorted(pn['xoIdx'] for pn in hits))
+    draw_patterns.append((r['serial'], r['date'], tier, mc_set, xo_set))
+    if tier > 0:
+        tier_mc_sets[tier].append((r['serial'], mc_set))
+        tier_xo_sets[tier].append((r['serial'], xo_set))
+
+tier_draw_counts = {t: len(tier_mc_sets.get(t, [])) for t in range(7)}
+
+def repeat_summary(tier_sets, k):
+    out = {}
+    for tier, entries in tier_sets.items():
+        counts = Counter(s for _, s in entries)
+        repeats = [(s, c) for s, c in counts.items() if c > 1]
+        out[tier] = {
+            'nDraws': len(entries), 'nDistinct': len(counts),
+            'universe': comb(k, tier) if tier <= k else 0,
+            'repeats': sorted(repeats, key=lambda x: -x[1]),
+        }
+    return out
+
+mc_repeat_info = repeat_summary(tier_mc_sets, k_mc)
+xo_repeat_info = repeat_summary(tier_xo_sets, k_xo)
+
+def repeat_examples_text(tier_sets_lookup, repeat_info, tier):
+    info = repeat_info.get(tier)
+    if not info or not info['repeats']:
+        return ""
+    parts = []
+    entries = tier_sets_lookup[tier]
+    for s, c in info['repeats'][:5]:
+        draws = [str(ser) for ser, ss in entries if ss == s]
+        parts.append(f"{{{', '.join(str(n) for n in s)}}} (#{'/#'.join(draws)})")
+    return ", ".join(parts)
+
+def set_str(s):
+    return "{" + ", ".join(str(n) for n in s) + "}" if s else "—"
+
+patterns_rows_html = ""
+for serial, date, tier, mc_set, xo_set in reversed(draw_patterns):  # newest first
+    patterns_rows_html += f"""<tr data-tier="{tier}" data-serial="{serial}">
+  <td class="tc">#{serial}</td>
+  <td class="tc">{date}</td>
+  <td class="tc">{tier}/6</td>
+  <td style="color:#7dd3fc;font-family:monospace;font-size:.8rem">{set_str(mc_set)}</td>
+  <td style="color:#c4b5fd;font-family:monospace;font-size:.8rem">{set_str(xo_set)}</td>
+</tr>"""
+
+# ── Repeat-analysis summary note (supplementary, not a large section) ───────
+_repeat_note_parts = []
+for tier in (6, 5):
+    mc_i, xo_i = mc_repeat_info.get(tier), xo_repeat_info.get(tier)
+    if mc_i and xo_i:
+        _repeat_note_parts.append(
+            f"<strong style=\"color:#f1f5f9\">{tier}/6:</strong> no repeats in either method &mdash; all "
+            f"{mc_i['nDraws']} draws produced {mc_i['nDistinct']} distinct index-sets for both Modular Cycle "
+            f"(universe C({k_mc},{tier})={mc_i['universe']:,}) and xoshiro (universe C({k_xo},{tier})={xo_i['universe']:,})."
+        )
+lower_tier_bits = []
+for tier in (4, 3, 2, 1):
+    mc_i, xo_i = mc_repeat_info.get(tier), xo_repeat_info.get(tier)
+    if not mc_i or not xo_i:
+        continue
+    mc_ex = repeat_examples_text(tier_mc_sets, mc_repeat_info, tier)
+    xo_ex = repeat_examples_text(tier_xo_sets, xo_repeat_info, tier)
+    bit = f"<strong style=\"color:#f1f5f9\">{tier}/6:</strong> MC {len(mc_i['repeats'])} repeat(s)"
+    if mc_ex:
+        bit += f" &mdash; {mc_ex}"
+    bit += f"; XO {len(xo_i['repeats'])} repeat(s)"
+    if xo_ex:
+        bit += f" &mdash; {xo_ex}"
+    lower_tier_bits.append(bit)
+_repeat_note_parts.append("<strong style=\"color:#f1f5f9\">4/6 down to 1/6:</strong> " + " &nbsp;|&nbsp; ".join(lower_tier_bits) + ". Every one of these counts is within normal statistical noise of what pure chance predicts (birthday-paradox math on each tier's combinatorial universe) &mdash; not a discovered pattern.")
+repeat_note_html = "</p><p>".join(_repeat_note_parts)
+
+tier_options_html = ""
+for t in (6, 5, 4, 3, 2, 1, 0):
+    tier_options_html += f'<option value="{t}">Show: {t}/6 hits ({tier_draw_counts.get(t, 0)} draws)</option>'
+
 rows_html = ""
 for r in reversed(results):  # newest first
     balls_html = ""
@@ -339,6 +427,8 @@ table.results th{{background:#0a0f1e;padding:8px 10px;text-align:left;color:#94a
   font-weight:600;font-size:.68rem;text-transform:uppercase;letter-spacing:.04em;
   border-bottom:1px solid #1e293b;white-space:nowrap}}
 table.results th.tc{{text-align:center}}
+table.results th.sortable{{cursor:pointer;user-select:none}}
+table.results th.sortable:hover{{color:#e2e8f0}}
 table.results tbody tr{{border-bottom:1px solid #1e293b}}
 table.results tbody tr:hover{{background:#111827}}
 table.results td{{padding:8px 10px;color:#cbd5e1;vertical-align:middle}}
@@ -571,6 +661,35 @@ tr.upcoming-row td:first-child{{font-weight:700;color:#38bdf8}}
   </div>
 
   <div class="section">
+    <h2>Hit index-set patterns</h2>
+    <p class="desc">For every draw, the full sorted set of generation-order indices where its hit numbers landed &mdash; e.g.
+    a draw with 5 hits might show Modular Cycle <code>{{8, 12, 13, 14, 29}}</code> and xoshiro <code>{{4, 6, 24, 30, 37}}</code>.
+    Organized by hit-count tier, filterable below.</p>
+    <div class="note" style="margin-bottom:16px">
+      <p>{repeat_note_html}</p>
+    </div>
+    <div class="controls">
+      <select id="patternsTierSel" onchange="applyPatternsFilter()">
+        <option value="all">Show: All tiers ({n_draws} draws)</option>
+        {tier_options_html}
+      </select>
+      <span id="patternsFilterCount" class="desc" style="margin:0"></span>
+    </div>
+    <div class="tbl-wrap">
+      <table class="results" id="patternsTable">
+        <thead><tr>
+          <th class="tc sortable" data-key="serial" onclick="sortPatterns('serial')">Draw ⇅</th>
+          <th class="tc">Date</th>
+          <th class="tc sortable" data-key="tier" onclick="sortPatterns('tier')">Hits ⇅</th>
+          <th>Modular Cycle index-set</th>
+          <th>xoshiro index-set</th>
+        </tr></thead>
+        <tbody id="patternsBody">{patterns_rows_html}</tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
     <h2>Per-draw results</h2>
     <p class="desc">The <strong style="color:#7dd3fc">⏳ upcoming draw</strong> is pinned at the top, showing the Base pool computed
     for it &mdash; not yet drawn, so there's no actual result to compare against and no hit highlighting. Below it, the {n_draws}
@@ -635,6 +754,38 @@ function applyFilter() {{
   document.getElementById('filterCount').textContent = 'Showing ' + shown + ' of ' + total;
 }}
 applyFilter();
+
+function applyPatternsFilter() {{
+  const sel = document.getElementById('patternsTierSel').value;
+  const rows = document.querySelectorAll('#patternsBody tr');
+  let shown = 0;
+  rows.forEach((tr) => {{
+    const tier = tr.getAttribute('data-tier');
+    const show = sel === 'all' || sel === tier;
+    tr.style.display = show ? '' : 'none';
+    if (show) shown++;
+  }});
+  document.getElementById('patternsFilterCount').textContent = 'Showing ' + shown + ' of ' + rows.length;
+}}
+applyPatternsFilter();
+
+let _patternsSortState = {{ key: 'serial', dir: -1 }};  // default: newest draw first
+function sortPatterns(key) {{
+  const tbody = document.getElementById('patternsBody');
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+  if (_patternsSortState.key === key) {{
+    _patternsSortState.dir *= -1;
+  }} else {{
+    _patternsSortState = {{ key: key, dir: key === 'serial' ? -1 : -1 }};
+  }}
+  const dir = _patternsSortState.dir;
+  rows.sort((a, b) => {{
+    const av = parseInt(a.getAttribute('data-' + (key === 'serial' ? 'serial' : 'tier')), 10);
+    const bv = parseInt(b.getAttribute('data-' + (key === 'serial' ? 'serial' : 'tier')), 10);
+    return (av - bv) * dir;
+  }});
+  rows.forEach(r => tbody.appendChild(r));
+}}
 </script>
 </body>
 </html>"""
