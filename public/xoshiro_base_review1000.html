@@ -287,6 +287,119 @@ tr.upcoming-row td:first-child{font-weight:700;color:#38bdf8}
   </div>
 
   <div class="section">
+    <h2>Exact-index frequency ranking</h2>
+    <p class="desc">Not bucketed &mdash; the individual generation-order index positions (1, 2, 3, ...) ranked by how often a hit
+    number landed there, for each method separately.</p>
+    <div class="note" style="border-color:#fbbf2455;background:#1c1608;margin-bottom:16px">
+      <p style="color:#fbbf24"><strong>⚠️ Not statistically significant.</strong> A chi-square goodness-of-fit test against a
+      uniform distribution gives <strong style="color:#f1f5f9">MC: &chi;&sup2;=27.02, df=32, p=0.72</strong>
+      and <strong style="color:#f1f5f9">XO: &chi;&sup2;=35.78, df=37, p=0.53</strong> &mdash; both far
+      above the p&lt;0.05 threshold. The spread between the top and bottom index below is fully consistent with random sampling
+      noise around a flat distribution (expected count per index: MC &asymp;126.0, XO &asymp;109.4), not a
+      real preferred position. This ranking would likely reshuffle noticeably on a different 1000-draw window &mdash; treat it as
+      a snapshot, not a discovered pattern.</p>
+    </div>
+
+    <h3 style="font-size:.85rem;color:#7dd3fc;margin-bottom:8px">Modular Cycle K=33 &mdash; top 15</h3>
+    <div class="tbl-wrap" style="margin-bottom:10px">
+      <table class="results">
+        <thead><tr><th class="tc">Index</th><th class="tc">Hits</th><th class="tc">%</th><th class="tc">vs. expected</th></tr></thead>
+        <tbody><tr><td class="tc">#3</td><td class="tc">144</td><td class="tc">3.46%</td>
+      <td class="tc" style="color:#4ade80">+14.3%</td></tr><tr><td class="tc">#5</td><td class="tc">143</td><td class="tc">3.44%</td>
+      <td class="tc" style="color:#4ade80">+13.5%</td></tr><tr><td class="tc">#18</td><td class="tc">143</td><td class="tc">3.44%</td>
+      <td class="tc" style="color:#4ade80">+13.5%</td></tr><tr><td class="tc">#16</td><td class="tc">140</td><td class="tc">3.37%</td>
+      <td class="tc" style="color:#4ade80">+11.1%</td></tr><tr><td class="tc">#11</td><td class="tc">138</td><td class="tc">3.32%</td>
+      <td class="tc" style="color:#4ade80">+9.5%</td></tr><tr><td class="tc">#32</td><td class="tc">137</td><td class="tc">3.29%</td>
+      <td class="tc" style="color:#4ade80">+8.7%</td></tr><tr><td class="tc">#7</td><td class="tc">133</td><td class="tc">3.20%</td>
+      <td class="tc" style="color:#4ade80">+5.6%</td></tr><tr><td class="tc">#14</td><td class="tc">133</td><td class="tc">3.20%</td>
+      <td class="tc" style="color:#4ade80">+5.6%</td></tr><tr><td class="tc">#15</td><td class="tc">133</td><td class="tc">3.20%</td>
+      <td class="tc" style="color:#4ade80">+5.6%</td></tr><tr><td class="tc">#33</td><td class="tc">133</td><td class="tc">3.20%</td>
+      <td class="tc" style="color:#4ade80">+5.6%</td></tr><tr><td class="tc">#2</td><td class="tc">130</td><td class="tc">3.13%</td>
+      <td class="tc" style="color:#4ade80">+3.2%</td></tr><tr><td class="tc">#13</td><td class="tc">130</td><td class="tc">3.13%</td>
+      <td class="tc" style="color:#4ade80">+3.2%</td></tr><tr><td class="tc">#31</td><td class="tc">129</td><td class="tc">3.10%</td>
+      <td class="tc" style="color:#4ade80">+2.4%</td></tr><tr><td class="tc">#6</td><td class="tc">128</td><td class="tc">3.08%</td>
+      <td class="tc" style="color:#4ade80">+1.6%</td></tr><tr><td class="tc">#21</td><td class="tc">128</td><td class="tc">3.08%</td>
+      <td class="tc" style="color:#4ade80">+1.6%</td></tr></tbody>
+      </table>
+    </div>
+    <details style="margin-bottom:22px">
+      <summary style="cursor:pointer;color:#94a3b8;font-size:.78rem;padding:6px 0">Show full ranked list (all 33 indices)</summary>
+      <p style="font-size:.75rem;color:#94a3b8;line-height:1.8;margin-top:8px;font-family:monospace">#3(144) #5(143) #18(143) #16(140) #11(138) #32(137) #7(133) #14(133) #15(133) #33(133) #2(130) #13(130) #31(129) #6(128) #21(128) #25(128) #9(127) #29(125) #1(124) #4(124) #8(124) #26(124) #30(124) #23(121) #28(120) #20(118) #22(117) #24(114) #10(111) #27(110) #12(109) #19(109) #17(107)</p>
+    </details>
+
+    <h3 style="font-size:.85rem;color:#c4b5fd;margin-bottom:8px">xoshiro K=38 &mdash; top 15</h3>
+    <div class="tbl-wrap" style="margin-bottom:10px">
+      <table class="results">
+        <thead><tr><th class="tc">Index</th><th class="tc">Hits</th><th class="tc">%</th><th class="tc">vs. expected</th></tr></thead>
+        <tbody><tr><td class="tc">#9</td><td class="tc">135</td><td class="tc">3.25%</td>
+      <td class="tc" style="color:#4ade80">+23.4%</td></tr><tr><td class="tc">#10</td><td class="tc">131</td><td class="tc">3.15%</td>
+      <td class="tc" style="color:#4ade80">+19.7%</td></tr><tr><td class="tc">#4</td><td class="tc">125</td><td class="tc">3.01%</td>
+      <td class="tc" style="color:#4ade80">+14.2%</td></tr><tr><td class="tc">#1</td><td class="tc">122</td><td class="tc">2.93%</td>
+      <td class="tc" style="color:#4ade80">+11.5%</td></tr><tr><td class="tc">#2</td><td class="tc">120</td><td class="tc">2.89%</td>
+      <td class="tc" style="color:#4ade80">+9.7%</td></tr><tr><td class="tc">#20</td><td class="tc">118</td><td class="tc">2.84%</td>
+      <td class="tc" style="color:#4ade80">+7.8%</td></tr><tr><td class="tc">#16</td><td class="tc">117</td><td class="tc">2.81%</td>
+      <td class="tc" style="color:#4ade80">+6.9%</td></tr><tr><td class="tc">#31</td><td class="tc">117</td><td class="tc">2.81%</td>
+      <td class="tc" style="color:#4ade80">+6.9%</td></tr><tr><td class="tc">#3</td><td class="tc">116</td><td class="tc">2.79%</td>
+      <td class="tc" style="color:#4ade80">+6.0%</td></tr><tr><td class="tc">#37</td><td class="tc">116</td><td class="tc">2.79%</td>
+      <td class="tc" style="color:#4ade80">+6.0%</td></tr><tr><td class="tc">#5</td><td class="tc">115</td><td class="tc">2.77%</td>
+      <td class="tc" style="color:#4ade80">+5.1%</td></tr><tr><td class="tc">#13</td><td class="tc">114</td><td class="tc">2.74%</td>
+      <td class="tc" style="color:#4ade80">+4.2%</td></tr><tr><td class="tc">#11</td><td class="tc">113</td><td class="tc">2.72%</td>
+      <td class="tc" style="color:#4ade80">+3.3%</td></tr><tr><td class="tc">#18</td><td class="tc">113</td><td class="tc">2.72%</td>
+      <td class="tc" style="color:#4ade80">+3.3%</td></tr><tr><td class="tc">#23</td><td class="tc">113</td><td class="tc">2.72%</td>
+      <td class="tc" style="color:#4ade80">+3.3%</td></tr></tbody>
+      </table>
+    </div>
+    <details>
+      <summary style="cursor:pointer;color:#94a3b8;font-size:.78rem;padding:6px 0">Show full ranked list (all 38 indices)</summary>
+      <p style="font-size:.75rem;color:#94a3b8;line-height:1.8;margin-top:8px;font-family:monospace">#9(135) #10(131) #4(125) #1(122) #2(120) #20(118) #16(117) #31(117) #3(116) #37(116) #5(115) #13(114) #11(113) #18(113) #23(113) #17(112) #25(112) #35(112) #7(111) #32(110) #34(110) #36(110) #24(109) #27(104) #6(103) #12(103) #14(103) #30(102) #38(102) #8(101) #26(101) #19(100) #33(100) #15(98) #21(97) #29(93) #28(91) #22(89)</p>
+    </details>
+  </div>
+
+  <div class="section">
+    <h2>Modular Cycle vs xoshiro: are the two orderings related?</h2>
+    <p class="desc">For the SAME hit number in the SAME draw, does an early Modular Cycle generation-order index predict an
+    early or late xoshiro index &mdash; or are the two methods' orderings independent?</p>
+    <div class="stats-row" style="margin-bottom:16px">
+      <div class="stat-card">
+        <div class="lbl">Pearson r (linear)</div>
+        <div class="val">-0.0036</div>
+        <div class="sub">~0 = no linear relationship</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Spearman &rho; (rank)</div>
+        <div class="val">-0.0037</div>
+        <div class="sub">~0 = no monotonic relationship</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Cross-tab &chi;&sup2; test</div>
+        <div class="val">p=0.232</div>
+        <div class="sub">&chi;&sup2;=48.35, df=42 &mdash; not significant</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Cramer's V (effect size)</div>
+        <div class="val">0.0440</div>
+        <div class="sub">~0 = negligible association</div>
+      </div>
+    </div>
+    <div class="note" style="margin-bottom:16px">
+      <p><strong style="color:#e2e8f0">No relationship.</strong> Both correlation coefficients are indistinguishable from zero
+      (two orders of magnitude below what would count as even a weak correlation), and the cross-tab independence test fails to
+      reject the null hypothesis of independence (p=0.23 &gt;&gt; 0.05) with a negligible effect size. This matches
+      what the two methods' mechanics predict: Modular Cycle's order comes from a mod-43 draw-frequency ranking (a function of
+      historical draw data), xoshiro's comes from an independently-seeded Fisher-Yates shuffle &mdash; no shared derivation, no
+      shared state, and empirically, no shared structure either. A number that's an early pick for one method is exactly as
+      likely to land anywhere in the other method's own generation order.</p>
+    </div>
+    <p class="desc">Cross-tabulation: hit count by MC index-range (rows) &times; XO index-range (columns), width-5 buckets.</p>
+    <div class="tbl-wrap">
+      <table class="results">
+        <thead><tr><th class="tc">MC \ XO</th><th class="tc">#1–5</th><th class="tc">#6–10</th><th class="tc">#11–15</th><th class="tc">#16–20</th><th class="tc">#21–25</th><th class="tc">#26–30</th><th class="tc">#31–35</th><th class="tc">#36–38</th></tr></thead>
+        <tbody><tr><td class="tc" style="font-weight:600;color:#7dd3fc">#1–5</td><td class="tc">100</td><td class="tc">80</td><td class="tc">92</td><td class="tc">90</td><td class="tc">79</td><td class="tc">84</td><td class="tc">85</td><td class="tc">55</td></tr><tr><td class="tc" style="font-weight:600;color:#7dd3fc">#6–10</td><td class="tc">91</td><td class="tc">88</td><td class="tc">77</td><td class="tc">96</td><td class="tc">82</td><td class="tc">70</td><td class="tc">75</td><td class="tc">44</td></tr><tr><td class="tc" style="font-weight:600;color:#7dd3fc">#11–15</td><td class="tc">80</td><td class="tc">92</td><td class="tc">96</td><td class="tc">72</td><td class="tc">73</td><td class="tc">69</td><td class="tc">103</td><td class="tc">58</td></tr><tr><td class="tc" style="font-weight:600;color:#7dd3fc">#16–20</td><td class="tc">101</td><td class="tc">90</td><td class="tc">69</td><td class="tc">87</td><td class="tc">61</td><td class="tc">73</td><td class="tc">91</td><td class="tc">45</td></tr><tr><td class="tc" style="font-weight:600;color:#7dd3fc">#21–25</td><td class="tc">89</td><td class="tc">92</td><td class="tc">63</td><td class="tc">73</td><td class="tc">101</td><td class="tc">73</td><td class="tc">63</td><td class="tc">54</td></tr><tr><td class="tc" style="font-weight:600;color:#7dd3fc">#26–30</td><td class="tc">81</td><td class="tc">79</td><td class="tc">78</td><td class="tc">88</td><td class="tc">79</td><td class="tc">73</td><td class="tc">80</td><td class="tc">45</td></tr><tr><td class="tc" style="font-weight:600;color:#7dd3fc">#31–33</td><td class="tc">56</td><td class="tc">60</td><td class="tc">56</td><td class="tc">54</td><td class="tc">45</td><td class="tc">49</td><td class="tc">52</td><td class="tc">27</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
     <h2>Per-draw results</h2>
     <p class="desc">The <strong style="color:#7dd3fc">⏳ upcoming draw</strong> is pinned at the top, showing the Base pool computed
     for it &mdash; not yet drawn, so there's no actual result to compare against and no hit highlighting. Below it, the 1000

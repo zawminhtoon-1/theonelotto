@@ -125,6 +125,104 @@ def dist_rows_html(labels, counts, total, color):
 mc_dist_html = dist_rows_html(mc_bucket_labels, mc_bucket_counts, n_hits_total, '#38bdf8')
 xo_dist_html = dist_rows_html(xo_bucket_labels, xo_bucket_counts, n_hits_total, '#a78bfa')
 
+# ── Exact-index frequency ranking: which individual index positions (not
+# buckets) show up most often among hit numbers, for each method separately.
+# Includes a chi-square goodness-of-fit test against a uniform distribution
+# to flag whether the ranking is a real pattern or just sampling noise. ─────
+from scipy import stats as _scipy_stats
+
+def exact_index_ranking(indices, k):
+    counts = Counter(indices)
+    total = len(indices)
+    ranked = sorted(counts.items(), key=lambda x: (-x[1], x[0]))
+    expected = total / k
+    chi2 = sum((counts.get(i, 0) - expected) ** 2 / expected for i in range(1, k + 1))
+    dof = k - 1
+    p_value = 1 - _scipy_stats.chi2.cdf(chi2, dof)
+    return ranked, expected, chi2, dof, p_value
+
+mc_ranked, mc_expected, mc_chi2, mc_dof, mc_pvalue = exact_index_ranking(hit_mc_indices, k_mc)
+xo_ranked, xo_expected, xo_chi2, xo_dof, xo_pvalue = exact_index_ranking(hit_xo_indices, k_xo)
+
+def ranking_table_html(ranked, expected, limit=None):
+    rows = ranked[:limit] if limit else ranked
+    out = ""
+    for idx, cnt in rows:
+        pct = cnt / n_hits_total * 100
+        vs_expected = (cnt - expected) / expected * 100
+        sign = "+" if vs_expected >= 0 else ""
+        out += f"""<tr><td class="tc">#{idx}</td><td class="tc">{cnt:,}</td><td class="tc">{pct:.2f}%</td>
+      <td class="tc" style="color:{'#4ade80' if vs_expected >= 0 else '#f87171'}">{sign}{vs_expected:.1f}%</td></tr>"""
+    return out
+
+def full_list_text(ranked):
+    return " ".join(f"#{idx}({cnt})" for idx, cnt in ranked)
+
+mc_top15_html = ranking_table_html(mc_ranked, mc_expected, limit=15)
+xo_top15_html = ranking_table_html(xo_ranked, xo_expected, limit=15)
+mc_full_list = full_list_text(mc_ranked)
+xo_full_list = full_list_text(xo_ranked)
+
+# ── MC-vs-XO correlation: for the SAME hit number in the SAME draw, does its
+# MC index correlate with its XO index? Pearson (linear) + Spearman (rank)
+# correlation, plus a cross-tab / chi-square independence test. ─────────────
+def pearson_r(xs, ys):
+    n = len(xs)
+    mx = sum(xs) / n
+    my = sum(ys) / n
+    cov = sum((a - mx) * (b - my) for a, b in zip(xs, ys)) / n
+    sx = (sum((a - mx) ** 2 for a in xs) / n) ** 0.5
+    sy = (sum((b - my) ** 2 for b in ys) / n) ** 0.5
+    return cov / (sx * sy)
+
+def rank_values(lst):
+    order = sorted(range(len(lst)), key=lambda i: lst[i])
+    ranks = [0.0] * len(lst)
+    i = 0
+    while i < len(lst):
+        j = i
+        while j + 1 < len(lst) and lst[order[j + 1]] == lst[order[i]]:
+            j += 1
+        avg_rank = (i + j) / 2 + 1
+        for k_ in range(i, j + 1):
+            ranks[order[k_]] = avg_rank
+        i = j + 1
+    return ranks
+
+pearson_corr = pearson_r(hit_mc_indices, hit_xo_indices)
+spearman_corr = pearson_r(rank_values(hit_mc_indices), rank_values(hit_xo_indices))
+
+def cross_tab(mc_idx_list, xo_idx_list, k_mc_, k_xo_, width=5):
+    n_mc_b = -(-k_mc_ // width)
+    n_xo_b = -(-k_xo_ // width)
+    table = [[0] * n_xo_b for _ in range(n_mc_b)]
+    for a, b in zip(mc_idx_list, xo_idx_list):
+        table[min((a - 1) // width, n_mc_b - 1)][min((b - 1) // width, n_xo_b - 1)] += 1
+    return table, n_mc_b, n_xo_b
+
+ct_table, ct_n_mc_b, ct_n_xo_b = cross_tab(hit_mc_indices, hit_xo_indices, k_mc, k_xo)
+ct_row_sums = [sum(row) for row in ct_table]
+ct_col_sums = [sum(ct_table[i][j] for i in range(ct_n_mc_b)) for j in range(ct_n_xo_b)]
+ct_total = n_hits_total
+ct_chi2 = 0.0
+for i in range(ct_n_mc_b):
+    for j in range(ct_n_xo_b):
+        exp_ij = ct_row_sums[i] * ct_col_sums[j] / ct_total
+        if exp_ij > 0:
+            ct_chi2 += (ct_table[i][j] - exp_ij) ** 2 / exp_ij
+ct_dof = (ct_n_mc_b - 1) * (ct_n_xo_b - 1)
+ct_pvalue = 1 - _scipy_stats.chi2.cdf(ct_chi2, ct_dof)
+cramers_v = (ct_chi2 / (ct_total * (min(ct_n_mc_b, ct_n_xo_b) - 1))) ** 0.5
+
+ct_mc_labels, _ = bucket_counts(hit_mc_indices, k_mc)  # reuse label formatting
+ct_xo_labels, _ = bucket_counts(hit_xo_indices, k_xo)
+
+ct_header_html = "<th class=\"tc\">MC \\ XO</th>" + "".join(f'<th class="tc">#{l}</th>' for l in ct_xo_labels)
+ct_rows_html = ""
+for i, row in enumerate(ct_table):
+    cells = "".join(f'<td class="tc">{v}</td>' for v in row)
+    ct_rows_html += f'<tr><td class="tc" style="font-weight:600;color:#7dd3fc">#{ct_mc_labels[i]}</td>{cells}</tr>'
+
 rows_html = ""
 for r in reversed(results):  # newest first
     balls_html = ""
@@ -386,6 +484,89 @@ tr.upcoming-row td:first-child{{font-weight:700;color:#38bdf8}}
     <div>
       <h3 style="font-size:.85rem;color:#c4b5fd;margin-bottom:10px">xoshiro K={k_xo}</h3>
       <div class="funnel">{xo_dist_html}</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Exact-index frequency ranking</h2>
+    <p class="desc">Not bucketed &mdash; the individual generation-order index positions (1, 2, 3, ...) ranked by how often a hit
+    number landed there, for each method separately.</p>
+    <div class="note" style="border-color:#fbbf2455;background:#1c1608;margin-bottom:16px">
+      <p style="color:#fbbf24"><strong>⚠️ Not statistically significant.</strong> A chi-square goodness-of-fit test against a
+      uniform distribution gives <strong style="color:#f1f5f9">MC: &chi;&sup2;={mc_chi2:.2f}, df={mc_dof}, p={mc_pvalue:.2f}</strong>
+      and <strong style="color:#f1f5f9">XO: &chi;&sup2;={xo_chi2:.2f}, df={xo_dof}, p={xo_pvalue:.2f}</strong> &mdash; both far
+      above the p&lt;0.05 threshold. The spread between the top and bottom index below is fully consistent with random sampling
+      noise around a flat distribution (expected count per index: MC &asymp;{mc_expected:.1f}, XO &asymp;{xo_expected:.1f}), not a
+      real preferred position. This ranking would likely reshuffle noticeably on a different 1000-draw window &mdash; treat it as
+      a snapshot, not a discovered pattern.</p>
+    </div>
+
+    <h3 style="font-size:.85rem;color:#7dd3fc;margin-bottom:8px">Modular Cycle K={k_mc} &mdash; top 15</h3>
+    <div class="tbl-wrap" style="margin-bottom:10px">
+      <table class="results">
+        <thead><tr><th class="tc">Index</th><th class="tc">Hits</th><th class="tc">%</th><th class="tc">vs. expected</th></tr></thead>
+        <tbody>{mc_top15_html}</tbody>
+      </table>
+    </div>
+    <details style="margin-bottom:22px">
+      <summary style="cursor:pointer;color:#94a3b8;font-size:.78rem;padding:6px 0">Show full ranked list (all {k_mc} indices)</summary>
+      <p style="font-size:.75rem;color:#94a3b8;line-height:1.8;margin-top:8px;font-family:monospace">{mc_full_list}</p>
+    </details>
+
+    <h3 style="font-size:.85rem;color:#c4b5fd;margin-bottom:8px">xoshiro K={k_xo} &mdash; top 15</h3>
+    <div class="tbl-wrap" style="margin-bottom:10px">
+      <table class="results">
+        <thead><tr><th class="tc">Index</th><th class="tc">Hits</th><th class="tc">%</th><th class="tc">vs. expected</th></tr></thead>
+        <tbody>{xo_top15_html}</tbody>
+      </table>
+    </div>
+    <details>
+      <summary style="cursor:pointer;color:#94a3b8;font-size:.78rem;padding:6px 0">Show full ranked list (all {k_xo} indices)</summary>
+      <p style="font-size:.75rem;color:#94a3b8;line-height:1.8;margin-top:8px;font-family:monospace">{xo_full_list}</p>
+    </details>
+  </div>
+
+  <div class="section">
+    <h2>Modular Cycle vs xoshiro: are the two orderings related?</h2>
+    <p class="desc">For the SAME hit number in the SAME draw, does an early Modular Cycle generation-order index predict an
+    early or late xoshiro index &mdash; or are the two methods' orderings independent?</p>
+    <div class="stats-row" style="margin-bottom:16px">
+      <div class="stat-card">
+        <div class="lbl">Pearson r (linear)</div>
+        <div class="val">{pearson_corr:.4f}</div>
+        <div class="sub">~0 = no linear relationship</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Spearman &rho; (rank)</div>
+        <div class="val">{spearman_corr:.4f}</div>
+        <div class="sub">~0 = no monotonic relationship</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Cross-tab &chi;&sup2; test</div>
+        <div class="val">p={ct_pvalue:.3f}</div>
+        <div class="sub">&chi;&sup2;={ct_chi2:.2f}, df={ct_dof} &mdash; not significant</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Cramer's V (effect size)</div>
+        <div class="val">{cramers_v:.4f}</div>
+        <div class="sub">~0 = negligible association</div>
+      </div>
+    </div>
+    <div class="note" style="margin-bottom:16px">
+      <p><strong style="color:#e2e8f0">No relationship.</strong> Both correlation coefficients are indistinguishable from zero
+      (two orders of magnitude below what would count as even a weak correlation), and the cross-tab independence test fails to
+      reject the null hypothesis of independence (p={ct_pvalue:.2f} &gt;&gt; 0.05) with a negligible effect size. This matches
+      what the two methods' mechanics predict: Modular Cycle's order comes from a mod-43 draw-frequency ranking (a function of
+      historical draw data), xoshiro's comes from an independently-seeded Fisher-Yates shuffle &mdash; no shared derivation, no
+      shared state, and empirically, no shared structure either. A number that's an early pick for one method is exactly as
+      likely to land anywhere in the other method's own generation order.</p>
+    </div>
+    <p class="desc">Cross-tabulation: hit count by MC index-range (rows) &times; XO index-range (columns), width-5 buckets.</p>
+    <div class="tbl-wrap">
+      <table class="results">
+        <thead><tr>{ct_header_html}</tr></thead>
+        <tbody>{ct_rows_html}</tbody>
+      </table>
     </div>
   </div>
 
