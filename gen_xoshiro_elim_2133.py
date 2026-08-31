@@ -372,7 +372,7 @@ table.combos tr:hover td{{background:#111827}}
     <h2>Pass 3 — historical repeat filter <span id="badgeHistorical" class="verify-badge pending">verifying…</span></h2>
     <p class="desc">Removes any Pass-2-remaining combo that exactly matches a real 6-number winning combo from the {historical_draw_count:,}
     draws #1&ndash;{TRAINED_THROUGH}. Checked live in your browser against the same embedded historical combo set. {len(removed_historical)} matches found.</p>
-    {"<table class='methods-table'><thead><tr><th>Removed &mdash; exact match to a historical winning combo</th></tr></thead><tbody>" + historical_rows_html + "</tbody></table>" if removed_historical else "<p style='color:#64748b;font-size:.85rem'>No matches found &mdash; nothing removed by this pass.</p>"}
+    {f"<details><summary>Show all {len(removed_historical):,} removed combos (exact match to a historical winning combo)</summary><table class='methods-table'><thead><tr><th>Removed &mdash; exact match to a historical winning combo</th></tr></thead><tbody>" + historical_rows_html + "</tbody></table></details>" if removed_historical else "<p style='color:#64748b;font-size:.85rem'>No matches found &mdash; nothing removed by this pass.</p>"}
   </div>
 
   <div class="section">
