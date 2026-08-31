@@ -103,9 +103,25 @@ pass7_prev_draw_serial = meta['pass7PrevDrawSerial']
 pass7_prev_draw_nums = meta['pass7PrevDrawNums']
 removed_by_pass7 = meta['removedByPass7']
 pass7_overlap_distribution = meta['pass7OverlapDistribution']
+final_remaining_pass7 = meta['finalRemainingPass7']
+pass7_pct = final_remaining_pass7 / universe_count * 100
+pass7_pct_of_pass6 = final_remaining_pass7 / final_remaining_pass6 * 100
+
+pass8_draw_serial = meta['pass8DrawSerial']
+pass8_draw_nums = meta['pass8DrawNums']
+removed_by_pass8 = meta['removedByPass8']
+pass8_overlap_distribution = meta['pass8OverlapDistribution']
+final_remaining_pass8 = meta['finalRemainingPass8']
+pass8_pct = final_remaining_pass8 / universe_count * 100
+pass8_pct_of_pass7 = final_remaining_pass8 / final_remaining_pass7 * 100
+
+pass9_draw_serial = meta['pass9DrawSerial']
+pass9_draw_nums = meta['pass9DrawNums']
+removed_by_pass9 = meta['removedByPass9']
+pass9_overlap_distribution = meta['pass9OverlapDistribution']
 final_remaining = meta['finalRemaining']
 final_pct = final_remaining / universe_count * 100
-pass7_pct_of_pass6 = final_remaining / final_remaining_pass6 * 100
+pass9_pct_of_pass8 = final_remaining / final_remaining_pass8 * 100
 
 methods_rows_html = ""
 for name, pool in zip(method_names, method_picks):
@@ -260,18 +276,35 @@ table.combos tr:hover td{{background:#111827}}
     three consecutive pairs &mdash; each a run of exactly 2, no run of 3+, no isolated singles (e.g. 1,2,9,10,15,16) &mdash;
     based on the historical finding that only 3 of all 2,131 real Loto6 draws (0.141%: #172, #775, #1394) match this exact
     pattern. Any Pass-5-remaining combo matching it gets removed, leaving {final_remaining_pass6:,}.</p>
-    <p><strong style="color:#e2e8f0">Pass 7</strong> (final) removes any Pass-6-remaining combo that shares exactly 3, 4, or 5
-    numbers with the immediately previous actual draw &mdash; #{pass7_prev_draw_serial}: {', '.join(str(n) for n in pass7_prev_draw_nums)}
+    <p><strong style="color:#e2e8f0">Pass 7</strong> removes any Pass-6-remaining combo that shares exactly 3, 4, or 5
+    numbers with the immediately previous actual draw ("1 step back") &mdash; #{pass7_prev_draw_serial}: {', '.join(str(n) for n in pass7_prev_draw_nums)}
     &mdash; based on <a href="/xoshiro_seed_scan_k20.html" style="color:#a78bfa">this site's own consecutive-draw-overlap analysis</a>
     across all 2,131 real Loto6 draw pairs (#1&ndash;2132): overlaps of 3, 4, and 5 numbers between adjacent draws occurred
     somewhat less often than the independent-draw chance expectation (observed 1.83% / 0.24% / 0.00% vs. chance 2.55% / 0.16% /
-    0.004% for overlap 3 / 4 / 5 respectively). This pass removes combos matching that same comparatively-rare high-overlap
-    pattern relative to draw #{pass7_prev_draw_serial}. (An overlap of exactly 6 would mean an exact repeat of
-    #{pass7_prev_draw_serial}, already excluded by Pass 3.) Any Pass-6-remaining combo matching it gets removed, leaving
-    {final_remaining:,}.</p>
-    <p>The xoshiro side of Base, all {len(pass2_seeds)} Pass-2 picks, and Passes 5, 6, and 7's pattern checks are recomputed
+    0.004% for overlap 3 / 4 / 5 respectively). Leaves {final_remaining_pass7:,}. <strong style="color:#fca5a5">Statistical caveat:</strong>
+    a follow-up binomial test on this specific claim (observed 44 vs. expected 57.9 high-overlap pairs out of 2,131) came back
+    p=0.071 &mdash; it does <em>not</em> clear the conventional 5% significance threshold, so this pattern is not confirmed to be
+    a real effect rather than sampling noise. Treat this pass as a plausible-looking but statistically unconfirmed heuristic.</p>
+    <p><strong style="color:#e2e8f0">Pass 8</strong> is the same heuristic, "2 steps back" &mdash; against draw
+    #{pass8_draw_serial}: {', '.join(str(n) for n in pass8_draw_nums)} (the draw two steps before #{TARGET_SERIAL}). Historical
+    basis: checking every draw N against draw N+2 across all 2,130 such pairs gives essentially the same shape as the 1-step
+    check. Any Pass-7-remaining combo with overlap 3, 4, or 5 against this draw gets removed, leaving {final_remaining_pass8:,}.
+    This pass was not independently significance-tested, but inherits the same caveat as Pass 7 &mdash; there's no reason to
+    expect a 2-step lookback to be more statistically robust than the 1-step version.</p>
+    <p><strong style="color:#e2e8f0">Pass 9</strong> (final) is the same heuristic again, "3 steps back" &mdash; against draw
+    #{pass9_draw_serial}: {', '.join(str(n) for n in pass9_draw_nums)}. Historical basis: draw N vs. N+3 across all 2,129 such
+    pairs, again the same shape. Any Pass-8-remaining combo with overlap 3, 4, or 5 against this draw gets removed, leaving
+    {final_remaining:,}. Same unconfirmed-heuristic caveat as Passes 7 and 8.</p>
+    <p style="color:#fca5a5"><strong>Honest summary of Passes 7&ndash;9:</strong> all three apply the identical "remove combos
+    overlapping 3+ with a recent past draw" heuristic at different lookback distances (1/2/3 steps back). None of them have
+    been shown to be a statistically significant deviation from pure chance &mdash; the one pass that was formally tested
+    (Pass 7) came back p=0.071, missing the conventional 5% threshold, and the 4-overlap tier in that same test actually ran
+    <em>above</em> chance rather than below it. These passes are included because the pattern is plausible and easy to check,
+    not because it's been statistically validated &mdash; they remove real combos from the pool based on an effect that may
+    simply be noise.</p>
+    <p>The xoshiro side of Base, all {len(pass2_seeds)} Pass-2 picks, and Passes 5&ndash;9's pattern checks are recomputed
     <strong>live in your browser</strong> below (bit-exact BigInt xoshiro256** port for Base and Pass 2, plain JS for Passes
-    5/6/7) and, where a server-embedded reference exists, checked against it &mdash; check the verification badges. Modular
+    5&ndash;9) and, where a server-embedded reference exists, checked against it &mdash; check the verification badges. Modular
     Cycle's pick, Pass 1's 16 statistical/ML methods (ARIMA, Random Forest, HMM, LSTM, etc.), and Pass 4's Worst Combo pick
     can't run in a browser, so those are precomputed server-side, same as every other draw on this site, and embedded as
     static data. Pass 3's historical combo set is embedded and checked client-side too.</p>
@@ -351,18 +384,47 @@ table.combos tr:hover td{{background:#111827}}
   </div>
 
   <div class="section">
-    <h2>Pass 7 (final) — consecutive-draw high-overlap filter <span id="badgePass7" class="verify-badge pending">verifying…</span></h2>
+    <h2>Pass 7 — "1 step back" high-overlap filter <span id="badgePass7" class="verify-badge pending">verifying…</span>
+    <span class="verify-badge" style="background:#450a0a;color:#fca5a5">unconfirmed (p=0.071)</span></h2>
     <p class="desc">Removes any Pass-6-remaining combo that shares exactly 3, 4, or 5 numbers with the immediately previous
     actual draw &mdash; #{pass7_prev_draw_serial}: <span class="balls" style="display:inline-flex;vertical-align:middle">{"".join(f'<span class="nb">{n}</span>' for n in pass7_prev_draw_nums)}</span>. Historical basis:
     <a href="/xoshiro_seed_scan_k20.html" style="color:#a78bfa">this site's consecutive-draw-overlap analysis</a> across all
     2,131 real Loto6 draw pairs found overlaps of 3, 4, and 5 numbers between adjacent draws occurred somewhat less often than
-    the independent-draw chance expectation (1.83% / 0.24% / 0.00% observed vs. 2.55% / 0.16% / 0.004% chance). Checked live in
-    your browser (pure JS, no server reference needed &mdash; this pass only compares each combo's own numbers against the
-    embedded previous-draw numbers).</p>
+    the independent-draw chance expectation (1.83% / 0.24% / 0.00% observed vs. 2.55% / 0.16% / 0.004% chance) &mdash; but a
+    follow-up binomial significance test on this exact claim came back p=0.071, missing the conventional 5% threshold. Checked
+    live in your browser (pure JS, no server reference needed &mdash; this pass only compares each combo's own numbers against
+    the embedded previous-draw numbers).</p>
     <p class="desc" style="margin-bottom:0">Overlap distribution among the {final_remaining_pass6:,} Pass-6-remaining combos:
     {' &middot; '.join(f'overlap={k}: {int(v):,}' for k, v in pass7_overlap_distribution.items())}. Removed
     {len(removed_by_pass7):,} combos with overlap 3, 4, or 5 &mdash; e.g.
     {', '.join(str(tuple(c)) for c in removed_by_pass7[:5])}{', ...' if len(removed_by_pass7) > 5 else ''}.</p>
+  </div>
+
+  <div class="section">
+    <h2>Pass 8 — "2 steps back" high-overlap filter <span id="badgePass8" class="verify-badge pending">verifying…</span>
+    <span class="verify-badge" style="background:#450a0a;color:#fca5a5">not independently tested</span></h2>
+    <p class="desc">Same heuristic as Pass 7, checked two draws back instead of one &mdash; against draw
+    #{pass8_draw_serial}: <span class="balls" style="display:inline-flex;vertical-align:middle">{"".join(f'<span class="nb">{n}</span>' for n in pass8_draw_nums)}</span>. Historical basis: draw N vs. draw N+2 across all 2,130 such pairs gives
+    essentially the same distribution shape as the 1-step-back check. Not independently significance-tested, but inherits Pass
+    7's caveat &mdash; there's no reason to expect this lookback distance to be more statistically robust. Checked live in your
+    browser (pure JS, no server reference needed).</p>
+    <p class="desc" style="margin-bottom:0">Overlap distribution among the {final_remaining_pass7:,} Pass-7-remaining combos:
+    {' &middot; '.join(f'overlap={k}: {int(v):,}' for k, v in pass8_overlap_distribution.items())}. Removed
+    {len(removed_by_pass8):,} combos with overlap 3, 4, or 5 &mdash; e.g.
+    {', '.join(str(tuple(c)) for c in removed_by_pass8[:5])}{', ...' if len(removed_by_pass8) > 5 else ''}.</p>
+  </div>
+
+  <div class="section">
+    <h2>Pass 9 (final) — "3 steps back" high-overlap filter <span id="badgePass9" class="verify-badge pending">verifying…</span>
+    <span class="verify-badge" style="background:#450a0a;color:#fca5a5">not independently tested</span></h2>
+    <p class="desc">Same heuristic once more, three draws back &mdash; against draw #{pass9_draw_serial}:
+    <span class="balls" style="display:inline-flex;vertical-align:middle">{"".join(f'<span class="nb">{n}</span>' for n in pass9_draw_nums)}</span>. Historical basis: draw N vs. draw N+3 across all 2,129 such pairs, same shape again. Same
+    unconfirmed-heuristic caveat as Passes 7 and 8. Checked live in your browser (pure JS, no server reference needed).</p>
+    <p class="desc" style="margin-bottom:0">Overlap distribution among the {final_remaining_pass8:,} Pass-8-remaining combos:
+    {' &middot; '.join(f'overlap={k}: {int(v):,}' for k, v in pass9_overlap_distribution.items())}. Removed
+    {len(removed_by_pass9):,} combos with overlap 3, 4, or 5 &mdash; e.g.
+    {', '.join(str(tuple(c)) for c in removed_by_pass9[:5])}{', ...' if len(removed_by_pass9) > 5 else ''}. Final remaining:
+    <strong style="color:#38bdf8">{final_remaining:,}</strong>.</p>
   </div>
 
   <div class="section">
@@ -436,12 +498,32 @@ table.combos tr:hover td{{background:#111827}}
       <div class="stat-card">
         <div class="lbl">Removed by draw-#{pass7_prev_draw_serial} overlap filter (Pass 7)</div>
         <div class="val">{len(removed_by_pass7):,}</div>
-        <div class="sub">overlap 3, 4, or 5 with prev. draw</div>
+        <div class="sub">overlap 3, 4, or 5 · 1 step back</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">After Pass 7</div>
+        <div class="val">{final_remaining_pass7:,}</div>
+        <div class="sub">{pass7_pct:.1f}% of universe retained</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Removed by draw-#{pass8_draw_serial} overlap filter (Pass 8)</div>
+        <div class="val">{len(removed_by_pass8):,}</div>
+        <div class="sub">overlap 3, 4, or 5 · 2 steps back</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">After Pass 8</div>
+        <div class="val">{final_remaining_pass8:,}</div>
+        <div class="sub">{pass8_pct:.1f}% of universe retained</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Removed by draw-#{pass9_draw_serial} overlap filter (Pass 9)</div>
+        <div class="val">{len(removed_by_pass9):,}</div>
+        <div class="sub">overlap 3, 4, or 5 · 3 steps back</div>
       </div>
       <div class="stat-card final">
         <div class="lbl">Final remaining</div>
         <div class="val">{final_remaining:,}</div>
-        <div class="sub">{final_pct:.1f}% of universe · {pass7_pct_of_pass6:.1f}% of Pass-6 output</div>
+        <div class="sub">{final_pct:.1f}% of universe · {pass9_pct_of_pass8:.1f}% of Pass-8 output</div>
       </div>
     </div>
     <div class="elim-flow">
@@ -459,7 +541,11 @@ table.combos tr:hover td{{background:#111827}}
       <span class="arrow">&rarr;</span>
       <span class="n">{final_remaining_pass6:,}</span> <span style="color:#64748b;font-size:.7rem">(Pass 6)</span>
       <span class="arrow">&rarr;</span>
-      <span class="n final">{final_remaining:,}</span> <span style="color:#64748b;font-size:.7rem">(Pass 7)</span>
+      <span class="n">{final_remaining_pass7:,}</span> <span style="color:#64748b;font-size:.7rem">(Pass 7)</span>
+      <span class="arrow">&rarr;</span>
+      <span class="n">{final_remaining_pass8:,}</span> <span style="color:#64748b;font-size:.7rem">(Pass 8)</span>
+      <span class="arrow">&rarr;</span>
+      <span class="n final">{final_remaining:,}</span> <span style="color:#64748b;font-size:.7rem">(Pass 9)</span>
     </div>
   </div>
 
@@ -648,13 +734,23 @@ function isThreeConsecutivePairs(combo) {{
   return runs.length === 3 && runs.every(r => r.length === 2);
 }}
 
-// ── Pass 7: consecutive-draw high-overlap filter -- pure JS, no server
-// reference needed (only compares each combo against the embedded
-// previous-draw numbers). ────────────────────────────────────────────────
+// ── Passes 7/8/9: consecutive-draw high-overlap filters at 1/2/3 steps
+// back -- pure JS, no server reference needed (only compares each combo
+// against the embedded past-draw numbers). ──────────────────────────────
 const PASS7_PREV_DRAW_NUMS = {json.dumps(pass7_prev_draw_nums)};
 const PASS7_PREV_DRAW_SET = new Set(PASS7_PREV_DRAW_NUMS);
 function prevDrawOverlap(combo) {{
   return combo.filter(n => PASS7_PREV_DRAW_SET.has(n)).length;
+}}
+const PASS8_DRAW_NUMS = {json.dumps(pass8_draw_nums)};
+const PASS8_DRAW_SET = new Set(PASS8_DRAW_NUMS);
+function pass8DrawOverlap(combo) {{
+  return combo.filter(n => PASS8_DRAW_SET.has(n)).length;
+}}
+const PASS9_DRAW_NUMS = {json.dumps(pass9_draw_nums)};
+const PASS9_DRAW_SET = new Set(PASS9_DRAW_NUMS);
+function pass9DrawOverlap(combo) {{
+  return combo.filter(n => PASS9_DRAW_SET.has(n)).length;
 }}
 
 // ── Remaining combos: fetch, paginate, filter, download ─────────────────────
@@ -691,6 +787,12 @@ fetch('/xoshiro_elim_{TARGET_SERIAL}_combos.json')
     const stillHighOverlap = REMAINING.filter(c => [3,4,5].includes(prevDrawOverlap(c)));
     renderBadge('badgePass7', stillHighOverlap.length === 0);
     if (stillHighOverlap.length > 0) console.error('Pass-7 leak: remaining combos still overlap draw #{pass7_prev_draw_serial} by 3-5', stillHighOverlap);
+    const stillHighOverlap8 = REMAINING.filter(c => [3,4,5].includes(pass8DrawOverlap(c)));
+    renderBadge('badgePass8', stillHighOverlap8.length === 0);
+    if (stillHighOverlap8.length > 0) console.error('Pass-8 leak: remaining combos still overlap draw #{pass8_draw_serial} by 3-5', stillHighOverlap8);
+    const stillHighOverlap9 = REMAINING.filter(c => [3,4,5].includes(pass9DrawOverlap(c)));
+    renderBadge('badgePass9', stillHighOverlap9.length === 0);
+    if (stillHighOverlap9.length > 0) console.error('Pass-9 leak: remaining combos still overlap draw #{pass9_draw_serial} by 3-5', stillHighOverlap9);
   }})
   .catch(err => {{
     document.getElementById('loadingMsg').textContent = 'Failed to load combinations: ' + err;

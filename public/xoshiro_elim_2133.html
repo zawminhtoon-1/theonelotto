@@ -136,18 +136,35 @@ table.combos tr:hover td{background:#111827}
     three consecutive pairs &mdash; each a run of exactly 2, no run of 3+, no isolated singles (e.g. 1,2,9,10,15,16) &mdash;
     based on the historical finding that only 3 of all 2,131 real Loto6 draws (0.141%: #172, #775, #1394) match this exact
     pattern. Any Pass-5-remaining combo matching it gets removed, leaving 315,234.</p>
-    <p><strong style="color:#e2e8f0">Pass 7</strong> (final) removes any Pass-6-remaining combo that shares exactly 3, 4, or 5
-    numbers with the immediately previous actual draw &mdash; #2132: 9, 15, 16, 19, 31, 32
+    <p><strong style="color:#e2e8f0">Pass 7</strong> removes any Pass-6-remaining combo that shares exactly 3, 4, or 5
+    numbers with the immediately previous actual draw ("1 step back") &mdash; #2132: 9, 15, 16, 19, 31, 32
     &mdash; based on <a href="/xoshiro_seed_scan_k20.html" style="color:#a78bfa">this site's own consecutive-draw-overlap analysis</a>
     across all 2,131 real Loto6 draw pairs (#1&ndash;2132): overlaps of 3, 4, and 5 numbers between adjacent draws occurred
     somewhat less often than the independent-draw chance expectation (observed 1.83% / 0.24% / 0.00% vs. chance 2.55% / 0.16% /
-    0.004% for overlap 3 / 4 / 5 respectively). This pass removes combos matching that same comparatively-rare high-overlap
-    pattern relative to draw #2132. (An overlap of exactly 6 would mean an exact repeat of
-    #2132, already excluded by Pass 3.) Any Pass-6-remaining combo matching it gets removed, leaving
-    300,952.</p>
-    <p>The xoshiro side of Base, all 3 Pass-2 picks, and Passes 5, 6, and 7's pattern checks are recomputed
+    0.004% for overlap 3 / 4 / 5 respectively). Leaves 300,952. <strong style="color:#fca5a5">Statistical caveat:</strong>
+    a follow-up binomial test on this specific claim (observed 44 vs. expected 57.9 high-overlap pairs out of 2,131) came back
+    p=0.071 &mdash; it does <em>not</em> clear the conventional 5% significance threshold, so this pattern is not confirmed to be
+    a real effect rather than sampling noise. Treat this pass as a plausible-looking but statistically unconfirmed heuristic.</p>
+    <p><strong style="color:#e2e8f0">Pass 8</strong> is the same heuristic, "2 steps back" &mdash; against draw
+    #2131: 25, 26, 28, 33, 35, 43 (the draw two steps before #2133). Historical
+    basis: checking every draw N against draw N+2 across all 2,130 such pairs gives essentially the same shape as the 1-step
+    check. Any Pass-7-remaining combo with overlap 3, 4, or 5 against this draw gets removed, leaving 298,911.
+    This pass was not independently significance-tested, but inherits the same caveat as Pass 7 &mdash; there's no reason to
+    expect a 2-step lookback to be more statistically robust than the 1-step version.</p>
+    <p><strong style="color:#e2e8f0">Pass 9</strong> (final) is the same heuristic again, "3 steps back" &mdash; against draw
+    #2130: 12, 18, 35, 40, 41, 43. Historical basis: draw N vs. N+3 across all 2,129 such
+    pairs, again the same shape. Any Pass-8-remaining combo with overlap 3, 4, or 5 against this draw gets removed, leaving
+    296,905. Same unconfirmed-heuristic caveat as Passes 7 and 8.</p>
+    <p style="color:#fca5a5"><strong>Honest summary of Passes 7&ndash;9:</strong> all three apply the identical "remove combos
+    overlapping 3+ with a recent past draw" heuristic at different lookback distances (1/2/3 steps back). None of them have
+    been shown to be a statistically significant deviation from pure chance &mdash; the one pass that was formally tested
+    (Pass 7) came back p=0.071, missing the conventional 5% threshold, and the 4-overlap tier in that same test actually ran
+    <em>above</em> chance rather than below it. These passes are included because the pattern is plausible and easy to check,
+    not because it's been statistically validated &mdash; they remove real combos from the pool based on an effect that may
+    simply be noise.</p>
+    <p>The xoshiro side of Base, all 3 Pass-2 picks, and Passes 5&ndash;9's pattern checks are recomputed
     <strong>live in your browser</strong> below (bit-exact BigInt xoshiro256** port for Base and Pass 2, plain JS for Passes
-    5/6/7) and, where a server-embedded reference exists, checked against it &mdash; check the verification badges. Modular
+    5&ndash;9) and, where a server-embedded reference exists, checked against it &mdash; check the verification badges. Modular
     Cycle's pick, Pass 1's 16 statistical/ML methods (ARIMA, Random Forest, HMM, LSTM, etc.), and Pass 4's Worst Combo pick
     can't run in a browser, so those are precomputed server-side, same as every other draw on this site, and embedded as
     static data. Pass 3's historical combo set is embedded and checked client-side too.</p>
@@ -227,18 +244,47 @@ table.combos tr:hover td{background:#111827}
   </div>
 
   <div class="section">
-    <h2>Pass 7 (final) — consecutive-draw high-overlap filter <span id="badgePass7" class="verify-badge pending">verifying…</span></h2>
+    <h2>Pass 7 — "1 step back" high-overlap filter <span id="badgePass7" class="verify-badge pending">verifying…</span>
+    <span class="verify-badge" style="background:#450a0a;color:#fca5a5">unconfirmed (p=0.071)</span></h2>
     <p class="desc">Removes any Pass-6-remaining combo that shares exactly 3, 4, or 5 numbers with the immediately previous
     actual draw &mdash; #2132: <span class="balls" style="display:inline-flex;vertical-align:middle"><span class="nb">9</span><span class="nb">15</span><span class="nb">16</span><span class="nb">19</span><span class="nb">31</span><span class="nb">32</span></span>. Historical basis:
     <a href="/xoshiro_seed_scan_k20.html" style="color:#a78bfa">this site's consecutive-draw-overlap analysis</a> across all
     2,131 real Loto6 draw pairs found overlaps of 3, 4, and 5 numbers between adjacent draws occurred somewhat less often than
-    the independent-draw chance expectation (1.83% / 0.24% / 0.00% observed vs. 2.55% / 0.16% / 0.004% chance). Checked live in
-    your browser (pure JS, no server reference needed &mdash; this pass only compares each combo's own numbers against the
-    embedded previous-draw numbers).</p>
+    the independent-draw chance expectation (1.83% / 0.24% / 0.00% observed vs. 2.55% / 0.16% / 0.004% chance) &mdash; but a
+    follow-up binomial significance test on this exact claim came back p=0.071, missing the conventional 5% threshold. Checked
+    live in your browser (pure JS, no server reference needed &mdash; this pass only compares each combo's own numbers against
+    the embedded previous-draw numbers).</p>
     <p class="desc" style="margin-bottom:0">Overlap distribution among the 315,234 Pass-6-remaining combos:
     overlap=0: 85,411 &middot; overlap=1: 142,561 &middot; overlap=2: 72,980 &middot; overlap=3: 13,467 &middot; overlap=4: 806 &middot; overlap=5: 9. Removed
     14,282 combos with overlap 3, 4, or 5 &mdash; e.g.
     (2, 3, 7, 9, 16, 19), (2, 3, 7, 9, 16, 32), (2, 3, 7, 9, 19, 31), (2, 3, 7, 9, 19, 32), (2, 3, 7, 9, 31, 32), ....</p>
+  </div>
+
+  <div class="section">
+    <h2>Pass 8 — "2 steps back" high-overlap filter <span id="badgePass8" class="verify-badge pending">verifying…</span>
+    <span class="verify-badge" style="background:#450a0a;color:#fca5a5">not independently tested</span></h2>
+    <p class="desc">Same heuristic as Pass 7, checked two draws back instead of one &mdash; against draw
+    #2131: <span class="balls" style="display:inline-flex;vertical-align:middle"><span class="nb">25</span><span class="nb">26</span><span class="nb">28</span><span class="nb">33</span><span class="nb">35</span><span class="nb">43</span></span>. Historical basis: draw N vs. draw N+2 across all 2,130 such pairs gives
+    essentially the same distribution shape as the 1-step-back check. Not independently significance-tested, but inherits Pass
+    7's caveat &mdash; there's no reason to expect this lookback distance to be more statistically robust. Checked live in your
+    browser (pure JS, no server reference needed).</p>
+    <p class="desc" style="margin-bottom:0">Overlap distribution among the 300,952 Pass-7-remaining combos:
+    overlap=0: 134,636 &middot; overlap=1: 131,230 &middot; overlap=2: 33,045 &middot; overlap=3: 2,041. Removed
+    2,041 combos with overlap 3, 4, or 5 &mdash; e.g.
+    (2, 3, 7, 26, 33, 43), (2, 3, 9, 26, 33, 43), (2, 3, 10, 26, 33, 43), (2, 3, 11, 26, 33, 43), (2, 3, 12, 26, 33, 43), ....</p>
+  </div>
+
+  <div class="section">
+    <h2>Pass 9 (final) — "3 steps back" high-overlap filter <span id="badgePass9" class="verify-badge pending">verifying…</span>
+    <span class="verify-badge" style="background:#450a0a;color:#fca5a5">not independently tested</span></h2>
+    <p class="desc">Same heuristic once more, three draws back &mdash; against draw #2130:
+    <span class="balls" style="display:inline-flex;vertical-align:middle"><span class="nb">12</span><span class="nb">18</span><span class="nb">35</span><span class="nb">40</span><span class="nb">41</span><span class="nb">43</span></span>. Historical basis: draw N vs. draw N+3 across all 2,129 such pairs, same shape again. Same
+    unconfirmed-heuristic caveat as Passes 7 and 8. Checked live in your browser (pure JS, no server reference needed).</p>
+    <p class="desc" style="margin-bottom:0">Overlap distribution among the 298,911 Pass-8-remaining combos:
+    overlap=0: 139,711 &middot; overlap=1: 125,680 &middot; overlap=2: 31,514 &middot; overlap=3: 2,006. Removed
+    2,006 combos with overlap 3, 4, or 5 &mdash; e.g.
+    (2, 3, 7, 12, 18, 43), (2, 3, 9, 12, 18, 43), (2, 3, 10, 12, 18, 43), (2, 3, 11, 12, 18, 43), (2, 3, 12, 13, 18, 43), .... Final remaining:
+    <strong style="color:#38bdf8">296,905</strong>.</p>
   </div>
 
   <div class="section">
@@ -312,12 +358,32 @@ table.combos tr:hover td{background:#111827}
       <div class="stat-card">
         <div class="lbl">Removed by draw-#2132 overlap filter (Pass 7)</div>
         <div class="val">14,282</div>
-        <div class="sub">overlap 3, 4, or 5 with prev. draw</div>
+        <div class="sub">overlap 3, 4, or 5 · 1 step back</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">After Pass 7</div>
+        <div class="val">300,952</div>
+        <div class="sub">79.9% of universe retained</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Removed by draw-#2131 overlap filter (Pass 8)</div>
+        <div class="val">2,041</div>
+        <div class="sub">overlap 3, 4, or 5 · 2 steps back</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">After Pass 8</div>
+        <div class="val">298,911</div>
+        <div class="sub">79.3% of universe retained</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Removed by draw-#2130 overlap filter (Pass 9)</div>
+        <div class="val">2,006</div>
+        <div class="sub">overlap 3, 4, or 5 · 3 steps back</div>
       </div>
       <div class="stat-card final">
         <div class="lbl">Final remaining</div>
-        <div class="val">300,952</div>
-        <div class="sub">79.9% of universe · 95.5% of Pass-6 output</div>
+        <div class="val">296,905</div>
+        <div class="sub">78.8% of universe · 99.3% of Pass-8 output</div>
       </div>
     </div>
     <div class="elim-flow">
@@ -335,14 +401,18 @@ table.combos tr:hover td{background:#111827}
       <span class="arrow">&rarr;</span>
       <span class="n">315,234</span> <span style="color:#64748b;font-size:.7rem">(Pass 6)</span>
       <span class="arrow">&rarr;</span>
-      <span class="n final">300,952</span> <span style="color:#64748b;font-size:.7rem">(Pass 7)</span>
+      <span class="n">300,952</span> <span style="color:#64748b;font-size:.7rem">(Pass 7)</span>
+      <span class="arrow">&rarr;</span>
+      <span class="n">298,911</span> <span style="color:#64748b;font-size:.7rem">(Pass 8)</span>
+      <span class="arrow">&rarr;</span>
+      <span class="n final">296,905</span> <span style="color:#64748b;font-size:.7rem">(Pass 9)</span>
     </div>
   </div>
 
   <div class="section">
     <h2>Browse remaining combinations</h2>
-    <p class="desc">Fetched from a separate JSON asset (not inlined — 300,952 rows is too large for the page itself).</p>
-    <div id="loadingMsg">Loading 300,952 combinations…</div>
+    <p class="desc">Fetched from a separate JSON asset (not inlined — 296,905 rows is too large for the page itself).</p>
+    <div id="loadingMsg">Loading 296,905 combinations…</div>
     <div id="comboUI" style="display:none">
       <div class="lookup">
         <button class="btn" onclick="clearFilter()">Clear filter</button>
@@ -524,13 +594,23 @@ function isThreeConsecutivePairs(combo) {
   return runs.length === 3 && runs.every(r => r.length === 2);
 }
 
-// ── Pass 7: consecutive-draw high-overlap filter -- pure JS, no server
-// reference needed (only compares each combo against the embedded
-// previous-draw numbers). ────────────────────────────────────────────────
+// ── Passes 7/8/9: consecutive-draw high-overlap filters at 1/2/3 steps
+// back -- pure JS, no server reference needed (only compares each combo
+// against the embedded past-draw numbers). ──────────────────────────────
 const PASS7_PREV_DRAW_NUMS = [9, 15, 16, 19, 31, 32];
 const PASS7_PREV_DRAW_SET = new Set(PASS7_PREV_DRAW_NUMS);
 function prevDrawOverlap(combo) {
   return combo.filter(n => PASS7_PREV_DRAW_SET.has(n)).length;
+}
+const PASS8_DRAW_NUMS = [25, 26, 28, 33, 35, 43];
+const PASS8_DRAW_SET = new Set(PASS8_DRAW_NUMS);
+function pass8DrawOverlap(combo) {
+  return combo.filter(n => PASS8_DRAW_SET.has(n)).length;
+}
+const PASS9_DRAW_NUMS = [12, 18, 35, 40, 41, 43];
+const PASS9_DRAW_SET = new Set(PASS9_DRAW_NUMS);
+function pass9DrawOverlap(combo) {
+  return combo.filter(n => PASS9_DRAW_SET.has(n)).length;
 }
 
 // ── Remaining combos: fetch, paginate, filter, download ─────────────────────
@@ -567,6 +647,12 @@ fetch('/xoshiro_elim_2133_combos.json')
     const stillHighOverlap = REMAINING.filter(c => [3,4,5].includes(prevDrawOverlap(c)));
     renderBadge('badgePass7', stillHighOverlap.length === 0);
     if (stillHighOverlap.length > 0) console.error('Pass-7 leak: remaining combos still overlap draw #2132 by 3-5', stillHighOverlap);
+    const stillHighOverlap8 = REMAINING.filter(c => [3,4,5].includes(pass8DrawOverlap(c)));
+    renderBadge('badgePass8', stillHighOverlap8.length === 0);
+    if (stillHighOverlap8.length > 0) console.error('Pass-8 leak: remaining combos still overlap draw #2131 by 3-5', stillHighOverlap8);
+    const stillHighOverlap9 = REMAINING.filter(c => [3,4,5].includes(pass9DrawOverlap(c)));
+    renderBadge('badgePass9', stillHighOverlap9.length === 0);
+    if (stillHighOverlap9.length > 0) console.error('Pass-9 leak: remaining combos still overlap draw #2130 by 3-5', stillHighOverlap9);
   })
   .catch(err => {
     document.getElementById('loadingMsg').textContent = 'Failed to load combinations: ' + err;

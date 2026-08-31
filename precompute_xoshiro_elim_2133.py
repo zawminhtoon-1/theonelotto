@@ -80,18 +80,47 @@ Pass 6:    "three consecutive pairs" filter. Removes any Pass-5-
            Historical basis: only 3 of all 2,131 real Loto6 draws
            (0.141%) match this exact pattern (#172, #775, #1394).
 
-Pass 7:    consecutive-draw high-overlap filter (final). Removes any
-           Pass-6-remaining combo that shares exactly 3, 4, or 5
-           numbers with the immediately previous actual draw (#2132:
-           9,15,16,19,31,32). Historical basis: across all 2,131
-           consecutive Loto6 draw pairs (#1-2132), overlaps of 3+ are
-           somewhat rarer than the independent-draw chance expectation
-           (observed 1.83%/0.24%/0.00% for overlap 3/4/5 vs. chance
-           2.55%/0.16%/0.004%) -- this pass removes combos matching
-           that same comparatively-rare high-overlap pattern relative
-           to draw #2132. (An overlap of exactly 6 would mean an exact
-           repeat of #2132, already excluded by Pass 3's historical
-           filter.)
+Pass 7:    consecutive-draw ("1 step back") high-overlap filter.
+           Removes any Pass-6-remaining combo that shares exactly 3,
+           4, or 5 numbers with the immediately previous actual draw
+           (#2132: 9,15,16,19,31,32). Historical basis: across all
+           2,131 consecutive Loto6 draw pairs (#1-2132), overlaps of
+           3+ are somewhat rarer than the independent-draw chance
+           expectation (observed 1.83%/0.24%/0.00% for overlap 3/4/5
+           vs. chance 2.55%/0.16%/0.004%). (An overlap of exactly 6
+           would mean an exact repeat of #2132, already excluded by
+           Pass 3's historical filter.)
+
+Pass 8:    "2 steps back" high-overlap filter. Same pattern as Pass 7
+           but against draw #2131 (25,26,28,33,35,43) instead of the
+           immediately-previous draw. Historical basis: checking every
+           draw N against N+2 (skip one draw) across all 2,130 such
+           pairs gives essentially the same shape as the 1-step-back
+           check (0:37.32% 1:44.13% 2:16.24% 3:2.21% 4:0.09% 5:0%).
+
+Pass 9:    "3 steps back" high-overlap filter. Same pattern again
+           against draw #2130 (12,18,35,40,41,43). Historical basis:
+           draw N vs. N+3 across all 2,129 such pairs, again the same
+           shape (0:37.86% 1:42.27% 2:16.49% 3:3.24% 4:0.14% 5:0%).
+
+           IMPORTANT CAVEAT (verified this session): a full-history
+           statistical check of Pass 7's specific claim -- that
+           overlap>=3 with the previous draw is rarer than chance --
+           does NOT reach conventional significance (binomial test,
+           observed 44 vs. expected 57.9 out of 2,131 pairs, p=0.071).
+           The omnibus shape does deviate mildly from chance (chi-
+           square p=0.028) but that's driven mostly by "exactly 1
+           overlap" being somewhat more common than chance, not by a
+           confirmed suppression of high overlaps -- and the 4-overlap
+           tier actually ran ABOVE chance (5 observed vs. 3.49
+           expected), the opposite of what Pass 7 assumes. Passes 8
+           and 9 apply the identical heuristic at 2- and 3-step
+           lookback distances and were not independently re-tested for
+           significance, but there is no reason to expect them to fare
+           any better -- they inherit the same "plausible-looking but
+           not statistically confirmed" status. All three passes
+           (7/8/9) should be read as weak/unconfirmed heuristics, not
+           validated statistical edges.
 
 Self-checks the xoshiro implementation against a known-good value before
 trusting Base's xoshiro component.
@@ -839,6 +868,78 @@ print(f"\nFull elimination sequence: {universe_count:,} -> {final_remaining_pass
       f"{final_remaining_pass3:,} (Pass 3) -> {final_remaining_pass4:,} (Pass 4) -> {final_remaining_pass5:,} (Pass 5) -> "
       f"{final_remaining_pass6:,} (Pass 6) -> {final_remaining_pass7:,} (Pass 7)")
 
+# ── Pass 8: "2 steps back" high-overlap filter. Removes any Pass-7-
+# remaining combo that shares exactly 3, 4, or 5 numbers with draw #2131
+# (the draw two steps before the target). Same heuristic as Pass 7, one
+# lookback step further -- see docstring caveat re: statistical strength. ──
+print(f"\n=== Pass 8 ===")
+PASS8_DRAW_SERIAL = TARGET_SERIAL - 2  # 2131
+PASS8_DRAW_NUMS = sorted([25, 26, 28, 33, 35, 43])
+assert sorted(all_main6[all_serials.index(PASS8_DRAW_SERIAL)]) == PASS8_DRAW_NUMS, \
+    f"PASS8_DRAW_NUMS stale -- draw #{PASS8_DRAW_SERIAL} in DB is {all_main6[all_serials.index(PASS8_DRAW_SERIAL)]}, not {PASS8_DRAW_NUMS}"
+pass8_draw_set = set(PASS8_DRAW_NUMS)
+print(f"'2 steps back' draw #{PASS8_DRAW_SERIAL}: {PASS8_DRAW_NUMS}")
+
+t0 = time.time()
+remaining_after8 = []
+removed_by_pass8 = []
+pass8_overlap_dist = Counter()
+for combo in remaining_after7:
+    ov = len(set(combo) & pass8_draw_set)
+    pass8_overlap_dist[ov] += 1
+    if ov in (3, 4, 5):
+        removed_by_pass8.append(combo)
+        continue
+    remaining_after8.append(combo)
+elapsed8 = time.time() - t0
+final_remaining_pass8 = len(remaining_after8)
+print(f"Pass 8 elimination in {elapsed8:.1f}s")
+print(f"  Overlap distribution (of Pass-7-remaining combos vs draw #{PASS8_DRAW_SERIAL}): " +
+      ", ".join(f"{k}:{v:,}" for k, v in sorted(pass8_overlap_dist.items())))
+print(f"  Removed (overlap 3, 4, or 5 with draw #{PASS8_DRAW_SERIAL}): {len(removed_by_pass8):,}")
+if removed_by_pass8[:10]:
+    print(f"  First 10 removed: {removed_by_pass8[:10]}")
+print(f"  Before Pass 8: {final_remaining_pass7:,}  ->  After Pass 8: {final_remaining_pass8:,}")
+print(f"\nFull elimination sequence: {universe_count:,} -> {final_remaining_pass1:,} (Pass 1) -> {final_remaining_pass2:,} (Pass 2) -> "
+      f"{final_remaining_pass3:,} (Pass 3) -> {final_remaining_pass4:,} (Pass 4) -> {final_remaining_pass5:,} (Pass 5) -> "
+      f"{final_remaining_pass6:,} (Pass 6) -> {final_remaining_pass7:,} (Pass 7) -> {final_remaining_pass8:,} (Pass 8)")
+
+# ── Pass 9: "3 steps back" high-overlap filter (final). Removes any
+# Pass-8-remaining combo that shares exactly 3, 4, or 5 numbers with draw
+# #2130 (three steps before the target). Same heuristic again. ─────────────
+print(f"\n=== Pass 9 ===")
+PASS9_DRAW_SERIAL = TARGET_SERIAL - 3  # 2130
+PASS9_DRAW_NUMS = sorted([12, 18, 35, 40, 41, 43])
+assert sorted(all_main6[all_serials.index(PASS9_DRAW_SERIAL)]) == PASS9_DRAW_NUMS, \
+    f"PASS9_DRAW_NUMS stale -- draw #{PASS9_DRAW_SERIAL} in DB is {all_main6[all_serials.index(PASS9_DRAW_SERIAL)]}, not {PASS9_DRAW_NUMS}"
+pass9_draw_set = set(PASS9_DRAW_NUMS)
+print(f"'3 steps back' draw #{PASS9_DRAW_SERIAL}: {PASS9_DRAW_NUMS}")
+
+t0 = time.time()
+remaining_after9 = []
+removed_by_pass9 = []
+pass9_overlap_dist = Counter()
+for combo in remaining_after8:
+    ov = len(set(combo) & pass9_draw_set)
+    pass9_overlap_dist[ov] += 1
+    if ov in (3, 4, 5):
+        removed_by_pass9.append(combo)
+        continue
+    remaining_after9.append(combo)
+elapsed9 = time.time() - t0
+final_remaining_pass9 = len(remaining_after9)
+print(f"Pass 9 elimination in {elapsed9:.1f}s")
+print(f"  Overlap distribution (of Pass-8-remaining combos vs draw #{PASS9_DRAW_SERIAL}): " +
+      ", ".join(f"{k}:{v:,}" for k, v in sorted(pass9_overlap_dist.items())))
+print(f"  Removed (overlap 3, 4, or 5 with draw #{PASS9_DRAW_SERIAL}): {len(removed_by_pass9):,}")
+if removed_by_pass9[:10]:
+    print(f"  First 10 removed: {removed_by_pass9[:10]}")
+print(f"  Before Pass 9: {final_remaining_pass8:,}  ->  After Pass 9: {final_remaining_pass9:,}")
+print(f"\nFull elimination sequence: {universe_count:,} -> {final_remaining_pass1:,} (Pass 1) -> {final_remaining_pass2:,} (Pass 2) -> "
+      f"{final_remaining_pass3:,} (Pass 3) -> {final_remaining_pass4:,} (Pass 4) -> {final_remaining_pass5:,} (Pass 5) -> "
+      f"{final_remaining_pass6:,} (Pass 6) -> {final_remaining_pass7:,} (Pass 7) -> {final_remaining_pass8:,} (Pass 8) -> "
+      f"{final_remaining_pass9:,} (Pass 9)")
+
 # ── Save outputs ──────────────────────────────────────────────────────────
 meta = {
     'targetSerial': TARGET_SERIAL,
@@ -877,12 +978,22 @@ meta = {
     'pass7PrevDrawNums': PREV_DRAW_NUMS,
     'removedByPass7': [list(c) for c in removed_by_pass7],
     'pass7OverlapDistribution': {str(k): v for k, v in sorted(overlap_dist.items())},
-    'finalRemaining': final_remaining_pass7,
+    'finalRemainingPass7': final_remaining_pass7,
+    'pass8DrawSerial': PASS8_DRAW_SERIAL,
+    'pass8DrawNums': PASS8_DRAW_NUMS,
+    'removedByPass8': [list(c) for c in removed_by_pass8],
+    'pass8OverlapDistribution': {str(k): v for k, v in sorted(pass8_overlap_dist.items())},
+    'finalRemainingPass8': final_remaining_pass8,
+    'pass9DrawSerial': PASS9_DRAW_SERIAL,
+    'pass9DrawNums': PASS9_DRAW_NUMS,
+    'removedByPass9': [list(c) for c in removed_by_pass9],
+    'pass9OverlapDistribution': {str(k): v for k, v in sorted(pass9_overlap_dist.items())},
+    'finalRemaining': final_remaining_pass9,
 }
 with open(META_OUT, 'w', encoding='utf-8') as f:
     json.dump(meta, f, indent=2)
 print(f"\nSaved {META_OUT}")
 
 with open(COMBOS_OUT, 'w', encoding='utf-8') as f:
-    json.dump(remaining_after7, f, separators=(',', ':'))
-print(f"Saved {COMBOS_OUT} ({len(remaining_after7):,} combos, {os.path.getsize(COMBOS_OUT)//1024:,} KB)")
+    json.dump(remaining_after9, f, separators=(',', ':'))
+print(f"Saved {COMBOS_OUT} ({len(remaining_after9):,} combos, {os.path.getsize(COMBOS_OUT)//1024:,} KB)")
