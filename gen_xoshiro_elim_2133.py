@@ -304,24 +304,28 @@ table.combos tr:hover td{{background:#111827}}
     #{pass9_draw_serial}: {', '.join(str(n) for n in pass9_draw_nums)}. Historical basis: draw N vs. N+3 across all 2,129 such
     pairs, again the same shape. Any Pass-8-remaining combo with overlap 3, 4, or 5 against this draw gets removed, leaving
     {final_remaining_pass9:,}. Same unconfirmed-heuristic caveat as Passes 7 and 8.</p>
-    <p><strong style="color:#e2e8f0">Pass 10</strong> (final) broadens the same heuristic to check against ALL of the last 50
-    actual draws before #{TARGET_SERIAL} at once &mdash; #{pass10_window_lo}&ndash;{pass10_window_hi} &mdash; instead of a single
-    specific past draw like Passes 7&ndash;9. Any Pass-9-remaining combo that shares exactly 3, 4, or 5 numbers with <em>even
-    one</em> of these 50 draws gets removed, leaving {final_remaining:,}. <strong style="color:#fca5a5">This is the weakest-justified
-    pass on the page:</strong> a follow-up pooled analysis &mdash; every draw in the last 1,000 checked against each of its own
-    1-to-50-steps-back prior draws, ~50,000 comparisons total &mdash; found the 3+/4+ overlap rate matches pure chance almost
-    exactly (2.748% observed vs. 2.717% chance for 3+; 0.164% observed vs. 0.164% chance for 4+; 5+ was 0% either way). Pass 10's
-    filter criterion is drawn directly from that pooled result, so it is, more clearly than Passes 7&ndash;9, removing combos
-    based on a pattern statistically indistinguishable from random chance.</p>
+    <p><strong style="color:#e2e8f0">Pass 10</strong> (final) broadens the same heuristic to check against ALL of the last
+    {len(pass10_draws)} actual draws before #{TARGET_SERIAL} at once &mdash; #{pass10_window_lo}&ndash;{pass10_window_hi}
+    &mdash; instead of a single specific past draw like Passes 7&ndash;9. (Widened from an initial 50-draw window to
+    {len(pass10_draws)} per explicit request.) Any Pass-9-remaining combo that shares exactly 3, 4, or 5 numbers with <em>even
+    one</em> of these {len(pass10_draws)} draws gets removed, leaving {final_remaining:,}. <strong style="color:#fca5a5">This
+    is the weakest-justified pass on the page:</strong> a pooled analysis &mdash; every draw in the last 1,000 checked against
+    each of its own 1-to-{len(pass10_draws)}-steps-back prior draws, ~100,000 comparisons total &mdash; found the 3+/4+/5+
+    overlap rate matches pure chance almost exactly (2.685% observed vs. 2.717% chance for 3+; 0.163% observed vs. 0.168%
+    chance for 4+; 0.002% observed vs. ~0.004% chance for 5+). Widening the window from 50 to 100 draws does not change this
+    conclusion &mdash; the pooled rate is essentially identical at both sizes &mdash; it just means more combos get removed on
+    the same non-signal, cutting the surviving pool from 105,009 (50-draw window) down to {final_remaining:,} (100-draw
+    window). Pass 10's filter criterion is drawn directly from the pooled result, so it is, more clearly than Passes 7&ndash;9,
+    removing combos based on a pattern statistically indistinguishable from random chance.</p>
     <p style="color:#fca5a5"><strong>Honest summary of Passes 7&ndash;10:</strong> all four apply the identical "remove combos
-    overlapping 3+ with a recent past draw" heuristic, at increasing scope (1/2/3 specific steps back, then all of the last 50
-    draws at once). None have been shown to be a statistically significant deviation from pure chance &mdash; the one pass
-    formally significance-tested (Pass 7) came back p=0.071, missing the conventional 5% threshold, with the 4-overlap tier
-    actually running <em>above</em> chance; and the pooled 50,000-pair analysis behind Pass 10 landed within a few hundredths
-    of a percent of the exact chance rate. These passes are included because the pattern is plausible and easy to check, not
-    because it's been statistically validated &mdash; together they remove {universe_count - final_remaining:,} combos
-    ({(universe_count - final_remaining) / universe_count * 100:.1f}% of the original universe) based on an effect that
-    appears to be noise rather than signal.</p>
+    overlapping 3+ with a recent past draw" heuristic, at increasing scope (1/2/3 specific steps back, then all of the last
+    {len(pass10_draws)} draws at once). None have been shown to be a statistically significant deviation from pure chance
+    &mdash; the one pass formally significance-tested (Pass 7) came back p=0.071, missing the conventional 5% threshold, with
+    the 4-overlap tier actually running <em>above</em> chance; and the pooled 100,000-pair analysis behind Pass 10 landed
+    within a few hundredths of a percent of the exact chance rate at every tier. These passes are included because the
+    pattern is plausible and easy to check, not because it's been statistically validated &mdash; together they remove
+    {universe_count - final_remaining:,} combos ({(universe_count - final_remaining) / universe_count * 100:.1f}% of the
+    original universe) based on an effect that appears to be noise rather than signal.</p>
     <p>The xoshiro side of Base, all {len(pass2_seeds)} Pass-2 picks, and Passes 5&ndash;10's pattern checks are recomputed
     <strong>live in your browser</strong> below (bit-exact BigInt xoshiro256** port for Base and Pass 2, plain JS for Passes
     5&ndash;10) and, where a server-embedded reference exists, checked against it &mdash; check the verification badges. Modular
@@ -447,20 +451,21 @@ table.combos tr:hover td{{background:#111827}}
   </div>
 
   <div class="section">
-    <h2>Pass 10 (final) — "any of the last 50 draws" broad high-overlap filter <span id="badgePass10" class="verify-badge pending">verifying…</span>
+    <h2>Pass 10 (final) — "any of the last {len(pass10_draws)} draws" broad high-overlap filter <span id="badgePass10" class="verify-badge pending">verifying…</span>
     <span class="verify-badge" style="background:#450a0a;color:#fca5a5">matches pure chance (pooled test)</span></h2>
     <p class="desc">Broader than Passes 7&ndash;9: removes any Pass-9-remaining combo that shares exactly 3, 4, or 5 numbers with
-    <strong>any</strong> of the 50 actual draws immediately preceding #{TARGET_SERIAL} &mdash; #{pass10_window_lo}&ndash;{pass10_window_hi}
-    &mdash; not just one specific past draw. A combo is removed if it overlaps 3+ with even a single one of these 50 draws.
+    <strong>any</strong> of the {len(pass10_draws)} actual draws immediately preceding #{TARGET_SERIAL} &mdash; #{pass10_window_lo}&ndash;{pass10_window_hi}
+    &mdash; not just one specific past draw. A combo is removed if it overlaps 3+ with even a single one of these {len(pass10_draws)} draws.
     <strong style="color:#fca5a5">Statistical caveat (the strongest one on this page):</strong> a pooled analysis &mdash; every
-    draw in the last 1,000 checked against each of its own 1-to-50-steps-back prior draws (~50,000 comparisons) &mdash; found
-    the observed 3+/4+ overlap rate matches the pure-chance rate almost exactly (2.748% vs. 2.717% chance for 3+; 0.164% vs.
-    0.164% chance for 4+). This pass's filter criterion comes directly from that pooled result, so it is removing combos based
-    on a pattern that is statistically indistinguishable from random noise. Checked live in your browser (pure JS, no server
-    reference needed &mdash; compares each combo's own numbers against all 50 embedded past-draw sets).</p>
-    <p class="desc" style="margin-bottom:0">Max-overlap-vs-any-of-50 distribution among the {final_remaining_pass9:,}
+    draw in the last 1,000 checked against each of its own 1-to-{len(pass10_draws)}-steps-back prior draws (~100,000
+    comparisons) &mdash; found the observed 3+/4+/5+ overlap rate matches the pure-chance rate almost exactly (2.685% vs.
+    2.717% chance for 3+; 0.163% vs. 0.168% chance for 4+; 0.002% vs. ~0.004% chance for 5+). This pass's filter criterion
+    comes directly from that pooled result, so it is removing combos based on a pattern that is statistically
+    indistinguishable from random noise. Checked live in your browser (pure JS, no server reference needed &mdash; compares
+    each combo's own numbers against all {len(pass10_draws)} embedded past-draw sets).</p>
+    <p class="desc" style="margin-bottom:0">Max-overlap-vs-any-of-{len(pass10_draws)} distribution among the {final_remaining_pass9:,}
     Pass-9-remaining combos: {' &middot; '.join(f'max overlap={k}: {int(v):,}' for k, v in pass10_max_overlap_distribution.items())}.
-    Removed {len(removed_by_pass10):,} combos (overlap 3, 4, or 5 with at least one of the 50 draws) &mdash; e.g.
+    Removed {len(removed_by_pass10):,} combos (overlap 3, 4, or 5 with at least one of the {len(pass10_draws)} draws) &mdash; e.g.
     {', '.join(str(tuple(c)) for c in removed_by_pass10[:5])}{', ...' if len(removed_by_pass10) > 5 else ''}. Final remaining:
     <strong style="color:#38bdf8">{final_remaining:,}</strong>.</p>
   </div>
@@ -564,9 +569,9 @@ table.combos tr:hover td{{background:#111827}}
         <div class="sub">{pass9_pct:.1f}% of universe retained</div>
       </div>
       <div class="stat-card">
-        <div class="lbl">Removed by last-50-draws overlap filter (Pass 10)</div>
+        <div class="lbl">Removed by last-{len(pass10_draws)}-draws overlap filter (Pass 10)</div>
         <div class="val">{len(removed_by_pass10):,}</div>
-        <div class="sub">overlap 3-5 with any of last 50 draws</div>
+        <div class="sub">overlap 3-5 with any of last {len(pass10_draws)} draws</div>
       </div>
       <div class="stat-card final">
         <div class="lbl">Final remaining</div>
@@ -803,9 +808,9 @@ function pass9DrawOverlap(combo) {{
   return combo.filter(n => PASS9_DRAW_SET.has(n)).length;
 }}
 
-// ── Pass 10: "any of the last 50 draws" broad high-overlap filter --
+// ── Pass 10: "any of the last N draws" broad high-overlap filter --
 // pure JS, no server reference needed (compares each combo against all
-// 50 embedded past-draw number sets). ────────────────────────────────────
+// embedded past-draw number sets; N comes from PASS10_DRAWS.length). ─────
 const PASS10_DRAWS = {json.dumps(pass10_draws)};
 const PASS10_DRAW_SETS = PASS10_DRAWS.map(d => new Set(d.nums));
 function pass10MaxOverlap(combo) {{
@@ -860,7 +865,7 @@ fetch('/xoshiro_elim_{TARGET_SERIAL}_combos.json')
     if (stillHighOverlap9.length > 0) console.error('Pass-9 leak: remaining combos still overlap draw #{pass9_draw_serial} by 3-5', stillHighOverlap9);
     const stillHighOverlap10 = REMAINING.filter(c => pass10HighOverlapAny(c));
     renderBadge('badgePass10', stillHighOverlap10.length === 0);
-    if (stillHighOverlap10.length > 0) console.error('Pass-10 leak: remaining combos still overlap 3-5 with at least one of the last 50 draws', stillHighOverlap10);
+    if (stillHighOverlap10.length > 0) console.error('Pass-10 leak: remaining combos still overlap 3-5 with at least one of the last {len(pass10_draws)} draws', stillHighOverlap10);
   }})
   .catch(err => {{
     document.getElementById('loadingMsg').textContent = 'Failed to load combinations: ' + err;
