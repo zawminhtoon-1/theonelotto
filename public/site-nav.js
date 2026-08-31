@@ -74,7 +74,7 @@
             '<a href="/xoshiro_seed_scan_k38.html">🔷 K=38, seeds 0–1,000,000</a>' +
             '<a href="/xoshiro_seed_scan_k35.html">🟣 K=35, seeds ±1,623,160</a>' +
             '<a href="/xoshiro_seed_scan_k7.html">🔎 K=7, seeds 0–10,000</a>' +
-            '<a href="/xoshiro_seed_scan_k20.html">🎲 K=20, seeds ±3,000,000 (2050 draws, in progress)</a>' +
+            '<a href="/xoshiro_seed_scan_k20.html">🎲 K=20, seeds ±3,000,000 (2050 draws)</a>' +
             '<div class="nav-divider"></div>' +
             '<div class="nav-dd-label">Predictions</div>' +
             '<a href="/xoshiro_elim_2128.html">✂️ Draw #2128 Elimination</a>' +
