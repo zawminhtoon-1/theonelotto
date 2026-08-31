@@ -103,24 +103,32 @@ Pass 9:    "3 steps back" high-overlap filter. Same pattern again
            draw N vs. N+3 across all 2,129 such pairs, again the same
            shape (0:37.86% 1:42.27% 2:16.49% 3:3.24% 4:0.14% 5:0%).
 
-           IMPORTANT CAVEAT (verified this session): a full-history
-           statistical check of Pass 7's specific claim -- that
-           overlap>=3 with the previous draw is rarer than chance --
-           does NOT reach conventional significance (binomial test,
-           observed 44 vs. expected 57.9 out of 2,131 pairs, p=0.071).
-           The omnibus shape does deviate mildly from chance (chi-
-           square p=0.028) but that's driven mostly by "exactly 1
-           overlap" being somewhat more common than chance, not by a
-           confirmed suppression of high overlaps -- and the 4-overlap
-           tier actually ran ABOVE chance (5 observed vs. 3.49
-           expected), the opposite of what Pass 7 assumes. Passes 8
-           and 9 apply the identical heuristic at 2- and 3-step
-           lookback distances and were not independently re-tested for
-           significance, but there is no reason to expect them to fare
-           any better -- they inherit the same "plausible-looking but
-           not statistically confirmed" status. All three passes
-           (7/8/9) should be read as weak/unconfirmed heuristics, not
-           validated statistical edges.
+Pass 10:   "any of the last 50 draws" broad high-overlap filter
+           (final). Removes any Pass-9-remaining combo that shares
+           exactly 3, 4, or 5 numbers with ANY of the 50 actual draws
+           immediately preceding the target (#2083-2132) -- broader
+           than Passes 7-9, which each checked exactly one past draw.
+           A combo is removed if it overlaps 3+ with even a single one
+           of these 50 draws.
+
+           IMPORTANT CAVEAT (verified this session, applies to Passes
+           7-10 collectively): a full-history statistical check of
+           Pass 7's specific claim -- that overlap>=3 with the
+           previous draw is rarer than chance -- does NOT reach
+           conventional significance (binomial test, observed 44 vs.
+           expected 57.9 out of 2,131 pairs, p=0.071). Worse, a
+           follow-up POOLED analysis -- every draw in the last 1,000
+           checked against each of its own 1-to-50-steps-back prior
+           draws, ~50,000 pooled comparisons -- found the 3+/4+
+           overlap rate matches pure chance almost exactly: 2.748%
+           observed vs. 2.717% chance for 3+, and 0.164% observed vs.
+           0.164% chance for 4+ (5+ was 0% either way). That pooled
+           result is exactly what Pass 10 draws its filter from, which
+           means Pass 10 is -- more clearly than Passes 7-9 -- removing
+           combos based on a pattern statistically indistinguishable
+           from random chance, not a real signal. All four passes
+           (7/8/9/10) should be read as weak/unconfirmed heuristics,
+           not validated statistical edges.
 
 Self-checks the xoshiro implementation against a known-good value before
 trusting Base's xoshiro component.
@@ -940,6 +948,47 @@ print(f"\nFull elimination sequence: {universe_count:,} -> {final_remaining_pass
       f"{final_remaining_pass6:,} (Pass 6) -> {final_remaining_pass7:,} (Pass 7) -> {final_remaining_pass8:,} (Pass 8) -> "
       f"{final_remaining_pass9:,} (Pass 9)")
 
+# ── Pass 10: "any of the last 50 draws" broad high-overlap filter (final).
+# Removes any Pass-9-remaining combo that shares exactly 3, 4, or 5 numbers
+# with ANY of the 50 actual draws immediately preceding the target
+# (#2083-2132) -- broader than Passes 7-9, which each checked exactly one
+# past draw. See docstring for the pooled-analysis caveat. ─────────────────
+print(f"\n=== Pass 10 ===")
+PASS10_WINDOW_LO = TARGET_SERIAL - 50  # 2083
+PASS10_WINDOW_HI = TARGET_SERIAL - 1   # 2132
+pass10_draws = []
+for s in range(PASS10_WINDOW_LO, PASS10_WINDOW_HI + 1):
+    idx = all_serials.index(s)
+    pass10_draws.append({'serial': s, 'nums': sorted(all_main6[idx])})
+print(f"Last 50 draws before #{TARGET_SERIAL}: #{PASS10_WINDOW_LO}-{PASS10_WINDOW_HI} ({len(pass10_draws)} draws)")
+pass10_draw_sets = [set(d['nums']) for d in pass10_draws]
+
+t0 = time.time()
+remaining_after10 = []
+removed_by_pass10 = []
+pass10_max_overlap_dist = Counter()
+for combo in remaining_after9:
+    combo_set = set(combo)
+    max_ov = max(len(combo_set & ds) for ds in pass10_draw_sets)
+    pass10_max_overlap_dist[max_ov] += 1
+    if any(len(combo_set & ds) in (3, 4, 5) for ds in pass10_draw_sets):
+        removed_by_pass10.append(combo)
+        continue
+    remaining_after10.append(combo)
+elapsed10 = time.time() - t0
+final_remaining_pass10 = len(remaining_after10)
+print(f"Pass 10 elimination in {elapsed10:.1f}s")
+print(f"  Max-overlap-vs-any-of-50 distribution (of Pass-9-remaining combos): " +
+      ", ".join(f"{k}:{v:,}" for k, v in sorted(pass10_max_overlap_dist.items())))
+print(f"  Removed (overlap 3, 4, or 5 with at least one of the last 50 draws): {len(removed_by_pass10):,}")
+if removed_by_pass10[:10]:
+    print(f"  First 10 removed: {removed_by_pass10[:10]}")
+print(f"  Before Pass 10: {final_remaining_pass9:,}  ->  After Pass 10: {final_remaining_pass10:,}")
+print(f"\nFull elimination sequence: {universe_count:,} -> {final_remaining_pass1:,} (Pass 1) -> {final_remaining_pass2:,} (Pass 2) -> "
+      f"{final_remaining_pass3:,} (Pass 3) -> {final_remaining_pass4:,} (Pass 4) -> {final_remaining_pass5:,} (Pass 5) -> "
+      f"{final_remaining_pass6:,} (Pass 6) -> {final_remaining_pass7:,} (Pass 7) -> {final_remaining_pass8:,} (Pass 8) -> "
+      f"{final_remaining_pass9:,} (Pass 9) -> {final_remaining_pass10:,} (Pass 10)")
+
 # ── Save outputs ──────────────────────────────────────────────────────────
 meta = {
     'targetSerial': TARGET_SERIAL,
@@ -988,12 +1037,18 @@ meta = {
     'pass9DrawNums': PASS9_DRAW_NUMS,
     'removedByPass9': [list(c) for c in removed_by_pass9],
     'pass9OverlapDistribution': {str(k): v for k, v in sorted(pass9_overlap_dist.items())},
-    'finalRemaining': final_remaining_pass9,
+    'finalRemainingPass9': final_remaining_pass9,
+    'pass10WindowLo': PASS10_WINDOW_LO,
+    'pass10WindowHi': PASS10_WINDOW_HI,
+    'pass10Draws': pass10_draws,
+    'removedByPass10': [list(c) for c in removed_by_pass10],
+    'pass10MaxOverlapDistribution': {str(k): v for k, v in sorted(pass10_max_overlap_dist.items())},
+    'finalRemaining': final_remaining_pass10,
 }
 with open(META_OUT, 'w', encoding='utf-8') as f:
     json.dump(meta, f, indent=2)
 print(f"\nSaved {META_OUT}")
 
 with open(COMBOS_OUT, 'w', encoding='utf-8') as f:
-    json.dump(remaining_after9, f, separators=(',', ':'))
-print(f"Saved {COMBOS_OUT} ({len(remaining_after9):,} combos, {os.path.getsize(COMBOS_OUT)//1024:,} KB)")
+    json.dump(remaining_after10, f, separators=(',', ':'))
+print(f"Saved {COMBOS_OUT} ({len(remaining_after10):,} combos, {os.path.getsize(COMBOS_OUT)//1024:,} KB)")
