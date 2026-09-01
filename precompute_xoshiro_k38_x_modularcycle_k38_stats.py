@@ -135,6 +135,7 @@ targets = list(range(BACKTEST_LO, BACKTEST_HI + 1))
 hit6b = hit6 = hit5 = hit4 = 0
 contained = 0
 kbases = []
+per_draw = []  # per-draw detail for the page's breakdown table
 
 for T in targets:
     idx = all_serials.index(T)
@@ -150,16 +151,32 @@ for T in targets:
     actual_set = set(d['main6'])
     bonus = d['bonus']
     h = len(actual_set & base_pool)
+    bonus_hit = bonus in base_pool
     if h == 6:
         hit6 += 1
-        if bonus in base_pool:
+        tier = 'hit6b' if bonus_hit else 'hit6'
+        if bonus_hit:
             hit6b += 1
     elif h == 5:
         hit5 += 1
+        tier = 'hit5'
     elif h == 4:
         hit4 += 1
+        tier = 'hit4'
+    else:
+        tier = 'hit0-3'
     if actual_set.issubset(base_pool):
         contained += 1
+
+    per_draw.append({
+        's': T,
+        'pool': sorted(base_pool),
+        'main': d['main6'],
+        'bonus': bonus,
+        'mainHits': h,
+        'bonusHit': bonus_hit,
+        'tier': tier,
+    })
 
 elapsed = time.time() - t0
 N = len(targets)
@@ -226,6 +243,9 @@ meta = {
     # for the client-side historical data (compact: serial + 6 main numbers,
     # no bonus needed for the JS Modular Cycle recompute or xoshiro recompute)
     'historicalDraws': [{'s': s, 'a': d} for s, d in zip(all_serials, all_main6_sorted)],
+    # per-draw breakdown for the page's paginated table (Base pool, actual
+    # numbers, hit tier) -- newest first, matching the page's default sort
+    'perDraw': list(reversed(per_draw)),
 }
 with open(META_OUT, 'w', encoding='utf-8') as f:
     json.dump(meta, f, separators=(',', ':'))

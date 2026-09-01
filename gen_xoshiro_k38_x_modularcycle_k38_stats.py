@@ -38,6 +38,7 @@ xo_pool_ordered = meta['xoPoolOrdered']
 mc_pool = meta['mcPool']
 mc_pool_ordered = meta['mcPoolOrdered']
 current_pool = meta['currentPool']
+per_draw = meta['perDraw']  # newest-first, see precompute script
 BACKTEST_LO = meta['backtestLo']
 BACKTEST_HI = meta['backtestHi']
 N_DRAWS = meta['nDraws']
@@ -165,6 +166,44 @@ table.stats-table tr:hover td{{background:#111827}}
 .sig-badge.sig-yes{{background:#14532d;color:#86efac}}
 .sig-badge.sig-no{{background:#1e293b;color:#94a3b8}}
 
+.nb-xs{{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;
+  border-radius:50%;font-size:.62rem;font-weight:700;margin:1px;flex-shrink:0;
+  background:#1e293b;color:#64748b}}
+.nb-xs.hit{{background:#14532d;color:#86efac}}
+.nb-xs.bonus-hit{{background:#3b0764;color:#d8b4fe;border:1px solid #a855f7}}
+.nb-xs.bonus-miss{{background:#451a03;color:#fde68a;border:1px solid #92400e}}
+
+.pd-controls{{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}}
+.pd-controls select,.pd-controls input{{background:#0a0f1e;border:1px solid #334155;border-radius:7px;
+  padding:7px 10px;color:#e2e8f0;font-size:.82rem}}
+.pd-controls input{{width:110px}}
+.pd-controls .pd-lbl{{font-size:.72rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em}}
+.pd-controls .btn{{background:#1e293b;border:1px solid #334155;border-radius:7px;padding:7px 12px;
+  color:#94a3b8;font-size:.8rem;cursor:pointer}}
+.pd-controls .btn:hover{{color:#f1f5f9}}
+.pd-controls .btn:disabled{{opacity:.4;cursor:default}}
+.pd-info{{font-size:.8rem;color:#94a3b8}}
+
+table.pd-table{{width:100%;border-collapse:collapse;font-size:.8rem}}
+table.pd-table th{{background:#0a0f1e;padding:7px 10px;text-align:left;color:#94a3b8;
+  font-weight:600;font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;
+  white-space:nowrap;border-bottom:1px solid #1e293b}}
+table.pd-table td{{padding:6px 10px;border-bottom:1px solid #0f172a;vertical-align:middle}}
+table.pd-table tr:hover td{{background:#111827}}
+table.pd-table td.pd-draw{{color:#e2e8f0;font-weight:600;white-space:nowrap}}
+.pd-balls{{display:flex;flex-wrap:wrap;gap:2px;max-width:420px}}
+.pd-tier{{font-size:.66rem;font-weight:700;padding:2px 7px;border-radius:9px;text-transform:uppercase;
+  letter-spacing:.03em;white-space:nowrap}}
+.pd-tier.t-hit6b{{background:#312e5f;color:#c4b5fd}}
+.pd-tier.t-hit6{{background:#0c2340;color:#7dd3fc}}
+.pd-tier.t-hit5{{background:#1c1206;color:#fbbf24}}
+.pd-tier.t-hit4{{background:#0a1c0f;color:#4ade80}}
+.pd-tier.t-hit0-3{{background:#1e293b;color:#64748b}}
+.pd-pool-toggle{{background:none;border:none;color:#a78bfa;font-size:.75rem;cursor:pointer;padding:0;
+  text-decoration:underline}}
+.pd-pool-row td{{background:#0a0f1e;padding:8px 10px 10px 10px}}
+.pd-pool-row .pd-balls{{max-width:none}}
+
 .footer{{margin-top:28px;font-size:.78rem;color:#475569;padding-bottom:20px;line-height:1.6}}
 </style>
 </head>
@@ -258,6 +297,45 @@ table.stats-table tr:hover td{{background:#111827}}
           <th>Construction</th><th class="tc">Window (draws)</th><th class="tc">Avg pool K</th><th>hit6b lift</th><th>hit6 lift</th><th class="tc">hit6b sig.</th><th class="tc">hit6 sig.</th>
         </tr></thead>
         <tbody>{comparison_rows_html}</tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Per-draw breakdown — #{BACKTEST_LO}–{BACKTEST_HI} ({N_DRAWS} draws)</h2>
+    <p class="desc">Every backtested draw: the intersected Base pool (walk-forward, click "pool" to expand), the actual
+    winning numbers (green = caught by the pool, purple = bonus caught too, amber = bonus missed, gray = missed
+    entirely), and the resulting hit tier. Newest draws first by default.</p>
+    <div class="pd-controls">
+      <span class="pd-lbl">Tier</span>
+      <select id="pdTierFilter" onchange="pdApplyFilter()">
+        <option value="">All tiers</option>
+        <option value="hit6b">hit6b</option>
+        <option value="hit6">hit6</option>
+        <option value="hit5">hit5</option>
+        <option value="hit4">hit4</option>
+        <option value="hit0-3">hit0-3 (miss)</option>
+      </select>
+      <span class="pd-lbl">Draw #</span>
+      <input id="pdSearch" type="number" placeholder="e.g. 2050" oninput="pdApplyFilter()">
+      <button class="btn" onclick="pdClearFilter()">Clear</button>
+      <span class="pd-info" id="pdFilterInfo"></span>
+    </div>
+    <div class="tbl-wrap">
+      <div class="pd-controls" style="justify-content:space-between;padding:8px 10px;margin-bottom:0">
+        <span class="pd-info" id="pdPageInfo"></span>
+        <div style="display:flex;gap:6px">
+          <button class="btn" id="pdFirstBtn" onclick="pdGoPage(0)">&laquo; First</button>
+          <button class="btn" id="pdPrevBtn" onclick="pdGoPage(pdCurPage-1)">&lsaquo; Prev</button>
+          <button class="btn" id="pdNextBtn" onclick="pdGoPage(pdCurPage+1)">Next &rsaquo;</button>
+          <button class="btn" id="pdLastBtn" onclick="pdGoPage(pdTotalPages()-1)">Last &raquo;</button>
+        </div>
+      </div>
+      <table class="pd-table">
+        <thead><tr>
+          <th>Draw</th><th>Actual (6 main + bonus)</th><th>Hits</th><th>Tier</th><th>Pool</th>
+        </tr></thead>
+        <tbody id="pdTbody"></tbody>
       </table>
     </div>
   </div>
@@ -388,6 +466,77 @@ const KNOWN_BASE = {json.dumps(current_pool)};
 renderBalls('baseBalls', liveBase, 'b2');
 renderBadge('badgeCurrent', arraysEqual(liveBase, KNOWN_BASE));
 if (!arraysEqual(liveBase, KNOWN_BASE)) console.error('Base intersection mismatch', liveBase, KNOWN_BASE);
+
+// ── Per-draw breakdown table: paginated + filterable, newest-first ─────────
+const PER_DRAW = {json.dumps(per_draw, separators=(',', ':'))};
+const PD_PAGE_SIZE = 100;
+let pdFiltered = PER_DRAW;
+let pdCurPage = 0;
+const pdExpanded = new Set(); // serials whose pool row is currently shown
+
+function pdTierLabel(t) {{ return t === 'hit0-3' ? 'hit0-3 (miss)' : t; }}
+
+function pdApplyFilter() {{
+  const tier = document.getElementById('pdTierFilter').value;
+  const search = document.getElementById('pdSearch').value.trim();
+  pdFiltered = PER_DRAW.filter(r => {{
+    if (tier && r.tier !== tier) return false;
+    if (search && String(r.s).indexOf(search) === -1) return false;
+    return true;
+  }});
+  const info = document.getElementById('pdFilterInfo');
+  info.textContent = (tier || search) ? (pdFiltered.length.toLocaleString() + ' / ' + PER_DRAW.length.toLocaleString() + ' draws match') : '';
+  pdCurPage = 0;
+  pdRender();
+}}
+function pdClearFilter() {{
+  document.getElementById('pdTierFilter').value = '';
+  document.getElementById('pdSearch').value = '';
+  pdApplyFilter();
+}}
+function pdTotalPages() {{ return Math.max(1, Math.ceil(pdFiltered.length / PD_PAGE_SIZE)); }}
+function pdGoPage(p) {{ pdCurPage = Math.max(0, Math.min(p, pdTotalPages() - 1)); pdRender(); }}
+function pdTogglePool(serial) {{
+  if (pdExpanded.has(serial)) pdExpanded.delete(serial); else pdExpanded.add(serial);
+  pdRender();
+}}
+window.pdTogglePool = pdTogglePool;
+
+function pdBallHtml(n, cls) {{ return '<span class="nb-xs ' + cls + '">' + n + '</span>'; }}
+
+function pdRender() {{
+  const start = pdCurPage * PD_PAGE_SIZE;
+  const pageRows = pdFiltered.slice(start, start + PD_PAGE_SIZE);
+  const parts = [];
+  for (const r of pageRows) {{
+    const poolSet = new Set(r.pool);
+    const actualHtml = r.main.map(n => pdBallHtml(n, poolSet.has(n) ? 'hit' : '')).join('') +
+      pdBallHtml(r.bonus, poolSet.has(r.bonus) ? 'bonus-hit' : 'bonus-miss');
+    const tierCls = 't-' + r.tier;
+    const isOpen = pdExpanded.has(r.s);
+    parts.push(
+      '<tr><td class="pd-draw">#' + r.s + '</td>' +
+      '<td><div class="pd-balls">' + actualHtml + '</div></td>' +
+      '<td>' + r.mainHits + (r.bonusHit ? '<span style="color:#a78bfa;font-size:.7rem">+B</span>' : '') + '</td>' +
+      '<td><span class="pd-tier ' + tierCls + '">' + pdTierLabel(r.tier) + '</span></td>' +
+      '<td><button class="pd-pool-toggle" onclick="pdTogglePool(' + r.s + ')">' + (isOpen ? 'hide' : 'show') + ' (' + r.pool.length + ')</button></td>' +
+      '</tr>'
+    );
+    if (isOpen) {{
+      const poolHtml = r.pool.map(n => pdBallHtml(n, '')).join('');
+      parts.push('<tr class="pd-pool-row"><td colspan="5"><div class="pd-balls">' + poolHtml + '</div></td></tr>');
+    }}
+  }}
+  document.getElementById('pdTbody').innerHTML = parts.join('');
+  document.getElementById('pdPageInfo').textContent =
+    pdFiltered.length === 0 ? 'No draws match' :
+    'Showing ' + (start + 1) + '-' + Math.min(start + PD_PAGE_SIZE, pdFiltered.length) + ' of ' + pdFiltered.length.toLocaleString() + ' (page ' + (pdCurPage + 1) + ' / ' + pdTotalPages() + ')';
+  document.getElementById('pdFirstBtn').disabled = pdCurPage === 0;
+  document.getElementById('pdPrevBtn').disabled = pdCurPage === 0;
+  document.getElementById('pdNextBtn').disabled = pdCurPage >= pdTotalPages() - 1;
+  document.getElementById('pdLastBtn').disabled = pdCurPage >= pdTotalPages() - 1;
+}}
+pdRender();
 </script>
 </body>
 </html>"""
