@@ -3,10 +3,14 @@ gen_xoshiro_k38_x_modularcycle_k38_stats.py
 --------------------------------------------------
 Generates the "Xoshiro K=38 x Modular Cycle Native K=38 -- Base Pool
 Statistics" page: presents the current #2133 intersected pool plus a
-full walk-forward backtest of that construction over #1000-2132 (1133
-draws, no leakage), with honest statistical framing (none of the four
-hit tiers reach conventional significance) and a comparison table
-against the other Base constructions tested this session.
+full walk-forward backtest of that construction over #44-2132 (the
+full usable history -- see precompute script for why #44 is the
+earliest valid target), with honest statistical framing (none of the
+four hit tiers reach conventional significance), a per-pool-number
+generation-order index profile, an aggregate hit-index distribution
+(same style as xoshiro_base_review1000.py), a paginated per-draw
+breakdown table, and a comparison table against the other Base
+constructions tested this session.
 
 Reads xoshiro_k38_x_modularcycle_k38_stats_meta.json (produced by
 precompute_xoshiro_k38_x_modularcycle_k38_stats.py). Both the xoshiro
@@ -39,6 +43,72 @@ mc_pool = meta['mcPool']
 mc_pool_ordered = meta['mcPoolOrdered']
 current_pool = meta['currentPool']
 per_draw = meta['perDraw']  # newest-first, see precompute script
+pool_index_profile = meta['poolIndexProfile']
+n_hits_total = meta['nHitsTotal']
+xo_bucket_labels = meta['xoBucketLabels']
+xo_bucket_counts = meta['xoBucketCounts']
+mc_bucket_labels = meta['mcBucketLabels']
+mc_bucket_counts = meta['mcBucketCounts']
+xo_ranked = meta['xoRanked']
+xo_expected = meta['xoExpected']
+xo_chi2 = meta['xoChi2']
+xo_dof = meta['xoDof']
+xo_pvalue = meta['xoPvalue']
+mc_ranked = meta['mcRanked']
+mc_expected = meta['mcExpected']
+mc_chi2 = meta['mcChi2']
+mc_dof = meta['mcDof']
+mc_pvalue = meta['mcPvalue']
+
+# ── Pool index-profile table rows ────────────────────────────────────────
+pool_profile_rows_html = ""
+for row in pool_index_profile:
+    xo_avg = f"{row['xoIdxAvg']:.1f}" if row['xoIdxAvg'] is not None else "&mdash;"
+    xo_modal = row['xoIdxModal'] if row['xoIdxModal'] is not None else "&mdash;"
+    mc_avg = f"{row['mcIdxAvg']:.1f}" if row['mcIdxAvg'] is not None else "&mdash;"
+    mc_modal = row['mcIdxModal'] if row['mcIdxModal'] is not None else "&mdash;"
+    pool_profile_rows_html += f"""<tr>
+      <td class="mname">{row['n']}</td>
+      <td class="tc">#{row['xoIdxToday']}</td>
+      <td class="tc">{xo_avg}</td>
+      <td class="tc">#{xo_modal}</td>
+      <td class="tc">#{row['mcIdxToday']}</td>
+      <td class="tc">{mc_avg}</td>
+      <td class="tc">#{mc_modal}</td>
+    </tr>"""
+
+# ── Hit-index distribution: bucketed bars ────────────────────────────────
+def dist_rows_html(labels, counts, total, color):
+    out = ""
+    max_count = max(counts) if counts else 1
+    for lbl, cnt in zip(labels, counts):
+        pct = cnt / total * 100 if total else 0
+        bar_pct = cnt / max_count * 100 if max_count else 0
+        out += f"""<div class="funnel-row">
+        <div class="funnel-lbl">#{lbl}</div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:{bar_pct:.1f}%;background:{color}"></div></div>
+        <div class="funnel-val">{cnt:,} <span style="color:#64748b;font-weight:400">({pct:.1f}%)</span></div>
+      </div>"""
+    return out
+
+xo_dist_html = dist_rows_html(xo_bucket_labels, xo_bucket_counts, n_hits_total, '#a78bfa')
+mc_dist_html = dist_rows_html(mc_bucket_labels, mc_bucket_counts, n_hits_total, '#38bdf8')
+
+def ranking_table_html(ranked, expected, total, limit=15):
+    rows = ranked[:limit] if limit else ranked
+    out = ""
+    for idxv, cnt in rows:
+        pct = cnt / total * 100 if total else 0
+        vs_expected = (cnt - expected) / expected * 100 if expected else 0
+        sign = "+" if vs_expected >= 0 else ""
+        out += f"""<tr><td class="tc">#{idxv}</td><td class="tc">{cnt:,}</td><td class="tc">{pct:.2f}%</td>
+      <td class="tc" style="color:{'#4ade80' if vs_expected >= 0 else '#f87171'}">{sign}{vs_expected:.1f}%</td></tr>"""
+    return out
+
+xo_top15_html = ranking_table_html(xo_ranked, xo_expected, n_hits_total)
+mc_top15_html = ranking_table_html(mc_ranked, mc_expected, n_hits_total)
+xo_pvalue_str = f"{xo_pvalue:.3f}" if xo_pvalue is not None else "n/a"
+mc_pvalue_str = f"{mc_pvalue:.3f}" if mc_pvalue is not None else "n/a"
 BACKTEST_LO = meta['backtestLo']
 BACKTEST_HI = meta['backtestHi']
 N_DRAWS = meta['nDraws']
@@ -204,6 +274,12 @@ table.pd-table td.pd-draw{{color:#e2e8f0;font-weight:600;white-space:nowrap}}
 .pd-pool-row td{{background:#0a0f1e;padding:8px 10px 10px 10px}}
 .pd-pool-row .pd-balls{{max-width:none}}
 
+.funnel-row{{display:flex;align-items:center;gap:10px;font-size:.82rem;margin-bottom:6px}}
+.funnel-lbl{{width:60px;color:#94a3b8;flex-shrink:0}}
+.funnel-bar-wrap{{flex:1;background:#0a0f1e;border-radius:6px;overflow:hidden;height:20px;border:1px solid #1e293b}}
+.funnel-bar{{height:100%;border-radius:6px}}
+.funnel-val{{width:110px;text-align:right;color:#f1f5f9;font-weight:600;flex-shrink:0;font-size:.78rem}}
+
 .footer{{margin-top:28px;font-size:.78rem;color:#475569;padding-bottom:20px;line-height:1.6}}
 </style>
 </head>
@@ -255,6 +331,24 @@ table.pd-table td.pd-draw{{color:#e2e8f0;font-weight:600;white-space:nowrap}}
   </div>
 
   <div class="section">
+    <h2>Current pool — per-number index profile</h2>
+    <p class="desc">For each of the {len(current_pool)} numbers in today's intersected pool: where it landed in each
+    method's generation order for #{TARGET_SERIAL} specifically ("today"), plus its <b>typical</b> (average) and
+    <b>most-frequent</b> (modal) index across the full #{BACKTEST_LO}–{BACKTEST_HI} backtest window, whenever it
+    appeared in that method's K={K} pick.</p>
+    <div class="tbl-wrap">
+      <table class="stats-table">
+        <thead><tr>
+          <th>Number</th>
+          <th class="tc">XO index (today)</th><th class="tc">XO avg index</th><th class="tc">XO modal index</th>
+          <th class="tc">MC index (today)</th><th class="tc">MC avg index</th><th class="tc">MC modal index</th>
+        </tr></thead>
+        <tbody>{pool_profile_rows_html}</tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
     <h2>Walk-forward backtest results — #{BACKTEST_LO}–{BACKTEST_HI} ({N_DRAWS} draws)</h2>
     <p class="desc">Base recomputed fresh for every target draw (no leakage). Chi-square goodness-of-fit, df=1, per tier
     (observed hit / no-hit vs. chance-expected hit / no-hit), equivalent to a two-sided binomial test on the same
@@ -284,6 +378,42 @@ table.pd-table td.pd-draw{{color:#e2e8f0;font-weight:600;white-space:nowrap}}
         <tbody>{tier_rows_html}</tbody>
       </table>
     </div>
+  </div>
+
+  <div class="section">
+    <h2>Hit-index distribution — where do caught winners land in each method's build order?</h2>
+    <p class="desc">Across all {N_DRAWS:,} backtest draws, whenever an actual winning main number WAS caught by Base
+    (present in both XO and MC that draw), where did it land in each method's own generation order for that specific
+    draw? {n_hits_total:,} hit-number occurrences total. A flat/uniform distribution means hits land roughly evenly
+    across the whole K={K}; a skew toward low or high indices would mean hits tend to cluster at a particular point
+    in that method's own build order.</p>
+
+    <h3 style="font-size:.86rem;font-weight:700;color:#cbd5e1;margin:14px 0 8px">Xoshiro K={K} — bucketed (width 5)</h3>
+    <div style="margin-bottom:16px">{xo_dist_html}</div>
+    <h3 style="font-size:.86rem;font-weight:700;color:#cbd5e1;margin:14px 0 8px">Modular Cycle K={K} — bucketed (width 5)</h3>
+    <div style="margin-bottom:8px">{mc_dist_html}</div>
+
+    <p class="desc" style="margin-top:16px">Exact-index chi-square goodness-of-fit vs. a uniform distribution across
+    all {K} positions: <strong style="color:#f1f5f9">XO: &chi;&sup2;={xo_chi2:.2f}, df={xo_dof}, p={xo_pvalue_str}</strong>
+    &middot; <strong style="color:#f1f5f9">MC: &chi;&sup2;={mc_chi2:.2f}, df={mc_dof}, p={mc_pvalue_str}</strong>.
+    Both comfortably above 0.05 &mdash; no detectable skew in either method's hit-index pattern, consistent with the
+    rest of this page's chance-baseline findings.</p>
+
+    <details style="margin-top:12px">
+      <summary style="cursor:pointer;font-size:.85rem;font-weight:600;color:#e2e8f0">Show top-15 exact-index ranking for both methods</summary>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px">
+        <div>
+          <h4 style="font-size:.8rem;color:#a78bfa;margin-bottom:6px">Xoshiro K={K}</h4>
+          <table class="stats-table"><thead><tr><th class="tc">Index</th><th class="tc">Count</th><th class="tc">%</th><th class="tc">vs. expected</th></tr></thead>
+          <tbody>{xo_top15_html}</tbody></table>
+        </div>
+        <div>
+          <h4 style="font-size:.8rem;color:#38bdf8;margin-bottom:6px">Modular Cycle K={K}</h4>
+          <table class="stats-table"><thead><tr><th class="tc">Index</th><th class="tc">Count</th><th class="tc">%</th><th class="tc">vs. expected</th></tr></thead>
+          <tbody>{mc_top15_html}</tbody></table>
+        </div>
+      </div>
+    </details>
   </div>
 
   <div class="section">

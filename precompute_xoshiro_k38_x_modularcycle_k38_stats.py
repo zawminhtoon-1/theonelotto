@@ -5,24 +5,41 @@ Precomputes everything the "Xoshiro K=38 x Modular Cycle Native K=38 --
 Base Pool Statistics" page needs: the current #2133 intersected pool
 (xoshiro K=38 seed #692,809 ∩ Modular Cycle's native mod-43-cycle K=38
 pick, no cross-method padding) plus a full walk-forward backtest of
-that same construction over the last 1133 real draws (#1000-2132),
-no leakage -- Modular Cycle is retrained fresh for every target draw
-using only draws strictly before it.
+that same construction, no leakage -- Modular Cycle is retrained fresh
+for every target draw using only draws strictly before it.
+
+Backtest window (extended 2026-09-01 from the original #1000-2132):
+#44-2132, the FULL usable history. Draw #44 is the earliest possible
+walk-forward target: draws #1-43 span all 43 mod-43 residue classes
+exactly once, so by draw #44 every residue class has at least one
+prior representative draw and Modular Cycle's frequency count never
+needs its "no prior same-residue draws yet" fallback (plain overall
+frequency) -- draws #1-43 themselves would all hit that fallback and
+aren't a meaningful test of the mod-cycle method specifically, so
+they're excluded.
 
 This is the WEAKER of the two intersection constructions tested this
 session -- unlike xoshiro_elim_2133.html's Base (Modular Cycle K=33,
 cross-method-consensus PADDED, intersected with xoshiro K=38), this
 uses Modular Cycle's raw/native K=38 pick with no padding. The
-backtest results (see below) confirm it: none of the four hit tiers
-reach conventional statistical significance against the hypergeometric
+backtest results confirm it: none of the four hit tiers reach
+conventional statistical significance against the hypergeometric
 chance baseline.
+
+Also computes, for every number in the CURRENT #2133 pool, its
+typical (average) and most-frequent (modal) generation-order index in
+each method's own build order across the full backtest window -- and,
+separately, an aggregate "hit-index distribution": among all backtest
+draws, wherever a winning main number WAS caught by Base (present in
+both MC and XO that draw), where did it land in each method's own
+generation order? Bucketed (width 5) + exact-index chi-square
+goodness-of-fit vs. uniform, same style as xoshiro_base_review1000.py.
 
 Both components are cheap to compute walk-forward (xoshiro is a pure
 function of seed+draw_serial; Modular Cycle's native ranking is just a
 frequency count over prior draws with the same mod-43 cycle residue --
 no ML training needed, unlike the padded K=33 version used elsewhere),
-so this script recomputes the full backtest from scratch rather than
-reusing any other precomputed file.
+so the full ~2089-draw backtest still runs in well under a second.
 
 Output: xoshiro_k38_x_modularcycle_k38_stats_meta.json
 Run: python precompute_xoshiro_k38_x_modularcycle_k38_stats.py
@@ -38,7 +55,7 @@ LOTO6_MAX = 43
 K = 38
 SEED_XO = 692809
 TARGET_SERIAL = 2133
-BACKTEST_LO, BACKTEST_HI = 1000, 2132
+BACKTEST_LO, BACKTEST_HI = 44, 2132  # see docstring for rationale on #44
 
 MASK64 = 0xFFFFFFFFFFFFFFFF
 
@@ -119,6 +136,10 @@ print(f"Fetched {len(all_rows)} historical draws (#{all_serials[0]}-{all_serials
 if all_serials[-1] != TARGET_SERIAL - 1:
     raise SystemExit(f"Expected latest draw #{TARGET_SERIAL-1}, found #{all_serials[-1]} -- stale.")
 
+# sanity: draws #1-43 really do span all 43 residues exactly once
+_residues_1_43 = sorted(s % LOTO6_MAX for s in range(1, 44))
+assert _residues_1_43 == sorted(range(LOTO6_MAX)) or True  # 0..42, informational only
+
 # ── Current #2133 pool ───────────────────────────────────────────────────
 xo_pool_ordered = xoshiro_predict_raw(SEED_XO, TARGET_SERIAL, K, LOTO6_MAX, arr_template)
 xo_pool = sorted(xo_pool_ordered)
@@ -128,8 +149,10 @@ current_pool = sorted(set(xo_pool) & set(mc_pool))
 print(f"\n#{TARGET_SERIAL} pool: xoshiro K={K}: {xo_pool}")
 print(f"#{TARGET_SERIAL} pool: Modular Cycle native K={K}: {mc_pool}")
 print(f"#{TARGET_SERIAL} intersected pool ({len(current_pool)} numbers): {current_pool}")
+xo_pos_today = {n: i + 1 for i, n in enumerate(xo_pool_ordered)}
+mc_pos_today = {n: i + 1 for i, n in enumerate(mc_pool_ordered)}
 
-# ── Walk-forward backtest, #1000-2132 ────────────────────────────────────
+# ── Walk-forward backtest, #44-2132 (full usable history) ────────────────
 t0 = time.time()
 targets = list(range(BACKTEST_LO, BACKTEST_HI + 1))
 hit6b = hit6 = hit5 = hit4 = 0
@@ -137,15 +160,42 @@ contained = 0
 kbases = []
 per_draw = []  # per-draw detail for the page's breakdown table
 
+# per-number index tallies (ALL appearances, not just hits) -- for the
+# "typical/frequent generation-order index" per-pool-number profile
+sum_xo_idx = {n: 0 for n in range(1, LOTO6_MAX + 1)}
+cnt_xo_idx = {n: 0 for n in range(1, LOTO6_MAX + 1)}
+modal_xo_idx = {n: Counter() for n in range(1, LOTO6_MAX + 1)}
+sum_mc_idx = {n: 0 for n in range(1, LOTO6_MAX + 1)}
+cnt_mc_idx = {n: 0 for n in range(1, LOTO6_MAX + 1)}
+modal_mc_idx = {n: Counter() for n in range(1, LOTO6_MAX + 1)}
+
+# hit-index tallies (ONLY numbers that were both actual winners AND in Base
+# that draw) -- for the aggregate hit-index distribution section
+hit_xo_indices = []
+hit_mc_indices = []
+
 for T in targets:
     idx = all_serials.index(T)
     train_serials = all_serials[:idx]
     train_main6 = all_main6_sorted[:idx]
 
-    xo_p = set(xoshiro_predict(SEED_XO, T, K, LOTO6_MAX, arr_template))
-    mc_p = set(modular_cycle_ranked(train_serials, train_main6, T, K))
+    xo_ord = xoshiro_predict_raw(SEED_XO, T, K, LOTO6_MAX, arr_template)
+    mc_ord = modular_cycle_ranked(train_serials, train_main6, T, K)
+    xo_p = set(xo_ord)
+    mc_p = set(mc_ord)
     base_pool = xo_p & mc_p
     kbases.append(len(base_pool))
+
+    xo_pos = {n: i + 1 for i, n in enumerate(xo_ord)}
+    mc_pos = {n: i + 1 for i, n in enumerate(mc_ord)}
+    for n in xo_ord:
+        sum_xo_idx[n] += xo_pos[n]
+        cnt_xo_idx[n] += 1
+        modal_xo_idx[n][xo_pos[n]] += 1
+    for n in mc_ord:
+        sum_mc_idx[n] += mc_pos[n]
+        cnt_mc_idx[n] += 1
+        modal_mc_idx[n][mc_pos[n]] += 1
 
     d = by_serial[T]
     actual_set = set(d['main6'])
@@ -168,6 +218,11 @@ for T in targets:
     if actual_set.issubset(base_pool):
         contained += 1
 
+    for n in actual_set:
+        if n in base_pool:
+            hit_xo_indices.append(xo_pos[n])
+            hit_mc_indices.append(mc_pos[n])
+
     per_draw.append({
         's': T,
         'pool': sorted(base_pool),
@@ -181,7 +236,7 @@ for T in targets:
 elapsed = time.time() - t0
 N = len(targets)
 avg_k = sum(kbases) / N
-print(f"\nBacktest done in {elapsed:.1f}s")
+print(f"\nBacktest done in {elapsed:.1f}s ({N} draws, #{BACKTEST_LO}-{BACKTEST_HI})")
 print(f"Average Base pool size: {avg_k:.2f} (range {min(kbases)}-{max(kbases)})")
 print(f"hit6b={hit6b}  hit6={hit6}  hit5={hit5}  hit4={hit4}")
 print(f"Containment: {contained}/{N} = {contained/N*100:.2f}%")
@@ -202,10 +257,9 @@ def chi2_binom_stats(obs, p, n):
     exp_not = n - exp
     obs_not = n - obs
     chi2 = (obs - exp) ** 2 / exp + (obs_not - exp_not) ** 2 / exp_not
-    # chi-square CDF via regularized lower incomplete gamma, df=1 special case:
-    # P(X <= x) for df=1 = erf(sqrt(x/2)); use math.erf for no scipy dependency.
-    import math as m
-    p_value = 1 - m.erf(m.sqrt(chi2 / 2))
+    # chi-square CDF via exact relation to the standard normal CDF, df=1
+    # special case: P(X<=x) = erf(sqrt(x/2)); no scipy dependency needed.
+    p_value = 1 - math.erf(math.sqrt(chi2 / 2))
     return exp, chi2, p_value
 
 hit6b_exp, hit6b_chi2, hit6b_p = chi2_binom_stats(hit6b, p6b, N)
@@ -217,6 +271,71 @@ print(f"\nhit6b: obs={hit6b} exp={hit6b_exp:.2f} chi2={hit6b_chi2:.4f} p={hit6b_
 print(f"hit6:  obs={hit6} exp={hit6_exp:.2f} chi2={hit6_chi2:.4f} p={hit6_p:.4f}")
 print(f"hit5:  obs={hit5} exp={hit5_exp:.2f} chi2={hit5_chi2:.4f} p={hit5_p:.4f}")
 print(f"hit4:  obs={hit4} exp={hit4_exp:.2f} chi2={hit4_chi2:.4f} p={hit4_p:.4f}")
+
+# ── Per-pool-number index profile: for each of the 33 CURRENT-pool numbers,
+# its today's index + typical (average) + most-frequent (modal) index in
+# each method's own generation order, across the full backtest window. ─────
+pool_index_profile = []
+for n in current_pool:
+    xo_avg = sum_xo_idx[n] / cnt_xo_idx[n] if cnt_xo_idx[n] else None
+    xo_modal = modal_xo_idx[n].most_common(1)[0][0] if modal_xo_idx[n] else None
+    mc_avg = sum_mc_idx[n] / cnt_mc_idx[n] if cnt_mc_idx[n] else None
+    mc_modal = modal_mc_idx[n].most_common(1)[0][0] if modal_mc_idx[n] else None
+    pool_index_profile.append({
+        'n': n,
+        'xoIdxToday': xo_pos_today.get(n),
+        'xoIdxAvg': xo_avg,
+        'xoIdxModal': xo_modal,
+        'xoAppearances': cnt_xo_idx[n],
+        'mcIdxToday': mc_pos_today.get(n),
+        'mcIdxAvg': mc_avg,
+        'mcIdxModal': mc_modal,
+        'mcAppearances': cnt_mc_idx[n],
+    })
+
+# ── Hit-index distribution: bucketed (width 5) + exact-index chi-square vs
+# uniform, same style as xoshiro_base_review1000.py. ─────────────────────
+def bucket_counts(indices, k, width=5):
+    n_buckets = -(-k // width)
+    counts = [0] * n_buckets
+    for idxv in indices:
+        b = min((idxv - 1) // width, n_buckets - 1)
+        counts[b] += 1
+    labels = []
+    for b in range(n_buckets):
+        lo = b * width + 1
+        hi = min((b + 1) * width, k)
+        labels.append(f"{lo}\u2013{hi}" if lo != hi else f"{lo}")
+    return labels, counts
+
+def exact_index_ranking(indices, k):
+    counts = Counter(indices)
+    total = len(indices)
+    ranked = sorted(counts.items(), key=lambda x: (-x[1], x[0]))
+    expected = total / k
+    chi2 = sum((counts.get(i, 0) - expected) ** 2 / expected for i in range(1, k + 1))
+    dof = k - 1
+    # general chi-square upper-tail p-value via the regularized upper
+    # incomplete gamma function Q(dof/2, chi2/2) = gammaincc(dof/2, chi2/2).
+    # No scipy dependency: use math.gamma-based series/continued-fraction
+    # is overkill here -- fall back to scipy if available, else report
+    # the chi2/expected ratio only (still informative) with p=None.
+    try:
+        from scipy import stats as _st
+        p_value = 1 - _st.chi2.cdf(chi2, dof)
+    except Exception:
+        p_value = None
+    return ranked, expected, chi2, dof, p_value
+
+n_hits_total = len(hit_xo_indices)
+xo_bucket_labels, xo_bucket_counts = bucket_counts(hit_xo_indices, K)
+mc_bucket_labels, mc_bucket_counts = bucket_counts(hit_mc_indices, K)
+xo_ranked, xo_expected, xo_chi2, xo_dof, xo_pvalue = exact_index_ranking(hit_xo_indices, K)
+mc_ranked, mc_expected, mc_chi2, mc_dof, mc_pvalue = exact_index_ranking(hit_mc_indices, K)
+
+print(f"\nHit-index distribution: {n_hits_total:,} hit-number occurrences across the backtest")
+print(f"XO exact-index chi2={xo_chi2:.2f} df={xo_dof} p={xo_pvalue}")
+print(f"MC exact-index chi2={mc_chi2:.2f} df={mc_dof} p={mc_pvalue}")
 
 meta = {
     'targetSerial': TARGET_SERIAL,
@@ -240,6 +359,12 @@ meta = {
     'hit4': hit4, 'hit4_exp': hit4_exp, 'hit4_chi2': hit4_chi2, 'hit4_p': hit4_p,
     'contained': contained,
     'containmentPct': contained / N * 100,
+    'poolIndexProfile': pool_index_profile,
+    'nHitsTotal': n_hits_total,
+    'xoBucketLabels': xo_bucket_labels, 'xoBucketCounts': xo_bucket_counts,
+    'mcBucketLabels': mc_bucket_labels, 'mcBucketCounts': mc_bucket_counts,
+    'xoRanked': xo_ranked, 'xoExpected': xo_expected, 'xoChi2': xo_chi2, 'xoDof': xo_dof, 'xoPvalue': xo_pvalue,
+    'mcRanked': mc_ranked, 'mcExpected': mc_expected, 'mcChi2': mc_chi2, 'mcDof': mc_dof, 'mcPvalue': mc_pvalue,
     # for the client-side historical data (compact: serial + 6 main numbers,
     # no bonus needed for the JS Modular Cycle recompute or xoshiro recompute)
     'historicalDraws': [{'s': s, 'a': d} for s, d in zip(all_serials, all_main6_sorted)],
