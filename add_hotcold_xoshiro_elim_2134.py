@@ -133,7 +133,7 @@ meta['hotCold'] = {
 }
 
 with open(META_PATH, 'w', encoding='utf-8') as f:
-    json.dump(meta, f, separators=(',', ':'))
+    json.dump(meta, f, indent=2)  # match precompute_xoshiro_elim_2134.py's formatting convention
 
 print(f"\nHot (top {HOT_N}):  " + ', '.join(f"{r['num']}({r['freq']})" for r in hot))
 print(f"Cold (bottom {COLD_N}): " + ', '.join(f"{r['num']}({r['freq']})" for r in cold))
