@@ -191,6 +191,42 @@ table.combos tr:hover td{background:#111827}
   </div>
 
   <div class="section">
+    <h2>Hot/Cold Number Status <span id="badgeHotCold" class="verify-badge pending">verifying…</span></h2>
+    <p class="desc">Descriptive appearance statistics for all 43 numbers, computed from the 2,133 real
+    draws #1&ndash;2133 (walk-forward, no leakage from #2134 &mdash; identical training window as
+    Base and every elimination pass above). "In Base" marks whether a number is inside the 34-number #2134
+    Base pool. Recomputed live in your browser from the same embedded historical combo set used for Pass 3, and checked
+    against a server-embedded reference.</p>
+
+    <h3>Hot — top 10 numbers by total appearance count</h3>
+    <div class="tbl-wrap"><table class="methods-table"><thead><tr>
+      <th>Rank</th><th>Number</th><th>Count</th><th>Last seen</th><th>Gap</th><th>Base?</th>
+    </tr></thead><tbody><tr><td>1</td><td><span class="nb">6</span></td><td>329</td><td>#2129</td><td>4</td><td><span class="verify-badge" style="font-size:.62rem;background:#1e293b;color:#64748b">outside Base</span></td></tr><tr><td>2</td><td><span class="nb">37</span></td><td>320</td><td>#2126</td><td>7</td><td><span class="verify-badge ok" style="font-size:.62rem">in Base</span></td></tr><tr><td>3</td><td><span class="nb">42</span></td><td>318</td><td>#2126</td><td>7</td><td><span class="verify-badge ok" style="font-size:.62rem">in Base</span></td></tr><tr><td>4</td><td><span class="nb">2</span></td><td>317</td><td>#2129</td><td>4</td><td><span class="verify-badge ok" style="font-size:.62rem">in Base</span></td></tr><tr><td>5</td><td><span class="nb">21</span></td><td>314</td><td>#2122</td><td>11</td><td><span class="verify-badge ok" style="font-size:.62rem">in Base</span></td></tr><tr><td>6</td><td><span class="nb">38</span></td><td>314</td><td>#2133</td><td>0</td><td><span class="verify-badge ok" style="font-size:.62rem">in Base</span></td></tr><tr><td>7</td><td><span class="nb">26</span></td><td>312</td><td>#2131</td><td>2</td><td><span class="verify-badge" style="font-size:.62rem;background:#1e293b;color:#64748b">outside Base</span></td></tr><tr><td>8</td><td><span class="nb">35</span></td><td>312</td><td>#2131</td><td>2</td><td><span class="verify-badge ok" style="font-size:.62rem">in Base</span></td></tr><tr><td>9</td><td><span class="nb">19</span></td><td>310</td><td>#2132</td><td>1</td><td><span class="verify-badge ok" style="font-size:.62rem">in Base</span></td></tr><tr><td>10</td><td><span class="nb">15</span></td><td>309</td><td>#2132</td><td>1</td><td><span class="verify-badge ok" style="font-size:.62rem">in Base</span></td></tr></tbody></table></div>
+
+    <h3 style="margin-top:20px">Cold — bottom 10 numbers by total appearance count</h3>
+    <div class="tbl-wrap"><table class="methods-table"><thead><tr>
+      <th>Rank</th><th>Number</th><th>Count</th><th>Last seen</th><th>Gap</th><th>Base?</th>
+    </tr></thead><tbody><tr><td>1</td><td><span class="nb">9</span></td><td>259</td><td>#2132</td><td>1</td><td><span class="verify-badge ok" style="font-size:.62rem">in Base</span></td></tr><tr><td>2</td><td><span class="nb">7</span></td><td>274</td><td>#2127</td><td>6</td><td><span class="verify-badge ok" style="font-size:.62rem">in Base</span></td></tr><tr><td>3</td><td><span class="nb">17</span></td><td>275</td><td>#2121</td><td>12</td><td><span class="verify-badge ok" style="font-size:.62rem">in Base</span></td></tr><tr><td>4</td><td><span class="nb">13</span></td><td>277</td><td>#2128</td><td>5</td><td><span class="verify-badge ok" style="font-size:.62rem">in Base</span></td></tr><tr><td>5</td><td><span class="nb">34</span></td><td>279</td><td>#2115</td><td>18</td><td><span class="verify-badge ok" style="font-size:.62rem">in Base</span></td></tr><tr><td>6</td><td><span class="nb">29</span></td><td>281</td><td>#2133</td><td>0</td><td><span class="verify-badge ok" style="font-size:.62rem">in Base</span></td></tr><tr><td>7</td><td><span class="nb">41</span></td><td>281</td><td>#2130</td><td>3</td><td><span class="verify-badge" style="font-size:.62rem;background:#1e293b;color:#64748b">outside Base</span></td></tr><tr><td>8</td><td><span class="nb">11</span></td><td>283</td><td>#2133</td><td>0</td><td><span class="verify-badge" style="font-size:.62rem;background:#1e293b;color:#64748b">outside Base</span></td></tr><tr><td>9</td><td><span class="nb">33</span></td><td>284</td><td>#2131</td><td>2</td><td><span class="verify-badge" style="font-size:.62rem;background:#1e293b;color:#64748b">outside Base</span></td></tr><tr><td>10</td><td><span class="nb">40</span></td><td>285</td><td>#2130</td><td>3</td><td><span class="verify-badge" style="font-size:.62rem;background:#1e293b;color:#64748b">outside Base</span></td></tr></tbody></table></div>
+
+    <h3 style="margin-top:20px">Cold appear — cold numbers breaking their drought</h3>
+    <p class="desc">Numbers in the below-median ("cold half," bottom 22 of 43 by
+    frequency) that appeared within the last 5 draws (#2129&ndash;2133).</p>
+    <div class="tbl-wrap"><table class="methods-table"><thead><tr><th>Number</th><th>Count</th><th>Last seen</th><th>Gap</th><th>Base?</th></tr></thead><tbody><tr><td><span class="nb">29</span></td><td>281</td><td>#2133</td><td>0</td><td><span class="verify-badge ok" style="font-size:.62rem">in Base</span></td></tr><tr><td><span class="nb">11</span></td><td>283</td><td>#2133</td><td>0</td><td><span class="verify-badge" style="font-size:.62rem;background:#1e293b;color:#64748b">outside Base</span></td></tr><tr><td><span class="nb">14</span></td><td>287</td><td>#2133</td><td>0</td><td><span class="verify-badge ok" style="font-size:.62rem">in Base</span></td></tr><tr><td><span class="nb">1</span></td><td>298</td><td>#2133</td><td>0</td><td><span class="verify-badge ok" style="font-size:.62rem">in Base</span></td></tr><tr><td><span class="nb">9</span></td><td>259</td><td>#2132</td><td>1</td><td><span class="verify-badge ok" style="font-size:.62rem">in Base</span></td></tr><tr><td><span class="nb">31</span></td><td>286</td><td>#2132</td><td>1</td><td><span class="verify-badge ok" style="font-size:.62rem">in Base</span></td></tr><tr><td><span class="nb">32</span></td><td>299</td><td>#2132</td><td>1</td><td><span class="verify-badge ok" style="font-size:.62rem">in Base</span></td></tr><tr><td><span class="nb">33</span></td><td>284</td><td>#2131</td><td>2</td><td><span class="verify-badge" style="font-size:.62rem;background:#1e293b;color:#64748b">outside Base</span></td></tr><tr><td><span class="nb">25</span></td><td>294</td><td>#2131</td><td>2</td><td><span class="verify-badge ok" style="font-size:.62rem">in Base</span></td></tr><tr><td><span class="nb">41</span></td><td>281</td><td>#2130</td><td>3</td><td><span class="verify-badge" style="font-size:.62rem;background:#1e293b;color:#64748b">outside Base</span></td></tr><tr><td><span class="nb">40</span></td><td>285</td><td>#2130</td><td>3</td><td><span class="verify-badge" style="font-size:.62rem;background:#1e293b;color:#64748b">outside Base</span></td></tr><tr><td><span class="nb">12</span></td><td>292</td><td>#2130</td><td>3</td><td><span class="verify-badge ok" style="font-size:.62rem">in Base</span></td></tr><tr><td><span class="nb">4</span></td><td>290</td><td>#2129</td><td>4</td><td><span class="verify-badge ok" style="font-size:.62rem">in Base</span></td></tr></tbody></table></div>
+
+    <h3 style="margin-top:20px">Hot overdue — hot numbers running past their own average gap</h3>
+    <p class="desc">Numbers in the above-median ("hot half," top 21 of 43 by frequency) whose
+    current gap since last appearance exceeds their own historical average gap (total draws &divide; count). "Overdue
+    ratio" = current gap &divide; average gap.</p>
+    <div class="tbl-wrap"><table class="methods-table"><thead><tr><th>Number</th><th>Count</th><th>Last seen</th><th>Gap</th><th>Avg gap</th><th>Overdue ratio</th><th>Base?</th></tr></thead><tbody><tr><td><span class="nb">24</span></td><td>307</td><td>#2100</td><td>33</td><td>6.95</td><td>4.75&times;</td><td><span class="verify-badge ok" style="font-size:.62rem">in Base</span></td></tr><tr><td><span class="nb">5</span></td><td>303</td><td>#2118</td><td>15</td><td>7.04</td><td>2.13&times;</td><td><span class="verify-badge ok" style="font-size:.62rem">in Base</span></td></tr><tr><td><span class="nb">10</span></td><td>307</td><td>#2121</td><td>12</td><td>6.95</td><td>1.73&times;</td><td><span class="verify-badge ok" style="font-size:.62rem">in Base</span></td></tr><tr><td><span class="nb">21</span></td><td>314</td><td>#2122</td><td>11</td><td>6.79</td><td>1.62&times;</td><td><span class="verify-badge ok" style="font-size:.62rem">in Base</span></td></tr><tr><td><span class="nb">36</span></td><td>306</td><td>#2124</td><td>9</td><td>6.97</td><td>1.29&times;</td><td><span class="verify-badge ok" style="font-size:.62rem">in Base</span></td></tr><tr><td><span class="nb">37</span></td><td>320</td><td>#2126</td><td>7</td><td>6.67</td><td>1.05&times;</td><td><span class="verify-badge ok" style="font-size:.62rem">in Base</span></td></tr><tr><td><span class="nb">42</span></td><td>318</td><td>#2126</td><td>7</td><td>6.71</td><td>1.04&times;</td><td><span class="verify-badge ok" style="font-size:.62rem">in Base</span></td></tr></tbody></table></div>
+
+    <p class="desc" style="margin-top:16px;color:#fca5a5"><strong>Honest framing:</strong> these are purely descriptive
+    counts of past appearances &mdash; not predictive signals. Each draw is statistically independent; numbers have no
+    memory, and a number being "hot," "cold," or "overdue" has no bearing on its odds in draw #2134. This
+    section exists for the same reason the rest of this site publishes honest backtests: to show what the historical
+    record actually looks like, not to claim it predicts anything.</p>
+  </div>
+
+  <div class="section">
     <h2>Pass 1 — 16 prediction methods, K=19 pick for draw #2134</h2>
     <p class="desc">Precomputed server-side (walk-forward, trained on all real draws through #2133), normalized to K=19 via cross-method consensus.</p>
     <details>
@@ -511,6 +547,54 @@ const REMOVED_HISTORICAL = [[1, 2, 3, 20, 31, 32], [1, 2, 3, 30, 35, 36], [1, 2,
 const liveRemovedHistorical = REMOVED_HISTORICAL.every(c => HISTORICAL_SET.has(c.join(',')));
 renderBadge('badgeHistorical', liveRemovedHistorical);
 if (!liveRemovedHistorical) console.error('Pass-3 historical-match mismatch', REMOVED_HISTORICAL);
+
+// ── Hot/Cold Number Status: recomputed live from the same HISTORICAL_COMBOS
+// list used for Pass 3 above -- index i in that array corresponds to draw
+// serial i+1 (the DB has no gaps, verified server-side before this page was
+// built), so no separate serial array needs to be embedded. ────────────────
+const HC_TRAINED_THROUGH = 2133;
+const HC_TOTAL_DRAWS = HISTORICAL_COMBOS.length;
+const HC_BASE_SET = new Set(KNOWN_BASE);
+function computeHotCold() {
+  const freq = new Array(44).fill(0);
+  const lastSeen = new Array(44).fill(0);
+  HISTORICAL_COMBOS.forEach((combo, idx) => {
+    const serial = idx + 1;
+    combo.forEach(n => { freq[n]++; lastSeen[n] = serial; });
+  });
+  const perNumber = [];
+  for (let n = 1; n <= 43; n++) {
+    const f = freq[n], ls = lastSeen[n];
+    const gap = HC_TRAINED_THROUGH - ls;
+    const avgGap = f > 0 ? HC_TOTAL_DRAWS / f : null;
+    const overdueRatio = avgGap ? gap / avgGap : null;
+    perNumber.push({num: n, freq: f, lastSeenSerial: ls, gap, avgGap, overdueRatio, inBase: HC_BASE_SET.has(n)});
+  }
+  const byFreqDesc = [...perNumber].sort((a, b) => b.freq - a.freq || a.num - b.num);
+  const byFreqAsc = [...perNumber].sort((a, b) => a.freq - b.freq || a.num - b.num);
+  const hot = byFreqDesc.slice(0, 10);
+  const cold = byFreqAsc.slice(0, 10);
+  const medianRank = 21;
+  const hotHalf = new Set(byFreqDesc.slice(0, medianRank).map(r => r.num));
+  const coldHalf = new Set(byFreqDesc.slice(medianRank).map(r => r.num));
+  const coldAppear = perNumber.filter(r => coldHalf.has(r.num) && r.gap <= 5 - 1)
+    .sort((a, b) => a.gap - b.gap || a.freq - b.freq || a.num - b.num);
+  const hotOverdue = perNumber.filter(r => hotHalf.has(r.num) && r.overdueRatio !== null && r.overdueRatio > 1)
+    .sort((a, b) => b.overdueRatio - a.overdueRatio || a.num - b.num);
+  return {perNumber, hot, cold, coldAppear, hotOverdue};
+}
+const liveHC = computeHotCold();
+const KNOWN_HC_HOT = [{"num": 6, "freq": 329, "lastSeenSerial": 2129, "gap": 4, "avgGap": 6.48, "overdueRatio": 0.617, "inBase": false}, {"num": 37, "freq": 320, "lastSeenSerial": 2126, "gap": 7, "avgGap": 6.67, "overdueRatio": 1.049, "inBase": true}, {"num": 42, "freq": 318, "lastSeenSerial": 2126, "gap": 7, "avgGap": 6.71, "overdueRatio": 1.043, "inBase": true}, {"num": 2, "freq": 317, "lastSeenSerial": 2129, "gap": 4, "avgGap": 6.73, "overdueRatio": 0.594, "inBase": true}, {"num": 21, "freq": 314, "lastSeenSerial": 2122, "gap": 11, "avgGap": 6.79, "overdueRatio": 1.62, "inBase": true}, {"num": 38, "freq": 314, "lastSeenSerial": 2133, "gap": 0, "avgGap": 6.79, "overdueRatio": 0.0, "inBase": true}, {"num": 26, "freq": 312, "lastSeenSerial": 2131, "gap": 2, "avgGap": 6.84, "overdueRatio": 0.292, "inBase": false}, {"num": 35, "freq": 312, "lastSeenSerial": 2131, "gap": 2, "avgGap": 6.84, "overdueRatio": 0.292, "inBase": true}, {"num": 19, "freq": 310, "lastSeenSerial": 2132, "gap": 1, "avgGap": 6.88, "overdueRatio": 0.145, "inBase": true}, {"num": 15, "freq": 309, "lastSeenSerial": 2132, "gap": 1, "avgGap": 6.9, "overdueRatio": 0.145, "inBase": true}];
+const KNOWN_HC_COLD = [{"num": 9, "freq": 259, "lastSeenSerial": 2132, "gap": 1, "avgGap": 8.24, "overdueRatio": 0.121, "inBase": true}, {"num": 7, "freq": 274, "lastSeenSerial": 2127, "gap": 6, "avgGap": 7.78, "overdueRatio": 0.771, "inBase": true}, {"num": 17, "freq": 275, "lastSeenSerial": 2121, "gap": 12, "avgGap": 7.76, "overdueRatio": 1.546, "inBase": true}, {"num": 13, "freq": 277, "lastSeenSerial": 2128, "gap": 5, "avgGap": 7.7, "overdueRatio": 0.649, "inBase": true}, {"num": 34, "freq": 279, "lastSeenSerial": 2115, "gap": 18, "avgGap": 7.65, "overdueRatio": 2.353, "inBase": true}, {"num": 29, "freq": 281, "lastSeenSerial": 2133, "gap": 0, "avgGap": 7.59, "overdueRatio": 0.0, "inBase": true}, {"num": 41, "freq": 281, "lastSeenSerial": 2130, "gap": 3, "avgGap": 7.59, "overdueRatio": 0.395, "inBase": false}, {"num": 11, "freq": 283, "lastSeenSerial": 2133, "gap": 0, "avgGap": 7.54, "overdueRatio": 0.0, "inBase": false}, {"num": 33, "freq": 284, "lastSeenSerial": 2131, "gap": 2, "avgGap": 7.51, "overdueRatio": 0.266, "inBase": false}, {"num": 40, "freq": 285, "lastSeenSerial": 2130, "gap": 3, "avgGap": 7.48, "overdueRatio": 0.401, "inBase": false}];
+const KNOWN_HC_COLD_APPEAR = [{"num": 29, "freq": 281, "lastSeenSerial": 2133, "gap": 0, "avgGap": 7.59, "overdueRatio": 0.0, "inBase": true}, {"num": 11, "freq": 283, "lastSeenSerial": 2133, "gap": 0, "avgGap": 7.54, "overdueRatio": 0.0, "inBase": false}, {"num": 14, "freq": 287, "lastSeenSerial": 2133, "gap": 0, "avgGap": 7.43, "overdueRatio": 0.0, "inBase": true}, {"num": 1, "freq": 298, "lastSeenSerial": 2133, "gap": 0, "avgGap": 7.16, "overdueRatio": 0.0, "inBase": true}, {"num": 9, "freq": 259, "lastSeenSerial": 2132, "gap": 1, "avgGap": 8.24, "overdueRatio": 0.121, "inBase": true}, {"num": 31, "freq": 286, "lastSeenSerial": 2132, "gap": 1, "avgGap": 7.46, "overdueRatio": 0.134, "inBase": true}, {"num": 32, "freq": 299, "lastSeenSerial": 2132, "gap": 1, "avgGap": 7.13, "overdueRatio": 0.14, "inBase": true}, {"num": 33, "freq": 284, "lastSeenSerial": 2131, "gap": 2, "avgGap": 7.51, "overdueRatio": 0.266, "inBase": false}, {"num": 25, "freq": 294, "lastSeenSerial": 2131, "gap": 2, "avgGap": 7.26, "overdueRatio": 0.275, "inBase": true}, {"num": 41, "freq": 281, "lastSeenSerial": 2130, "gap": 3, "avgGap": 7.59, "overdueRatio": 0.395, "inBase": false}, {"num": 40, "freq": 285, "lastSeenSerial": 2130, "gap": 3, "avgGap": 7.48, "overdueRatio": 0.401, "inBase": false}, {"num": 12, "freq": 292, "lastSeenSerial": 2130, "gap": 3, "avgGap": 7.3, "overdueRatio": 0.411, "inBase": true}, {"num": 4, "freq": 290, "lastSeenSerial": 2129, "gap": 4, "avgGap": 7.36, "overdueRatio": 0.543, "inBase": true}];
+const KNOWN_HC_HOT_OVERDUE = [{"num": 24, "freq": 307, "lastSeenSerial": 2100, "gap": 33, "avgGap": 6.95, "overdueRatio": 4.748, "inBase": true}, {"num": 5, "freq": 303, "lastSeenSerial": 2118, "gap": 15, "avgGap": 7.04, "overdueRatio": 2.131, "inBase": true}, {"num": 10, "freq": 307, "lastSeenSerial": 2121, "gap": 12, "avgGap": 6.95, "overdueRatio": 1.727, "inBase": true}, {"num": 21, "freq": 314, "lastSeenSerial": 2122, "gap": 11, "avgGap": 6.79, "overdueRatio": 1.62, "inBase": true}, {"num": 36, "freq": 306, "lastSeenSerial": 2124, "gap": 9, "avgGap": 6.97, "overdueRatio": 1.291, "inBase": true}, {"num": 37, "freq": 320, "lastSeenSerial": 2126, "gap": 7, "avgGap": 6.67, "overdueRatio": 1.049, "inBase": true}, {"num": 42, "freq": 318, "lastSeenSerial": 2126, "gap": 7, "avgGap": 6.71, "overdueRatio": 1.043, "inBase": true}];
+function hcListsEqual(a, b) {
+  return a.length === b.length && a.every((v, i) => v.num === b[i].num && v.freq === b[i].freq && v.gap === b[i].gap);
+}
+const hcAllMatch = hcListsEqual(liveHC.hot, KNOWN_HC_HOT) && hcListsEqual(liveHC.cold, KNOWN_HC_COLD) &&
+  hcListsEqual(liveHC.coldAppear, KNOWN_HC_COLD_APPEAR) && hcListsEqual(liveHC.hotOverdue, KNOWN_HC_HOT_OVERDUE);
+renderBadge('badgeHotCold', hcAllMatch);
+if (!hcAllMatch) console.error('Hot/Cold mismatch', liveHC, {hot: KNOWN_HC_HOT, cold: KNOWN_HC_COLD, coldAppear: KNOWN_HC_COLD_APPEAR, hotOverdue: KNOWN_HC_HOT_OVERDUE});
 
 // ── Pass 4: Worst Combo (Anti-Pick) K=15 pick -- server-computed,
 // embedded (5 methods including Random Forest/kNN/Apriori can't run

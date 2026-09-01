@@ -40,11 +40,18 @@ explicit user request:
    the removed passes' "overlap 3, 4, or 5" criterion (which included
    the not-significant 3-and-4 tiers).
 
+Extended (2026-09-01) with a "Hot/Cold Number Status" section -- reads the
+hotCold block added to meta.json by add_hotcold_xoshiro_elim_2134.py
+(hot/cold/coldAppear/hotOverdue lists over all 43 numbers, walk-forward
+through #2133). Recomputed live in the browser from the same
+HISTORICAL_COMBOS array already embedded for Pass 3, no new data needed.
+
 Output: public/xoshiro_elim_2134.html
 Run: python gen_xoshiro_elim_2134.py
 """
 import json
 
+LOTO6_MAX_PY = 43
 BASE = r"C:\Users\Zaw Min Htoon\source\repos\theonelotto"
 META_PATH = BASE + r"\xoshiro_elim_2134_meta.json"
 HTML_OUT = BASE + r"\public\xoshiro_elim_2134.html"
@@ -107,6 +114,18 @@ final_pct = final_remaining / universe_count * 100
 pass7_pct_of_pass6 = final_remaining / final_remaining_pass6 * 100
 pass7_pairs_count = historical_draw_count - 1  # consecutive real-draw pairs, #1-TRAINED_THROUGH
 
+hc = meta['hotCold']
+hc_total_draws = hc['totalDraws']
+hc_hot_n = hc['hotN']
+hc_cold_n = hc['coldN']
+hc_recent_window = hc['recentWindow']
+hc_median_rank = hc['medianRank']
+hc_per_number = hc['perNumber']
+hc_hot = hc['hot']
+hc_cold = hc['cold']
+hc_cold_appear = hc['coldAppear']
+hc_hot_overdue = hc['hotOverdue']
+
 methods_rows_html = ""
 for name, pool in zip(method_names, method_picks):
     balls = "".join(f'<span class="nb">{n}</span>' for n in pool)
@@ -121,6 +140,26 @@ historical_rows_html = ""
 for combo in removed_historical:
     balls = "".join(f'<span class="nb">{n}</span>' for n in combo)
     historical_rows_html += f"""<tr><td><div class="balls">{balls}</div></td></tr>"""
+
+def _in_base_pill(in_base):
+    return ('<span class="verify-badge ok" style="font-size:.62rem">in Base</span>' if in_base
+            else '<span class="verify-badge" style="font-size:.62rem;background:#1e293b;color:#64748b">outside Base</span>')
+
+def _hot_cold_rows(rows, show_avg=False, rank_start=None):
+    out = ""
+    for i, r in enumerate(rows):
+        rank_cell = f"<td>{rank_start + i}</td>" if rank_start is not None else ""
+        avg_cells = (f"<td>{r['avgGap']:.2f}</td><td>{r['overdueRatio']:.2f}&times;</td>" if show_avg else "")
+        last_seen = f"#{r['lastSeenSerial']}" if r['lastSeenSerial'] else "&mdash;"
+        out += (f"<tr>{rank_cell}<td><span class=\"nb\">{r['num']}</span></td>"
+                f"<td>{r['freq']:,}</td><td>{last_seen}</td><td>{r['gap']}</td>{avg_cells}"
+                f"<td>{_in_base_pill(r['inBase'])}</td></tr>")
+    return out
+
+hotcold_hot_rows_html = _hot_cold_rows(hc_hot, rank_start=1)
+hotcold_cold_rows_html = _hot_cold_rows(hc_cold, rank_start=1)
+hotcold_coldappear_rows_html = _hot_cold_rows(hc_cold_appear)
+hotcold_hotoverdue_rows_html = _hot_cold_rows(hc_hot_overdue, show_avg=True)
 
 page = f"""<!DOCTYPE html>
 <html lang="en">
@@ -312,6 +351,42 @@ table.combos tr:hover td{{background:#111827}}
     <div class="balls" id="xoBallsOrdered"></div>
     <h3>Base (intersection)</h3>
     <div class="balls" id="baseBalls"></div>
+  </div>
+
+  <div class="section">
+    <h2>Hot/Cold Number Status <span id="badgeHotCold" class="verify-badge pending">verifying…</span></h2>
+    <p class="desc">Descriptive appearance statistics for all {LOTO6_MAX_PY} numbers, computed from the {hc_total_draws:,} real
+    draws #1&ndash;{TRAINED_THROUGH} (walk-forward, no leakage from #{TARGET_SERIAL} &mdash; identical training window as
+    Base and every elimination pass above). "In Base" marks whether a number is inside the {base['k']}-number #{TARGET_SERIAL}
+    Base pool. Recomputed live in your browser from the same embedded historical combo set used for Pass 3, and checked
+    against a server-embedded reference.</p>
+
+    <h3>Hot — top {hc_hot_n} numbers by total appearance count</h3>
+    <div class="tbl-wrap"><table class="methods-table"><thead><tr>
+      <th>Rank</th><th>Number</th><th>Count</th><th>Last seen</th><th>Gap</th><th>Base?</th>
+    </tr></thead><tbody>{hotcold_hot_rows_html}</tbody></table></div>
+
+    <h3 style="margin-top:20px">Cold — bottom {hc_cold_n} numbers by total appearance count</h3>
+    <div class="tbl-wrap"><table class="methods-table"><thead><tr>
+      <th>Rank</th><th>Number</th><th>Count</th><th>Last seen</th><th>Gap</th><th>Base?</th>
+    </tr></thead><tbody>{hotcold_cold_rows_html}</tbody></table></div>
+
+    <h3 style="margin-top:20px">Cold appear — cold numbers breaking their drought</h3>
+    <p class="desc">Numbers in the below-median ("cold half," bottom {LOTO6_MAX_PY - hc_median_rank} of {LOTO6_MAX_PY} by
+    frequency) that appeared within the last {hc_recent_window} draws (#{TRAINED_THROUGH - hc_recent_window + 1}&ndash;{TRAINED_THROUGH}).</p>
+    {f'<div class="tbl-wrap"><table class="methods-table"><thead><tr><th>Number</th><th>Count</th><th>Last seen</th><th>Gap</th><th>Base?</th></tr></thead><tbody>{hotcold_coldappear_rows_html}</tbody></table></div>' if hc_cold_appear else f'<p style="color:#64748b;font-size:.85rem">No cold-half numbers appeared in the last {hc_recent_window} draws.</p>'}
+
+    <h3 style="margin-top:20px">Hot overdue — hot numbers running past their own average gap</h3>
+    <p class="desc">Numbers in the above-median ("hot half," top {hc_median_rank} of {LOTO6_MAX_PY} by frequency) whose
+    current gap since last appearance exceeds their own historical average gap (total draws &divide; count). "Overdue
+    ratio" = current gap &divide; average gap.</p>
+    {f'<div class="tbl-wrap"><table class="methods-table"><thead><tr><th>Number</th><th>Count</th><th>Last seen</th><th>Gap</th><th>Avg gap</th><th>Overdue ratio</th><th>Base?</th></tr></thead><tbody>{hotcold_hotoverdue_rows_html}</tbody></table></div>' if hc_hot_overdue else '<p style="color:#64748b;font-size:.85rem">No hot-half numbers are currently past their average gap.</p>'}
+
+    <p class="desc" style="margin-top:16px;color:#fca5a5"><strong>Honest framing:</strong> these are purely descriptive
+    counts of past appearances &mdash; not predictive signals. Each draw is statistically independent; numbers have no
+    memory, and a number being "hot," "cold," or "overdue" has no bearing on its odds in draw #{TARGET_SERIAL}. This
+    section exists for the same reason the rest of this site publishes honest backtests: to show what the historical
+    record actually looks like, not to claim it predicts anything.</p>
   </div>
 
   <div class="section">
@@ -635,6 +710,54 @@ const REMOVED_HISTORICAL = {json.dumps(removed_historical)};
 const liveRemovedHistorical = REMOVED_HISTORICAL.every(c => HISTORICAL_SET.has(c.join(',')));
 renderBadge('badgeHistorical', liveRemovedHistorical);
 if (!liveRemovedHistorical) console.error('Pass-3 historical-match mismatch', REMOVED_HISTORICAL);
+
+// ── Hot/Cold Number Status: recomputed live from the same HISTORICAL_COMBOS
+// list used for Pass 3 above -- index i in that array corresponds to draw
+// serial i+1 (the DB has no gaps, verified server-side before this page was
+// built), so no separate serial array needs to be embedded. ────────────────
+const HC_TRAINED_THROUGH = {TRAINED_THROUGH};
+const HC_TOTAL_DRAWS = HISTORICAL_COMBOS.length;
+const HC_BASE_SET = new Set(KNOWN_BASE);
+function computeHotCold() {{
+  const freq = new Array(44).fill(0);
+  const lastSeen = new Array(44).fill(0);
+  HISTORICAL_COMBOS.forEach((combo, idx) => {{
+    const serial = idx + 1;
+    combo.forEach(n => {{ freq[n]++; lastSeen[n] = serial; }});
+  }});
+  const perNumber = [];
+  for (let n = 1; n <= 43; n++) {{
+    const f = freq[n], ls = lastSeen[n];
+    const gap = HC_TRAINED_THROUGH - ls;
+    const avgGap = f > 0 ? HC_TOTAL_DRAWS / f : null;
+    const overdueRatio = avgGap ? gap / avgGap : null;
+    perNumber.push({{num: n, freq: f, lastSeenSerial: ls, gap, avgGap, overdueRatio, inBase: HC_BASE_SET.has(n)}});
+  }}
+  const byFreqDesc = [...perNumber].sort((a, b) => b.freq - a.freq || a.num - b.num);
+  const byFreqAsc = [...perNumber].sort((a, b) => a.freq - b.freq || a.num - b.num);
+  const hot = byFreqDesc.slice(0, {hc_hot_n});
+  const cold = byFreqAsc.slice(0, {hc_cold_n});
+  const medianRank = {hc_median_rank};
+  const hotHalf = new Set(byFreqDesc.slice(0, medianRank).map(r => r.num));
+  const coldHalf = new Set(byFreqDesc.slice(medianRank).map(r => r.num));
+  const coldAppear = perNumber.filter(r => coldHalf.has(r.num) && r.gap <= {hc_recent_window} - 1)
+    .sort((a, b) => a.gap - b.gap || a.freq - b.freq || a.num - b.num);
+  const hotOverdue = perNumber.filter(r => hotHalf.has(r.num) && r.overdueRatio !== null && r.overdueRatio > 1)
+    .sort((a, b) => b.overdueRatio - a.overdueRatio || a.num - b.num);
+  return {{perNumber, hot, cold, coldAppear, hotOverdue}};
+}}
+const liveHC = computeHotCold();
+const KNOWN_HC_HOT = {json.dumps(hc_hot)};
+const KNOWN_HC_COLD = {json.dumps(hc_cold)};
+const KNOWN_HC_COLD_APPEAR = {json.dumps(hc_cold_appear)};
+const KNOWN_HC_HOT_OVERDUE = {json.dumps(hc_hot_overdue)};
+function hcListsEqual(a, b) {{
+  return a.length === b.length && a.every((v, i) => v.num === b[i].num && v.freq === b[i].freq && v.gap === b[i].gap);
+}}
+const hcAllMatch = hcListsEqual(liveHC.hot, KNOWN_HC_HOT) && hcListsEqual(liveHC.cold, KNOWN_HC_COLD) &&
+  hcListsEqual(liveHC.coldAppear, KNOWN_HC_COLD_APPEAR) && hcListsEqual(liveHC.hotOverdue, KNOWN_HC_HOT_OVERDUE);
+renderBadge('badgeHotCold', hcAllMatch);
+if (!hcAllMatch) console.error('Hot/Cold mismatch', liveHC, {{hot: KNOWN_HC_HOT, cold: KNOWN_HC_COLD, coldAppear: KNOWN_HC_COLD_APPEAR, hotOverdue: KNOWN_HC_HOT_OVERDUE}});
 
 // ── Pass 4: Worst Combo (Anti-Pick) K={pass4_k} pick -- server-computed,
 // embedded (5 methods including Random Forest/kNN/Apriori can't run
