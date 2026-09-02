@@ -5,11 +5,13 @@ Generates the "Triple K=38 Intersection -- xoshiro x Modular Cycle x
 PCG64" stats page: the current #2134 pool (three component K=38
 pools and their triple intersection, all recomputed live in the
 browser and checked against server-embedded references), a walk-
-forward backtest over the last 101 real draws (#2033-2133) with
-significance testing for both the full 101-draw window and the last
-50 draws, honest framing (nothing reaches significance, plus the
-PCG64/xoshiro in-sample-seed-selection caveat), and a paginated/
-filterable per-draw breakdown table.
+forward backtest across THREE windows -- #2084-2133 (50 draws),
+#2033-2133 (101 draws), and #1884-2133 (250 draws, added 2026-09-03)
+-- with significance testing for each, honest framing (only the
+250-draw window's hit6 tier clears p<0.05, and it carries the largest
+in-sample-seed-selection overlap of the three), and a paginated/
+filterable per-draw breakdown table covering the full 250-draw
+window.
 
 Reads triple_k38_stats_meta.json (produced by
 precompute_triple_k38_stats.py).
@@ -39,8 +41,14 @@ per_draw = meta['perDraw']
 historical_draws = meta['historicalDraws']
 B101_LO, B101_HI = meta['backtest101Lo'], meta['backtest101Hi']
 B50_LO, B50_HI = meta['backtest50Lo'], meta['backtest50Hi']
+B250_LO, B250_HI = meta['backtest250Lo'], meta['backtest250Hi']
+SCAN_WINDOW_HI = meta['scanWindowHi']
 s101 = meta['summary101']
 s50 = meta['summary50']
+s250 = meta['summary250']
+inSample101 = meta['inSample101']
+inSample50 = meta['inSample50']
+inSample250 = meta['inSample250']
 
 def balls_html(nums, cls="nb"):
     return "".join(f'<span class="{cls}">{n}</span>' for n in nums)
@@ -66,6 +74,7 @@ def tier_rows_html(summary):
 
 tier101_html = tier_rows_html(s101)
 tier50_html = tier_rows_html(s50)
+tier250_html = tier_rows_html(s250)
 
 js_historical = json.dumps(historical_draws, separators=(',', ':'))
 js_per_draw = json.dumps(per_draw, separators=(',', ':'))
@@ -184,7 +193,7 @@ table.pd-table td.pd-draw{{color:#e2e8f0;font-weight:600;white-space:nowrap}}
 <script src="/site-nav.js"></script>
 <div class="wrap">
   <h1>📊 Triple K=38 Intersection — xoshiro × Modular Cycle × PCG64</h1>
-  <p class="subtitle">Current #{TARGET_SERIAL} pool + walk-forward backtest, #{B101_LO}–{B101_HI} (101 draws) and last {s50['n']} draws</p>
+  <p class="subtitle">Current #{TARGET_SERIAL} pool + walk-forward backtest across three windows: #{B50_LO}–{B50_HI} ({s50['n']} draws), #{B101_LO}–{B101_HI} ({s101['n']} draws), #{B250_LO}–{B250_HI} ({s250['n']} draws)</p>
 
   <div class="note">
     <p><strong style="color:#e2e8f0">Pool</strong> is the intersection of three independently-constructed K={K} pools,
@@ -193,23 +202,35 @@ table.pd-table td.pd-draw{{color:#e2e8f0;font-weight:600;white-space:nowrap}}
     <strong>PCG64 (O'Neill XSL-RR 128/64) seed #{SEED_PCG:,}</strong> &mdash; the top-ranked seed from
     <a href="/pcg64_seed_scan_k38.html" style="color:#a78bfa">the PCG64 K=38 seed scan</a>'s Stage 1. All three are
     recomputed <strong>live in your browser</strong> below and checked against server-embedded references.</p>
-    <p>The backtest applies this exact three-way construction to the last 101 real draws (#{B101_LO}&ndash;{B101_HI}),
-    re-deriving the pool fresh for every target (no leakage), and tallies hit6b (6 main + bonus), hit6 (6 main, any
-    bonus, equivalent to full containment), hit5, and hit4 against the hypergeometric chance expectation &mdash;
-    computed per draw using that draw's actual pool size (28&ndash;33 across this window, not a fixed average), then
+    <p>The backtest applies this exact three-way construction to three windows &mdash; #{B50_LO}&ndash;{B50_HI}
+    ({s50['n']} draws), #{B101_LO}&ndash;{B101_HI} ({s101['n']} draws), and #{B250_LO}&ndash;{B250_HI} ({s250['n']} draws)
+    &mdash; re-deriving the pool fresh for every target (no leakage), and tallies hit6b (6 main + bonus), hit6 (6 main,
+    any bonus, equivalent to full containment), hit5, and hit4 against the hypergeometric chance expectation &mdash;
+    computed per draw using that draw's actual pool size (28&ndash;33 across these windows, not a fixed average), then
     summed for the significance test.</p>
   </div>
 
   <div class="honest">
-    <p><strong>⚠️ Honest framing:</strong> none of the four hit tiers reach conventional statistical significance in
-    either window (all p &gt; 0.05 &mdash; see the tables below). This construction is statistically indistinguishable
-    from chance, same conclusion as every other multi-pool intersection tested on this site.</p>
+    <p><strong>⚠️ Honest framing:</strong> in the 101-draw and 50-draw windows, none of the four hit tiers reach
+    conventional statistical significance (all p &gt; 0.05). The wider 250-draw window (#{B250_LO}&ndash;{B250_HI}, added
+    2026-09-03) shows one exception &mdash; hit6/containment comes in at {s250['tiers']['hit6']['observed']} observed vs.
+    {s250['tiers']['hit6']['expected']:.2f} expected ({s250['tiers']['hit6']['ratio']:.2f}&times;,
+    <strong style="color:#fecaca">p={s250['tiers']['hit6']['p']:.4f}</strong>), just clearing 0.05. Given how much of
+    that window overlaps the seeds' own selection window (see the caveat below) and that this is one tier out of many
+    tested across this whole site, treat it as a borderline, unconfirmed observation, not a validated edge &mdash; the
+    other three tiers in the same window, and all four tiers in the two narrower windows, sit at chance.</p>
     <p><strong>In-sample seed selection caveat:</strong> the PCG64 seed #{SEED_PCG:,} was found by scanning against the
-    fixed #1&ndash;2050 draw window. Draws #{B101_LO}&ndash;2050 of this backtest (18 of the 101) were part of that same
-    scanned window, so results on those specific draws are partially in-sample for that seed &mdash; it was selected in
-    part for performing acceptably on them. Draws #2051&ndash;{B101_HI} are genuinely out-of-sample. The xoshiro seed
-    #{SEED_XO:,} has an analogous history from its own earlier K=38 scan. Treat the whole backtest with the usual
-    skepticism, and the #{B101_LO}&ndash;2050 stretch specifically with a bit extra.</p>
+    fixed #1&ndash;2050 draw window. This matters more for wider backtest windows, since they reach further back into
+    that same range:</p>
+    <ul style="margin:6px 0 0 20px;line-height:1.7">
+      <li>50-draw window (#{B50_LO}&ndash;{B50_HI}): {inSample50} of {s50['n']} draws in-sample &mdash; fully clean, out-of-sample throughout.</li>
+      <li>101-draw window (#{B101_LO}&ndash;{B101_HI}): {inSample101} of {s101['n']} draws in-sample (#{B101_LO}&ndash;{SCAN_WINDOW_HI}).</li>
+      <li>250-draw window (#{B250_LO}&ndash;{B250_HI}): <strong style="color:#fecaca">{inSample250} of {s250['n']} draws in-sample</strong>
+      (#{B250_LO}&ndash;{SCAN_WINDOW_HI}) &mdash; a majority of this window overlaps the seed's own selection window, so its
+      results (including the borderline hit6 figure above) deserve the most skepticism of the three.</li>
+    </ul>
+    <p style="margin-top:8px">The xoshiro seed #{SEED_XO:,} has an analogous history from its own earlier K=38 scan.
+    Treat every window with the usual skepticism, and the in-sample portions specifically with a bit extra.</p>
   </div>
 
   <div class="section">
@@ -300,10 +321,47 @@ table.pd-table td.pd-draw{{color:#e2e8f0;font-weight:600;white-space:nowrap}}
   </div>
 
   <div class="section">
-    <h2>Per-draw breakdown — #{B101_LO}–{B101_HI} ({s101['n']} draws)</h2>
-    <p class="desc">Every backtested draw: the triple-intersection pool (walk-forward, click "pool" to expand), the
-    actual winning numbers (green = caught by the pool, purple = bonus caught too, amber = bonus missed, gray = missed
-    entirely), and the resulting hit tier. Newest draws first by default.</p>
+    <h2>Backtest results — wider window, #{B250_LO}–{B250_HI} ({s250['n']} draws)</h2>
+    <p class="desc">Same construction and significance method, extended to the last {s250['n']} draws.
+    <strong style="color:#fca5a5">{inSample250} of these {s250['n']} draws (#{B250_LO}&ndash;{SCAN_WINDOW_HI}) overlap the
+    PCG64 seed's own #1&ndash;{SCAN_WINDOW_HI} selection window</strong> &mdash; see the in-sample caveat above.</p>
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="lbl">Average pool size</div>
+        <div class="val">{s250['avgPoolSize']:.2f}</div>
+        <div class="sub">range {s250['minPoolSize']}–{s250['maxPoolSize']}</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Containment (hit6)</div>
+        <div class="val">{s250['containment']:,} / {s250['n']:,}</div>
+        <div class="sub">{s250['containmentPct']:.2f}%</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Draws tested</div>
+        <div class="val">{s250['n']:,}</div>
+        <div class="sub">#{B250_LO}–{B250_HI}, walk-forward</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">In-sample overlap</div>
+        <div class="val">{inSample250} / {s250['n']}</div>
+        <div class="sub">#{B250_LO}–{SCAN_WINDOW_HI}, see caveat above</div>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table class="stats-table">
+        <thead><tr>
+          <th>Tier</th><th>Observed</th><th>Expected</th><th>Lift</th><th>χ²</th><th class="tc">df</th><th>p-value</th><th class="tc">Significant?</th>
+        </tr></thead>
+        <tbody>{tier250_html}</tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Per-draw breakdown — #{B250_LO}–{B250_HI} ({s250['n']} draws)</h2>
+    <p class="desc">Every backtested draw across the full 250-draw window: the triple-intersection pool (walk-forward,
+    click "pool" to expand), the actual winning numbers (green = caught by the pool, purple = bonus caught too, amber =
+    bonus missed, gray = missed entirely), and the resulting hit tier. Newest draws first by default.</p>
     <div class="pd-controls">
       <span class="pd-lbl">Tier</span>
       <select id="pdTierFilter" onchange="pdApplyFilter()">

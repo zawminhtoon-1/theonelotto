@@ -24,8 +24,12 @@ hypergeometric trial), then a normal-approximation z-test / chi-square
 (df=1) is applied to the sum, same convention as the site's other
 varying-pool-size backtests (e.g. the 2-2-2 hot/cold pool test).
 
-Two windows reported: the full 101-draw window (#2033-2133) and the
-last 50 draws (#2084-2133).
+Three windows reported: the full 101-draw window (#2033-2133), the
+last 50 draws (#2084-2133), and a wider 250-draw window (#1884-2133)
+added 2026-09-03. The 250-draw window has notably more in-sample
+overlap with the PCG64 scan's #1-2050 training range (167 of its 250
+draws, #1884-2050) than the 101-draw window (18 of 101) -- flagged
+explicitly on the page.
 
 Output: triple_k38_stats_meta.json
 Run: python precompute_triple_k38_stats.py
@@ -44,6 +48,8 @@ SEED_PCG = -4675555
 TARGET_SERIAL = 2134
 BACKTEST101_LO, BACKTEST101_HI = 2033, 2133
 BACKTEST50_LO, BACKTEST50_HI = 2084, 2133
+BACKTEST250_LO, BACKTEST250_HI = 1884, 2133
+SCAN_WINDOW_HI = 2050  # PCG64 scan's fixed training window is #1-2050
 
 MASK64 = 0xFFFFFFFFFFFFFFFF
 
@@ -186,7 +192,7 @@ def prob_all_in(subset_needed, pool_max, pick_k):
         return 0.0
     return math.comb(pool_max - subset_needed, pick_k - subset_needed) / math.comb(pool_max, pick_k)
 
-targets = list(range(BACKTEST101_LO, BACKTEST101_HI + 1))
+targets = list(range(BACKTEST250_LO, BACKTEST250_HI + 1))
 per_draw = []
 for T in targets:
     idx = T - 1
@@ -250,8 +256,17 @@ def significance_for_window(rows):
 per_draw_by_serial = {r['s']: r for r in per_draw}
 window101 = [per_draw_by_serial[s] for s in range(BACKTEST101_LO, BACKTEST101_HI + 1)]
 window50 = [per_draw_by_serial[s] for s in range(BACKTEST50_LO, BACKTEST50_HI + 1)]
+window250 = [per_draw_by_serial[s] for s in range(BACKTEST250_LO, BACKTEST250_HI + 1)]
 summary101 = significance_for_window(window101)
 summary50 = significance_for_window(window50)
+summary250 = significance_for_window(window250)
+
+def in_sample_count(lo, hi):
+    return max(0, min(hi, SCAN_WINDOW_HI) - lo + 1)
+
+inSample101 = in_sample_count(BACKTEST101_LO, BACKTEST101_HI)
+inSample50 = in_sample_count(BACKTEST50_LO, BACKTEST50_HI)
+inSample250 = in_sample_count(BACKTEST250_LO, BACKTEST250_HI)
 
 print(f"\n=== #{BACKTEST101_LO}-{BACKTEST101_HI} ({summary101['n']} draws) ===")
 print(f"Avg pool: {summary101['avgPoolSize']:.2f} (range {summary101['minPoolSize']}-{summary101['maxPoolSize']})")
@@ -261,6 +276,12 @@ for tier_name, s in summary101['tiers'].items():
 print(f"\n=== #{BACKTEST50_LO}-{BACKTEST50_HI} ({summary50['n']} draws) ===")
 print(f"Avg pool: {summary50['avgPoolSize']:.2f} (range {summary50['minPoolSize']}-{summary50['maxPoolSize']})")
 for tier_name, s in summary50['tiers'].items():
+    print(f"  {tier_name}: obs={s['observed']} exp={s['expected']:.2f} ratio={s['ratio']:.3f}x z={s['z']:.3f} chi2={s['chi2']:.3f} p={s['p']:.4f}")
+
+print(f"\n=== #{BACKTEST250_LO}-{BACKTEST250_HI} ({summary250['n']} draws) ===")
+print(f"Avg pool: {summary250['avgPoolSize']:.2f} (range {summary250['minPoolSize']}-{summary250['maxPoolSize']})")
+print(f"In-sample overlap with PCG64 scan window (#1-{SCAN_WINDOW_HI}): {inSample250} of {summary250['n']} draws")
+for tier_name, s in summary250['tiers'].items():
     print(f"  {tier_name}: obs={s['observed']} exp={s['expected']:.2f} ratio={s['ratio']:.3f}x z={s['z']:.3f} chi2={s['chi2']:.3f} p={s['p']:.4f}")
 
 meta = {
@@ -275,8 +296,14 @@ meta = {
     'currentPool': current_pool,
     'backtest101Lo': BACKTEST101_LO, 'backtest101Hi': BACKTEST101_HI,
     'backtest50Lo': BACKTEST50_LO, 'backtest50Hi': BACKTEST50_HI,
+    'backtest250Lo': BACKTEST250_LO, 'backtest250Hi': BACKTEST250_HI,
+    'scanWindowHi': SCAN_WINDOW_HI,
     'summary101': summary101,
     'summary50': summary50,
+    'summary250': summary250,
+    'inSample101': inSample101,
+    'inSample50': inSample50,
+    'inSample250': inSample250,
     'historicalDraws': [{'s': s, 'a': d} for s, d in zip(all_serials, all_main6)],
     'perDraw': list(reversed(per_draw)),  # newest-first, matching page default
 }
