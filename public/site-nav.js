@@ -94,6 +94,7 @@
             '<a href="/xoshiro_base_review100.html">🧪 Base Pool Construction Review (100 Draws)</a>' +
             '<a href="/xoshiro_base_review1000.html">🧪 Base Pool Construction Review (1000 Draws)</a>' +
             '<a href="/xoshiro_k38_x_modularcycle_k38_stats.html">📊 Modular Cycle (native K=38) × K=38 — Stats</a>' +
+            '<a href="/triple_k38_stats.html">📊 Triple K=38 — xoshiro × Modular Cycle × PCG64 — Stats</a>' +
           '</div></div>' +
         '</div>' +
         '<div class="nav-group">' +
