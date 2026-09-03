@@ -82,6 +82,12 @@ summary:hover{color:#f1f5f9}
 .filter-legend .swatch.include{background:#312e5f;box-shadow:0 0 0 1px #0a0f1e,0 0 0 2px #22c55e}
 .filter-legend .swatch.exclude{background:#312e5f;opacity:.55;box-shadow:0 0 0 1px #0a0f1e,0 0 0 2px #ef4444}
 .page-info{font-size:.8rem;color:#94a3b8}
+.lookup select{background:#0a0f1e;border:1px solid #334155;border-radius:7px;padding:7px 10px;
+  color:#e2e8f0;font-size:.82rem}
+.pd-lbl{font-size:.72rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em}
+#generatedResults{margin-bottom:14px}
+#generatedResults .gen-hdr{font-size:.78rem;color:#94a3b8;margin-bottom:8px}
+#generatedResults .gen-row{margin-bottom:6px}
 .tbl-wrap{overflow-x:auto;border-radius:10px;border:1px solid #1e293b}
 table.combos{width:100%;border-collapse:collapse;font-size:.83rem}
 table.combos th{background:#0a0f1e;padding:8px 12px;text-align:left;color:#94a3b8;
@@ -387,14 +393,35 @@ table.combos tr:hover td{background:#111827}
     <div id="loadingMsg">Loading 625,520 combinations…</div>
     <div id="comboUI" style="display:none">
       <div class="lookup">
+        <span class="pd-lbl">Hot/cold pattern</span>
+        <select id="hcFilterSelect" onchange="applyFilter()">
+          <option value="">All patterns</option>
+          <option value="0">0h/6c</option>
+          <option value="1">1h/5c</option>
+          <option value="2">2h/4c</option>
+          <option value="3">3h/3c</option>
+          <option value="4">4h/2c</option>
+          <option value="5">5h/1c</option>
+          <option value="6">6h/0c</option>
+        </select>
         <button class="btn" onclick="clearFilter()">Clear filter</button>
         <button class="btn primary" onclick="downloadCSV()">⬇ Download CSV</button>
         <span id="filterInfo" class="page-info"></span>
       </div>
       <div class="filter-legend">Click a number to cycle: <span class="swatch neutral"></span>neutral (no filter) &rarr;
         <span class="swatch include"></span>include (must contain) &rarr; <span class="swatch exclude"></span>exclude (must not
-        contain) &rarr; back to neutral. Include and exclude constraints apply together.</div>
+        contain) &rarr; back to neutral. Include and exclude constraints apply together. Hot/cold pattern (walk-forward
+        top-21/bottom-22 split, computed live from the same embedded historical data as Pass 3) applies on top of both.</div>
       <div class="filter-grid" id="filterGrid"></div>
+
+      <div class="lookup" style="margin-top:4px">
+        <span class="pd-lbl">Random sample</span>
+        <button class="btn primary" onclick="generateSamples(5)">🎲 Generate 5</button>
+        <button class="btn primary" onclick="generateSamples(10)">🎲 Generate 10</button>
+        <span class="page-info">Samples from the currently filtered set (or all 625,520 if no filter is active).</span>
+      </div>
+      <div id="generatedResults"></div>
+
       <div class="tbl-wrap">
         <div class="lookup" style="justify-content:space-between;padding:10px 12px;margin-bottom:0">
           <span id="pageInfo" class="page-info"></span>
@@ -627,6 +654,22 @@ function isInTriplePool(combo) {
   return combo.every(n => TRIPLE_SET.has(n));
 }
 
+// ── Hot/cold pattern filter: walk-forward top-21/bottom-22 split, computed
+// live from the same embedded HISTORICAL_COMBOS array used for Pass 3 above
+// (index i == draw serial i+1, no gaps -- same convention as every other
+// hot/cold computation on this site). ────────────────────────────────────
+function computeHotSet() {
+  const freq = new Array(44).fill(0);
+  HISTORICAL_COMBOS.forEach(combo => combo.forEach(n => freq[n]++));
+  const nums = Array.from({length: 43}, (_, i) => i + 1);
+  nums.sort((a, b) => freq[b] - freq[a] || a - b);
+  return new Set(nums.slice(0, 21));
+}
+const HOT_SET = computeHotSet();
+function hotCount(combo) {
+  return combo.filter(n => HOT_SET.has(n)).length;
+}
+
 // ── Remaining combos: fetch, paginate, filter, download ─────────────────────
 const POOL_BASE = liveBase;
 let REMAINING = [];
@@ -693,23 +736,52 @@ function toggleNum(n) {
 function clearFilter() {
   numState.clear();
   document.querySelectorAll('.num-btn.include, .num-btn.exclude').forEach(b => b.classList.remove('include', 'exclude'));
+  document.getElementById('hcFilterSelect').value = '';
   applyFilter();
 }
 function applyFilter() {
   const includeNums = [...numState.entries()].filter(([n, s]) => s === 'include').map(([n]) => n);
   const excludeNums = [...numState.entries()].filter(([n, s]) => s === 'exclude').map(([n]) => n);
-  filtered = (includeNums.length === 0 && excludeNums.length === 0) ? REMAINING : REMAINING.filter(c => {
+  const hcVal = document.getElementById('hcFilterSelect').value;
+  filtered = (includeNums.length === 0 && excludeNums.length === 0 && hcVal === '') ? REMAINING : REMAINING.filter(c => {
     for (const n of includeNums) if (!c.includes(n)) return false;
     for (const n of excludeNums) if (c.includes(n)) return false;
+    if (hcVal !== '' && hotCount(c) !== parseInt(hcVal, 10)) return false;
     return true;
   });
   const parts = [];
   if (includeNums.length) parts.push('contain ' + includeNums.sort((a,b)=>a-b).join(', '));
   if (excludeNums.length) parts.push('exclude ' + excludeNums.sort((a,b)=>a-b).join(', '));
+  if (hcVal !== '') parts.push(hcVal + 'h/' + (6 - parseInt(hcVal, 10)) + 'c pattern');
   document.getElementById('filterInfo').textContent = parts.length === 0 ? '' :
     (filtered.length.toLocaleString() + ' / ' + REMAINING.length.toLocaleString() + ' combos ' + parts.join(' and '));
   curPage = 0;
   render();
+}
+
+// ── Random sample generator: draws N distinct combos from the currently
+// filtered set (or all REMAINING if no filter is active) via a partial
+// Fisher-Yates shuffle of index positions (doesn't mutate filtered/REMAINING). ─
+function generateSamples(n) {
+  const pool = filtered.length > 0 ? filtered : REMAINING;
+  const container = document.getElementById('generatedResults');
+  if (pool.length === 0) {
+    container.innerHTML = '<p style="color:#64748b;font-size:.85rem">No combos match the current filter to sample from.</p>';
+    return;
+  }
+  const count = Math.min(n, pool.length);
+  const indices = Array.from({length: pool.length}, (_, i) => i);
+  for (let i = indices.length - 1; i > indices.length - 1 - count; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [indices[i], indices[j]] = [indices[j], indices[i]];
+  }
+  const picks = indices.slice(indices.length - count).map(i => pool[i]);
+  const sourceLabel = filtered.length > 0 && filtered.length < REMAINING.length ? filtered.length.toLocaleString() + ' filtered' : REMAINING.length.toLocaleString() + ' total';
+  container.innerHTML =
+    '<div class="gen-hdr">Generated ' + picks.length + ' random combo' + (picks.length !== 1 ? 's' : '') + ' from ' + sourceLabel + ':</div>' +
+    picks.map(c => '<div class="balls gen-row">' + c.map(n2 =>
+      '<span class="nb" style="background:' + getBallColor(n2) + '33;color:#e2e8f0;border:1px solid ' + getBallColor(n2) + '">' + n2 + '</span>'
+    ).join('') + '</div>').join('');
 }
 function totalPages() { return Math.max(1, Math.ceil(filtered.length / PAGE_SIZE)); }
 function goPage(p) { curPage = Math.max(0, Math.min(p, totalPages()-1)); render(); }
