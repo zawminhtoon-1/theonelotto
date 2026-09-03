@@ -21,7 +21,7 @@ never should.
 
 Run: python load_pcg64_seed_scan_loto7_k30_to_db.py
 """
-import json, sqlite3, glob, re
+import json, sqlite3, glob, re, time
 
 BASE = r"C:\Users\Zaw Min Htoon\source\repos\theonelotto"
 DB_PATH = BASE + r"\loto7_local.db"
@@ -41,28 +41,57 @@ stage_nums_loaded = []
 for path in stage_files:
     with open(path, encoding='utf-8') as f:
         stage = json.load(f)
-    print(f"Stage {stage['stage']}: {len(stage['results'])} rows (seeds {stage['seedRange']})")
+    print(f"Stage {stage['stage']}: {len(stage['results'])} rows (seeds {stage['seedRange']})", flush=True)
     all_results.extend(stage['results'])
     stage_nums_loaded.append(stage['stage'])
 
-print(f"\nCombined: {len(all_results):,} rows from stages {stage_nums_loaded}")
+print(f"\nCombined: {len(all_results):,} rows from stages {stage_nums_loaded}", flush=True)
 
-# ── Gap/duplicate check on what IS loaded (must always be clean, complete or not) ──
+# ── De-duplicate + gap check on what IS loaded (must always be clean, complete
+# or not). Uses a dict keyed by seed (O(n), not the old O(n^2) list.count()
+# scan) -- an exact-duplicate seed with IDENTICAL result values (e.g. a
+# harmless off-by-one stage-boundary overlap, seed scanned twice) is
+# silently collapsed to one row; a duplicate seed with DIFFERING values
+# (a real data bug) still raises. ────────────────────────────────────────────
+t_dedup0 = time.time()
+by_seed = {}
+conflicting = []
+for r in all_results:
+    seed = r[0]
+    if seed in by_seed and by_seed[seed] != r:
+        conflicting.append((seed, by_seed[seed], r))
+    by_seed[seed] = r
+if conflicting:
+    raise SystemExit(f"CONFLICTING duplicate seeds (same seed, different results) across stages: {conflicting[:5]}...")
+n_exact_dupes = len(all_results) - len(by_seed)
+if n_exact_dupes:
+    print(f"Collapsed {n_exact_dupes} harmless exact-duplicate seed(s) (stage-boundary overlap) in "
+          f"{time.time()-t_dedup0:.2f}s.", flush=True)
+all_results = list(by_seed.values())
+print(f"De-dup check done in {time.time()-t_dedup0:.2f}s -- {len(all_results):,} unique seeds.", flush=True)
+
 seeds_loaded = sorted(r[0] for r in all_results)
-if len(set(seeds_loaded)) != len(seeds_loaded):
-    dupes = [s for s in set(seeds_loaded) if seeds_loaded.count(s) > 1]
-    raise SystemExit(f"DUPLICATE seeds found across loaded stages: {dupes[:10]}...")
 expected_contiguous = list(range(seeds_loaded[0], seeds_loaded[-1] + 1))
 if seeds_loaded != expected_contiguous:
     missing = sorted(set(expected_contiguous) - set(seeds_loaded))
     raise SystemExit(f"GAP in loaded seed range {seeds_loaded[0]:,}-{seeds_loaded[-1]:,}: missing {len(missing)} seeds, "
                       f"e.g. {missing[:10]}. Stages must be loaded in order with no skips.")
 print(f"Verified: {len(seeds_loaded):,} seeds, contiguous, no gaps or duplicates "
-      f"({seeds_loaded[0]:,} to {seeds_loaded[-1]:,}).")
+      f"({seeds_loaded[0]:,} to {seeds_loaded[-1]:,}).", flush=True)
 
+t_db0 = time.time()
+print("Connecting to DB...", flush=True)
 conn = sqlite3.connect(DB_PATH)
 cur = conn.cursor()
 
+# Bulk-load performance pragmas (this is a scratch/rebuild-from-source table,
+# durability doesn't matter -- always regenerated from the stage JSON files).
+cur.execute("PRAGMA synchronous=OFF")
+cur.execute("PRAGMA journal_mode=MEMORY")
+cur.execute("PRAGMA temp_store=MEMORY")
+print(f"Connected + pragmas set in {time.time()-t_db0:.1f}s", flush=True)
+
+t0 = time.time()
 cur.execute(f"DROP TABLE IF EXISTS {TABLE}")
 cur.execute(f"""
     CREATE TABLE {TABLE} (
@@ -71,16 +100,24 @@ cur.execute(f"""
         hit7_count  INTEGER NOT NULL,
         hit6_count  INTEGER NOT NULL,
         hit5_count  INTEGER NOT NULL,
-        hit4_count  INTEGER NOT NULL,
-        created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        hit4_count  INTEGER NOT NULL
     )
 """)
+print(f"Table dropped+recreated in {time.time()-t0:.1f}s", flush=True)
 
-cur.executemany(
-    f"INSERT INTO {TABLE} (seed, hit7b_count, hit7_count, hit6_count, hit5_count, hit4_count) VALUES (?, ?, ?, ?, ?, ?)",
-    all_results
-)
+t0 = time.time()
+cur.execute("BEGIN")
+CHUNK = 100_000
+for i in range(0, len(all_results), CHUNK):
+    chunk = all_results[i:i+CHUNK]
+    cur.executemany(
+        f"INSERT INTO {TABLE} (seed, hit7b_count, hit7_count, hit6_count, hit5_count, hit4_count) VALUES (?, ?, ?, ?, ?, ?)",
+        chunk
+    )
+    print(f"  Inserted {min(i+CHUNK, len(all_results)):,} / {len(all_results):,} rows "
+          f"({time.time()-t0:.1f}s elapsed)", flush=True)
 conn.commit()
+print(f"Insert + commit done in {time.time()-t0:.1f}s total", flush=True)
 
 cur.execute(f"SELECT COUNT(*) FROM {TABLE}")
 count = cur.fetchone()[0]
