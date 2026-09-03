@@ -7,47 +7,63 @@
 <style>
 
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#0f172a;color:#f1f5f9;font-family:system-ui,sans-serif;padding:24px;min-height:100vh}
-.wrap{max-width:1200px;margin:0 auto}
+body{background:#0a0f1e;color:#e2e8f0;font-family:system-ui,sans-serif;padding-top:60px;min-height:100vh}
+.wrap{max-width:1200px;margin:0 auto;padding:24px 16px}
 h1{font-size:1.4rem;font-weight:700;color:#f1f5f9;margin-bottom:4px}
-.subtitle{font-size:.85rem;color:#94a3b8;margin-bottom:20px}
+.subtitle{font-size:.85rem;color:#64748b;margin-bottom:20px}
 
-.section{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px;margin-bottom:20px}
-.section h2{font-size:1rem;font-weight:700;color:#f1f5f9;margin-bottom:4px}
-.section .desc{font-size:.8rem;color:#94a3b8;margin-bottom:14px}
+.note{background:#0d1526;border:1px solid #1e293b;border-radius:10px;padding:14px 18px;
+  font-size:.8rem;color:#94a3b8;margin-bottom:20px;line-height:1.6}
+.note p+p{margin-top:8px}
+.note code{background:#0a0f1e;padding:1px 5px;border-radius:4px;font-size:.85em}
+
+.honest{background:#1c0f0f;border:1px solid #7f1d1d;border-radius:10px;padding:14px 18px;
+  font-size:.8rem;color:#fca5a5;margin-bottom:20px;line-height:1.6}
+.honest strong{color:#fecaca}
+.honest p+p{margin-top:8px}
+.honest .stats-mini{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
+.honest .stats-mini div{background:#0a0f1e;border:1px solid #450a0a;border-radius:8px;padding:8px 12px;font-size:.76rem;color:#e2e8f0}
+.honest .stats-mini div b{color:#fca5a5}
+
+.section{background:#0d1526;border:1px solid #1e293b;border-radius:12px;padding:20px;margin-bottom:20px}
+.section h2{font-size:1rem;font-weight:700;color:#f1f5f9;margin-bottom:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.section h3{font-size:.86rem;font-weight:700;color:#cbd5e1;margin:14px 0 6px}
+.section .desc{font-size:.8rem;color:#64748b;margin-bottom:14px}
+.verify-badge{font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:10px;text-transform:uppercase;letter-spacing:.04em}
+.verify-badge.pending{background:#1e293b;color:#94a3b8}
+.verify-badge.ok{background:#14532d;color:#86efac}
+.verify-badge.fail{background:#450a0a;color:#fca5a5}
+.verify-badge.na{background:#1e293b;color:#64748b}
 
 .balls{display:flex;flex-wrap:wrap;gap:5px}
 .nb{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;
   border-radius:50%;font-size:.78rem;font-weight:700;background:#312e5f;color:#c4b5fd;
   border:1px solid #7c3aed55;flex-shrink:0}
+.nb.b2{background:#450a0a;color:#fca5a5;border-color:#ef444455}
 
 .stats-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
-.stat-card{background:#0f172a;border:1px solid #334155;border-radius:10px;padding:14px 18px;flex:1;min-width:150px}
-.stat-card .lbl{font-size:.7rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.stat-card{background:#0a0f1e;border:1px solid #1e293b;border-radius:10px;padding:14px 18px;flex:1;min-width:150px}
+.stat-card .lbl{font-size:.7rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
 .stat-card .val{font-size:1.35rem;font-weight:700;color:#f1f5f9}
 .stat-card .sub{font-size:.75rem;color:#94a3b8;margin-top:2px}
 .stat-card.final .val{color:#38bdf8}
 
-.note{background:#0f172a;border:1px solid #334155;border-radius:10px;padding:14px 18px;
-  font-size:.8rem;color:#94a3b8;margin-bottom:20px;line-height:1.6}
-.note p+p{margin-top:8px}
-.note code{background:#0a0f1e;padding:1px 5px;border-radius:4px;font-size:.85em}
-
-.elim-flow{font-size:1rem;color:#e2e8f0;text-align:center;padding:16px;background:#0f172a;
-  border:1px solid #334155;border-radius:10px;font-weight:600;letter-spacing:.02em;margin-top:16px}
-.elim-flow .arrow{color:#94a3b8;margin:0 10px}
+.elim-flow{font-size:1rem;color:#e2e8f0;text-align:center;padding:16px;background:#0a0f1e;
+  border:1px solid #1e293b;border-radius:10px;font-weight:600;letter-spacing:.02em}
+.elim-flow .arrow{color:#64748b;margin:0 10px}
 .elim-flow .n{color:#f1f5f9}
 .elim-flow .final{color:#38bdf8}
 
-details{background:#0f172a;border:1px solid #334155;border-radius:10px;padding:12px 16px}
+details{background:#0a0f1e;border:1px solid #1e293b;border-radius:10px;padding:12px 16px}
 summary{cursor:pointer;font-size:.85rem;font-weight:600;color:#e2e8f0;user-select:none}
 summary:hover{color:#f1f5f9}
 .methods-table{width:100%;border-collapse:collapse;font-size:.82rem;margin-top:12px}
-.methods-table td{padding:7px 10px;border-bottom:1px solid #334155;vertical-align:middle}
-.methods-table td.mname{color:#94a3b8;white-space:nowrap;font-weight:600;width:160px}
+.methods-table td{padding:7px 10px;border-bottom:1px solid #1e293b;vertical-align:middle}
+.methods-table td.mname{color:#94a3b8;white-space:nowrap;font-weight:600;width:180px}
+.methods-table .nb{width:26px;height:26px;font-size:.7rem;background:#1e293b;color:#94a3b8;border:none}
 
 .lookup{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
-.lookup .btn{padding:6px 14px;background:#0f172a;border:1px solid #334155;border-radius:7px;
+.lookup .btn{padding:6px 14px;background:#1e293b;border:1px solid #334155;border-radius:7px;
   color:#94a3b8;font-size:.8rem;cursor:pointer}
 .lookup .btn:hover{color:#f1f5f9}
 .lookup .btn.primary{background:#7c3aed;border-color:#7c3aed;color:#fff}
@@ -58,80 +74,180 @@ summary:hover{color:#f1f5f9}
   border-radius:50%;font-size:.72rem;font-weight:700;color:#fff;background:#312e5f;
   border:none;cursor:pointer;opacity:.65;transition:all .12s;flex-shrink:0}
 .num-btn:hover{opacity:.9}
-.num-btn.active{opacity:1;box-shadow:0 0 0 2px #0f172a,0 0 0 4px #38bdf8;transform:scale(1.08)}
+.num-btn.include{opacity:1;box-shadow:0 0 0 2px #0a0f1e,0 0 0 4px #22c55e;transform:scale(1.08)}
+.num-btn.exclude{opacity:.55;box-shadow:0 0 0 2px #0a0f1e,0 0 0 4px #ef4444;transform:scale(1.08);
+  text-decoration:line-through;text-decoration-thickness:2px}
+.filter-legend{font-size:.72rem;color:#64748b;margin-bottom:8px}
+.filter-legend .swatch{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;
+  border-radius:50%;font-size:0;margin:0 3px -3px 0}
+.filter-legend .swatch.neutral{background:#312e5f;opacity:.65}
+.filter-legend .swatch.include{background:#312e5f;box-shadow:0 0 0 1px #0a0f1e,0 0 0 2px #22c55e}
+.filter-legend .swatch.exclude{background:#312e5f;opacity:.55;box-shadow:0 0 0 1px #0a0f1e,0 0 0 2px #ef4444}
 .page-info{font-size:.8rem;color:#94a3b8}
-.tbl-wrap{overflow-x:auto;border-radius:10px;border:1px solid #334155}
+.lookup select{background:#0a0f1e;border:1px solid #334155;border-radius:7px;padding:7px 10px;
+  color:#e2e8f0;font-size:.82rem}
+.pd-lbl{font-size:.72rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em}
+#generatedResults{margin-bottom:14px}
+#generatedResults .gen-hdr{font-size:.78rem;color:#94a3b8;margin-bottom:8px}
+#generatedResults .gen-row{margin-bottom:6px}
+.tbl-wrap{overflow-x:auto;border-radius:10px;border:1px solid #1e293b}
 table.combos{width:100%;border-collapse:collapse;font-size:.83rem}
-table.combos th{background:#0f172a;padding:8px 12px;text-align:left;color:#94a3b8;
+table.combos th{background:#0a0f1e;padding:8px 12px;text-align:left;color:#94a3b8;
   font-weight:600;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;
-  border-bottom:1px solid #334155}
+  border-bottom:1px solid #1e293b}
 table.combos td{padding:6px 12px;border-bottom:1px solid #0f172a}
 table.combos tr:hover td{background:#111827}
-#loadingMsg{padding:30px;text-align:center;color:#94a3b8;font-size:.85rem}
+#loadingMsg{padding:30px;text-align:center;color:#64748b;font-size:.85rem}
 
-.footer{margin-top:28px;font-size:.78rem;color:#64748b;padding-bottom:20px;line-height:1.6}
+.footer{margin-top:28px;font-size:.78rem;color:#475569;padding-bottom:20px;line-height:1.6}
 </style>
 </head>
 <body>
 
+<script src="/site-nav.js"></script>
 <div class="wrap">
   <h1>✂️ Loto 7 — Draw #693 Elimination</h1>
-  <p class="subtitle">Base = ARIMA(2,1,0)'s K=25 prediction pool for draw #693 &mdash; Pass 1 = 16 methods' K=22 picks &mdash; Pass 2 = 4 methods' K=25 picks &mdash; Pass 3 = historical repeat filter</p>
+  <p class="subtitle">Combinatorial set-difference: ARIMA's K=25 Base pool, minus combos covered by any of the 16 prediction methods, minus statistically-validated pattern filters</p>
+
+  <div class="honest">
+    <p><strong>Base construction — tested, not assumed.</strong> Before building this page, we walk-forward
+    backtested whether intersecting Base with the completed xoshiro K=25/28/30 Loto7 seed scans' best seeds would
+    strengthen it (same rigor as the Loto6 seed-intersection pages), across all 692 real
+    Loto7 draws:</p>
+    <div class="stats-mini">
+      <div>ARIMA K=25 alone<br>containment (actual draw fully inside pool): <b>4.35%</b> (30/690)<br>~chance level for a random 25-of-37 pool (4.67%)</div>
+      <div>ARIMA ∩ 1 xoshiro seed<br>pool shrinks to ~17&ndash;20 numbers<br>containment: <b>0.29%&ndash;1.45%</b> &mdash; worse</div>
+      <div>ARIMA ∩ all 3 xoshiro seeds<br>pool shrinks to ~10 numbers<br>containment: <b>0%</b> (0/690) &mdash; never once contained the real combo</div>
+    </div>
+    <p>Intersecting Base with any xoshiro seed makes it <strong>worse</strong>, not better — the pool shrinks enough
+    that it stops reliably containing the actual winning numbers at all. Decision: Base stays
+    <strong style="color:#e2e8f0">ARIMA(2,1,0) K=25 alone</strong>, not intersected with any seed scan. (Also worth
+    noting: even ARIMA alone barely beats the chance level for containment — this Base isn't a strong signal on its
+    own, it's a starting point the elimination passes then narrow down.)</p>
+  </div>
 
   <div class="note">
-    <p>Base is <strong style="color:#f1f5f9">ARIMA(2,1,0)'s K=25 pick</strong> for draw #693 (not yet drawn) &mdash;
+    <p><strong style="color:#e2e8f0">Base</strong> is <strong>ARIMA(2,1,0)'s K=25 pick</strong> for draw #693 (not yet drawn) &mdash;
     read from <a href="/loto7/predictions" style="color:#a78bfa">the live /loto7/predictions page</a>'s data (ARIMA's native
     K=15 pool, normalized to K=25 via <code>topKNums()</code>, the same generic cross-method-consensus
-    trim/pad function used throughout this site &mdash; the same method that made ARIMA the top-ranked method at K=25 on
-    <a href="/loto7_backtest100_multik.html" style="color:#a78bfa">the 100-draw multi-K backtest</a>). This defines the working
-    universe: all C(25,7) = 480,700 seven-number combinations drawable from this 25-number pool.</p>
-    <p><strong style="color:#f1f5f9">Pass 1</strong> is each of the 16 prediction methods' K=22 pick for draw
-    #693 (native K=15 pool normalized to K=22 via the same <code>topKNums()</code>), checked
-    <strong>independently</strong> &mdash; NOT a union of raw numbers. Any Base combo fully contained within ANY single
-    one of these 16 K=22 sets gets removed &mdash; same per-method containment pattern used on the Loto6
-    elimination pages (e.g. <a href="/xoshiro_elim_2130.html" style="color:#a78bfa">xoshiro_elim_2130.html</a>'s Pass 1),
+    trim/pad function used throughout this site). It defines the working universe: all C(25,7) = 480,700
+    seven-number combinations drawable from this 25-number pool.</p>
+    <p><strong style="color:#e2e8f0">Pass 1</strong> is each of the 16 prediction methods' K=22 pick for draw
+    #693 (native K=15 pool normalized to K=22), checked <strong>independently</strong> &mdash; NOT a union
+    of raw numbers. Any Base combo fully contained within ANY single one of these 16 K=22 sets gets removed,
     leaving 149,932.</p>
-    <p><strong style="color:#f1f5f9">Pass 2</strong> is 4 specific methods' K=25 pick for draw
-    #693 &mdash; MA-37, Poly deg-2, Hidden Markov Model, Weighted MA-37 &mdash; checked <strong>independently</strong>, same as Pass 1
-    (not a union). Any Pass-1-remaining combo fully contained within ANY single one of these 4
-    K=25 sets gets removed, leaving 86,623.</p>
-    <p><strong style="color:#f1f5f9">Pass 3 (final)</strong> is a historical repeat filter, same "zero repeats in history"
+    <p><strong style="color:#e2e8f0">Pass 2</strong> is 4 specific methods' K=25 pick for draw
+    #693 &mdash; MA-37, Poly deg-2, Hidden Markov Model, Weighted MA-37 &mdash; checked independently. Any Pass-1-remaining combo fully
+    contained within ANY single one of these 4 K=25 sets gets removed, leaving 86,623.</p>
+    <p><strong style="color:#e2e8f0">Pass 3</strong> is a historical repeat filter &mdash; the same "zero repeats in history"
     pattern used on the Loto6 elimination pages. Any Pass-2-remaining combo that exactly matches one of Loto7's
     692 historical actual winning combos (draws #1&ndash;692, main 7 numbers only,
     bonus ignored) gets removed, leaving 86,620.</p>
+    <p><strong style="color:#e2e8f0">Pass 4</strong> (NEW) is the Worst Combo (Anti-Pick) K=15 pick &mdash;
+    MA-37, Exp-weighted, Random Forest, kNN (k=10), Apriori Assoc Rules consensus, the exact Loto7 analog of the 5-method combination used on the Loto6
+    pages' Worst Combo panel. Any Pass-3-remaining combo fully contained within this 15-number pick gets removed,
+    leaving 86,620.</p>
+    <p><strong style="color:#e2e8f0">Pass 5</strong> (NEW) removes any Pass-4-remaining combo containing a run of
+    4+ consecutive numbers. <strong>Validated first</strong>, same rigor as the Loto6 pages: across all
+    692 real Loto7 draws, run&ge;3 occurs in 15.32% of draws &mdash; too common to be a meaningful
+    pattern, so it was <strong style="color:#fca5a5">rejected</strong> (unlike Loto6, where 6.62% was judged rare enough
+    to use). run&ge;4 occurs in only 18/692
+    draws (2.6%) &mdash; comparably
+    rare to Loto6's threshold, so this is the one actually used. Leaves 84,380.</p>
+    <p><strong style="color:#e2e8f0">Pass 6</strong> (NEW) removes any Pass-5-remaining combo that decomposes into
+    exactly three consecutive pairs plus one leftover single number (e.g. 1,2,9,10,15,16,23) &mdash; the natural Loto7
+    analog of Loto6's "three consecutive pairs" pattern (Loto6's exact-6-numbers-as-3-pairs pattern doesn't map onto
+    Loto7's 7 numbers, so this adds the necessary 7th "single" slot). <strong>Validated first</strong>: occurs in only
+    4/692 real draws (0.58%) &mdash; comparably rare to Loto6's pattern.
+    Leaves 82,711.</p>
+    <p><strong style="color:#e2e8f0">Pass 7</strong> (NEW, final) removes any Pass-6-remaining combo that shares 5 or
+    more numbers with the immediately previous actual draw ("1 step back") &mdash; #692:
+    7, 9, 15, 18, 20, 28, 31. <strong>Validated first</strong> via hypergeometric expectation
+    (pool=37, 7-of-37 draws) against all 691 consecutive real-draw pairs &mdash; explicitly checking
+    the weak heuristic this site rejected for Loto6: overlap=3 occurred in 70/691 pairs (10.13%), essentially matching
+    the 9.32% chance expectation &mdash; <strong style="color:#fca5a5">rejected</strong>, same conclusion as Loto6's
+    abandoned 3-overlap idea. overlap=4 (1.59% observed vs 1.38% expected) was also rejected as too close to chance.
+    overlap&ge;5 has <strong style="color:#86efac">never once occurred</strong>
+    (0/691, vs a near-zero 0.09% chance expectation) &mdash; well-supported, adopted. Leaves
+    <strong style="color:#38bdf8">82,705</strong>.</p>
+    <p>Passes 3, 5, 6 and 7 are recomputed <strong>live in your browser</strong> below (pure JS, pattern/historical
+    checks, no PRNG involved in this page) and checked against server-embedded references &mdash; check the
+    verification badges. Passes 1, 2 and 4's 16-method ML ensemble can't (practically) run in a browser, so those
+    are precomputed server-side and embedded as static data.</p>
   </div>
 
   <div class="section">
     <h2>Base — ARIMA(2,1,0) K=25</h2>
-    <p class="desc">Native K=15 pick normalized to K=25 via cross-method-consensus trim/pad.</p>
+    <p class="desc">Native K=15 pick normalized to K=25 via cross-method-consensus trim/pad. See the
+    honest-framing note above for why this is NOT intersected with a xoshiro seed.</p>
     <div class="balls"><span class="nb">4</span><span class="nb">5</span><span class="nb">6</span><span class="nb">9</span><span class="nb">10</span><span class="nb">11</span><span class="nb">13</span><span class="nb">14</span><span class="nb">15</span><span class="nb">16</span><span class="nb">17</span><span class="nb">18</span><span class="nb">19</span><span class="nb">20</span><span class="nb">22</span><span class="nb">25</span><span class="nb">26</span><span class="nb">27</span><span class="nb">28</span><span class="nb">29</span><span class="nb">30</span><span class="nb">31</span><span class="nb">32</span><span class="nb">34</span><span class="nb">35</span></div>
   </div>
 
   <div class="section">
-    <h2>Pass 1 — 16 prediction methods, K=22 pick for draw #693</h2>
+    <h2>Pass 1 — 16 prediction methods, K=22 pick for draw #693 <span class="verify-badge na">server-computed</span></h2>
     <p class="desc">Each method's native K=15 pool normalized to K=22, checked independently against the Base pool.</p>
     <details>
       <summary>Show all 16 methods' K=22 picks</summary>
       <table class="methods-table">
-        <tbody><tr><td class="mname">Poly deg-2</td><td><div class="balls"><span class="nb" style="width:26px;height:26px;font-size:.7rem">4</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">5</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">9</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">10</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">11</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">13</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">14</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">15</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">17</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">18</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">22</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">23</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">26</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">27</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">28</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">29</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">30</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">31</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">32</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">33</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">34</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">35</span></div></td></tr><tr><td class="mname">MA-37</td><td><div class="balls"><span class="nb" style="width:26px;height:26px;font-size:.7rem">4</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">5</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">9</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">10</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">11</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">13</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">14</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">15</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">17</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">18</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">20</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">22</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">26</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">27</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">28</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">29</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">30</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">31</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">32</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">34</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">35</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">36</span></div></td></tr><tr><td class="mname">Exp-weighted</td><td><div class="balls"><span class="nb" style="width:26px;height:26px;font-size:.7rem">4</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">5</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">9</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">10</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">11</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">13</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">15</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">16</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">18</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">19</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">22</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">23</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">26</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">27</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">28</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">29</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">30</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">31</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">32</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">33</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">34</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">35</span></div></td></tr><tr><td class="mname">Most frequent all</td><td><div class="balls"><span class="nb" style="width:26px;height:26px;font-size:.7rem">4</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">8</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">9</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">10</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">11</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">13</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">14</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">15</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">17</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">18</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">20</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">22</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">26</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">27</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">28</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">29</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">30</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">31</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">32</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">34</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">35</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">36</span></div></td></tr><tr><td class="mname">Markov chain</td><td><div class="balls"><span class="nb" style="width:26px;height:26px;font-size:.7rem">4</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">5</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">7</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">9</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">10</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">11</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">13</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">14</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">15</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">17</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">18</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">20</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">22</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">26</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">27</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">28</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">29</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">30</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">31</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">32</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">34</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">35</span></div></td></tr><tr><td class="mname">ARIMA(2,1,0)</td><td><div class="balls"><span class="nb" style="width:26px;height:26px;font-size:.7rem">4</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">6</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">9</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">10</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">11</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">13</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">14</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">15</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">16</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">18</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">19</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">20</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">22</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">25</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">26</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">28</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">29</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">30</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">31</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">32</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">34</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">35</span></div></td></tr><tr><td class="mname">Random Forest</td><td><div class="balls"><span class="nb" style="width:26px;height:26px;font-size:.7rem">4</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">7</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">9</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">10</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">11</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">13</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">14</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">15</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">17</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">18</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">19</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">21</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">22</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">26</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">27</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">28</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">29</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">30</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">31</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">32</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">34</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">35</span></div></td></tr><tr><td class="mname">RL (Linear Q)</td><td><div class="balls"><span class="nb" style="width:26px;height:26px;font-size:.7rem">4</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">5</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">8</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">9</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">10</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">11</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">13</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">14</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">15</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">17</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">18</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">20</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">22</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">26</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">27</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">28</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">29</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">30</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">31</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">32</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">34</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">35</span></div></td></tr><tr><td class="mname">Hidden Markov Model</td><td><div class="balls"><span class="nb" style="width:26px;height:26px;font-size:.7rem">4</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">9</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">10</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">13</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">14</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">15</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">18</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">21</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">22</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">25</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">26</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">27</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">28</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">29</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">30</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">31</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">32</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">33</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">34</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">35</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">36</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">37</span></div></td></tr><tr><td class="mname">kNN (k=10)</td><td><div class="balls"><span class="nb" style="width:26px;height:26px;font-size:.7rem">4</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">7</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">8</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">9</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">10</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">11</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">12</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">13</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">14</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">15</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">18</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">20</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">22</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">26</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">28</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">29</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">30</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">31</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">32</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">34</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">35</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">37</span></div></td></tr><tr><td class="mname">Modular Cycle (mod 37)</td><td><div class="balls"><span class="nb" style="width:26px;height:26px;font-size:.7rem">4</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">5</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">6</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">9</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">11</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">12</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">13</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">14</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">15</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">17</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">18</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">20</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">21</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">22</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">28</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">29</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">30</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">31</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">34</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">35</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">36</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">37</span></div></td></tr><tr><td class="mname">Apriori Assoc Rules</td><td><div class="balls"><span class="nb" style="width:26px;height:26px;font-size:.7rem">4</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">7</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">9</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">10</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">11</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">13</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">14</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">15</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">17</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">18</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">20</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">22</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">23</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">26</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">27</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">28</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">29</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">30</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">31</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">32</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">34</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">35</span></div></td></tr><tr><td class="mname">Monte Carlo</td><td><div class="balls"><span class="nb" style="width:26px;height:26px;font-size:.7rem">1</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">4</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">7</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">8</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">9</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">10</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">11</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">13</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">14</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">15</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">17</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">18</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">22</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">26</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">27</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">28</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">29</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">30</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">31</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">32</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">34</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">35</span></div></td></tr><tr><td class="mname">Naive Bayes</td><td><div class="balls"><span class="nb" style="width:26px;height:26px;font-size:.7rem">4</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">5</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">6</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">9</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">10</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">11</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">13</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">14</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">15</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">17</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">18</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">20</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">22</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">26</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">27</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">28</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">29</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">30</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">31</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">32</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">34</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">35</span></div></td></tr><tr><td class="mname">Weighted MA-37</td><td><div class="balls"><span class="nb" style="width:26px;height:26px;font-size:.7rem">4</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">5</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">9</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">10</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">11</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">13</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">15</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">16</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">18</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">19</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">22</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">23</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">26</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">27</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">28</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">29</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">30</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">31</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">32</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">33</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">34</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">35</span></div></td></tr><tr><td class="mname">LSTM (seq prediction)</td><td><div class="balls"><span class="nb" style="width:26px;height:26px;font-size:.7rem">3</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">4</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">9</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">10</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">12</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">13</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">15</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">18</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">20</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">22</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">24</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">26</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">27</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">28</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">29</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">30</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">31</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">32</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">34</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">35</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">36</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">37</span></div></td></tr></tbody>
+        <tbody><tr><td class="mname">Poly deg-2</td><td><div class="balls"><span class="nb">4</span><span class="nb">5</span><span class="nb">9</span><span class="nb">10</span><span class="nb">11</span><span class="nb">13</span><span class="nb">14</span><span class="nb">15</span><span class="nb">17</span><span class="nb">18</span><span class="nb">22</span><span class="nb">23</span><span class="nb">26</span><span class="nb">27</span><span class="nb">28</span><span class="nb">29</span><span class="nb">30</span><span class="nb">31</span><span class="nb">32</span><span class="nb">33</span><span class="nb">34</span><span class="nb">35</span></div></td></tr><tr><td class="mname">MA-37</td><td><div class="balls"><span class="nb">4</span><span class="nb">5</span><span class="nb">9</span><span class="nb">10</span><span class="nb">11</span><span class="nb">13</span><span class="nb">14</span><span class="nb">15</span><span class="nb">17</span><span class="nb">18</span><span class="nb">20</span><span class="nb">22</span><span class="nb">26</span><span class="nb">27</span><span class="nb">28</span><span class="nb">29</span><span class="nb">30</span><span class="nb">31</span><span class="nb">32</span><span class="nb">34</span><span class="nb">35</span><span class="nb">36</span></div></td></tr><tr><td class="mname">Exp-weighted</td><td><div class="balls"><span class="nb">4</span><span class="nb">5</span><span class="nb">9</span><span class="nb">10</span><span class="nb">11</span><span class="nb">13</span><span class="nb">15</span><span class="nb">16</span><span class="nb">18</span><span class="nb">19</span><span class="nb">22</span><span class="nb">23</span><span class="nb">26</span><span class="nb">27</span><span class="nb">28</span><span class="nb">29</span><span class="nb">30</span><span class="nb">31</span><span class="nb">32</span><span class="nb">33</span><span class="nb">34</span><span class="nb">35</span></div></td></tr><tr><td class="mname">Most frequent all</td><td><div class="balls"><span class="nb">4</span><span class="nb">8</span><span class="nb">9</span><span class="nb">10</span><span class="nb">11</span><span class="nb">13</span><span class="nb">14</span><span class="nb">15</span><span class="nb">17</span><span class="nb">18</span><span class="nb">20</span><span class="nb">22</span><span class="nb">26</span><span class="nb">27</span><span class="nb">28</span><span class="nb">29</span><span class="nb">30</span><span class="nb">31</span><span class="nb">32</span><span class="nb">34</span><span class="nb">35</span><span class="nb">36</span></div></td></tr><tr><td class="mname">Markov chain</td><td><div class="balls"><span class="nb">4</span><span class="nb">5</span><span class="nb">7</span><span class="nb">9</span><span class="nb">10</span><span class="nb">11</span><span class="nb">13</span><span class="nb">14</span><span class="nb">15</span><span class="nb">17</span><span class="nb">18</span><span class="nb">20</span><span class="nb">22</span><span class="nb">26</span><span class="nb">27</span><span class="nb">28</span><span class="nb">29</span><span class="nb">30</span><span class="nb">31</span><span class="nb">32</span><span class="nb">34</span><span class="nb">35</span></div></td></tr><tr><td class="mname">ARIMA(2,1,0)</td><td><div class="balls"><span class="nb">4</span><span class="nb">6</span><span class="nb">9</span><span class="nb">10</span><span class="nb">11</span><span class="nb">13</span><span class="nb">14</span><span class="nb">15</span><span class="nb">16</span><span class="nb">18</span><span class="nb">19</span><span class="nb">20</span><span class="nb">22</span><span class="nb">25</span><span class="nb">26</span><span class="nb">28</span><span class="nb">29</span><span class="nb">30</span><span class="nb">31</span><span class="nb">32</span><span class="nb">34</span><span class="nb">35</span></div></td></tr><tr><td class="mname">Random Forest</td><td><div class="balls"><span class="nb">4</span><span class="nb">7</span><span class="nb">9</span><span class="nb">10</span><span class="nb">11</span><span class="nb">13</span><span class="nb">14</span><span class="nb">15</span><span class="nb">17</span><span class="nb">18</span><span class="nb">19</span><span class="nb">21</span><span class="nb">22</span><span class="nb">26</span><span class="nb">27</span><span class="nb">28</span><span class="nb">29</span><span class="nb">30</span><span class="nb">31</span><span class="nb">32</span><span class="nb">34</span><span class="nb">35</span></div></td></tr><tr><td class="mname">RL (Linear Q)</td><td><div class="balls"><span class="nb">4</span><span class="nb">5</span><span class="nb">8</span><span class="nb">9</span><span class="nb">10</span><span class="nb">11</span><span class="nb">13</span><span class="nb">14</span><span class="nb">15</span><span class="nb">17</span><span class="nb">18</span><span class="nb">20</span><span class="nb">22</span><span class="nb">26</span><span class="nb">27</span><span class="nb">28</span><span class="nb">29</span><span class="nb">30</span><span class="nb">31</span><span class="nb">32</span><span class="nb">34</span><span class="nb">35</span></div></td></tr><tr><td class="mname">Hidden Markov Model</td><td><div class="balls"><span class="nb">4</span><span class="nb">9</span><span class="nb">10</span><span class="nb">13</span><span class="nb">14</span><span class="nb">15</span><span class="nb">18</span><span class="nb">21</span><span class="nb">22</span><span class="nb">25</span><span class="nb">26</span><span class="nb">27</span><span class="nb">28</span><span class="nb">29</span><span class="nb">30</span><span class="nb">31</span><span class="nb">32</span><span class="nb">33</span><span class="nb">34</span><span class="nb">35</span><span class="nb">36</span><span class="nb">37</span></div></td></tr><tr><td class="mname">kNN (k=10)</td><td><div class="balls"><span class="nb">4</span><span class="nb">7</span><span class="nb">8</span><span class="nb">9</span><span class="nb">10</span><span class="nb">11</span><span class="nb">12</span><span class="nb">13</span><span class="nb">14</span><span class="nb">15</span><span class="nb">18</span><span class="nb">20</span><span class="nb">22</span><span class="nb">26</span><span class="nb">28</span><span class="nb">29</span><span class="nb">30</span><span class="nb">31</span><span class="nb">32</span><span class="nb">34</span><span class="nb">35</span><span class="nb">37</span></div></td></tr><tr><td class="mname">Modular Cycle (mod 37)</td><td><div class="balls"><span class="nb">4</span><span class="nb">5</span><span class="nb">6</span><span class="nb">9</span><span class="nb">11</span><span class="nb">12</span><span class="nb">13</span><span class="nb">14</span><span class="nb">15</span><span class="nb">17</span><span class="nb">18</span><span class="nb">20</span><span class="nb">21</span><span class="nb">22</span><span class="nb">28</span><span class="nb">29</span><span class="nb">30</span><span class="nb">31</span><span class="nb">34</span><span class="nb">35</span><span class="nb">36</span><span class="nb">37</span></div></td></tr><tr><td class="mname">Apriori Assoc Rules</td><td><div class="balls"><span class="nb">4</span><span class="nb">7</span><span class="nb">9</span><span class="nb">10</span><span class="nb">11</span><span class="nb">13</span><span class="nb">14</span><span class="nb">15</span><span class="nb">17</span><span class="nb">18</span><span class="nb">20</span><span class="nb">22</span><span class="nb">23</span><span class="nb">26</span><span class="nb">27</span><span class="nb">28</span><span class="nb">29</span><span class="nb">30</span><span class="nb">31</span><span class="nb">32</span><span class="nb">34</span><span class="nb">35</span></div></td></tr><tr><td class="mname">Monte Carlo</td><td><div class="balls"><span class="nb">1</span><span class="nb">4</span><span class="nb">7</span><span class="nb">8</span><span class="nb">9</span><span class="nb">10</span><span class="nb">11</span><span class="nb">13</span><span class="nb">14</span><span class="nb">15</span><span class="nb">17</span><span class="nb">18</span><span class="nb">22</span><span class="nb">26</span><span class="nb">27</span><span class="nb">28</span><span class="nb">29</span><span class="nb">30</span><span class="nb">31</span><span class="nb">32</span><span class="nb">34</span><span class="nb">35</span></div></td></tr><tr><td class="mname">Naive Bayes</td><td><div class="balls"><span class="nb">4</span><span class="nb">5</span><span class="nb">6</span><span class="nb">9</span><span class="nb">10</span><span class="nb">11</span><span class="nb">13</span><span class="nb">14</span><span class="nb">15</span><span class="nb">17</span><span class="nb">18</span><span class="nb">20</span><span class="nb">22</span><span class="nb">26</span><span class="nb">27</span><span class="nb">28</span><span class="nb">29</span><span class="nb">30</span><span class="nb">31</span><span class="nb">32</span><span class="nb">34</span><span class="nb">35</span></div></td></tr><tr><td class="mname">Weighted MA-37</td><td><div class="balls"><span class="nb">4</span><span class="nb">5</span><span class="nb">9</span><span class="nb">10</span><span class="nb">11</span><span class="nb">13</span><span class="nb">15</span><span class="nb">16</span><span class="nb">18</span><span class="nb">19</span><span class="nb">22</span><span class="nb">23</span><span class="nb">26</span><span class="nb">27</span><span class="nb">28</span><span class="nb">29</span><span class="nb">30</span><span class="nb">31</span><span class="nb">32</span><span class="nb">33</span><span class="nb">34</span><span class="nb">35</span></div></td></tr><tr><td class="mname">LSTM (seq prediction)</td><td><div class="balls"><span class="nb">3</span><span class="nb">4</span><span class="nb">9</span><span class="nb">10</span><span class="nb">12</span><span class="nb">13</span><span class="nb">15</span><span class="nb">18</span><span class="nb">20</span><span class="nb">22</span><span class="nb">24</span><span class="nb">26</span><span class="nb">27</span><span class="nb">28</span><span class="nb">29</span><span class="nb">30</span><span class="nb">31</span><span class="nb">32</span><span class="nb">34</span><span class="nb">35</span><span class="nb">36</span><span class="nb">37</span></div></td></tr></tbody>
       </table>
     </details>
   </div>
 
   <div class="section">
-    <h2>Pass 2 — 4 methods, K=25 pick for draw #693</h2>
+    <h2>Pass 2 — 4 methods, K=25 pick for draw #693 <span class="verify-badge na">server-computed</span></h2>
     <p class="desc">MA-37, Poly deg-2, Hidden Markov Model, Weighted MA-37 &mdash; native K=15 pools normalized to K=25, checked independently against what's left after Pass 1.</p>
     <table class="methods-table">
-      <tbody><tr><td class="mname">MA-37</td><td><div class="balls"><span class="nb" style="width:26px;height:26px;font-size:.7rem">4</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">5</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">7</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">9</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">10</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">11</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">13</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">14</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">15</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">17</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">18</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">20</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">22</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">23</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">26</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">27</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">28</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">29</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">30</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">31</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">32</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">33</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">34</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">35</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">36</span></div></td></tr><tr><td class="mname">Poly deg-2</td><td><div class="balls"><span class="nb" style="width:26px;height:26px;font-size:.7rem">4</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">5</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">7</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">9</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">10</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">11</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">13</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">14</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">15</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">17</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">18</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">20</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">22</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">23</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">26</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">27</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">28</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">29</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">30</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">31</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">32</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">33</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">34</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">35</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">36</span></div></td></tr><tr><td class="mname">Hidden Markov Model</td><td><div class="balls"><span class="nb" style="width:26px;height:26px;font-size:.7rem">4</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">9</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">10</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">11</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">13</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">14</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">15</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">17</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">18</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">20</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">21</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">22</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">25</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">26</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">27</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">28</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">29</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">30</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">31</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">32</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">33</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">34</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">35</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">36</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">37</span></div></td></tr><tr><td class="mname">Weighted MA-37</td><td><div class="balls"><span class="nb" style="width:26px;height:26px;font-size:.7rem">4</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">5</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">9</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">10</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">11</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">13</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">14</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">15</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">16</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">17</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">18</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">19</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">20</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">22</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">23</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">26</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">27</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">28</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">29</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">30</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">31</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">32</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">33</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">34</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">35</span></div></td></tr></tbody>
+      <tbody><tr><td class="mname">MA-37</td><td><div class="balls"><span class="nb">4</span><span class="nb">5</span><span class="nb">7</span><span class="nb">9</span><span class="nb">10</span><span class="nb">11</span><span class="nb">13</span><span class="nb">14</span><span class="nb">15</span><span class="nb">17</span><span class="nb">18</span><span class="nb">20</span><span class="nb">22</span><span class="nb">23</span><span class="nb">26</span><span class="nb">27</span><span class="nb">28</span><span class="nb">29</span><span class="nb">30</span><span class="nb">31</span><span class="nb">32</span><span class="nb">33</span><span class="nb">34</span><span class="nb">35</span><span class="nb">36</span></div></td></tr><tr><td class="mname">Poly deg-2</td><td><div class="balls"><span class="nb">4</span><span class="nb">5</span><span class="nb">7</span><span class="nb">9</span><span class="nb">10</span><span class="nb">11</span><span class="nb">13</span><span class="nb">14</span><span class="nb">15</span><span class="nb">17</span><span class="nb">18</span><span class="nb">20</span><span class="nb">22</span><span class="nb">23</span><span class="nb">26</span><span class="nb">27</span><span class="nb">28</span><span class="nb">29</span><span class="nb">30</span><span class="nb">31</span><span class="nb">32</span><span class="nb">33</span><span class="nb">34</span><span class="nb">35</span><span class="nb">36</span></div></td></tr><tr><td class="mname">Hidden Markov Model</td><td><div class="balls"><span class="nb">4</span><span class="nb">9</span><span class="nb">10</span><span class="nb">11</span><span class="nb">13</span><span class="nb">14</span><span class="nb">15</span><span class="nb">17</span><span class="nb">18</span><span class="nb">20</span><span class="nb">21</span><span class="nb">22</span><span class="nb">25</span><span class="nb">26</span><span class="nb">27</span><span class="nb">28</span><span class="nb">29</span><span class="nb">30</span><span class="nb">31</span><span class="nb">32</span><span class="nb">33</span><span class="nb">34</span><span class="nb">35</span><span class="nb">36</span><span class="nb">37</span></div></td></tr><tr><td class="mname">Weighted MA-37</td><td><div class="balls"><span class="nb">4</span><span class="nb">5</span><span class="nb">9</span><span class="nb">10</span><span class="nb">11</span><span class="nb">13</span><span class="nb">14</span><span class="nb">15</span><span class="nb">16</span><span class="nb">17</span><span class="nb">18</span><span class="nb">19</span><span class="nb">20</span><span class="nb">22</span><span class="nb">23</span><span class="nb">26</span><span class="nb">27</span><span class="nb">28</span><span class="nb">29</span><span class="nb">30</span><span class="nb">31</span><span class="nb">32</span><span class="nb">33</span><span class="nb">34</span><span class="nb">35</span></div></td></tr></tbody>
     </table>
   </div>
 
   <div class="section">
-    <h2>Pass 3 (final) — historical repeat filter</h2>
-    <p class="desc">Any Pass-2-remaining combo that exactly matches one of Loto7's 692 historical actual winning combos (draws #1&ndash;692, main 7 numbers only, bonus ignored) is removed. 3 matched.</p>
-    <table class="methods-table">
-      <tbody><tr><td><div class="balls"><span class="nb" style="width:26px;height:26px;font-size:.7rem">4</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">5</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">15</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">25</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">26</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">29</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">32</span></div></td></tr><tr><td><div class="balls"><span class="nb" style="width:26px;height:26px;font-size:.7rem">5</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">6</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">15</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">19</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">22</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">29</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">32</span></div></td></tr><tr><td><div class="balls"><span class="nb" style="width:26px;height:26px;font-size:.7rem">6</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">11</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">13</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">14</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">16</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">27</span><span class="nb" style="width:26px;height:26px;font-size:.7rem">34</span></div></td></tr></tbody>
-    </table>
+    <h2>Pass 3 — historical repeat filter <span id="badgeHistorical" class="verify-badge pending">verifying…</span></h2>
+    <p class="desc">Any Pass-2-remaining combo that exactly matches one of Loto7's 692 historical actual
+    winning combos (draws #1&ndash;692, main 7 numbers only, bonus ignored) is removed. Checked live in your
+    browser against the same embedded historical combo set. 3 matches found.</p>
+    <details><summary>Show all 3 removed combos (exact match to a historical winning combo)</summary><table class='methods-table'><thead><tr><th>Removed &mdash; exact match to a historical winning combo</th></tr></thead><tbody><tr><td><div class="balls"><span class="nb">4</span><span class="nb">5</span><span class="nb">15</span><span class="nb">25</span><span class="nb">26</span><span class="nb">29</span><span class="nb">32</span></div></td></tr><tr><td><div class="balls"><span class="nb">5</span><span class="nb">6</span><span class="nb">15</span><span class="nb">19</span><span class="nb">22</span><span class="nb">29</span><span class="nb">32</span></div></td></tr><tr><td><div class="balls"><span class="nb">6</span><span class="nb">11</span><span class="nb">13</span><span class="nb">14</span><span class="nb">16</span><span class="nb">27</span><span class="nb">34</span></div></td></tr></tbody></table></details>
+  </div>
+
+  <div class="section">
+    <h2>Pass 4 (NEW) — Worst Combo (Anti-Pick), K=15 pick for draw #693 <span class="verify-badge na">server-computed</span></h2>
+    <p class="desc">MA-37, Exp-weighted, Random Forest, kNN (k=10), Apriori Assoc Rules consensus &mdash; the Loto7 analog of the 5-method combination used on the
+    Loto6 pages' Worst Combo panel. Overlap with the 25-pool: 14 numbers.</p>
+    <div class="balls"><span class="nb">4</span><span class="nb">5</span><span class="nb">7</span><span class="nb">9</span><span class="nb">10</span><span class="nb">11</span><span class="nb">13</span><span class="nb">15</span><span class="nb">17</span><span class="nb">18</span><span class="nb">22</span><span class="nb">30</span><span class="nb">32</span><span class="nb">34</span><span class="nb">35</span></div>
+  </div>
+
+  <div class="section">
+    <h2>Pass 5 (NEW) — no 4+-length consecutive-run filter <span id="badgePass5" class="verify-badge pending">verifying…</span></h2>
+    <p class="desc">Removes any Pass-4-remaining combo whose sorted main numbers contain a run of 4 or more
+    consecutive integers. Threshold chosen from historical validation, not copied from Loto6's run&ge;3 (which was too
+    common at 15.32% for Loto7). Checked live in your browser (pure JS, no server reference needed).</p>
+    <p class="desc" style="margin-bottom:0">Historical validation (all 692 real draws): run=1: 181 (26.16%) &middot; run=2: 405 (58.53%) &middot; run=3: 87 (12.57%) &middot; run=4: 18 (2.60%) &middot; run=5: 1 (0.14%).
+    Max-run distribution among the 86,620 Pass-4-remaining combos: run=1: 15,407 &middot; run=2: 53,020 &middot; run=3: 15,953 &middot; run=4: 2,019 &middot; run=5: 211 &middot; run=6: 10.</p>
+  </div>
+
+  <div class="section">
+    <h2>Pass 6 (NEW) — three-pairs-plus-single filter <span id="badgePass6" class="verify-badge pending">verifying…</span></h2>
+    <p class="desc">Removes any Pass-5-remaining combo whose sorted main numbers decompose into exactly three consecutive
+    pairs plus one leftover single (pattern 2-2-2-1) &mdash; the Loto7 analog of Loto6's three-consecutive-pairs filter.
+    Checked live in your browser (pure JS, no server reference needed).</p>
+    <p class="desc" style="margin-bottom:0">Historical validation: 4/692 real draws
+    (0.58%) match this pattern. Removed 1,669 combos matching this pattern from the
+    Pass-5-remaining set &mdash; e.g. (4, 5, 9, 10, 13, 14, 25), (4, 5, 9, 10, 13, 25, 26), (4, 5, 9, 10, 14, 15, 25), (4, 5, 9, 10, 14, 25, 26), (4, 5, 9, 10, 15, 16, 25), ....</p>
+  </div>
+
+  <div class="section">
+    <h2>Pass 7 (NEW, final) — "5+ overlap, 1 step back" filter <span id="badgePass7" class="verify-badge pending">verifying…</span>
+    <span class="verify-badge" style="background:#14532d;color:#86efac">well-supported (0/691)</span></h2>
+    <p class="desc">Removes any Pass-6-remaining combo that shares 5 or more numbers with the immediately previous
+    actual draw &mdash; #692: <span class="balls" style="display:inline-flex;vertical-align:middle"><span class="nb">7</span><span class="nb">9</span><span class="nb">15</span><span class="nb">18</span><span class="nb">20</span><span class="nb">28</span><span class="nb">31</span></span>. Historical basis: across all
+    691 consecutive real-draw pairs, overlap&ge;5 has never once occurred (0/691).
+    overlap=3 and overlap=4 were tested and rejected (they match chance closely, unlike overlap&ge;5). Checked live in
+    your browser (pure JS, no server reference needed).</p>
+    <p class="desc" style="margin-bottom:0">Historical overlap distribution (all 691 consecutive
+    pairs): overlap=0: 128 &middot; overlap=1: 292 &middot; overlap=2: 190 &middot; overlap=3: 70 &middot; overlap=4: 11 &middot; overlap=5: 0 &middot; overlap=6: 0 &middot; overlap=7: 0. Overlap distribution among the 82,711 Pass-6-remaining combos:
+    overlap=0: 16,496 &middot; overlap=1: 36,321 &middot; overlap=2: 23,913 &middot; overlap=3: 5,564 &middot; overlap=4: 411 &middot; overlap=5: 6. Removed 6 combos with overlap&ge;5. Final remaining:
+    <strong style="color:#38bdf8">82,705</strong>.</p>
   </div>
 
   <div class="section">
@@ -160,41 +276,116 @@ table.combos tr:hover td{background:#111827}
       <div class="stat-card">
         <div class="lbl">After Pass 2</div>
         <div class="val">86,623</div>
-        <div class="sub">18.0% of universe &middot; 57.8% of Pass-1 output</div>
+        <div class="sub">18.0% of universe retained</div>
       </div>
       <div class="stat-card">
         <div class="lbl">Removed by historical filter (Pass 3)</div>
         <div class="val">3</div>
         <div class="sub">exact match to a real drawn combo</div>
       </div>
+      <div class="stat-card">
+        <div class="lbl">After Pass 3</div>
+        <div class="val">86,620</div>
+        <div class="sub">18.0% of universe retained</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Removed by Worst Combo K=15 (Pass 4)</div>
+        <div class="val">0</div>
+        <div class="sub">contained in the anti-pick's K=15</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">After Pass 4</div>
+        <div class="val">86,620</div>
+        <div class="sub">18.0% of universe retained</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Removed by consecutive-run filter (Pass 5)</div>
+        <div class="val">2,240</div>
+        <div class="sub">max run of 4+ consecutive numbers</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">After Pass 5</div>
+        <div class="val">84,380</div>
+        <div class="sub">17.6% of universe retained</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Removed by three-pairs-plus-single filter (Pass 6)</div>
+        <div class="val">1,669</div>
+        <div class="sub">pattern 2-2-2-1</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">After Pass 6</div>
+        <div class="val">82,711</div>
+        <div class="sub">17.2% of universe retained</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Removed by 5+-overlap filter (Pass 7)</div>
+        <div class="val">6</div>
+        <div class="sub">overlap &ge;5 &middot; 1 step back &middot; 0/691 historically</div>
+      </div>
       <div class="stat-card final">
         <div class="lbl">Final remaining</div>
-        <div class="val">86,620</div>
-        <div class="sub">18.0% of universe &middot; 100.0% of Pass-2 output</div>
+        <div class="val">82,705</div>
+        <div class="sub">17.2% of universe retained</div>
       </div>
     </div>
     <div class="elim-flow">
       <span class="n">480,700</span>
       <span class="arrow">&rarr;</span>
-      <span class="n">149,932</span> <span style="color:#94a3b8;font-size:.7rem">(Pass 1)</span>
+      <span class="n">149,932</span> <span style="color:#64748b;font-size:.7rem">(P1)</span>
       <span class="arrow">&rarr;</span>
-      <span class="n">86,623</span> <span style="color:#94a3b8;font-size:.7rem">(Pass 2)</span>
+      <span class="n">86,623</span> <span style="color:#64748b;font-size:.7rem">(P2)</span>
       <span class="arrow">&rarr;</span>
-      <span class="n final">86,620</span> <span style="color:#94a3b8;font-size:.7rem">(Pass 3)</span>
+      <span class="n">86,620</span> <span style="color:#64748b;font-size:.7rem">(P3)</span>
+      <span class="arrow">&rarr;</span>
+      <span class="n">86,620</span> <span style="color:#64748b;font-size:.7rem">(P4)</span>
+      <span class="arrow">&rarr;</span>
+      <span class="n">84,380</span> <span style="color:#64748b;font-size:.7rem">(P5)</span>
+      <span class="arrow">&rarr;</span>
+      <span class="n">82,711</span> <span style="color:#64748b;font-size:.7rem">(P6)</span>
+      <span class="arrow">&rarr;</span>
+      <span class="n final">82,705</span> <span style="color:#64748b;font-size:.7rem">(P7)</span>
     </div>
   </div>
 
   <div class="section">
     <h2>Browse remaining combinations</h2>
-    <p class="desc">Fetched from a separate JSON asset (not inlined — 86,620 rows is too large for the page itself).</p>
-    <div id="loadingMsg">Loading 86,620 combinations…</div>
+    <p class="desc">Fetched from a separate JSON asset (not inlined — 82,705 rows is too large for the page itself).</p>
+    <div id="loadingMsg">Loading 82,705 combinations…</div>
     <div id="comboUI" style="display:none">
       <div class="lookup">
+        <span class="pd-lbl">Hot/cold pattern</span>
+        <select id="hcFilterSelect" onchange="applyFilter()">
+          <option value="">All patterns</option>
+          <option value="0">0h/7c</option>
+          <option value="1">1h/6c</option>
+          <option value="2">2h/5c</option>
+          <option value="3">3h/4c</option>
+          <option value="4">4h/3c</option>
+          <option value="5">5h/2c</option>
+          <option value="6">6h/1c</option>
+          <option value="7">7h/0c</option>
+        </select>
         <button class="btn" onclick="clearFilter()">Clear filter</button>
         <button class="btn primary" onclick="downloadCSV()">⬇ Download CSV</button>
         <span id="filterInfo" class="page-info"></span>
       </div>
+      <div class="filter-legend">Click a number to cycle: <span class="swatch neutral"></span>neutral (no filter) &rarr;
+        <span class="swatch include"></span>include (must contain) &rarr; <span class="swatch exclude"></span>exclude (must not
+        contain) &rarr; back to neutral. Include and exclude constraints apply together. Hot/cold pattern (walk-forward
+        top-18/bottom-19 split, computed live from the same embedded historical data as Pass 3) applies on top of both.</div>
       <div class="filter-grid" id="filterGrid"></div>
+
+      <div class="lookup" style="margin-top:4px">
+        <span class="pd-lbl">Diverse sample</span>
+        <button class="btn primary" onclick="generateSamples(5)">🎲 Generate 5</button>
+        <button class="btn primary" onclick="generateSamples(10)">🎲 Generate 10</button>
+        <span class="page-info">Greedy coverage-maximizing pick from the currently filtered set (or all 82,705 if no
+        filter is active) — each pick is the combo whose numbers have the least cumulative usage so far, spreading the
+        sample across as many distinct pool numbers as possible rather than clustering. Not a uniform random sample.</span>
+      </div>
+      <div id="generatedResults"></div>
+
       <div class="tbl-wrap">
         <div class="lookup" style="justify-content:space-between;padding:10px 12px;margin-bottom:0">
           <span id="pageInfo" class="page-info"></span>
@@ -216,12 +407,6 @@ table.combos tr:hover td{background:#111827}
   <p class="footer">
     Base = ARIMA(2,1,0)'s K=25 pick, normalized via <code>topKNums()</code> (cross-method-consensus trim/pad,
     same function used throughout this site). Universe = all C(25,7) combinations drawable from that pool.
-    Pass 1 removes any combo fully contained within ANY single one of the 16 methods' K=22 picks, checked
-    independently, leaving 149,932. Pass 2 then removes any of those fully contained within ANY
-    single one of 4 methods' K=25 picks (MA-37, Poly deg-2, Hidden Markov Model, Weighted MA-37), also
-    checked independently, leaving 86,623. Pass 3 (final) removes any of those that exactly
-    matches one of Loto7's 692 historical actual winning combos (draws #1&ndash;692),
-    leaving 86,620.<br>
     16 methods: Poly Regression, Moving Avg-37, Exp-Weighted Avg, Frequency, Markov Chain, ARIMA(2,1,0), Random Forest,
     RL (Linear Q), HMM, k-NN, Modular Cycle, Apriori, Monte Carlo, Naive Bayes, Weighted MA-37, LSTM — same 16 used
     throughout <a href="/loto7_backtest.html" style="color:#64748b">loto7_backtest.html</a> /
@@ -232,25 +417,117 @@ table.combos tr:hover td{background:#111827}
 
 <script>
 const POOL_BASE = [4, 5, 6, 9, 10, 11, 13, 14, 15, 16, 17, 18, 19, 20, 22, 25, 26, 27, 28, 29, 30, 31, 32, 34, 35];
+
+function arraysEqual(a, b) {
+  return a.length === b.length && a.every((v, i) => v === b[i]);
+}
+function renderBadge(id, ok) {
+  const el = document.getElementById(id);
+  el.className = 'verify-badge ' + (ok ? 'ok' : 'fail');
+  el.textContent = ok ? '✓ live-computed value matches' : '✗ MISMATCH — check console';
+}
+
+// ── Pass 3: historical repeat filter, checked live against the full
+// historical combo set (fetched alongside the remaining-combos JSON below --
+// too large to inline here, kept as a separate small asset). ────────────────
+const REMOVED_HISTORICAL = [[4, 5, 15, 25, 26, 29, 32], [5, 6, 15, 19, 22, 29, 32], [6, 11, 13, 14, 16, 27, 34]];
+
+// ── Pass 5: consecutive-run filter, threshold 4 -- pure JS ──
+const PASS5_THRESHOLD = 4;
+function maxConsecutiveRun(combo) {
+  const s = [...combo].sort((a, b) => a - b);
+  let run = 1, best = 1;
+  for (let i = 1; i < s.length; i++) {
+    if (s[i] === s[i - 1] + 1) { run++; best = Math.max(best, run); }
+    else { run = 1; }
+  }
+  return best;
+}
+
+// ── Pass 6: three-pairs-plus-single filter (pattern 2-2-2-1) -- pure JS ─────
+function runLengths(combo) {
+  const s = [...combo].sort((a, b) => a - b);
+  const runs = [];
+  let run = [s[0]];
+  for (let i = 1; i < s.length; i++) {
+    if (s[i] === s[i - 1] + 1) { run.push(s[i]); }
+    else { runs.push(run); run = [s[i]]; }
+  }
+  runs.push(run);
+  return runs.map(r => r.length);
+}
+function isThreePairsPlusSingle(combo) {
+  const lengths = runLengths(combo).slice().sort((a, b) => b - a);
+  return lengths.length === 4 && lengths[0] === 2 && lengths[1] === 2 && lengths[2] === 2 && lengths[3] === 1;
+}
+
+// ── Pass 7: "5+ overlap, 1 step back" filter -- pure JS ──────────────────────
+const PASS7_PREV_DRAW_NUMS = [7, 9, 15, 18, 20, 28, 31];
+const PASS7_PREV_DRAW_SET = new Set(PASS7_PREV_DRAW_NUMS);
+function prevDrawOverlap(combo) {
+  return combo.filter(n => PASS7_PREV_DRAW_SET.has(n)).length;
+}
+
+// ── Hot/cold pattern filter: walk-forward top-18/bottom-19 split. Needs the
+// full historical winning-combo set to compute frequency -- fetched
+// alongside the remaining-combos JSON below (small enough to also embed
+// separately would duplicate data, so it's derived from the same server
+// call that verifies Pass 3). ────────────────────────────────────────────
+let HOT_SET = new Set();
+function hotCount(combo) {
+  return combo.filter(n => HOT_SET.has(n)).length;
+}
+
+// ── Remaining combos + full historical set: fetch, paginate, filter, download ──
+const POOL = POOL_BASE;
 let REMAINING = [];
 let filtered = [];
 const PAGE_SIZE = 100;
 let curPage = 0;
-const selectedNums = new Set();
+const numState = new Map();
 
-fetch('/loto7_elim_693_combos.json')
-  .then(r => r.json())
-  .then(data => {
-    REMAINING = data;
-    filtered = REMAINING;
-    document.getElementById('loadingMsg').style.display = 'none';
-    document.getElementById('comboUI').style.display = 'block';
-    buildFilterGrid();
-    render();
-  })
-  .catch(err => {
-    document.getElementById('loadingMsg').textContent = 'Failed to load combinations: ' + err;
-  });
+Promise.all([
+  fetch('/loto7_elim_693_combos.json').then(r => r.json()),
+  fetch('/loto7_elim_693_historical.json').then(r => r.json())
+]).then(([combosData, historicalData]) => {
+  REMAINING = combosData;
+  filtered = REMAINING;
+  document.getElementById('loadingMsg').style.display = 'none';
+  document.getElementById('comboUI').style.display = 'block';
+
+  // Pass 3 verify: REMOVED_HISTORICAL should all be in historicalData, and
+  // none of REMAINING should be.
+  const histSet = new Set(historicalData.map(c => c.join(',')));
+  const removedOk = REMOVED_HISTORICAL.every(c => histSet.has(c.join(',')));
+  const noneRemainingMatch = REMAINING.every(c => !histSet.has(c.join(',')));
+  renderBadge('badgeHistorical', removedOk && noneRemainingMatch);
+  if (!removedOk) console.error('Pass-3 leak: a server-removed combo is not actually historical', REMOVED_HISTORICAL);
+  if (!noneRemainingMatch) console.error('Pass-3 leak: a remaining combo matches history', REMAINING.filter(c => histSet.has(c.join(','))));
+
+  // Hot/cold: walk-forward top-18/bottom-19 split from the full historical set.
+  const freq = new Array(38).fill(0);
+  historicalData.forEach(combo => combo.forEach(n => freq[n]++));
+  const nums = Array.from({length: 37}, (_, i) => i + 1);
+  nums.sort((a, b) => freq[b] - freq[a] || a - b);
+  HOT_SET = new Set(nums.slice(0, 18));
+
+  buildFilterGrid();
+  render();
+
+  const stillHasRun = REMAINING.filter(c => maxConsecutiveRun(c) >= PASS5_THRESHOLD);
+  renderBadge('badgePass5', stillHasRun.length === 0);
+  if (stillHasRun.length > 0) console.error('Pass-5 leak: remaining combos still have a run of ' + PASS5_THRESHOLD + '+', stillHasRun);
+
+  const stillThreePairs = REMAINING.filter(c => isThreePairsPlusSingle(c));
+  renderBadge('badgePass6', stillThreePairs.length === 0);
+  if (stillThreePairs.length > 0) console.error('Pass-6 leak: remaining combos still match three-pairs-plus-single', stillThreePairs);
+
+  const stillHighOverlap = REMAINING.filter(c => prevDrawOverlap(c) >= 5);
+  renderBadge('badgePass7', stillHighOverlap.length === 0);
+  if (stillHighOverlap.length > 0) console.error('Pass-7 leak: remaining combos still overlap draw #692 by 5+', stillHighOverlap);
+}).catch(err => {
+  document.getElementById('loadingMsg').textContent = 'Failed to load combinations: ' + err;
+});
 
 function getBallColor(n) {
   if (n <= 6) return '#e74c3c';
@@ -263,29 +540,93 @@ function getBallColor(n) {
 }
 function buildFilterGrid() {
   const grid = document.getElementById('filterGrid');
-  grid.innerHTML = POOL_BASE.map(n =>
+  grid.innerHTML = POOL.map(n =>
     '<button class="num-btn" data-n="' + n + '" style="background:' + getBallColor(n) + '" onclick="toggleNum(' + n + ')">' + n + '</button>'
   ).join('');
 }
 function toggleNum(n) {
-  if (selectedNums.has(n)) selectedNums.delete(n); else selectedNums.add(n);
-  document.querySelector('.num-btn[data-n="' + n + '"]').classList.toggle('active', selectedNums.has(n));
+  const cur = numState.get(n);
+  const next = cur === undefined ? 'include' : cur === 'include' ? 'exclude' : undefined;
+  if (next === undefined) numState.delete(n); else numState.set(n, next);
+  const btn = document.querySelector('.num-btn[data-n="' + n + '"]');
+  btn.classList.remove('include', 'exclude');
+  if (next) btn.classList.add(next);
   applyFilter();
 }
 function clearFilter() {
-  selectedNums.clear();
-  document.querySelectorAll('.num-btn.active').forEach(b => b.classList.remove('active'));
+  numState.clear();
+  document.querySelectorAll('.num-btn.include, .num-btn.exclude').forEach(b => b.classList.remove('include', 'exclude'));
+  document.getElementById('hcFilterSelect').value = '';
   applyFilter();
 }
 function applyFilter() {
-  filtered = selectedNums.size === 0 ? REMAINING : REMAINING.filter(c => {
-    for (const n of selectedNums) if (!c.includes(n)) return false;
+  const includeNums = [...numState.entries()].filter(([n, s]) => s === 'include').map(([n]) => n);
+  const excludeNums = [...numState.entries()].filter(([n, s]) => s === 'exclude').map(([n]) => n);
+  const hcVal = document.getElementById('hcFilterSelect').value;
+  filtered = (includeNums.length === 0 && excludeNums.length === 0 && hcVal === '') ? REMAINING : REMAINING.filter(c => {
+    for (const n of includeNums) if (!c.includes(n)) return false;
+    for (const n of excludeNums) if (c.includes(n)) return false;
+    if (hcVal !== '' && hotCount(c) !== parseInt(hcVal, 10)) return false;
     return true;
   });
-  document.getElementById('filterInfo').textContent = selectedNums.size === 0 ? '' :
-    (filtered.length.toLocaleString() + ' / ' + REMAINING.length.toLocaleString() + ' combos contain ' + [...selectedNums].sort((a,b)=>a-b).join(', '));
+  const parts = [];
+  if (includeNums.length) parts.push('contain ' + includeNums.sort((a,b)=>a-b).join(', '));
+  if (excludeNums.length) parts.push('exclude ' + excludeNums.sort((a,b)=>a-b).join(', '));
+  if (hcVal !== '') parts.push(hcVal + 'h/' + (7 - parseInt(hcVal, 10)) + 'c pattern');
+  document.getElementById('filterInfo').textContent = parts.length === 0 ? '' :
+    (filtered.length.toLocaleString() + ' / ' + REMAINING.length.toLocaleString() + ' combos ' + parts.join(' and '));
   curPage = 0;
   render();
+}
+
+// ── Diverse sample generator: greedy coverage-maximizing pick, same
+// algorithm used on the Loto6 elimination pages. ─────────────────────────
+function generateSamples(n) {
+  const pool = filtered.length > 0 ? filtered : REMAINING;
+  const container = document.getElementById('generatedResults');
+  if (pool.length === 0) {
+    container.innerHTML = '<p style="color:#64748b;font-size:.85rem">No combos match the current filter to sample from.</p>';
+    return;
+  }
+  const count = Math.min(n, pool.length);
+
+  const order = Array.from({length: pool.length}, (_, i) => i);
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+
+  const usage = new Map();
+  const takenPositions = new Set();
+  const picks = [];
+  for (let round = 0; round < count; round++) {
+    let bestPos = -1;
+    let bestScore = Infinity;
+    for (let k = 0; k < order.length; k++) {
+      if (takenPositions.has(k)) continue;
+      const c = pool[order[k]];
+      let score = 0;
+      for (let m = 0; m < c.length; m++) score += (usage.get(c[m]) || 0);
+      if (score < bestScore) {
+        bestScore = score;
+        bestPos = k;
+        if (bestScore === 0 && round === 0) break;
+      }
+    }
+    const chosen = pool[order[bestPos]];
+    takenPositions.add(bestPos);
+    picks.push(chosen);
+    for (const num of chosen) usage.set(num, (usage.get(num) || 0) + 1);
+  }
+
+  const distinctCovered = new Set(picks.flat()).size;
+  const sourceLabel = filtered.length > 0 && filtered.length < REMAINING.length ? filtered.length.toLocaleString() + ' filtered' : REMAINING.length.toLocaleString() + ' total';
+  container.innerHTML =
+    '<div class="gen-hdr">Generated ' + picks.length + ' diverse combo' + (picks.length !== 1 ? 's' : '') +
+    ' from ' + sourceLabel + ' — covers ' + distinctCovered + ' distinct pool numbers:</div>' +
+    picks.map(c => '<div class="balls gen-row">' + c.map(n2 =>
+      '<span class="nb" style="background:' + getBallColor(n2) + '33;color:#e2e8f0;border:1px solid ' + getBallColor(n2) + '">' + n2 + '</span>'
+    ).join('') + '</div>').join('');
 }
 function totalPages() { return Math.max(1, Math.ceil(filtered.length / PAGE_SIZE)); }
 function goPage(p) { curPage = Math.max(0, Math.min(p, totalPages()-1)); render(); }
