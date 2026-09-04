@@ -172,6 +172,8 @@ summary:hover{{color:#f1f5f9}}
 .lookup select{{background:#0a0f1e;border:1px solid #334155;border-radius:7px;padding:7px 10px;
   color:#e2e8f0;font-size:.82rem}}
 .pd-lbl{{font-size:.72rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em}}
+.pairs-check{{display:inline-flex;align-items:center;gap:4px;font-size:.8rem;color:#cbd5e1;cursor:pointer;user-select:none}}
+.pairs-check input{{accent-color:#7c3aed;cursor:pointer}}
 #generatedResults{{margin-bottom:14px}}
 #generatedResults .gen-hdr{{font-size:.78rem;color:#94a3b8;margin-bottom:8px}}
 #generatedResults .gen-row{{margin-bottom:6px}}
@@ -372,6 +374,10 @@ table.combos tr:hover td{{background:#111827}}
           <option value="6">6h/1c</option>
           <option value="7">7h/0c</option>
         </select>
+        <span class="pd-lbl" style="margin-left:6px">Pairs filter</span>
+        <label class="pairs-check"><input type="checkbox" id="pairsCheck1" checked onchange="applyFilter()"> 1 pair</label>
+        <label class="pairs-check"><input type="checkbox" id="pairsCheck2" checked onchange="applyFilter()"> 2 pairs</label>
+        <label class="pairs-check"><input type="checkbox" id="pairsCheck3" checked onchange="applyFilter()"> 3 pairs</label>
         <button class="btn" onclick="clearFilter()">Clear filter</button>
         <button class="btn primary" onclick="downloadCSV()">⬇ Download CSV</button>
         <span id="filterInfo" class="page-info"></span>
@@ -379,7 +385,10 @@ table.combos tr:hover td{{background:#111827}}
       <div class="filter-legend">Click a number to cycle: <span class="swatch neutral"></span>neutral (no filter) &rarr;
         <span class="swatch include"></span>include (must contain) &rarr; <span class="swatch exclude"></span>exclude (must not
         contain) &rarr; back to neutral. Include and exclude constraints apply together. Hot/cold pattern (walk-forward
-        top-18/bottom-19 split, computed live from the embedded historical data) applies on top of both.</div>
+        top-18/bottom-19 split, computed live from the embedded historical data) and the pairs filter both apply on top
+        of the number filter. The pairs filter is browsing-only — it does NOT touch the underlying {final_remaining:,}-combo
+        pool or the Pass 4 badge above (which already permanently removed all 4+-pair combos); unchecking a box here just
+        hides that pair-count tier from the current view.</div>
       <div class="filter-grid" id="filterGrid"></div>
 
       <div class="lookup" style="margin-top:4px">
@@ -593,22 +602,39 @@ function clearFilter() {{
   numState.clear();
   document.querySelectorAll('.num-btn.include, .num-btn.exclude').forEach(b => b.classList.remove('include', 'exclude'));
   document.getElementById('hcFilterSelect').value = '';
+  document.getElementById('pairsCheck1').checked = true;
+  document.getElementById('pairsCheck2').checked = true;
+  document.getElementById('pairsCheck3').checked = true;
   applyFilter();
 }}
 function applyFilter() {{
   const includeNums = [...numState.entries()].filter(([n, s]) => s === 'include').map(([n]) => n);
   const excludeNums = [...numState.entries()].filter(([n, s]) => s === 'exclude').map(([n]) => n);
   const hcVal = document.getElementById('hcFilterSelect').value;
-  filtered = (includeNums.length === 0 && excludeNums.length === 0 && hcVal === '') ? REMAINING : REMAINING.filter(c => {{
+
+  // Pairs filter: browsing-only, does NOT touch REMAINING (the stored pool)
+  // or any badge -- purely restricts what's displayed/sampled here. All
+  // three boxes checked (the default) means "no filtering" -- 0-pair combos
+  // (which have no checkbox of their own) stay visible in that default
+  // state, matching "nothing changes by default".
+  const p1 = document.getElementById('pairsCheck1').checked;
+  const p2 = document.getElementById('pairsCheck2').checked;
+  const p3 = document.getElementById('pairsCheck3').checked;
+  const pairsFilterActive = !(p1 && p2 && p3);
+  const allowedPairCounts = new Set([...(p1 ? [1] : []), ...(p2 ? [2] : []), ...(p3 ? [3] : [])]);
+
+  filtered = (includeNums.length === 0 && excludeNums.length === 0 && hcVal === '' && !pairsFilterActive) ? REMAINING : REMAINING.filter(c => {{
     for (const n of includeNums) if (!c.includes(n)) return false;
     for (const n of excludeNums) if (c.includes(n)) return false;
     if (hcVal !== '' && hotCount(c) !== parseInt(hcVal, 10)) return false;
+    if (pairsFilterActive && !allowedPairCounts.has(consecutivePairCount(c))) return false;
     return true;
   }});
   const parts = [];
   if (includeNums.length) parts.push('contain ' + includeNums.sort((a,b)=>a-b).join(', '));
   if (excludeNums.length) parts.push('exclude ' + excludeNums.sort((a,b)=>a-b).join(', '));
   if (hcVal !== '') parts.push(hcVal + 'h/' + (7 - parseInt(hcVal, 10)) + 'c pattern');
+  if (pairsFilterActive) parts.push('pairs in {{' + [...allowedPairCounts].sort().join(',') + '}} (0-pair combos hidden)');
   document.getElementById('filterInfo').textContent = parts.length === 0 ? '' :
     (filtered.length.toLocaleString() + ' / ' + REMAINING.length.toLocaleString() + ' combos ' + parts.join(' and '));
   curPage = 0;
