@@ -16,12 +16,20 @@ this pool_max=37/K=30 configuration on the scan page itself.
 Universe = all C(30,7) = 2,035,800 seven-number combinations drawable
 from the 30-number Base pool.
 
-Pass 1 (NEW): each of the 16 prediction methods' K=20 pick for draw
-#693 (native K=15 pool normalized to K=20 via topKNums(), walk-forward
+Pass 1: each of the 16 prediction methods' K=20 pick for draw #693
+(native K=15 pool normalized to K=20 via topKNums(), walk-forward
 trained through #692, read from public/loto7_predictions_data.json --
 same data loto7_elim_693.html's Pass 1 uses, just K=20 instead of
 K=22). Checked independently, NOT a union. Any Base combo fully
 contained within ANY single one of these 16 K=20 sets gets removed.
+
+Pass 2 (NEW): for each of the 16 methods INDIVIDUALLY, that method's
+K=31 pick intersected with Base (the 30-number PCG64 pool) -- 16
+separate method-specific intersected pools, not one combined 16-way
+intersection. Any Pass-1-remaining combo fully contained within ANY
+SINGLE one of these 16 intersected pools gets removed (same
+independent-check pattern as Pass 1, just Base-intersected K=31
+instead of raw K=20).
 
 Outputs:
   pcg64_elim_693_meta.json           -- small: base pool, seed, counts
@@ -215,6 +223,45 @@ print(f"\nPass 1 elimination in {elapsed1:.1f}s")
 print(f"  Removed by ANY of the 16 methods' K={K_METHODS} containment: {removed_by_methods:,}")
 print(f"  Before Pass 1: {universe_count:,}  ->  After Pass 1: {final_remaining_pass1:,}")
 
+# ── Pass 2 (NEW): for each method individually, that method's K=31 pick
+# INTERSECTED with Base -- 16 separate method-specific intersected pools,
+# checked independently (not a combined 16-way intersection). ─────────────
+print(f"\n=== Pass 2 (NEW) ===")
+K_PASS2_METHOD = 31
+method_picks_31 = [top_k_nums(pool, all_pools, K_PASS2_METHOD) for pool in all_pools]
+for name, pool in zip(METHOD_NAMES, method_picks_31):
+    assert len(pool) == K_PASS2_METHOD, f"{name}: got {len(pool)} numbers, expected {K_PASS2_METHOD}"
+
+base_set = set(base_pool)
+pass2_intersected_pools = [sorted(base_set & set(pool)) for pool in method_picks_31]
+pass2_masks = []
+for name, ipool in zip(METHOD_NAMES, pass2_intersected_pools):
+    mmask = restricted_mask(set(ipool))
+    pass2_masks.append(mmask)
+    print(f"  {name:24s} K={K_PASS2_METHOD} pick ∩ Base: {len(ipool)} numbers: {ipool}")
+
+t0 = time.time()
+remaining_after2 = []
+removed_by_pass2 = 0
+for combo in remaining_after1:
+    combo_mask = 0
+    for n in combo:
+        combo_mask |= (1 << pos_of[n])
+    removed = False
+    for mmask in pass2_masks:
+        if (combo_mask & ~mmask) & FULLBASE == 0:
+            removed = True
+            break
+    if removed:
+        removed_by_pass2 += 1
+        continue
+    remaining_after2.append(combo)
+elapsed2 = time.time() - t0
+final_remaining_pass2 = len(remaining_after2)
+print(f"\nPass 2 elimination in {elapsed2:.1f}s")
+print(f"  Removed by ANY of the 16 methods' (K={K_PASS2_METHOD} ∩ Base) containment: {removed_by_pass2:,}")
+print(f"  Before Pass 2: {final_remaining_pass1:,}  ->  After Pass 2: {final_remaining_pass2:,}")
+
 # ── Save outputs ──────────────────────────────────────────────────────────
 meta = {
     'targetSerial': TARGET_SERIAL,
@@ -230,15 +277,19 @@ meta = {
     'removedByMethods': removed_by_methods,
     'methodOverlaps': [bin(m).count('1') for m in method_masks],
     'finalRemainingPass1': final_remaining_pass1,
-    'finalRemaining': final_remaining_pass1,
+    'pass2MethodK': K_PASS2_METHOD,
+    'pass2IntersectedPools': pass2_intersected_pools,
+    'removedByPass2': removed_by_pass2,
+    'finalRemainingPass2': final_remaining_pass2,
+    'finalRemaining': final_remaining_pass2,
 }
 with open(META_OUT, 'w', encoding='utf-8') as f:
     json.dump(meta, f, indent=2)
 print(f"\nSaved {META_OUT}")
 
 with open(COMBOS_OUT, 'w', encoding='utf-8') as f:
-    json.dump(remaining_after1, f, separators=(',', ':'))
-print(f"Saved {COMBOS_OUT} ({len(remaining_after1):,} combos, {os.path.getsize(COMBOS_OUT)//1024/1024:.1f} MB)")
+    json.dump(remaining_after2, f, separators=(',', ':'))
+print(f"Saved {COMBOS_OUT} ({len(remaining_after2):,} combos, {os.path.getsize(COMBOS_OUT)//1024/1024:.1f} MB)")
 
 with open(HISTORICAL_OUT, 'w', encoding='utf-8') as f:
     json.dump(all_main7, f, separators=(',', ':'))

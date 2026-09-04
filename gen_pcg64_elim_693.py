@@ -6,11 +6,13 @@ the Loto6 elimination-page pattern (e.g. xoshiro_elim_2130.html) and
 Loto7's own loto7_elim_693.html: shows the Base pool, live client-side
 verification badge (bit-exact BigInt PCG64 port), Pass 1 (16 methods'
 K=20 picks, checked independently -- same style as loto7_elim_693.html's
-Pass 1 but K=20 instead of K=22), the elimination summary, and a
-paginated/filterable/CSV-downloadable combo browser over the
-Pass-1-remaining combos -- hot/cold pattern filter dropdown and greedy
-"Diverse sample" Generate 5/10 buttons included. Further passes to be
-added in later, separately-directed builds.
+Pass 1 but K=20 instead of K=22), Pass 2 (16 methods, each individually
+intersected with Base at K=31, checked independently -- 16 separate
+method-specific pools, not one combined intersection), the elimination
+summary, and a paginated/filterable/CSV-downloadable combo browser
+over the Pass-2-remaining combos -- hot/cold pattern filter dropdown
+and greedy "Diverse sample" Generate 5/10 buttons included. Further
+passes to be added in later, separately-directed builds.
 
 Reads pcg64_elim_693_meta.json (small: base pool, seed, counts). The
 large combo list lives separately at public/pcg64_elim_693_combos.json
@@ -44,6 +46,14 @@ method_picks = meta['methodPicks']
 removed_by_methods = meta['removedByMethods']
 final_remaining_pass1 = meta['finalRemainingPass1']
 pass1_pct = final_remaining_pass1 / universe_count * 100
+
+pass2_method_k = meta['pass2MethodK']
+pass2_intersected_pools = meta['pass2IntersectedPools']
+removed_by_pass2 = meta['removedByPass2']
+final_remaining_pass2 = meta['finalRemainingPass2']
+pass2_pct = final_remaining_pass2 / universe_count * 100
+pass2_pct_of_pass1 = final_remaining_pass2 / final_remaining_pass1 * 100
+
 final_remaining = meta['finalRemaining']
 final_pct = final_remaining / universe_count * 100
 
@@ -51,6 +61,11 @@ methods_rows_html = ""
 for name, pool in zip(method_names, method_picks):
     balls = "".join(f'<span class="nb">{n}</span>' for n in pool)
     methods_rows_html += f"""<tr><td class="mname">{name}</td><td><div class="balls">{balls}</div></td></tr>"""
+
+pass2_rows_html = ""
+for name, ipool in zip(method_names, pass2_intersected_pools):
+    balls = "".join(f'<span class="nb">{n}</span>' for n in ipool)
+    pass2_rows_html += f"""<tr><td class="mname">{name}</td><td><div class="balls">{balls}</div></td></tr>"""
 
 page = f"""<!DOCTYPE html>
 <html lang="en">
@@ -157,7 +172,7 @@ table.combos tr:hover td{{background:#111827}}
 <script src="/site-nav.js"></script>
 <div class="wrap">
   <h1>✂️ Loto 7 PCG64 Seed — Draw #{TARGET_SERIAL} Elimination</h1>
-  <p class="subtitle">PCG64 K={K_PICKS} seed #{SEED:,}'s pick for draw #{TARGET_SERIAL} — Pass 1 = 16 methods' K={method_k} picks</p>
+  <p class="subtitle">PCG64 K={K_PICKS} seed #{SEED:,}'s pick for draw #{TARGET_SERIAL} — Pass 1 = 16 methods' K={method_k} picks — Pass 2 = 16 methods' K={pass2_method_k} picks ∩ Base</p>
 
   <div class="note">
     <p><strong style="color:#e2e8f0">Base</strong> is <strong>PCG64 (O'Neill XSL-RR 128/64) K={K_PICKS} seed
@@ -172,14 +187,19 @@ table.combos tr:hover td{{background:#111827}}
     <a href="/loto7_elim_693.html" style="color:#a78bfa">loto7_elim_693.html</a>'s Pass 1 (just K={method_k} instead
     of K=22). Any Base combo fully contained within ANY single one of these 16 K={method_k} sets gets removed,
     leaving {final_remaining_pass1:,}.</p>
-    <p><strong style="color:#fbbf24">No further passes yet</strong> beyond Pass 1 — more passes will be added in
+    <p><strong style="color:#e2e8f0">Pass 2</strong> is, for each of the 16 methods <strong>individually</strong>,
+    that method's K={pass2_method_k} pick <strong>intersected with Base</strong> — 16 separate method-specific
+    intersected pools, NOT one combined 16-way intersection. Each intersected pool is checked independently, same
+    pattern as Pass 1. Any Pass-1-remaining combo fully contained within ANY SINGLE one of these 16 intersected
+    pools gets removed, leaving {final_remaining_pass2:,}.</p>
+    <p><strong style="color:#fbbf24">No further passes yet</strong> beyond Pass 2 — more passes will be added in
     later, separately-directed builds (see
     <a href="/pcg64_top3_elim_2134.html" style="color:#a78bfa">the Loto6 equivalent</a> for what a fully-built
     multi-pass elimination page on this site looks like).</p>
     <p>The Base pool is recomputed <strong>live in your browser</strong> below (bit-exact BigInt PCG64 port, same
     implementation used on the seed-scan page) and checked against the server-embedded reference — check the
-    verification badge. Pass 1's 16 statistical/ML methods can't (practically) run in a browser, so that's
-    precomputed server-side and embedded as static data.</p>
+    verification badge. Passes 1 and 2's 16 statistical/ML methods can't (practically) run in a browser, so those
+    are precomputed server-side and embedded as static data.</p>
   </div>
 
   <div class="section">
@@ -203,6 +223,18 @@ table.combos tr:hover td{{background:#111827}}
   </div>
 
   <div class="section">
+    <h2>Pass 2 — 16 methods, K={pass2_method_k} pick ∩ Base for draw #{TARGET_SERIAL} <span class="verify-badge na">server-computed</span></h2>
+    <p class="desc">Each method's native K=15 pool normalized to K={pass2_method_k}, then intersected with the {base['k']}-number
+    Base pool — 16 separate method-specific pools (sizes vary per method), checked independently against what's left after Pass 1.</p>
+    <details>
+      <summary>Show all 16 methods' (K={pass2_method_k} ∩ Base) pools</summary>
+      <table class="methods-table">
+        <tbody>{pass2_rows_html}</tbody>
+      </table>
+    </details>
+  </div>
+
+  <div class="section">
     <h2>Elimination summary</h2>
     <div class="stats-row">
       <div class="stat-card">
@@ -215,16 +247,28 @@ table.combos tr:hover td{{background:#111827}}
         <div class="val">{removed_by_methods:,}</div>
         <div class="sub">contained in ANY method's K={method_k}</div>
       </div>
+      <div class="stat-card">
+        <div class="lbl">After Pass 1</div>
+        <div class="val">{final_remaining_pass1:,}</div>
+        <div class="sub">{pass1_pct:.1f}% of universe retained</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Removed by 16 methods ∩ Base (Pass 2)</div>
+        <div class="val">{removed_by_pass2:,}</div>
+        <div class="sub">contained in ANY method's (K={pass2_method_k} ∩ Base)</div>
+      </div>
       <div class="stat-card final">
         <div class="lbl">Final remaining</div>
         <div class="val">{final_remaining:,}</div>
-        <div class="sub">{final_pct:.1f}% of universe retained</div>
+        <div class="sub">{final_pct:.1f}% of universe · {pass2_pct_of_pass1:.1f}% of Pass-1 output</div>
       </div>
     </div>
     <div class="elim-flow">
       <span class="n">{universe_count:,}</span>
       <span class="arrow">&rarr;</span>
-      <span class="n final">{final_remaining_pass1:,}</span> <span style="color:#64748b;font-size:.7rem">(P1)</span>
+      <span class="n">{final_remaining_pass1:,}</span> <span style="color:#64748b;font-size:.7rem">(P1)</span>
+      <span class="arrow">&rarr;</span>
+      <span class="n final">{final_remaining_pass2:,}</span> <span style="color:#64748b;font-size:.7rem">(P2)</span>
     </div>
   </div>
 
@@ -289,7 +333,8 @@ table.combos tr:hover td{{background:#111827}}
     with combined seed = seed×10⁷ + draw_serial. Core algorithm verified bit-exact against <code>numpy.random.Generator(PCG64())</code>
     for this pool_max=37/K={K_PICKS} configuration before the seed scan ran.<br>
     Base = the overall winner of the completed Loto7 PCG64 K=30 seed scan (10,000,001 seeds). Pass 1 = 16 methods'
-    K={method_k} picks, same style as loto7_elim_693.html. {final_remaining:,} of {universe_count:,} combos remain.<br>
+    K={method_k} picks, same style as loto7_elim_693.html. Pass 2 = each method's K={pass2_method_k} pick intersected
+    with Base individually (16 separate pools). {final_remaining:,} of {universe_count:,} combos remain.<br>
     16 methods: Poly Regression, Moving Avg-37, Exp-Weighted Avg, Frequency, Markov Chain, ARIMA(2,1,0), Random Forest,
     RL (Linear Q), HMM, k-NN, Modular Cycle, Apriori, Monte Carlo, Naive Bayes, Weighted MA-37, LSTM — same 16 used
     throughout <a href="/loto7_backtest.html" style="color:#64748b">loto7_backtest.html</a> /
