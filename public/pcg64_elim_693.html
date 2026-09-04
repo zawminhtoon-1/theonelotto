@@ -524,28 +524,30 @@ function applyFilter() {
   const hcVal = document.getElementById('hcFilterSelect').value;
 
   // Pairs filter: browsing-only, does NOT touch REMAINING (the stored pool)
-  // or any badge -- purely restricts what's displayed/sampled here. All
-  // three boxes checked (the default) means "no filtering" -- 0-pair combos
-  // (which have no checkbox of their own) stay visible in that default
-  // state, matching "nothing changes by default".
+  // or any badge -- purely restricts what's displayed/sampled here. Pure
+  // per-box EXCLUSION (not an allowlist): unchecking a box hides ONLY
+  // combos with that exact pair-count. 0-pair combos have no checkbox of
+  // their own and are NEVER excluded, regardless of what's checked. All
+  // three boxes checked (the default) means "no filtering" -- everything,
+  // including 0-pair combos, stays visible.
   const p1 = document.getElementById('pairsCheck1').checked;
   const p2 = document.getElementById('pairsCheck2').checked;
   const p3 = document.getElementById('pairsCheck3').checked;
   const pairsFilterActive = !(p1 && p2 && p3);
-  const allowedPairCounts = new Set([...(p1 ? [1] : []), ...(p2 ? [2] : []), ...(p3 ? [3] : [])]);
+  const excludedPairCounts = new Set([...(p1 ? [] : [1]), ...(p2 ? [] : [2]), ...(p3 ? [] : [3])]);
 
   filtered = (includeNums.length === 0 && excludeNums.length === 0 && hcVal === '' && !pairsFilterActive) ? REMAINING : REMAINING.filter(c => {
     for (const n of includeNums) if (!c.includes(n)) return false;
     for (const n of excludeNums) if (c.includes(n)) return false;
     if (hcVal !== '' && hotCount(c) !== parseInt(hcVal, 10)) return false;
-    if (pairsFilterActive && !allowedPairCounts.has(consecutivePairCount(c))) return false;
+    if (pairsFilterActive && excludedPairCounts.has(consecutivePairCount(c))) return false;
     return true;
   });
   const parts = [];
   if (includeNums.length) parts.push('contain ' + includeNums.sort((a,b)=>a-b).join(', '));
   if (excludeNums.length) parts.push('exclude ' + excludeNums.sort((a,b)=>a-b).join(', '));
   if (hcVal !== '') parts.push(hcVal + 'h/' + (7 - parseInt(hcVal, 10)) + 'c pattern');
-  if (pairsFilterActive) parts.push('pairs in {' + [...allowedPairCounts].sort().join(',') + '} (0-pair combos hidden)');
+  if (pairsFilterActive) parts.push('exclude ' + [...excludedPairCounts].sort().map(k => k + '-pair').join(', ') + ' combos');
   document.getElementById('filterInfo').textContent = parts.length === 0 ? '' :
     (filtered.length.toLocaleString() + ' / ' + REMAINING.length.toLocaleString() + ' combos ' + parts.join(' and '));
   curPage = 0;
