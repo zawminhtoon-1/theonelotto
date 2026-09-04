@@ -127,7 +127,7 @@
             '<a href="/xoshiro_seed_scan_loto7_k25.html">🌀 Xoshiro Seed Scan K=25 (±1,000,000)</a>' +
             '<a href="/xoshiro_seed_scan_loto7_k28.html">🌀 Xoshiro Seed Scan K=28 (±1,000,000)</a>' +
             '<a href="/xoshiro_seed_scan_loto7_k30.html">🌀 Xoshiro Seed Scan K=30 (±1,000,000)</a>' +
-            '<a href="/pcg64_seed_scan_loto7_k30.html">🎲 PCG64 Seed Scan K=30, seeds ±5,000,000 (650 draws, in progress)</a>' +
+            '<a href="/pcg64_seed_scan_loto7_k30.html">🎲 PCG64 Seed Scan K=30, seeds ±5,000,000 (650 draws)</a>' +
           '</div></div>' +
         '</div>' +
         '<div class="nav-group">' +
