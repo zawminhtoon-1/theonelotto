@@ -31,7 +31,7 @@ SINGLE one of these 16 intersected pools gets removed (same
 independent-check pattern as Pass 1, just Base-intersected K=31
 instead of raw K=20).
 
-Pass 3 (NEW): removes any Pass-2-remaining combo that shares 5 or more
+Pass 3: removes any Pass-2-remaining combo that shares 5 or more
 numbers with ANY of the last 100 actual draws before #693 (draws
 #593-692) -- checked against a whole 100-draw window, not a single
 fixed distance, structurally the same "any of the last 100 draws"
@@ -43,6 +43,14 @@ basis: a multi-distance overlap validation across Loto7's full history
 occurred at any tested distance (0 occurrences across 592-691 pairs
 per distance); overlap=5 itself is rare (5 occurrences total across
 all distances tested combined).
+
+Pass 4 (NEW, final): removes any Pass-3-remaining combo with 4 or more
+consecutive (adjacent, differ-by-1) pairs among its 7 numbers.
+Well-supported basis: a consecutive-pairs analysis across all 692 real
+Loto7 draws found 4-pair combos occurred 7 times (1.01%, vs 0.65%
+exact chance expectation); 5- and 6-pair combos occurred ZERO times
+(vs 0.027% and 0.0003% chance expectation respectively) -- essentially
+never happens. This is the final pass on this page for now.
 
 Outputs:
   pcg64_elim_693_meta.json           -- small: base pool, seed, counts
@@ -57,6 +65,7 @@ Run: python precompute_pcg64_elim_693.py
 """
 import json, os, re, itertools, time
 from math import comb
+from collections import Counter
 import psycopg2
 
 BASE = r"C:\Users\Zaw Min Htoon\source\repos\theonelotto"
@@ -307,6 +316,43 @@ print(f"\nPass 3 elimination in {elapsed3:.1f}s")
 print(f"  Removed (overlap >= {PASS3_OVERLAP_THRESHOLD} with ANY of the last {PASS3_WINDOW} draws): {removed_by_pass3:,}")
 print(f"  Before Pass 3: {final_remaining_pass2:,}  ->  After Pass 3: {final_remaining_pass3:,}")
 
+# ── Pass 4 (NEW, final): removes any combo with 4+ consecutive (adjacent,
+# differ-by-1) pairs among its 7 numbers. Validated in chat immediately
+# before this build: across all 692 real Loto7 draws, 4-pair combos occurred
+# 7 times (1.01%, close to the 0.65% chance expectation, ratio 1.54x -- a
+# small-count bin, not a strong effect but not contradicted either); 5- and
+# 6-pair combos occurred ZERO times (chance expectation 0.19 and 0.002
+# respectively -- consistent with "essentially never happens"). This pass
+# uses the explicitly-requested >=4 threshold, covering all three tiers. ────
+print(f"\n=== Pass 4 (NEW, final) ===")
+PASS4_PAIR_THRESHOLD = 4
+
+def max_consecutive_pairs(combo):
+    s = sorted(combo)
+    runs = 1
+    for i in range(1, len(s)):
+        if s[i] != s[i-1] + 1:
+            runs += 1
+    return len(s) - runs  # pairs = k - number_of_runs
+
+t0 = time.time()
+remaining_after4 = []
+removed_by_pass4 = 0
+pair_dist = Counter()
+for combo in remaining_after3:
+    pairs = max_consecutive_pairs(combo)
+    pair_dist[pairs] += 1
+    if pairs >= PASS4_PAIR_THRESHOLD:
+        removed_by_pass4 += 1
+        continue
+    remaining_after4.append(combo)
+elapsed4 = time.time() - t0
+final_remaining_pass4 = len(remaining_after4)
+print(f"Pair-count distribution (of Pass-3-remaining combos): " + ", ".join(f"{k}:{v:,}" for k, v in sorted(pair_dist.items())))
+print(f"Pass 4 elimination in {elapsed4:.1f}s")
+print(f"  Removed (consecutive-pair count >= {PASS4_PAIR_THRESHOLD}): {removed_by_pass4:,}")
+print(f"  Before Pass 4: {final_remaining_pass3:,}  ->  After Pass 4: {final_remaining_pass4:,}")
+
 # ── Save outputs ──────────────────────────────────────────────────────────
 meta = {
     'targetSerial': TARGET_SERIAL,
@@ -332,15 +378,19 @@ meta = {
     'pass3WindowDraws': [sorted(s) for s in last100_sets],
     'removedByPass3': removed_by_pass3,
     'finalRemainingPass3': final_remaining_pass3,
-    'finalRemaining': final_remaining_pass3,
+    'pass4PairThreshold': PASS4_PAIR_THRESHOLD,
+    'pass4PairDistribution': {str(k): v for k, v in sorted(pair_dist.items())},
+    'removedByPass4': removed_by_pass4,
+    'finalRemainingPass4': final_remaining_pass4,
+    'finalRemaining': final_remaining_pass4,
 }
 with open(META_OUT, 'w', encoding='utf-8') as f:
     json.dump(meta, f, indent=2)
 print(f"\nSaved {META_OUT}")
 
 with open(COMBOS_OUT, 'w', encoding='utf-8') as f:
-    json.dump(remaining_after3, f, separators=(',', ':'))
-print(f"Saved {COMBOS_OUT} ({len(remaining_after3):,} combos, {os.path.getsize(COMBOS_OUT)//1024/1024:.1f} MB)")
+    json.dump(remaining_after4, f, separators=(',', ':'))
+print(f"Saved {COMBOS_OUT} ({len(remaining_after4):,} combos, {os.path.getsize(COMBOS_OUT)//1024/1024:.1f} MB)")
 
 with open(HISTORICAL_OUT, 'w', encoding='utf-8') as f:
     json.dump(all_main7, f, separators=(',', ':'))

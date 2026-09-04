@@ -103,7 +103,7 @@ table.combos tr:hover td{background:#111827}
 <script src="/site-nav.js"></script>
 <div class="wrap">
   <h1>✂️ Loto 7 PCG64 Seed — Draw #693 Elimination</h1>
-  <p class="subtitle">PCG64 K=30 seed #-2,826,673's pick for draw #693 — Pass 1 = 16 methods' K=20 picks — Pass 2 = 16 methods' K=31 picks ∩ Base — Pass 3 = overlap≥5 vs last 100 draws</p>
+  <p class="subtitle">PCG64 K=30 seed #-2,826,673's pick for draw #693 — Pass 1 = 16 methods' K=20 picks — Pass 2 = 16 methods' K=31 picks ∩ Base — Pass 3 = overlap≥5 vs last 100 draws — Pass 4 = consecutive-pairs≥4</p>
 
   <div class="note">
     <p><strong style="color:#e2e8f0">Base</strong> is <strong>PCG64 (O'Neill XSL-RR 128/64) K=30 seed
@@ -123,23 +123,29 @@ table.combos tr:hover td{background:#111827}
     intersected pools, NOT one combined 16-way intersection. Each intersected pool is checked independently, same
     pattern as Pass 1. Any Pass-1-remaining combo fully contained within ANY SINGLE one of these 16 intersected
     pools gets removed, leaving 763,463.</p>
-    <p><strong style="color:#e2e8f0">Pass 3</strong> (final) removes any Pass-2-remaining combo that shares
+    <p><strong style="color:#e2e8f0">Pass 3</strong> removes any Pass-2-remaining combo that shares
     5 or more numbers with <strong>ANY</strong> of the last 100 actual draws
     before #693 — draws #593&ndash;692, checked against the
     whole window, not one fixed distance. <strong style="color:#e2e8f0">Validated first:</strong> a multi-distance
     overlap check across Loto7's full 692-draw history (distances 1, 2, 3, 5, 10, 50, and 100 steps back) found
     overlap&ge;6 has <strong style="color:#86efac">never once occurred</strong> at any tested distance (0/592&ndash;691
     pairs per distance); overlap=5 is rare but not impossible (5 occurrences total across all distances combined).
-    This pass uses the &ge;5 threshold. Leaves
-    <strong style="color:#38bdf8">702,826</strong>.</p>
-    <p><strong style="color:#fbbf24">No further passes yet</strong> beyond Pass 3 — more passes will be added in
+    This pass uses the &ge;5 threshold. Leaves 702,826.</p>
+    <p><strong style="color:#e2e8f0">Pass 4</strong> (final) removes any Pass-3-remaining combo with
+    4 or more consecutive (adjacent, differ-by-1) pairs among its 7 numbers.
+    <strong style="color:#e2e8f0">Validated first:</strong> a consecutive-pairs analysis across all 692 real Loto7
+    draws found 4-pair combos occurred 7 times (1.01%, vs 0.65% exact chance expectation); 5- and 6-pair combos
+    occurred <strong style="color:#86efac">zero times</strong> (vs 0.027% and 0.0003% chance expectation
+    respectively). This pass uses the &ge;4 threshold, covering all three tiers. Leaves
+    <strong style="color:#38bdf8">698,739</strong>.</p>
+    <p><strong style="color:#fbbf24">No further passes yet</strong> beyond Pass 4 — more passes will be added in
     later, separately-directed builds (see
     <a href="/pcg64_top3_elim_2134.html" style="color:#a78bfa">the Loto6 equivalent</a> for what a fully-built
     multi-pass elimination page on this site looks like).</p>
-    <p>The Base pool and Pass 3 are recomputed <strong>live in your browser</strong> below (bit-exact BigInt PCG64
-    port for Base, pure JS historical check for Pass 3) and checked against the server-embedded reference — check
-    the verification badges. Passes 1 and 2's 16 statistical/ML methods can't (practically) run in a browser, so
-    those are precomputed server-side and embedded as static data.</p>
+    <p>The Base pool, Pass 3, and Pass 4 are recomputed <strong>live in your browser</strong> below (bit-exact
+    BigInt PCG64 port for Base, pure JS historical/pattern checks for Passes 3 and 4) and checked against the
+    server-embedded reference — check the verification badges. Passes 1 and 2's 16 statistical/ML methods can't
+    (practically) run in a browser, so those are precomputed server-side and embedded as static data.</p>
   </div>
 
   <div class="section">
@@ -175,13 +181,26 @@ table.combos tr:hover td{background:#111827}
   </div>
 
   <div class="section">
-    <h2>Pass 3 (final) — overlap&ge;5 vs last 100 draws <span id="badgePass3" class="verify-badge pending">verifying…</span>
+    <h2>Pass 3 — overlap&ge;5 vs last 100 draws <span id="badgePass3" class="verify-badge pending">verifying…</span>
     <span class="verify-badge" style="background:#14532d;color:#86efac">overlap&ge;6 well-supported (0/592&ndash;691 per distance)</span></h2>
     <p class="desc">Removes any Pass-2-remaining combo that shares 5+ numbers with ANY of the
     100 actual draws #593&ndash;692. Checked live in your
     browser (pure JS, no server reference needed).</p>
     <p class="desc" style="margin-bottom:0">Removed 60,637 combos with overlap&ge;5
-    against at least one of the 100 draws. Final remaining: <strong style="color:#38bdf8">702,826</strong>.</p>
+    against at least one of the 100 draws. Final remaining after Pass 3: 702,826.</p>
+  </div>
+
+  <div class="section">
+    <h2>Pass 4 (final) — consecutive-pairs&ge;4 <span id="badgePass4" class="verify-badge pending">verifying…</span>
+    <span class="verify-badge" style="background:#14532d;color:#86efac">5-6 pairs well-supported (0/692 historically)</span></h2>
+    <p class="desc">Removes any Pass-3-remaining combo with 4+ consecutive (adjacent,
+    differ-by-1) pairs among its 7 numbers — e.g. a combo containing 14,15,16,17 has 3 such pairs (14-15, 15-16,
+    16-17); pair-count = 7 minus the number of separate consecutive runs. Checked live in your browser (pure JS,
+    no server reference needed).</p>
+    <p class="desc" style="margin-bottom:0">Pair-count distribution among the 702,826
+    Pass-3-remaining combos: 0 pairs: 218,058 &middot; 1 pairs: 298,971 &middot; 2 pairs: 147,883 &middot; 3 pairs: 33,827 &middot; 4 pairs: 3,864 &middot; 5 pairs: 218 &middot; 6 pairs: 5.
+    Removed 4,087 combos with 4+ pairs. Final remaining:
+    <strong style="color:#38bdf8">698,739</strong>.</p>
   </div>
 
   <div class="section">
@@ -217,10 +236,20 @@ table.combos tr:hover td{background:#111827}
         <div class="val">60,637</div>
         <div class="sub">overlap &ge;5 vs ANY of the 100 draws</div>
       </div>
-      <div class="stat-card final">
-        <div class="lbl">Final remaining</div>
+      <div class="stat-card">
+        <div class="lbl">After Pass 3</div>
         <div class="val">702,826</div>
         <div class="sub">34.5% of universe · 92.1% of Pass-2 output</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Removed by consecutive-pairs filter (Pass 4)</div>
+        <div class="val">4,087</div>
+        <div class="sub">consecutive-pairs &ge;4</div>
+      </div>
+      <div class="stat-card final">
+        <div class="lbl">Final remaining</div>
+        <div class="val">698,739</div>
+        <div class="sub">34.3% of universe · 99.4% of Pass-3 output</div>
       </div>
     </div>
     <div class="elim-flow">
@@ -230,14 +259,16 @@ table.combos tr:hover td{background:#111827}
       <span class="arrow">&rarr;</span>
       <span class="n">763,463</span> <span style="color:#64748b;font-size:.7rem">(P2)</span>
       <span class="arrow">&rarr;</span>
-      <span class="n final">702,826</span> <span style="color:#64748b;font-size:.7rem">(P3)</span>
+      <span class="n">702,826</span> <span style="color:#64748b;font-size:.7rem">(P3)</span>
+      <span class="arrow">&rarr;</span>
+      <span class="n final">698,739</span> <span style="color:#64748b;font-size:.7rem">(P4)</span>
     </div>
   </div>
 
   <div class="section">
     <h2>Browse remaining combinations</h2>
-    <p class="desc">Fetched from a separate JSON asset (not inlined — 702,826 rows is too large for the page itself).</p>
-    <div id="loadingMsg">Loading 702,826 combinations…</div>
+    <p class="desc">Fetched from a separate JSON asset (not inlined — 698,739 rows is too large for the page itself).</p>
+    <div id="loadingMsg">Loading 698,739 combinations…</div>
     <div id="comboUI" style="display:none">
       <div class="lookup">
         <span class="pd-lbl">Hot/cold pattern</span>
@@ -266,7 +297,7 @@ table.combos tr:hover td{background:#111827}
         <span class="pd-lbl">Diverse sample</span>
         <button class="btn primary" onclick="generateSamples(5)">🎲 Generate 5</button>
         <button class="btn primary" onclick="generateSamples(10)">🎲 Generate 10</button>
-        <span class="page-info">Greedy coverage-maximizing pick from the currently filtered set (or all 702,826 if no
+        <span class="page-info">Greedy coverage-maximizing pick from the currently filtered set (or all 698,739 if no
         filter is active) — each pick is the combo whose numbers have the least cumulative usage so far, spreading the
         sample across as many distinct pool numbers as possible rather than clustering. Not a uniform random sample.</span>
       </div>
@@ -297,7 +328,8 @@ table.combos tr:hover td{background:#111827}
     Base = the overall winner of the completed Loto7 PCG64 K=30 seed scan (10,000,001 seeds). Pass 1 = 16 methods'
     K=20 picks, same style as loto7_elim_693.html. Pass 2 = each method's K=31 pick intersected
     with Base individually (16 separate pools). Pass 3 = overlap&ge;5 vs any of the last
-    100 actual draws. 702,826 of 2,035,800 combos remain.<br>
+    100 actual draws. Pass 4 = consecutive-pairs&ge;4. 698,739 of
+    2,035,800 combos remain.<br>
     16 methods: Poly Regression, Moving Avg-37, Exp-Weighted Avg, Frequency, Markov Chain, ARIMA(2,1,0), Random Forest,
     RL (Linear Q), HMM, k-NN, Modular Cycle, Apriori, Monte Carlo, Naive Bayes, Weighted MA-37, LSTM — same 16 used
     throughout <a href="/loto7_backtest.html" style="color:#64748b">loto7_backtest.html</a> /
@@ -395,6 +427,18 @@ function maxOverlapVsWindow(combo) {
   return best;
 }
 
+// ── Pass 4: consecutive-pairs>=4 filter -- pure JS,
+// pair-count = 7 minus the number of separate consecutive runs. ─────────────
+const PASS4_PAIR_THRESHOLD = 4;
+function consecutivePairCount(combo) {
+  const s = [...combo].sort((a, b) => a - b);
+  let runs = 1;
+  for (let i = 1; i < s.length; i++) {
+    if (s[i] !== s[i - 1] + 1) runs++;
+  }
+  return s.length - runs;
+}
+
 // ── Remaining combos + historical set: fetch, paginate, filter, download ────
 const POOL_BASE = liveBase;
 let REMAINING = [];
@@ -421,6 +465,10 @@ Promise.all([
   const stillHighOverlap = REMAINING.filter(c => maxOverlapVsWindow(c) >= PASS3_OVERLAP_THRESHOLD);
   renderBadge('badgePass3', stillHighOverlap.length === 0);
   if (stillHighOverlap.length > 0) console.error('Pass-3 leak: remaining combos still overlap >= ' + PASS3_OVERLAP_THRESHOLD + ' with a last-100-draws window entry', stillHighOverlap);
+
+  const stillHighPairs = REMAINING.filter(c => consecutivePairCount(c) >= PASS4_PAIR_THRESHOLD);
+  renderBadge('badgePass4', stillHighPairs.length === 0);
+  if (stillHighPairs.length > 0) console.error('Pass-4 leak: remaining combos still have consecutive-pairs >= ' + PASS4_PAIR_THRESHOLD, stillHighPairs);
 
   buildFilterGrid();
   render();

@@ -1814,5 +1814,17 @@
   ],
   "removedByPass3": 60637,
   "finalRemainingPass3": 702826,
-  "finalRemaining": 702826
+  "pass4PairThreshold": 4,
+  "pass4PairDistribution": {
+    "0": 218058,
+    "1": 298971,
+    "2": 147883,
+    "3": 33827,
+    "4": 3864,
+    "5": 218,
+    "6": 5
+  },
+  "removedByPass4": 4087,
+  "finalRemainingPass4": 698739,
+  "finalRemaining": 698739
 }
