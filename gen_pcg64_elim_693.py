@@ -8,11 +8,14 @@ verification badge (bit-exact BigInt PCG64 port), Pass 1 (16 methods'
 K=20 picks, checked independently -- same style as loto7_elim_693.html's
 Pass 1 but K=20 instead of K=22), Pass 2 (16 methods, each individually
 intersected with Base at K=31, checked independently -- 16 separate
-method-specific pools, not one combined intersection), the elimination
-summary, and a paginated/filterable/CSV-downloadable combo browser
-over the Pass-2-remaining combos -- hot/cold pattern filter dropdown
-and greedy "Diverse sample" Generate 5/10 buttons included. Further
-passes to be added in later, separately-directed builds.
+method-specific pools, not one combined intersection), Pass 3 (removes
+any combo overlapping 5+ with ANY of the last 100 actual draws --
+checked live client-side, pure historical data, no ML methods needed),
+the elimination summary, and a paginated/filterable/CSV-downloadable
+combo browser over the Pass-3-remaining combos -- hot/cold pattern
+filter dropdown and greedy "Diverse sample" Generate 5/10 buttons
+included. Further passes to be added in later, separately-directed
+builds.
 
 Reads pcg64_elim_693_meta.json (small: base pool, seed, counts). The
 large combo list lives separately at public/pcg64_elim_693_combos.json
@@ -53,6 +56,15 @@ removed_by_pass2 = meta['removedByPass2']
 final_remaining_pass2 = meta['finalRemainingPass2']
 pass2_pct = final_remaining_pass2 / universe_count * 100
 pass2_pct_of_pass1 = final_remaining_pass2 / final_remaining_pass1 * 100
+
+pass3_window = meta['pass3Window']
+pass3_overlap_threshold = meta['pass3OverlapThreshold']
+pass3_window_serials = meta['pass3WindowSerials']
+pass3_window_draws = meta['pass3WindowDraws']
+removed_by_pass3 = meta['removedByPass3']
+final_remaining_pass3 = meta['finalRemainingPass3']
+pass3_pct = final_remaining_pass3 / universe_count * 100
+pass3_pct_of_pass2 = final_remaining_pass3 / final_remaining_pass2 * 100
 
 final_remaining = meta['finalRemaining']
 final_pct = final_remaining / universe_count * 100
@@ -172,7 +184,7 @@ table.combos tr:hover td{{background:#111827}}
 <script src="/site-nav.js"></script>
 <div class="wrap">
   <h1>✂️ Loto 7 PCG64 Seed — Draw #{TARGET_SERIAL} Elimination</h1>
-  <p class="subtitle">PCG64 K={K_PICKS} seed #{SEED:,}'s pick for draw #{TARGET_SERIAL} — Pass 1 = 16 methods' K={method_k} picks — Pass 2 = 16 methods' K={pass2_method_k} picks ∩ Base</p>
+  <p class="subtitle">PCG64 K={K_PICKS} seed #{SEED:,}'s pick for draw #{TARGET_SERIAL} — Pass 1 = 16 methods' K={method_k} picks — Pass 2 = 16 methods' K={pass2_method_k} picks ∩ Base — Pass 3 = overlap≥{pass3_overlap_threshold} vs last {pass3_window} draws</p>
 
   <div class="note">
     <p><strong style="color:#e2e8f0">Base</strong> is <strong>PCG64 (O'Neill XSL-RR 128/64) K={K_PICKS} seed
@@ -192,14 +204,23 @@ table.combos tr:hover td{{background:#111827}}
     intersected pools, NOT one combined 16-way intersection. Each intersected pool is checked independently, same
     pattern as Pass 1. Any Pass-1-remaining combo fully contained within ANY SINGLE one of these 16 intersected
     pools gets removed, leaving {final_remaining_pass2:,}.</p>
-    <p><strong style="color:#fbbf24">No further passes yet</strong> beyond Pass 2 — more passes will be added in
+    <p><strong style="color:#e2e8f0">Pass 3</strong> (final) removes any Pass-2-remaining combo that shares
+    {pass3_overlap_threshold} or more numbers with <strong>ANY</strong> of the last {pass3_window} actual draws
+    before #{TARGET_SERIAL} — draws #{pass3_window_serials[0]}&ndash;{pass3_window_serials[1]}, checked against the
+    whole window, not one fixed distance. <strong style="color:#e2e8f0">Validated first:</strong> a multi-distance
+    overlap check across Loto7's full 692-draw history (distances 1, 2, 3, 5, 10, 50, and 100 steps back) found
+    overlap&ge;6 has <strong style="color:#86efac">never once occurred</strong> at any tested distance (0/592&ndash;691
+    pairs per distance); overlap=5 is rare but not impossible (5 occurrences total across all distances combined).
+    This pass uses the &ge;{pass3_overlap_threshold} threshold. Leaves
+    <strong style="color:#38bdf8">{final_remaining_pass3:,}</strong>.</p>
+    <p><strong style="color:#fbbf24">No further passes yet</strong> beyond Pass 3 — more passes will be added in
     later, separately-directed builds (see
     <a href="/pcg64_top3_elim_2134.html" style="color:#a78bfa">the Loto6 equivalent</a> for what a fully-built
     multi-pass elimination page on this site looks like).</p>
-    <p>The Base pool is recomputed <strong>live in your browser</strong> below (bit-exact BigInt PCG64 port, same
-    implementation used on the seed-scan page) and checked against the server-embedded reference — check the
-    verification badge. Passes 1 and 2's 16 statistical/ML methods can't (practically) run in a browser, so those
-    are precomputed server-side and embedded as static data.</p>
+    <p>The Base pool and Pass 3 are recomputed <strong>live in your browser</strong> below (bit-exact BigInt PCG64
+    port for Base, pure JS historical check for Pass 3) and checked against the server-embedded reference — check
+    the verification badges. Passes 1 and 2's 16 statistical/ML methods can't (practically) run in a browser, so
+    those are precomputed server-side and embedded as static data.</p>
   </div>
 
   <div class="section">
@@ -235,6 +256,16 @@ table.combos tr:hover td{{background:#111827}}
   </div>
 
   <div class="section">
+    <h2>Pass 3 (final) — overlap&ge;{pass3_overlap_threshold} vs last {pass3_window} draws <span id="badgePass3" class="verify-badge pending">verifying…</span>
+    <span class="verify-badge" style="background:#14532d;color:#86efac">overlap&ge;6 well-supported (0/592&ndash;691 per distance)</span></h2>
+    <p class="desc">Removes any Pass-2-remaining combo that shares {pass3_overlap_threshold}+ numbers with ANY of the
+    {pass3_window} actual draws #{pass3_window_serials[0]}&ndash;{pass3_window_serials[1]}. Checked live in your
+    browser (pure JS, no server reference needed).</p>
+    <p class="desc" style="margin-bottom:0">Removed {removed_by_pass3:,} combos with overlap&ge;{pass3_overlap_threshold}
+    against at least one of the {pass3_window} draws. Final remaining: <strong style="color:#38bdf8">{final_remaining_pass3:,}</strong>.</p>
+  </div>
+
+  <div class="section">
     <h2>Elimination summary</h2>
     <div class="stats-row">
       <div class="stat-card">
@@ -257,10 +288,20 @@ table.combos tr:hover td{{background:#111827}}
         <div class="val">{removed_by_pass2:,}</div>
         <div class="sub">contained in ANY method's (K={pass2_method_k} ∩ Base)</div>
       </div>
+      <div class="stat-card">
+        <div class="lbl">After Pass 2</div>
+        <div class="val">{final_remaining_pass2:,}</div>
+        <div class="sub">{pass2_pct:.1f}% of universe · {pass2_pct_of_pass1:.1f}% of Pass-1 output</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Removed by last-{pass3_window}-draws filter (Pass 3)</div>
+        <div class="val">{removed_by_pass3:,}</div>
+        <div class="sub">overlap &ge;{pass3_overlap_threshold} vs ANY of the {pass3_window} draws</div>
+      </div>
       <div class="stat-card final">
         <div class="lbl">Final remaining</div>
         <div class="val">{final_remaining:,}</div>
-        <div class="sub">{final_pct:.1f}% of universe · {pass2_pct_of_pass1:.1f}% of Pass-1 output</div>
+        <div class="sub">{final_pct:.1f}% of universe · {pass3_pct_of_pass2:.1f}% of Pass-2 output</div>
       </div>
     </div>
     <div class="elim-flow">
@@ -268,7 +309,9 @@ table.combos tr:hover td{{background:#111827}}
       <span class="arrow">&rarr;</span>
       <span class="n">{final_remaining_pass1:,}</span> <span style="color:#64748b;font-size:.7rem">(P1)</span>
       <span class="arrow">&rarr;</span>
-      <span class="n final">{final_remaining_pass2:,}</span> <span style="color:#64748b;font-size:.7rem">(P2)</span>
+      <span class="n">{final_remaining_pass2:,}</span> <span style="color:#64748b;font-size:.7rem">(P2)</span>
+      <span class="arrow">&rarr;</span>
+      <span class="n final">{final_remaining_pass3:,}</span> <span style="color:#64748b;font-size:.7rem">(P3)</span>
     </div>
   </div>
 
@@ -334,7 +377,8 @@ table.combos tr:hover td{{background:#111827}}
     for this pool_max=37/K={K_PICKS} configuration before the seed scan ran.<br>
     Base = the overall winner of the completed Loto7 PCG64 K=30 seed scan (10,000,001 seeds). Pass 1 = 16 methods'
     K={method_k} picks, same style as loto7_elim_693.html. Pass 2 = each method's K={pass2_method_k} pick intersected
-    with Base individually (16 separate pools). {final_remaining:,} of {universe_count:,} combos remain.<br>
+    with Base individually (16 separate pools). Pass 3 = overlap&ge;{pass3_overlap_threshold} vs any of the last
+    {pass3_window} actual draws. {final_remaining:,} of {universe_count:,} combos remain.<br>
     16 methods: Poly Regression, Moving Avg-37, Exp-Weighted Avg, Frequency, Markov Chain, ARIMA(2,1,0), Random Forest,
     RL (Linear Q), HMM, k-NN, Modular Cycle, Apriori, Monte Carlo, Naive Bayes, Weighted MA-37, LSTM — same 16 used
     throughout <a href="/loto7_backtest.html" style="color:#64748b">loto7_backtest.html</a> /
@@ -418,6 +462,20 @@ function hotCount(combo) {{
   return combo.filter(n => HOT_SET.has(n)).length;
 }}
 
+// ── Pass 3: overlap>={pass3_overlap_threshold} vs ANY of the last {pass3_window} actual draws -- pure JS,
+// no server reference needed beyond the embedded draw window itself. ───────
+const PASS3_WINDOW_DRAWS = {json.dumps(pass3_window_draws)};
+const PASS3_OVERLAP_THRESHOLD = {pass3_overlap_threshold};
+function maxOverlapVsWindow(combo) {{
+  let best = 0;
+  for (const draw of PASS3_WINDOW_DRAWS) {{
+    let ov = 0;
+    for (const n of combo) if (draw.includes(n)) ov++;
+    if (ov > best) best = ov;
+  }}
+  return best;
+}}
+
 // ── Remaining combos + historical set: fetch, paginate, filter, download ────
 const POOL_BASE = liveBase;
 let REMAINING = [];
@@ -440,6 +498,10 @@ Promise.all([
   const nums = Array.from({{length: 37}}, (_, i) => i + 1);
   nums.sort((a, b) => freq[b] - freq[a] || a - b);
   HOT_SET = new Set(nums.slice(0, 18));
+
+  const stillHighOverlap = REMAINING.filter(c => maxOverlapVsWindow(c) >= PASS3_OVERLAP_THRESHOLD);
+  renderBadge('badgePass3', stillHighOverlap.length === 0);
+  if (stillHighOverlap.length > 0) console.error('Pass-3 leak: remaining combos still overlap >= ' + PASS3_OVERLAP_THRESHOLD + ' with a last-{pass3_window}-draws window entry', stillHighOverlap);
 
   buildFilterGrid();
   render();

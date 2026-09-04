@@ -23,13 +23,26 @@ same data loto7_elim_693.html's Pass 1 uses, just K=20 instead of
 K=22). Checked independently, NOT a union. Any Base combo fully
 contained within ANY single one of these 16 K=20 sets gets removed.
 
-Pass 2 (NEW): for each of the 16 methods INDIVIDUALLY, that method's
-K=31 pick intersected with Base (the 30-number PCG64 pool) -- 16
-separate method-specific intersected pools, not one combined 16-way
+Pass 2: for each of the 16 methods INDIVIDUALLY, that method's K=31
+pick intersected with Base (the 30-number PCG64 pool) -- 16 separate
+method-specific intersected pools, not one combined 16-way
 intersection. Any Pass-1-remaining combo fully contained within ANY
 SINGLE one of these 16 intersected pools gets removed (same
 independent-check pattern as Pass 1, just Base-intersected K=31
 instead of raw K=20).
+
+Pass 3 (NEW): removes any Pass-2-remaining combo that shares 5 or more
+numbers with ANY of the last 100 actual draws before #693 (draws
+#593-692) -- checked against a whole 100-draw window, not a single
+fixed distance, structurally the same "any of the last 100 draws"
+pattern as the Loto6 elimination pages' Pass 10 (though that page uses
+a 3/4/5 threshold tuned to its own multi-distance study; this pass
+uses the explicitly-requested >=5 threshold for Loto7). Well-supported
+basis: a multi-distance overlap validation across Loto7's full history
+(distances 1,2,3,5,10,50,100 steps back) found overlap>=6 has NEVER
+occurred at any tested distance (0 occurrences across 592-691 pairs
+per distance); overlap=5 itself is rare (5 occurrences total across
+all distances tested combined).
 
 Outputs:
   pcg64_elim_693_meta.json           -- small: base pool, seed, counts
@@ -262,6 +275,38 @@ print(f"\nPass 2 elimination in {elapsed2:.1f}s")
 print(f"  Removed by ANY of the 16 methods' (K={K_PASS2_METHOD} ∩ Base) containment: {removed_by_pass2:,}")
 print(f"  Before Pass 2: {final_remaining_pass1:,}  ->  After Pass 2: {final_remaining_pass2:,}")
 
+# ── Pass 3 (NEW): removes any combo sharing 5+ numbers with ANY of the last
+# 100 actual draws before #693 (draws #593-692). ────────────────────────────
+print(f"\n=== Pass 3 (NEW) ===")
+PASS3_WINDOW = 100
+PASS3_OVERLAP_THRESHOLD = 5
+last100_serials = [r[0] for r in db_rows[-PASS3_WINDOW:]]
+assert len(last100_serials) == PASS3_WINDOW, f"Expected {PASS3_WINDOW} draws, got {len(last100_serials)}"
+assert last100_serials[0] == TARGET_SERIAL - PASS3_WINDOW and last100_serials[-1] == TARGET_SERIAL - 1, \
+    f"Last-100 window mismatch: got #{last100_serials[0]}-{last100_serials[-1]}, expected #{TARGET_SERIAL-PASS3_WINDOW}-{TARGET_SERIAL-1}"
+last100_sets = [set(r[1:8]) for r in db_rows[-PASS3_WINDOW:]]
+print(f"Checking against the last {PASS3_WINDOW} actual draws: #{last100_serials[0]}-{last100_serials[-1]}")
+
+t0 = time.time()
+remaining_after3 = []
+removed_by_pass3 = 0
+for combo in remaining_after2:
+    combo_set = set(combo)
+    removed = False
+    for draw_set in last100_sets:
+        if len(combo_set & draw_set) >= PASS3_OVERLAP_THRESHOLD:
+            removed = True
+            break
+    if removed:
+        removed_by_pass3 += 1
+        continue
+    remaining_after3.append(combo)
+elapsed3 = time.time() - t0
+final_remaining_pass3 = len(remaining_after3)
+print(f"\nPass 3 elimination in {elapsed3:.1f}s")
+print(f"  Removed (overlap >= {PASS3_OVERLAP_THRESHOLD} with ANY of the last {PASS3_WINDOW} draws): {removed_by_pass3:,}")
+print(f"  Before Pass 3: {final_remaining_pass2:,}  ->  After Pass 3: {final_remaining_pass3:,}")
+
 # ── Save outputs ──────────────────────────────────────────────────────────
 meta = {
     'targetSerial': TARGET_SERIAL,
@@ -281,15 +326,21 @@ meta = {
     'pass2IntersectedPools': pass2_intersected_pools,
     'removedByPass2': removed_by_pass2,
     'finalRemainingPass2': final_remaining_pass2,
-    'finalRemaining': final_remaining_pass2,
+    'pass3Window': PASS3_WINDOW,
+    'pass3OverlapThreshold': PASS3_OVERLAP_THRESHOLD,
+    'pass3WindowSerials': [last100_serials[0], last100_serials[-1]],
+    'pass3WindowDraws': [sorted(s) for s in last100_sets],
+    'removedByPass3': removed_by_pass3,
+    'finalRemainingPass3': final_remaining_pass3,
+    'finalRemaining': final_remaining_pass3,
 }
 with open(META_OUT, 'w', encoding='utf-8') as f:
     json.dump(meta, f, indent=2)
 print(f"\nSaved {META_OUT}")
 
 with open(COMBOS_OUT, 'w', encoding='utf-8') as f:
-    json.dump(remaining_after2, f, separators=(',', ':'))
-print(f"Saved {COMBOS_OUT} ({len(remaining_after2):,} combos, {os.path.getsize(COMBOS_OUT)//1024/1024:.1f} MB)")
+    json.dump(remaining_after3, f, separators=(',', ':'))
+print(f"Saved {COMBOS_OUT} ({len(remaining_after3):,} combos, {os.path.getsize(COMBOS_OUT)//1024/1024:.1f} MB)")
 
 with open(HISTORICAL_OUT, 'w', encoding='utf-8') as f:
     json.dump(all_main7, f, separators=(',', ':'))
