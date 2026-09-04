@@ -51,7 +51,7 @@ if 'DATABASE_URL' not in os.environ:
 
 LOTO7_MAX = 37
 POOL_K = 15
-K_OPTIONS = [7, 9, 13, 17, 20, 22, 25, 28]
+K_OPTIONS = [13, 17, 20, 22, 25, 28, 31]
 DEFAULT_K = 20
 
 METHOD_NAMES = [
