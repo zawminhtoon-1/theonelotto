@@ -105,7 +105,7 @@ table.combos tr:hover td{background:#111827}
 <script src="/site-nav.js"></script>
 <div class="wrap">
   <h1>✂️ Loto 7 PCG64 Seed — Draw #693 Elimination</h1>
-  <p class="subtitle">PCG64 K=30 seed #-2,826,673's pick for draw #693 — Pass 1 = 16 methods' K=20 picks — Pass 2 = 16 methods' K=31 picks ∩ Base — Pass 3 = overlap≥5 vs last 100 draws — Pass 4 = consecutive-pairs≥4</p>
+  <p class="subtitle">PCG64 K=30 seed #-2,826,673's pick for draw #693 — Pass 1 = 16 methods' K=20 picks — Pass 2 = 16 methods' K=31 picks ∩ Base — Pass 3 = overlap≥5 vs last 100 draws — Pass 4 = consecutive-pairs≥4 — Pass 5 = historical repeat filter</p>
 
   <div class="note">
     <p><strong style="color:#e2e8f0">Base</strong> is <strong>PCG64 (O'Neill XSL-RR 128/64) K=30 seed
@@ -133,21 +133,28 @@ table.combos tr:hover td{background:#111827}
     overlap&ge;6 has <strong style="color:#86efac">never once occurred</strong> at any tested distance (0/592&ndash;691
     pairs per distance); overlap=5 is rare but not impossible (5 occurrences total across all distances combined).
     This pass uses the &ge;5 threshold. Leaves 702,826.</p>
-    <p><strong style="color:#e2e8f0">Pass 4</strong> (final) removes any Pass-3-remaining combo with
+    <p><strong style="color:#e2e8f0">Pass 4</strong> removes any Pass-3-remaining combo with
     4 or more consecutive (adjacent, differ-by-1) pairs among its 7 numbers.
     <strong style="color:#e2e8f0">Validated first:</strong> a consecutive-pairs analysis across all 692 real Loto7
     draws found 4-pair combos occurred 7 times (1.01%, vs 0.65% exact chance expectation); 5- and 6-pair combos
     occurred <strong style="color:#86efac">zero times</strong> (vs 0.027% and 0.0003% chance expectation
     respectively). This pass uses the &ge;4 threshold, covering all three tiers. Leaves
-    <strong style="color:#38bdf8">698,739</strong>.</p>
-    <p><strong style="color:#fbbf24">No further passes yet</strong> beyond Pass 4 — more passes will be added in
+    698,739.</p>
+    <p><strong style="color:#e2e8f0">Pass 5</strong> (final) is a historical repeat filter — the same "zero repeats
+    in history" pattern used on <a href="/loto7_elim_693.html" style="color:#a78bfa">loto7_elim_693.html</a> and
+    every other elimination page on this site. Any Pass-4-remaining combo that exactly matches one of Loto7's
+    692 historical actual winning combos (draws #1&ndash;692, exact 7-number
+    match, not partial overlap — Pass 3 already covers partial overlap) gets removed. 36
+    matches found. Leaves <strong style="color:#38bdf8">698,703</strong>.</p>
+    <p><strong style="color:#fbbf24">No further passes yet</strong> beyond Pass 5 — more passes will be added in
     later, separately-directed builds (see
     <a href="/pcg64_top3_elim_2134.html" style="color:#a78bfa">the Loto6 equivalent</a> for what a fully-built
     multi-pass elimination page on this site looks like).</p>
-    <p>The Base pool, Pass 3, and Pass 4 are recomputed <strong>live in your browser</strong> below (bit-exact
-    BigInt PCG64 port for Base, pure JS historical/pattern checks for Passes 3 and 4) and checked against the
-    server-embedded reference — check the verification badges. Passes 1 and 2's 16 statistical/ML methods can't
-    (practically) run in a browser, so those are precomputed server-side and embedded as static data.</p>
+    <p>The Base pool, Pass 3, Pass 4, and Pass 5 are recomputed <strong>live in your browser</strong> below
+    (bit-exact BigInt PCG64 port for Base, pure JS historical/pattern checks for Passes 3, 4 and 5) and checked
+    against the server-embedded reference — check the verification badges. Passes 1 and 2's 16 statistical/ML
+    methods can't (practically) run in a browser, so those are precomputed server-side and embedded as static
+    data.</p>
   </div>
 
   <div class="section">
@@ -193,7 +200,7 @@ table.combos tr:hover td{background:#111827}
   </div>
 
   <div class="section">
-    <h2>Pass 4 (final) — consecutive-pairs&ge;4 <span id="badgePass4" class="verify-badge pending">verifying…</span>
+    <h2>Pass 4 — consecutive-pairs&ge;4 <span id="badgePass4" class="verify-badge pending">verifying…</span>
     <span class="verify-badge" style="background:#14532d;color:#86efac">5-6 pairs well-supported (0/692 historically)</span></h2>
     <p class="desc">Removes any Pass-3-remaining combo with 4+ consecutive (adjacent,
     differ-by-1) pairs among its 7 numbers — e.g. a combo containing 14,15,16,17 has 3 such pairs (14-15, 15-16,
@@ -201,8 +208,16 @@ table.combos tr:hover td{background:#111827}
     no server reference needed).</p>
     <p class="desc" style="margin-bottom:0">Pair-count distribution among the 702,826
     Pass-3-remaining combos: 0 pairs: 218,058 &middot; 1 pairs: 298,971 &middot; 2 pairs: 147,883 &middot; 3 pairs: 33,827 &middot; 4 pairs: 3,864 &middot; 5 pairs: 218 &middot; 6 pairs: 5.
-    Removed 4,087 combos with 4+ pairs. Final remaining:
-    <strong style="color:#38bdf8">698,739</strong>.</p>
+    Removed 4,087 combos with 4+ pairs. Final remaining after Pass 4:
+    698,739.</p>
+  </div>
+
+  <div class="section">
+    <h2>Pass 5 (final) — historical repeat filter <span id="badgePass5" class="verify-badge pending">verifying…</span></h2>
+    <p class="desc">Removes any Pass-4-remaining combo that exactly matches a real 7-number winning combo from the
+    692 draws #1&ndash;692. Checked live in your browser against the same
+    embedded historical combo set used for the hot/cold split. 36 matches found.</p>
+    <details><summary>Show all 36 removed combos (exact match to a historical winning combo)</summary><table class='methods-table'><thead><tr><th>Removed &mdash; exact match to a historical winning combo</th></tr></thead><tbody><tr><td><div class="balls"><span class="nb">1</span><span class="nb">3</span><span class="nb">5</span><span class="nb">7</span><span class="nb">27</span><span class="nb">29</span><span class="nb">33</span></div></td></tr><tr><td><div class="balls"><span class="nb">1</span><span class="nb">3</span><span class="nb">5</span><span class="nb">10</span><span class="nb">18</span><span class="nb">22</span><span class="nb">23</span></div></td></tr><tr><td><div class="balls"><span class="nb">1</span><span class="nb">3</span><span class="nb">10</span><span class="nb">18</span><span class="nb">28</span><span class="nb">31</span><span class="nb">35</span></div></td></tr><tr><td><div class="balls"><span class="nb">1</span><span class="nb">3</span><span class="nb">11</span><span class="nb">20</span><span class="nb">23</span><span class="nb">32</span><span class="nb">35</span></div></td></tr><tr><td><div class="balls"><span class="nb">1</span><span class="nb">3</span><span class="nb">16</span><span class="nb">20</span><span class="nb">25</span><span class="nb">27</span><span class="nb">34</span></div></td></tr><tr><td><div class="balls"><span class="nb">1</span><span class="nb">5</span><span class="nb">7</span><span class="nb">12</span><span class="nb">15</span><span class="nb">24</span><span class="nb">25</span></div></td></tr><tr><td><div class="balls"><span class="nb">1</span><span class="nb">5</span><span class="nb">10</span><span class="nb">20</span><span class="nb">21</span><span class="nb">28</span><span class="nb">30</span></div></td></tr><tr><td><div class="balls"><span class="nb">1</span><span class="nb">8</span><span class="nb">10</span><span class="nb">12</span><span class="nb">18</span><span class="nb">28</span><span class="nb">29</span></div></td></tr><tr><td><div class="balls"><span class="nb">1</span><span class="nb">8</span><span class="nb">11</span><span class="nb">21</span><span class="nb">23</span><span class="nb">25</span><span class="nb">28</span></div></td></tr><tr><td><div class="balls"><span class="nb">1</span><span class="nb">10</span><span class="nb">11</span><span class="nb">21</span><span class="nb">26</span><span class="nb">29</span><span class="nb">30</span></div></td></tr><tr><td><div class="balls"><span class="nb">1</span><span class="nb">11</span><span class="nb">12</span><span class="nb">17</span><span class="nb">22</span><span class="nb">30</span><span class="nb">35</span></div></td></tr><tr><td><div class="balls"><span class="nb">1</span><span class="nb">11</span><span class="nb">21</span><span class="nb">26</span><span class="nb">28</span><span class="nb">32</span><span class="nb">35</span></div></td></tr><tr><td><div class="balls"><span class="nb">1</span><span class="nb">11</span><span class="nb">25</span><span class="nb">28</span><span class="nb">31</span><span class="nb">33</span><span class="nb">37</span></div></td></tr><tr><td><div class="balls"><span class="nb">1</span><span class="nb">13</span><span class="nb">16</span><span class="nb">17</span><span class="nb">18</span><span class="nb">25</span><span class="nb">30</span></div></td></tr><tr><td><div class="balls"><span class="nb">1</span><span class="nb">15</span><span class="nb">20</span><span class="nb">23</span><span class="nb">25</span><span class="nb">31</span><span class="nb">32</span></div></td></tr><tr><td><div class="balls"><span class="nb">3</span><span class="nb">5</span><span class="nb">7</span><span class="nb">11</span><span class="nb">15</span><span class="nb">17</span><span class="nb">25</span></div></td></tr><tr><td><div class="balls"><span class="nb">3</span><span class="nb">5</span><span class="nb">8</span><span class="nb">15</span><span class="nb">22</span><span class="nb">25</span><span class="nb">27</span></div></td></tr><tr><td><div class="balls"><span class="nb">3</span><span class="nb">5</span><span class="nb">18</span><span class="nb">25</span><span class="nb">28</span><span class="nb">35</span><span class="nb">37</span></div></td></tr><tr><td><div class="balls"><span class="nb">3</span><span class="nb">7</span><span class="nb">11</span><span class="nb">16</span><span class="nb">22</span><span class="nb">34</span><span class="nb">37</span></div></td></tr><tr><td><div class="balls"><span class="nb">3</span><span class="nb">7</span><span class="nb">13</span><span class="nb">15</span><span class="nb">17</span><span class="nb">21</span><span class="nb">30</span></div></td></tr><tr><td><div class="balls"><span class="nb">3</span><span class="nb">7</span><span class="nb">15</span><span class="nb">16</span><span class="nb">30</span><span class="nb">34</span><span class="nb">35</span></div></td></tr><tr><td><div class="balls"><span class="nb">3</span><span class="nb">10</span><span class="nb">20</span><span class="nb">21</span><span class="nb">22</span><span class="nb">26</span><span class="nb">30</span></div></td></tr><tr><td><div class="balls"><span class="nb">3</span><span class="nb">10</span><span class="nb">23</span><span class="nb">25</span><span class="nb">26</span><span class="nb">28</span><span class="nb">30</span></div></td></tr><tr><td><div class="balls"><span class="nb">3</span><span class="nb">12</span><span class="nb">15</span><span class="nb">16</span><span class="nb">25</span><span class="nb">29</span><span class="nb">37</span></div></td></tr><tr><td><div class="balls"><span class="nb">3</span><span class="nb">12</span><span class="nb">16</span><span class="nb">17</span><span class="nb">27</span><span class="nb">30</span><span class="nb">34</span></div></td></tr><tr><td><div class="balls"><span class="nb">3</span><span class="nb">13</span><span class="nb">17</span><span class="nb">25</span><span class="nb">26</span><span class="nb">27</span><span class="nb">29</span></div></td></tr><tr><td><div class="balls"><span class="nb">3</span><span class="nb">21</span><span class="nb">26</span><span class="nb">33</span><span class="nb">34</span><span class="nb">35</span><span class="nb">37</span></div></td></tr><tr><td><div class="balls"><span class="nb">5</span><span class="nb">8</span><span class="nb">15</span><span class="nb">24</span><span class="nb">25</span><span class="nb">32</span><span class="nb">35</span></div></td></tr><tr><td><div class="balls"><span class="nb">8</span><span class="nb">12</span><span class="nb">17</span><span class="nb">21</span><span class="nb">23</span><span class="nb">24</span><span class="nb">31</span></div></td></tr><tr><td><div class="balls"><span class="nb">8</span><span class="nb">15</span><span class="nb">21</span><span class="nb">24</span><span class="nb">26</span><span class="nb">27</span><span class="nb">29</span></div></td></tr><tr><td><div class="balls"><span class="nb">8</span><span class="nb">23</span><span class="nb">24</span><span class="nb">25</span><span class="nb">27</span><span class="nb">30</span><span class="nb">31</span></div></td></tr><tr><td><div class="balls"><span class="nb">12</span><span class="nb">13</span><span class="nb">15</span><span class="nb">22</span><span class="nb">25</span><span class="nb">33</span><span class="nb">35</span></div></td></tr><tr><td><div class="balls"><span class="nb">12</span><span class="nb">15</span><span class="nb">25</span><span class="nb">26</span><span class="nb">27</span><span class="nb">29</span><span class="nb">35</span></div></td></tr><tr><td><div class="balls"><span class="nb">12</span><span class="nb">16</span><span class="nb">23</span><span class="nb">25</span><span class="nb">27</span><span class="nb">30</span><span class="nb">32</span></div></td></tr><tr><td><div class="balls"><span class="nb">12</span><span class="nb">17</span><span class="nb">21</span><span class="nb">24</span><span class="nb">26</span><span class="nb">30</span><span class="nb">32</span></div></td></tr><tr><td><div class="balls"><span class="nb">13</span><span class="nb">15</span><span class="nb">16</span><span class="nb">24</span><span class="nb">30</span><span class="nb">31</span><span class="nb">37</span></div></td></tr></tbody></table></details>
   </div>
 
   <div class="section">
@@ -248,10 +263,20 @@ table.combos tr:hover td{background:#111827}
         <div class="val">4,087</div>
         <div class="sub">consecutive-pairs &ge;4</div>
       </div>
-      <div class="stat-card final">
-        <div class="lbl">Final remaining</div>
+      <div class="stat-card">
+        <div class="lbl">After Pass 4</div>
         <div class="val">698,739</div>
         <div class="sub">34.3% of universe · 99.4% of Pass-3 output</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Removed by historical filter (Pass 5)</div>
+        <div class="val">36</div>
+        <div class="sub">exact match to a real drawn combo</div>
+      </div>
+      <div class="stat-card final">
+        <div class="lbl">Final remaining</div>
+        <div class="val">698,703</div>
+        <div class="sub">34.3% of universe · 100.0% of Pass-4 output</div>
       </div>
     </div>
     <div class="elim-flow">
@@ -263,14 +288,16 @@ table.combos tr:hover td{background:#111827}
       <span class="arrow">&rarr;</span>
       <span class="n">702,826</span> <span style="color:#64748b;font-size:.7rem">(P3)</span>
       <span class="arrow">&rarr;</span>
-      <span class="n final">698,739</span> <span style="color:#64748b;font-size:.7rem">(P4)</span>
+      <span class="n">698,739</span> <span style="color:#64748b;font-size:.7rem">(P4)</span>
+      <span class="arrow">&rarr;</span>
+      <span class="n final">698,703</span> <span style="color:#64748b;font-size:.7rem">(P5)</span>
     </div>
   </div>
 
   <div class="section">
     <h2>Browse remaining combinations</h2>
-    <p class="desc">Fetched from a separate JSON asset (not inlined — 698,739 rows is too large for the page itself).</p>
-    <div id="loadingMsg">Loading 698,739 combinations…</div>
+    <p class="desc">Fetched from a separate JSON asset (not inlined — 698,703 rows is too large for the page itself).</p>
+    <div id="loadingMsg">Loading 698,703 combinations…</div>
     <div id="comboUI" style="display:none">
       <div class="lookup">
         <span class="pd-lbl">Hot/cold pattern</span>
@@ -297,7 +324,7 @@ table.combos tr:hover td{background:#111827}
         <span class="swatch include"></span>include (must contain) &rarr; <span class="swatch exclude"></span>exclude (must not
         contain) &rarr; back to neutral. Include and exclude constraints apply together. Hot/cold pattern (walk-forward
         top-18/bottom-19 split, computed live from the embedded historical data) and the pairs filter both apply on top
-        of the number filter. The pairs filter is browsing-only — it does NOT touch the underlying 698,739-combo
+        of the number filter. The pairs filter is browsing-only — it does NOT touch the underlying 698,703-combo
         pool or the Pass 4 badge above (which already permanently removed all 4+-pair combos); unchecking a box here just
         hides that pair-count tier from the current view.</div>
       <div class="filter-grid" id="filterGrid"></div>
@@ -306,7 +333,7 @@ table.combos tr:hover td{background:#111827}
         <span class="pd-lbl">Diverse sample</span>
         <button class="btn primary" onclick="generateSamples(5)">🎲 Generate 5</button>
         <button class="btn primary" onclick="generateSamples(10)">🎲 Generate 10</button>
-        <span class="page-info">Greedy coverage-maximizing pick from the currently filtered set (or all 698,739 if no
+        <span class="page-info">Greedy coverage-maximizing pick from the currently filtered set (or all 698,703 if no
         filter is active) — each pick is the combo whose numbers have the least cumulative usage so far, spreading the
         sample across as many distinct pool numbers as possible rather than clustering. Not a uniform random sample.</span>
       </div>
@@ -337,8 +364,8 @@ table.combos tr:hover td{background:#111827}
     Base = the overall winner of the completed Loto7 PCG64 K=30 seed scan (10,000,001 seeds). Pass 1 = 16 methods'
     K=20 picks, same style as loto7_elim_693.html. Pass 2 = each method's K=31 pick intersected
     with Base individually (16 separate pools). Pass 3 = overlap&ge;5 vs any of the last
-    100 actual draws. Pass 4 = consecutive-pairs&ge;4. 698,739 of
-    2,035,800 combos remain.<br>
+    100 actual draws. Pass 4 = consecutive-pairs&ge;4. Pass 5 = historical repeat
+    filter (exact 7-number match). 698,703 of 2,035,800 combos remain.<br>
     16 methods: Poly Regression, Moving Avg-37, Exp-Weighted Avg, Frequency, Markov Chain, ARIMA(2,1,0), Random Forest,
     RL (Linear Q), HMM, k-NN, Modular Cycle, Apriori, Monte Carlo, Naive Bayes, Weighted MA-37, LSTM — same 16 used
     throughout <a href="/loto7_backtest.html" style="color:#64748b">loto7_backtest.html</a> /
@@ -478,6 +505,11 @@ Promise.all([
   const stillHighPairs = REMAINING.filter(c => consecutivePairCount(c) >= PASS4_PAIR_THRESHOLD);
   renderBadge('badgePass4', stillHighPairs.length === 0);
   if (stillHighPairs.length > 0) console.error('Pass-4 leak: remaining combos still have consecutive-pairs >= ' + PASS4_PAIR_THRESHOLD, stillHighPairs);
+
+  const historicalSet = new Set(historicalData.map(c => [...c].sort((a,b)=>a-b).join(',')));
+  const stillHistorical = REMAINING.filter(c => historicalSet.has([...c].sort((a,b)=>a-b).join(',')));
+  renderBadge('badgePass5', stillHistorical.length === 0);
+  if (stillHistorical.length > 0) console.error('Pass-5 leak: remaining combos still match a historical winning combo', stillHistorical);
 
   buildFilterGrid();
   render();

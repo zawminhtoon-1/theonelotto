@@ -44,13 +44,21 @@ occurred at any tested distance (0 occurrences across 592-691 pairs
 per distance); overlap=5 itself is rare (5 occurrences total across
 all distances tested combined).
 
-Pass 4 (NEW, final): removes any Pass-3-remaining combo with 4 or more
-consecutive (adjacent, differ-by-1) pairs among its 7 numbers.
-Well-supported basis: a consecutive-pairs analysis across all 692 real
-Loto7 draws found 4-pair combos occurred 7 times (1.01%, vs 0.65%
-exact chance expectation); 5- and 6-pair combos occurred ZERO times
-(vs 0.027% and 0.0003% chance expectation respectively) -- essentially
-never happens. This is the final pass on this page for now.
+Pass 4: removes any Pass-3-remaining combo with 4 or more consecutive
+(adjacent, differ-by-1) pairs among its 7 numbers. Well-supported
+basis: a consecutive-pairs analysis across all 692 real Loto7 draws
+found 4-pair combos occurred 7 times (1.01%, vs 0.65% exact chance
+expectation); 5- and 6-pair combos occurred ZERO times (vs 0.027% and
+0.0003% chance expectation respectively) -- essentially never
+happens.
+
+Pass 5 (NEW, final): historical repeat filter, same "zero repeats in
+history" pattern used on loto7_elim_693.html and every other
+elimination page on this site. Any Pass-4-remaining combo that exactly
+matches one of Loto7's 692 historical actual winning combos (main 7
+numbers only, exact 7-number match, not partial overlap -- that's what
+Pass 3 already covers) gets removed. This is the final pass on this
+page for now.
 
 Outputs:
   pcg64_elim_693_meta.json           -- small: base pool, seed, counts
@@ -353,6 +361,32 @@ print(f"Pass 4 elimination in {elapsed4:.1f}s")
 print(f"  Removed (consecutive-pair count >= {PASS4_PAIR_THRESHOLD}): {removed_by_pass4:,}")
 print(f"  Before Pass 4: {final_remaining_pass3:,}  ->  After Pass 4: {final_remaining_pass4:,}")
 
+# ── Pass 5 (NEW, final): historical repeat filter -- same "zero repeats in
+# history" pattern used on loto7_elim_693.html and every other elimination
+# page on this site. Any Pass-4-remaining combo that exactly matches one of
+# Loto7's 692 historical actual winning combos (main 7 numbers only) gets
+# removed. Exact match only, not partial overlap (that's what Pass 3 already
+# covers). ────────────────────────────────────────────────────────────────
+print(f"\n=== Pass 5 (NEW, final) ===")
+historical_combos = set(tuple(c) for c in all_main7)
+print(f"Historical winning combos: {len(historical_combos):,} (from {len(all_main7):,} draws, #1-{TARGET_SERIAL-1})")
+
+t0 = time.time()
+remaining_after5 = []
+removed_historical = []
+for combo in remaining_after4:
+    if tuple(combo) in historical_combos:
+        removed_historical.append(combo)
+        continue
+    remaining_after5.append(combo)
+elapsed5 = time.time() - t0
+final_remaining_pass5 = len(remaining_after5)
+print(f"Pass 5 elimination in {elapsed5:.1f}s")
+print(f"  Removed (exact match to a historical winning combo): {len(removed_historical):,}")
+if removed_historical:
+    print(f"  Matched historical combos: {removed_historical}")
+print(f"  Before Pass 5: {final_remaining_pass4:,}  ->  After Pass 5: {final_remaining_pass5:,}")
+
 # ── Save outputs ──────────────────────────────────────────────────────────
 meta = {
     'targetSerial': TARGET_SERIAL,
@@ -382,15 +416,17 @@ meta = {
     'pass4PairDistribution': {str(k): v for k, v in sorted(pair_dist.items())},
     'removedByPass4': removed_by_pass4,
     'finalRemainingPass4': final_remaining_pass4,
-    'finalRemaining': final_remaining_pass4,
+    'removedHistorical': [list(c) for c in removed_historical],
+    'finalRemainingPass5': final_remaining_pass5,
+    'finalRemaining': final_remaining_pass5,
 }
 with open(META_OUT, 'w', encoding='utf-8') as f:
     json.dump(meta, f, indent=2)
 print(f"\nSaved {META_OUT}")
 
 with open(COMBOS_OUT, 'w', encoding='utf-8') as f:
-    json.dump(remaining_after4, f, separators=(',', ':'))
-print(f"Saved {COMBOS_OUT} ({len(remaining_after4):,} combos, {os.path.getsize(COMBOS_OUT)//1024/1024:.1f} MB)")
+    json.dump(remaining_after5, f, separators=(',', ':'))
+print(f"Saved {COMBOS_OUT} ({len(remaining_after5):,} combos, {os.path.getsize(COMBOS_OUT)//1024/1024:.1f} MB)")
 
 with open(HISTORICAL_OUT, 'w', encoding='utf-8') as f:
     json.dump(all_main7, f, separators=(',', ':'))

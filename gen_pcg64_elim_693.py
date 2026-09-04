@@ -74,6 +74,11 @@ final_remaining_pass4 = meta['finalRemainingPass4']
 pass4_pct = final_remaining_pass4 / universe_count * 100
 pass4_pct_of_pass3 = final_remaining_pass4 / final_remaining_pass3 * 100
 
+removed_historical = meta['removedHistorical']
+final_remaining_pass5 = meta['finalRemainingPass5']
+pass5_pct = final_remaining_pass5 / universe_count * 100
+pass5_pct_of_pass4 = final_remaining_pass5 / final_remaining_pass4 * 100
+
 final_remaining = meta['finalRemaining']
 final_pct = final_remaining / universe_count * 100
 
@@ -86,6 +91,11 @@ pass2_rows_html = ""
 for name, ipool in zip(method_names, pass2_intersected_pools):
     balls = "".join(f'<span class="nb">{n}</span>' for n in ipool)
     pass2_rows_html += f"""<tr><td class="mname">{name}</td><td><div class="balls">{balls}</div></td></tr>"""
+
+historical_rows_html = ""
+for combo in removed_historical:
+    balls = "".join(f'<span class="nb">{n}</span>' for n in combo)
+    historical_rows_html += f"""<tr><td><div class="balls">{balls}</div></td></tr>"""
 
 page = f"""<!DOCTYPE html>
 <html lang="en">
@@ -194,7 +204,7 @@ table.combos tr:hover td{{background:#111827}}
 <script src="/site-nav.js"></script>
 <div class="wrap">
   <h1>✂️ Loto 7 PCG64 Seed — Draw #{TARGET_SERIAL} Elimination</h1>
-  <p class="subtitle">PCG64 K={K_PICKS} seed #{SEED:,}'s pick for draw #{TARGET_SERIAL} — Pass 1 = 16 methods' K={method_k} picks — Pass 2 = 16 methods' K={pass2_method_k} picks ∩ Base — Pass 3 = overlap≥{pass3_overlap_threshold} vs last {pass3_window} draws — Pass 4 = consecutive-pairs≥{pass4_pair_threshold}</p>
+  <p class="subtitle">PCG64 K={K_PICKS} seed #{SEED:,}'s pick for draw #{TARGET_SERIAL} — Pass 1 = 16 methods' K={method_k} picks — Pass 2 = 16 methods' K={pass2_method_k} picks ∩ Base — Pass 3 = overlap≥{pass3_overlap_threshold} vs last {pass3_window} draws — Pass 4 = consecutive-pairs≥{pass4_pair_threshold} — Pass 5 = historical repeat filter</p>
 
   <div class="note">
     <p><strong style="color:#e2e8f0">Base</strong> is <strong>PCG64 (O'Neill XSL-RR 128/64) K={K_PICKS} seed
@@ -222,21 +232,28 @@ table.combos tr:hover td{{background:#111827}}
     overlap&ge;6 has <strong style="color:#86efac">never once occurred</strong> at any tested distance (0/592&ndash;691
     pairs per distance); overlap=5 is rare but not impossible (5 occurrences total across all distances combined).
     This pass uses the &ge;{pass3_overlap_threshold} threshold. Leaves {final_remaining_pass3:,}.</p>
-    <p><strong style="color:#e2e8f0">Pass 4</strong> (final) removes any Pass-3-remaining combo with
+    <p><strong style="color:#e2e8f0">Pass 4</strong> removes any Pass-3-remaining combo with
     {pass4_pair_threshold} or more consecutive (adjacent, differ-by-1) pairs among its 7 numbers.
     <strong style="color:#e2e8f0">Validated first:</strong> a consecutive-pairs analysis across all 692 real Loto7
     draws found 4-pair combos occurred 7 times (1.01%, vs 0.65% exact chance expectation); 5- and 6-pair combos
     occurred <strong style="color:#86efac">zero times</strong> (vs 0.027% and 0.0003% chance expectation
     respectively). This pass uses the &ge;{pass4_pair_threshold} threshold, covering all three tiers. Leaves
-    <strong style="color:#38bdf8">{final_remaining_pass4:,}</strong>.</p>
-    <p><strong style="color:#fbbf24">No further passes yet</strong> beyond Pass 4 — more passes will be added in
+    {final_remaining_pass4:,}.</p>
+    <p><strong style="color:#e2e8f0">Pass 5</strong> (final) is a historical repeat filter — the same "zero repeats
+    in history" pattern used on <a href="/loto7_elim_693.html" style="color:#a78bfa">loto7_elim_693.html</a> and
+    every other elimination page on this site. Any Pass-4-remaining combo that exactly matches one of Loto7's
+    {historical_draw_count:,} historical actual winning combos (draws #1&ndash;{TRAINED_THROUGH}, exact 7-number
+    match, not partial overlap — Pass 3 already covers partial overlap) gets removed. {len(removed_historical)}
+    matches found. Leaves <strong style="color:#38bdf8">{final_remaining_pass5:,}</strong>.</p>
+    <p><strong style="color:#fbbf24">No further passes yet</strong> beyond Pass 5 — more passes will be added in
     later, separately-directed builds (see
     <a href="/pcg64_top3_elim_2134.html" style="color:#a78bfa">the Loto6 equivalent</a> for what a fully-built
     multi-pass elimination page on this site looks like).</p>
-    <p>The Base pool, Pass 3, and Pass 4 are recomputed <strong>live in your browser</strong> below (bit-exact
-    BigInt PCG64 port for Base, pure JS historical/pattern checks for Passes 3 and 4) and checked against the
-    server-embedded reference — check the verification badges. Passes 1 and 2's 16 statistical/ML methods can't
-    (practically) run in a browser, so those are precomputed server-side and embedded as static data.</p>
+    <p>The Base pool, Pass 3, Pass 4, and Pass 5 are recomputed <strong>live in your browser</strong> below
+    (bit-exact BigInt PCG64 port for Base, pure JS historical/pattern checks for Passes 3, 4 and 5) and checked
+    against the server-embedded reference — check the verification badges. Passes 1 and 2's 16 statistical/ML
+    methods can't (practically) run in a browser, so those are precomputed server-side and embedded as static
+    data.</p>
   </div>
 
   <div class="section">
@@ -282,7 +299,7 @@ table.combos tr:hover td{{background:#111827}}
   </div>
 
   <div class="section">
-    <h2>Pass 4 (final) — consecutive-pairs&ge;{pass4_pair_threshold} <span id="badgePass4" class="verify-badge pending">verifying…</span>
+    <h2>Pass 4 — consecutive-pairs&ge;{pass4_pair_threshold} <span id="badgePass4" class="verify-badge pending">verifying…</span>
     <span class="verify-badge" style="background:#14532d;color:#86efac">5-6 pairs well-supported (0/692 historically)</span></h2>
     <p class="desc">Removes any Pass-3-remaining combo with {pass4_pair_threshold}+ consecutive (adjacent,
     differ-by-1) pairs among its 7 numbers — e.g. a combo containing 14,15,16,17 has 3 such pairs (14-15, 15-16,
@@ -290,8 +307,16 @@ table.combos tr:hover td{{background:#111827}}
     no server reference needed).</p>
     <p class="desc" style="margin-bottom:0">Pair-count distribution among the {final_remaining_pass3:,}
     Pass-3-remaining combos: {' &middot; '.join(f'{k} pairs: {int(v):,}' for k, v in pass4_pair_distribution.items())}.
-    Removed {removed_by_pass4:,} combos with {pass4_pair_threshold}+ pairs. Final remaining:
-    <strong style="color:#38bdf8">{final_remaining_pass4:,}</strong>.</p>
+    Removed {removed_by_pass4:,} combos with {pass4_pair_threshold}+ pairs. Final remaining after Pass 4:
+    {final_remaining_pass4:,}.</p>
+  </div>
+
+  <div class="section">
+    <h2>Pass 5 (final) — historical repeat filter <span id="badgePass5" class="verify-badge pending">verifying…</span></h2>
+    <p class="desc">Removes any Pass-4-remaining combo that exactly matches a real 7-number winning combo from the
+    {historical_draw_count:,} draws #1&ndash;{TRAINED_THROUGH}. Checked live in your browser against the same
+    embedded historical combo set used for the hot/cold split. {len(removed_historical)} matches found.</p>
+    {f"<details><summary>Show all {len(removed_historical):,} removed combos (exact match to a historical winning combo)</summary><table class='methods-table'><thead><tr><th>Removed &mdash; exact match to a historical winning combo</th></tr></thead><tbody>" + historical_rows_html + "</tbody></table></details>" if removed_historical else "<p style='color:#64748b;font-size:.85rem'>No matches found &mdash; nothing removed by this pass.</p>"}
   </div>
 
   <div class="section">
@@ -337,10 +362,20 @@ table.combos tr:hover td{{background:#111827}}
         <div class="val">{removed_by_pass4:,}</div>
         <div class="sub">consecutive-pairs &ge;{pass4_pair_threshold}</div>
       </div>
+      <div class="stat-card">
+        <div class="lbl">After Pass 4</div>
+        <div class="val">{final_remaining_pass4:,}</div>
+        <div class="sub">{pass4_pct:.1f}% of universe · {pass4_pct_of_pass3:.1f}% of Pass-3 output</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Removed by historical filter (Pass 5)</div>
+        <div class="val">{len(removed_historical):,}</div>
+        <div class="sub">exact match to a real drawn combo</div>
+      </div>
       <div class="stat-card final">
         <div class="lbl">Final remaining</div>
         <div class="val">{final_remaining:,}</div>
-        <div class="sub">{final_pct:.1f}% of universe · {pass4_pct_of_pass3:.1f}% of Pass-3 output</div>
+        <div class="sub">{final_pct:.1f}% of universe · {pass5_pct_of_pass4:.1f}% of Pass-4 output</div>
       </div>
     </div>
     <div class="elim-flow">
@@ -352,7 +387,9 @@ table.combos tr:hover td{{background:#111827}}
       <span class="arrow">&rarr;</span>
       <span class="n">{final_remaining_pass3:,}</span> <span style="color:#64748b;font-size:.7rem">(P3)</span>
       <span class="arrow">&rarr;</span>
-      <span class="n final">{final_remaining_pass4:,}</span> <span style="color:#64748b;font-size:.7rem">(P4)</span>
+      <span class="n">{final_remaining_pass4:,}</span> <span style="color:#64748b;font-size:.7rem">(P4)</span>
+      <span class="arrow">&rarr;</span>
+      <span class="n final">{final_remaining_pass5:,}</span> <span style="color:#64748b;font-size:.7rem">(P5)</span>
     </div>
   </div>
 
@@ -426,8 +463,8 @@ table.combos tr:hover td{{background:#111827}}
     Base = the overall winner of the completed Loto7 PCG64 K=30 seed scan (10,000,001 seeds). Pass 1 = 16 methods'
     K={method_k} picks, same style as loto7_elim_693.html. Pass 2 = each method's K={pass2_method_k} pick intersected
     with Base individually (16 separate pools). Pass 3 = overlap&ge;{pass3_overlap_threshold} vs any of the last
-    {pass3_window} actual draws. Pass 4 = consecutive-pairs&ge;{pass4_pair_threshold}. {final_remaining:,} of
-    {universe_count:,} combos remain.<br>
+    {pass3_window} actual draws. Pass 4 = consecutive-pairs&ge;{pass4_pair_threshold}. Pass 5 = historical repeat
+    filter (exact 7-number match). {final_remaining:,} of {universe_count:,} combos remain.<br>
     16 methods: Poly Regression, Moving Avg-37, Exp-Weighted Avg, Frequency, Markov Chain, ARIMA(2,1,0), Random Forest,
     RL (Linear Q), HMM, k-NN, Modular Cycle, Apriori, Monte Carlo, Naive Bayes, Weighted MA-37, LSTM — same 16 used
     throughout <a href="/loto7_backtest.html" style="color:#64748b">loto7_backtest.html</a> /
@@ -567,6 +604,11 @@ Promise.all([
   const stillHighPairs = REMAINING.filter(c => consecutivePairCount(c) >= PASS4_PAIR_THRESHOLD);
   renderBadge('badgePass4', stillHighPairs.length === 0);
   if (stillHighPairs.length > 0) console.error('Pass-4 leak: remaining combos still have consecutive-pairs >= ' + PASS4_PAIR_THRESHOLD, stillHighPairs);
+
+  const historicalSet = new Set(historicalData.map(c => [...c].sort((a,b)=>a-b).join(',')));
+  const stillHistorical = REMAINING.filter(c => historicalSet.has([...c].sort((a,b)=>a-b).join(',')));
+  renderBadge('badgePass5', stillHistorical.length === 0);
+  if (stillHistorical.length > 0) console.error('Pass-5 leak: remaining combos still match a historical winning combo', stillHistorical);
 
   buildFilterGrid();
   render();
