@@ -1,16 +1,16 @@
 """
 gen_pcg64_elim_693.py
 --------------------------
-Generates the Loto7 PCG64-seed draw #693 elimination page's Base
-stage -- mirrors the Loto6 elimination-page pattern (e.g.
-xoshiro_elim_2130.html) and Loto7's own loto7_elim_693.html: shows the
-Base pool, live client-side verification badge (bit-exact BigInt PCG64
-port), the universe count, and a paginated/filterable/CSV-downloadable
-combo browser over all C(30,7) combinations -- hot/cold pattern filter
-dropdown and greedy "Diverse sample" Generate 5/10 buttons included.
-No elimination passes yet, per explicit instruction -- this
-establishes the Base only. Passes to be added in later, separately-
-directed builds.
+Generates the Loto7 PCG64-seed draw #693 elimination page -- mirrors
+the Loto6 elimination-page pattern (e.g. xoshiro_elim_2130.html) and
+Loto7's own loto7_elim_693.html: shows the Base pool, live client-side
+verification badge (bit-exact BigInt PCG64 port), Pass 1 (16 methods'
+K=20 picks, checked independently -- same style as loto7_elim_693.html's
+Pass 1 but K=20 instead of K=22), the elimination summary, and a
+paginated/filterable/CSV-downloadable combo browser over the
+Pass-1-remaining combos -- hot/cold pattern filter dropdown and greedy
+"Diverse sample" Generate 5/10 buttons included. Further passes to be
+added in later, separately-directed builds.
 
 Reads pcg64_elim_693_meta.json (small: base pool, seed, counts). The
 large combo list lives separately at public/pcg64_elim_693_combos.json
@@ -38,12 +38,26 @@ base = meta['base']
 universe_count = meta['universeCount']
 historical_draw_count = meta['historicalDrawCount']
 
+method_names = meta['methodNames']
+method_k = meta['methodK']
+method_picks = meta['methodPicks']
+removed_by_methods = meta['removedByMethods']
+final_remaining_pass1 = meta['finalRemainingPass1']
+pass1_pct = final_remaining_pass1 / universe_count * 100
+final_remaining = meta['finalRemaining']
+final_pct = final_remaining / universe_count * 100
+
+methods_rows_html = ""
+for name, pool in zip(method_names, method_picks):
+    balls = "".join(f'<span class="nb">{n}</span>' for n in pool)
+    methods_rows_html += f"""<tr><td class="mname">{name}</td><td><div class="balls">{balls}</div></td></tr>"""
+
 page = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Loto 7 PCG64 Seed — Draw #{TARGET_SERIAL} Elimination (Base)</title>
+<title>Loto 7 PCG64 Seed — Draw #{TARGET_SERIAL} Elimination</title>
 <style>
 
 *{{box-sizing:border-box;margin:0;padding:0}}
@@ -80,6 +94,23 @@ h1{{font-size:1.4rem;font-weight:700;color:#f1f5f9;margin-bottom:4px}}
 .stat-card .lbl{{font-size:.7rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}}
 .stat-card .val{{font-size:1.35rem;font-weight:700;color:#f1f5f9}}
 .stat-card .sub{{font-size:.75rem;color:#94a3b8;margin-top:2px}}
+.stat-card.final .val{{color:#38bdf8}}
+
+.elim-flow{{font-size:1rem;color:#e2e8f0;text-align:center;padding:16px;background:#0a0f1e;
+  border:1px solid #1e293b;border-radius:10px;font-weight:600;letter-spacing:.02em}}
+.elim-flow .arrow{{color:#64748b;margin:0 10px}}
+.elim-flow .n{{color:#f1f5f9}}
+.elim-flow .final{{color:#38bdf8}}
+
+.verify-badge.na{{background:#1e293b;color:#64748b}}
+
+details{{background:#0a0f1e;border:1px solid #1e293b;border-radius:10px;padding:12px 16px}}
+summary{{cursor:pointer;font-size:.85rem;font-weight:600;color:#e2e8f0;user-select:none}}
+summary:hover{{color:#f1f5f9}}
+.methods-table{{width:100%;border-collapse:collapse;font-size:.82rem;margin-top:12px}}
+.methods-table td{{padding:7px 10px;border-bottom:1px solid #1e293b;vertical-align:middle}}
+.methods-table td.mname{{color:#94a3b8;white-space:nowrap;font-weight:600;width:180px}}
+.methods-table .nb{{width:26px;height:26px;font-size:.7rem;background:#1e293b;color:#94a3b8;border:none}}
 
 .lookup{{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}}
 .lookup .btn{{padding:6px 14px;background:#1e293b;border:1px solid #334155;border-radius:7px;
@@ -125,8 +156,8 @@ table.combos tr:hover td{{background:#111827}}
 
 <script src="/site-nav.js"></script>
 <div class="wrap">
-  <h1>✂️ Loto 7 PCG64 Seed — Draw #{TARGET_SERIAL} Elimination (Base)</h1>
-  <p class="subtitle">Base only, no elimination passes yet — PCG64 K={K_PICKS} seed #{SEED:,}'s pick for draw #{TARGET_SERIAL}</p>
+  <h1>✂️ Loto 7 PCG64 Seed — Draw #{TARGET_SERIAL} Elimination</h1>
+  <p class="subtitle">PCG64 K={K_PICKS} seed #{SEED:,}'s pick for draw #{TARGET_SERIAL} — Pass 1 = 16 methods' K={method_k} picks</p>
 
   <div class="note">
     <p><strong style="color:#e2e8f0">Base</strong> is <strong>PCG64 (O'Neill XSL-RR 128/64) K={K_PICKS} seed
@@ -135,15 +166,20 @@ table.combos tr:hover td{{background:#111827}}
     <a href="/pcg64_seed_scan_loto7_k30.html" style="color:#a78bfa">the completed Loto7 PCG64 K=30 seed scan</a>
     (10,000,001 seeds, -5,000,000 to 5,000,000, draws #1-650). It defines the working universe: all
     C({base['k']},7) = {universe_count:,} seven-number combinations drawable from this {base['k']}-number pool.</p>
-    <p><strong style="color:#fbbf24">No elimination passes yet</strong> — this page is Base only, per explicit
-    instruction. Every one of the {universe_count:,} combos below is still in play; nothing has been removed.
-    Passes will be added in later, separately-directed builds (see
-    <a href="/pcg64_top3_elim_2134.html" style="color:#a78bfa">the Loto6 equivalent</a> and
-    <a href="/loto7_elim_693.html" style="color:#a78bfa">loto7_elim_693.html</a> for what a fully-built
+    <p><strong style="color:#e2e8f0">Pass 1</strong> is each of the 16 prediction methods' K={method_k} pick for draw
+    #{TARGET_SERIAL} (native K=15 pool normalized to K={method_k} via <code>topKNums()</code>, walk-forward trained
+    through #{TRAINED_THROUGH}), checked <strong>independently</strong> — NOT a union of raw numbers, same style as
+    <a href="/loto7_elim_693.html" style="color:#a78bfa">loto7_elim_693.html</a>'s Pass 1 (just K={method_k} instead
+    of K=22). Any Base combo fully contained within ANY single one of these 16 K={method_k} sets gets removed,
+    leaving {final_remaining_pass1:,}.</p>
+    <p><strong style="color:#fbbf24">No further passes yet</strong> beyond Pass 1 — more passes will be added in
+    later, separately-directed builds (see
+    <a href="/pcg64_top3_elim_2134.html" style="color:#a78bfa">the Loto6 equivalent</a> for what a fully-built
     multi-pass elimination page on this site looks like).</p>
     <p>The Base pool is recomputed <strong>live in your browser</strong> below (bit-exact BigInt PCG64 port, same
     implementation used on the seed-scan page) and checked against the server-embedded reference — check the
-    verification badge.</p>
+    verification badge. Pass 1's 16 statistical/ML methods can't (practically) run in a browser, so that's
+    precomputed server-side and embedded as static data.</p>
   </div>
 
   <div class="section">
@@ -156,7 +192,18 @@ table.combos tr:hover td{{background:#111827}}
   </div>
 
   <div class="section">
-    <h2>Universe</h2>
+    <h2>Pass 1 — 16 prediction methods, K={method_k} pick for draw #{TARGET_SERIAL} <span class="verify-badge na">server-computed</span></h2>
+    <p class="desc">Each method's native K=15 pool normalized to K={method_k}, checked independently against the Base pool.</p>
+    <details>
+      <summary>Show all 16 methods' K={method_k} picks</summary>
+      <table class="methods-table">
+        <tbody>{methods_rows_html}</tbody>
+      </table>
+    </details>
+  </div>
+
+  <div class="section">
+    <h2>Elimination summary</h2>
     <div class="stats-row">
       <div class="stat-card">
         <div class="lbl">Universe (Base)</div>
@@ -164,22 +211,27 @@ table.combos tr:hover td{{background:#111827}}
         <div class="sub">C({base['k']},7)</div>
       </div>
       <div class="stat-card">
-        <div class="lbl">Base pool size</div>
-        <div class="val">{base['k']}</div>
-        <div class="sub">of {37} numbers</div>
+        <div class="lbl">Removed by 16 methods (Pass 1)</div>
+        <div class="val">{removed_by_methods:,}</div>
+        <div class="sub">contained in ANY method's K={method_k}</div>
       </div>
-      <div class="stat-card">
-        <div class="lbl">Elimination passes applied</div>
-        <div class="val">0</div>
-        <div class="sub">Base only — nothing removed yet</div>
+      <div class="stat-card final">
+        <div class="lbl">Final remaining</div>
+        <div class="val">{final_remaining:,}</div>
+        <div class="sub">{final_pct:.1f}% of universe retained</div>
       </div>
+    </div>
+    <div class="elim-flow">
+      <span class="n">{universe_count:,}</span>
+      <span class="arrow">&rarr;</span>
+      <span class="n final">{final_remaining_pass1:,}</span> <span style="color:#64748b;font-size:.7rem">(P1)</span>
     </div>
   </div>
 
   <div class="section">
-    <h2>Browse combinations</h2>
-    <p class="desc">Fetched from a separate JSON asset (not inlined — {universe_count:,} rows is too large for the page itself).</p>
-    <div id="loadingMsg">Loading {universe_count:,} combinations…</div>
+    <h2>Browse remaining combinations</h2>
+    <p class="desc">Fetched from a separate JSON asset (not inlined — {final_remaining:,} rows is too large for the page itself).</p>
+    <div id="loadingMsg">Loading {final_remaining:,} combinations…</div>
     <div id="comboUI" style="display:none">
       <div class="lookup">
         <span class="pd-lbl">Hot/cold pattern</span>
@@ -208,7 +260,7 @@ table.combos tr:hover td{{background:#111827}}
         <span class="pd-lbl">Diverse sample</span>
         <button class="btn primary" onclick="generateSamples(5)">🎲 Generate 5</button>
         <button class="btn primary" onclick="generateSamples(10)">🎲 Generate 10</button>
-        <span class="page-info">Greedy coverage-maximizing pick from the currently filtered set (or all {universe_count:,} if no
+        <span class="page-info">Greedy coverage-maximizing pick from the currently filtered set (or all {final_remaining:,} if no
         filter is active) — each pick is the combo whose numbers have the least cumulative usage so far, spreading the
         sample across as many distinct pool numbers as possible rather than clustering. Not a uniform random sample.</span>
       </div>
@@ -236,8 +288,12 @@ table.combos tr:hover td{{background:#111827}}
     PCG64 (O'Neill XSL-RR 128/64, seeded via SplitMix64-expanded {{state,inc}}): picks = partial Fisher-Yates(range(1,38), {K_PICKS})
     with combined seed = seed×10⁷ + draw_serial. Core algorithm verified bit-exact against <code>numpy.random.Generator(PCG64())</code>
     for this pool_max=37/K={K_PICKS} configuration before the seed scan ran.<br>
-    Base = the overall winner of the completed Loto7 PCG64 K=30 seed scan (10,000,001 seeds). No elimination passes applied — this
-    page currently shows the raw C({base['k']},7) universe in full.<br>
+    Base = the overall winner of the completed Loto7 PCG64 K=30 seed scan (10,000,001 seeds). Pass 1 = 16 methods'
+    K={method_k} picks, same style as loto7_elim_693.html. {final_remaining:,} of {universe_count:,} combos remain.<br>
+    16 methods: Poly Regression, Moving Avg-37, Exp-Weighted Avg, Frequency, Markov Chain, ARIMA(2,1,0), Random Forest,
+    RL (Linear Q), HMM, k-NN, Modular Cycle, Apriori, Monte Carlo, Naive Bayes, Weighted MA-37, LSTM — same 16 used
+    throughout <a href="/loto7_backtest.html" style="color:#64748b">loto7_backtest.html</a> /
+    <a href="/loto7/predictions" style="color:#64748b">predictions</a>.<br>
     Formula-based only · Not financial advice · Loto 7 is random.
   </p>
 </div>
