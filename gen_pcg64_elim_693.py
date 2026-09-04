@@ -1,0 +1,482 @@
+"""
+gen_pcg64_elim_693.py
+--------------------------
+Generates the Loto7 PCG64-seed draw #693 elimination page's Base
+stage -- mirrors the Loto6 elimination-page pattern (e.g.
+xoshiro_elim_2130.html) and Loto7's own loto7_elim_693.html: shows the
+Base pool, live client-side verification badge (bit-exact BigInt PCG64
+port), the universe count, and a paginated/filterable/CSV-downloadable
+combo browser over all C(30,7) combinations -- hot/cold pattern filter
+dropdown and greedy "Diverse sample" Generate 5/10 buttons included.
+No elimination passes yet, per explicit instruction -- this
+establishes the Base only. Passes to be added in later, separately-
+directed builds.
+
+Reads pcg64_elim_693_meta.json (small: base pool, seed, counts). The
+large combo list lives separately at public/pcg64_elim_693_combos.json
+and the historical winning-combo set (for the hot/cold split) at
+public/pcg64_elim_693_historical.json -- both fetched client-side, not
+inlined.
+
+Output: public/pcg64_elim_693.html
+Run: python gen_pcg64_elim_693.py
+"""
+import json
+
+BASE = r"C:\Users\Zaw Min Htoon\source\repos\theonelotto"
+META_PATH = BASE + r"\pcg64_elim_693_meta.json"
+HTML_OUT = BASE + r"\public\pcg64_elim_693.html"
+
+with open(META_PATH, encoding='utf-8') as f:
+    meta = json.load(f)
+
+TARGET_SERIAL = meta['targetSerial']
+TRAINED_THROUGH = meta['trainedThroughSerial']
+SEED = meta['seed']
+K_PICKS = meta['k']
+base = meta['base']
+universe_count = meta['universeCount']
+historical_draw_count = meta['historicalDrawCount']
+
+page = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Loto 7 PCG64 Seed — Draw #{TARGET_SERIAL} Elimination (Base)</title>
+<style>
+
+*{{box-sizing:border-box;margin:0;padding:0}}
+body{{background:#0a0f1e;color:#e2e8f0;font-family:system-ui,sans-serif;padding-top:60px;min-height:100vh}}
+.wrap{{max-width:1200px;margin:0 auto;padding:24px 16px}}
+h1{{font-size:1.4rem;font-weight:700;color:#f1f5f9;margin-bottom:4px}}
+.subtitle{{font-size:.85rem;color:#64748b;margin-bottom:20px}}
+
+.note{{background:#0d1526;border:1px solid #1e293b;border-radius:10px;padding:14px 18px;
+  font-size:.8rem;color:#94a3b8;margin-bottom:20px;line-height:1.6}}
+.note p+p{{margin-top:8px}}
+.note code{{background:#0a0f1e;padding:1px 5px;border-radius:4px;font-size:.85em}}
+
+.section{{background:#0d1526;border:1px solid #1e293b;border-radius:12px;padding:20px;margin-bottom:20px}}
+.section h2{{font-size:1rem;font-weight:700;color:#f1f5f9;margin-bottom:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}}
+.section h3{{font-size:.86rem;font-weight:700;color:#cbd5e1;margin:14px 0 6px}}
+.order-label{{font-size:.7rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;
+  margin:10px 0 5px;display:flex;align-items:center;gap:8px}}
+.order-hint{{font-size:.72rem;font-weight:400;text-transform:none;letter-spacing:normal;color:#475569}}
+.section .desc{{font-size:.8rem;color:#64748b;margin-bottom:14px}}
+.verify-badge{{font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:10px;text-transform:uppercase;letter-spacing:.04em}}
+.verify-badge.pending{{background:#1e293b;color:#94a3b8}}
+.verify-badge.ok{{background:#14532d;color:#86efac}}
+.verify-badge.fail{{background:#450a0a;color:#fca5a5}}
+
+.balls{{display:flex;flex-wrap:wrap;gap:5px}}
+.nb{{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;
+  border-radius:50%;font-size:.78rem;font-weight:700;background:#312e5f;color:#c4b5fd;
+  border:1px solid #7c3aed55;flex-shrink:0}}
+.nb.b4{{background:#052e16;color:#86efac;border-color:#22c55e55}}
+
+.stats-row{{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}}
+.stat-card{{background:#0a0f1e;border:1px solid #1e293b;border-radius:10px;padding:14px 18px;flex:1;min-width:150px}}
+.stat-card .lbl{{font-size:.7rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}}
+.stat-card .val{{font-size:1.35rem;font-weight:700;color:#f1f5f9}}
+.stat-card .sub{{font-size:.75rem;color:#94a3b8;margin-top:2px}}
+
+.lookup{{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}}
+.lookup .btn{{padding:6px 14px;background:#1e293b;border:1px solid #334155;border-radius:7px;
+  color:#94a3b8;font-size:.8rem;cursor:pointer}}
+.lookup .btn:hover{{color:#f1f5f9}}
+.lookup .btn.primary{{background:#7c3aed;border-color:#7c3aed;color:#fff}}
+.lookup .btn.primary:hover{{background:#6d28d9}}
+.lookup .btn:disabled{{opacity:.4;cursor:default}}
+.filter-grid{{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}}
+.num-btn{{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;
+  border-radius:50%;font-size:.72rem;font-weight:700;color:#fff;background:#312e5f;
+  border:none;cursor:pointer;opacity:.65;transition:all .12s;flex-shrink:0}}
+.num-btn:hover{{opacity:.9}}
+.num-btn.include{{opacity:1;box-shadow:0 0 0 2px #0a0f1e,0 0 0 4px #22c55e;transform:scale(1.08)}}
+.num-btn.exclude{{opacity:.55;box-shadow:0 0 0 2px #0a0f1e,0 0 0 4px #ef4444;transform:scale(1.08);
+  text-decoration:line-through;text-decoration-thickness:2px}}
+.filter-legend{{font-size:.72rem;color:#64748b;margin-bottom:8px}}
+.filter-legend .swatch{{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;
+  border-radius:50%;font-size:0;margin:0 3px -3px 0}}
+.filter-legend .swatch.neutral{{background:#312e5f;opacity:.65}}
+.filter-legend .swatch.include{{background:#312e5f;box-shadow:0 0 0 1px #0a0f1e,0 0 0 2px #22c55e}}
+.filter-legend .swatch.exclude{{background:#312e5f;opacity:.55;box-shadow:0 0 0 1px #0a0f1e,0 0 0 2px #ef4444}}
+.page-info{{font-size:.8rem;color:#94a3b8}}
+.lookup select{{background:#0a0f1e;border:1px solid #334155;border-radius:7px;padding:7px 10px;
+  color:#e2e8f0;font-size:.82rem}}
+.pd-lbl{{font-size:.72rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em}}
+#generatedResults{{margin-bottom:14px}}
+#generatedResults .gen-hdr{{font-size:.78rem;color:#94a3b8;margin-bottom:8px}}
+#generatedResults .gen-row{{margin-bottom:6px}}
+.tbl-wrap{{overflow-x:auto;border-radius:10px;border:1px solid #1e293b}}
+table.combos{{width:100%;border-collapse:collapse;font-size:.83rem}}
+table.combos th{{background:#0a0f1e;padding:8px 12px;text-align:left;color:#94a3b8;
+  font-weight:600;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;
+  border-bottom:1px solid #1e293b}}
+table.combos td{{padding:6px 12px;border-bottom:1px solid #0f172a}}
+table.combos tr:hover td{{background:#111827}}
+#loadingMsg{{padding:30px;text-align:center;color:#64748b;font-size:.85rem}}
+
+.footer{{margin-top:28px;font-size:.78rem;color:#475569;padding-bottom:20px;line-height:1.6}}
+</style>
+</head>
+<body>
+
+<script src="/site-nav.js"></script>
+<div class="wrap">
+  <h1>✂️ Loto 7 PCG64 Seed — Draw #{TARGET_SERIAL} Elimination (Base)</h1>
+  <p class="subtitle">Base only, no elimination passes yet — PCG64 K={K_PICKS} seed #{SEED:,}'s pick for draw #{TARGET_SERIAL}</p>
+
+  <div class="note">
+    <p><strong style="color:#e2e8f0">Base</strong> is <strong>PCG64 (O'Neill XSL-RR 128/64) K={K_PICKS} seed
+    #{SEED:,}'s pick</strong> for draw #{TARGET_SERIAL} (not yet drawn), walk-forward — a pure function of
+    (seed, draw serial), no training data needed. This seed is the overall winner of
+    <a href="/pcg64_seed_scan_loto7_k30.html" style="color:#a78bfa">the completed Loto7 PCG64 K=30 seed scan</a>
+    (10,000,001 seeds, -5,000,000 to 5,000,000, draws #1-650). It defines the working universe: all
+    C({base['k']},7) = {universe_count:,} seven-number combinations drawable from this {base['k']}-number pool.</p>
+    <p><strong style="color:#fbbf24">No elimination passes yet</strong> — this page is Base only, per explicit
+    instruction. Every one of the {universe_count:,} combos below is still in play; nothing has been removed.
+    Passes will be added in later, separately-directed builds (see
+    <a href="/pcg64_top3_elim_2134.html" style="color:#a78bfa">the Loto6 equivalent</a> and
+    <a href="/loto7_elim_693.html" style="color:#a78bfa">loto7_elim_693.html</a> for what a fully-built
+    multi-pass elimination page on this site looks like).</p>
+    <p>The Base pool is recomputed <strong>live in your browser</strong> below (bit-exact BigInt PCG64 port, same
+    implementation used on the seed-scan page) and checked against the server-embedded reference — check the
+    verification badge.</p>
+  </div>
+
+  <div class="section">
+    <h2>Base — PCG64 K={K_PICKS} seed #{SEED:,} <span id="badgeBase" class="verify-badge pending">verifying…</span></h2>
+    <p class="desc">Pure function of (seed, draw serial) — no training data needed.</p>
+    <div class="order-label">Ascending order</div>
+    <div class="balls" id="baseBalls"></div>
+    <div class="order-label">Generation order <span class="order-hint">(O'Neill XSL-RR partial Fisher-Yates order)</span> <span id="badgeBaseOrdered" class="verify-badge pending">verifying…</span></div>
+    <div class="balls" id="baseBallsOrdered"></div>
+  </div>
+
+  <div class="section">
+    <h2>Universe</h2>
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="lbl">Universe (Base)</div>
+        <div class="val">{universe_count:,}</div>
+        <div class="sub">C({base['k']},7)</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Base pool size</div>
+        <div class="val">{base['k']}</div>
+        <div class="sub">of {37} numbers</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Elimination passes applied</div>
+        <div class="val">0</div>
+        <div class="sub">Base only — nothing removed yet</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Browse combinations</h2>
+    <p class="desc">Fetched from a separate JSON asset (not inlined — {universe_count:,} rows is too large for the page itself).</p>
+    <div id="loadingMsg">Loading {universe_count:,} combinations…</div>
+    <div id="comboUI" style="display:none">
+      <div class="lookup">
+        <span class="pd-lbl">Hot/cold pattern</span>
+        <select id="hcFilterSelect" onchange="applyFilter()">
+          <option value="">All patterns</option>
+          <option value="0">0h/7c</option>
+          <option value="1">1h/6c</option>
+          <option value="2">2h/5c</option>
+          <option value="3">3h/4c</option>
+          <option value="4">4h/3c</option>
+          <option value="5">5h/2c</option>
+          <option value="6">6h/1c</option>
+          <option value="7">7h/0c</option>
+        </select>
+        <button class="btn" onclick="clearFilter()">Clear filter</button>
+        <button class="btn primary" onclick="downloadCSV()">⬇ Download CSV</button>
+        <span id="filterInfo" class="page-info"></span>
+      </div>
+      <div class="filter-legend">Click a number to cycle: <span class="swatch neutral"></span>neutral (no filter) &rarr;
+        <span class="swatch include"></span>include (must contain) &rarr; <span class="swatch exclude"></span>exclude (must not
+        contain) &rarr; back to neutral. Include and exclude constraints apply together. Hot/cold pattern (walk-forward
+        top-18/bottom-19 split, computed live from the embedded historical data) applies on top of both.</div>
+      <div class="filter-grid" id="filterGrid"></div>
+
+      <div class="lookup" style="margin-top:4px">
+        <span class="pd-lbl">Diverse sample</span>
+        <button class="btn primary" onclick="generateSamples(5)">🎲 Generate 5</button>
+        <button class="btn primary" onclick="generateSamples(10)">🎲 Generate 10</button>
+        <span class="page-info">Greedy coverage-maximizing pick from the currently filtered set (or all {universe_count:,} if no
+        filter is active) — each pick is the combo whose numbers have the least cumulative usage so far, spreading the
+        sample across as many distinct pool numbers as possible rather than clustering. Not a uniform random sample.</span>
+      </div>
+      <div id="generatedResults"></div>
+
+      <div class="tbl-wrap">
+        <div class="lookup" style="justify-content:space-between;padding:10px 12px;margin-bottom:0">
+          <span id="pageInfo" class="page-info"></span>
+          <div style="display:flex;gap:6px">
+            <button class="btn" id="firstBtn" onclick="goPage(0)">&laquo; First</button>
+            <button class="btn" id="prevBtn" onclick="goPage(curPage-1)">&lsaquo; Prev</button>
+            <button class="btn" id="nextBtn" onclick="goPage(curPage+1)">Next &rsaquo;</button>
+            <button class="btn" id="lastBtn" onclick="goPage(totalPages()-1)">Last &raquo;</button>
+          </div>
+        </div>
+        <table class="combos">
+          <thead><tr><th>#</th><th>Combination</th></tr></thead>
+          <tbody id="comboBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <p class="footer">
+    PCG64 (O'Neill XSL-RR 128/64, seeded via SplitMix64-expanded {{state,inc}}): picks = partial Fisher-Yates(range(1,38), {K_PICKS})
+    with combined seed = seed×10⁷ + draw_serial. Core algorithm verified bit-exact against <code>numpy.random.Generator(PCG64())</code>
+    for this pool_max=37/K={K_PICKS} configuration before the seed scan ran.<br>
+    Base = the overall winner of the completed Loto7 PCG64 K=30 seed scan (10,000,001 seeds). No elimination passes applied — this
+    page currently shows the raw C({base['k']},7) universe in full.<br>
+    Formula-based only · Not financial advice · Loto 7 is random.
+  </p>
+</div>
+
+<script>
+// ── PCG64 (O'Neill XSL-RR 128/64), bit-exact BigInt port ────────────────────
+const MASK64 = (1n << 64n) - 1n;
+const MASK128 = (1n << 128n) - 1n;
+const PCG_MULT_128 = 0x2360ed051fc65da44385df649fccf645n;
+
+function splitmix64Next(z) {{
+  z = (z + 0x9E3779B97F4A7C15n) & MASK64;
+  let zz = z;
+  zz = ((zz ^ (zz >> 30n)) * 0xBF58476D1CE4E5B9n) & MASK64;
+  zz = ((zz ^ (zz >> 27n)) * 0x94D049BB133111EBn) & MASK64;
+  zz = zz ^ (zz >> 31n);
+  return [z, zz];
+}}
+function pcg64PredictRaw(seed, drawSerial, k) {{
+  const combined = (BigInt(seed) * 10000000n + BigInt(drawSerial)) & MASK64;
+  let z = combined & MASK64;
+  const outs = [];
+  for (let i = 0; i < 4; i++) {{
+    const [nz, o] = splitmix64Next(z);
+    z = nz;
+    outs.push(o);
+  }}
+  let state = ((outs[0] << 64n) | outs[1]) & MASK128;
+  let inc = (((outs[2] << 64n) | outs[3]) | 1n) & MASK128;
+  const arr = Array.from({{length: {37}}}, (_, i) => i + 1);
+  const n = arr.length;
+  const order = [];
+  for (let i = n - 1; i >= n - k; i--) {{
+    state = (state * PCG_MULT_128 + inc) & MASK128;
+    const xored = (state >> 64n) ^ (state & MASK64);
+    const rot = (state >> 122n) & 0x3fn;
+    const shift = (64n - rot) % 64n;
+    const out = ((xored >> rot) | (xored << shift)) & MASK64;
+    const j = Number(out % BigInt(i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+    order.push(arr[i]);
+  }}
+  return order;
+}}
+function pcg64Predict(seed, drawSerial, k) {{
+  return pcg64PredictRaw(seed, drawSerial, k).slice().sort((a, b) => a - b);
+}}
+
+function arraysEqual(a, b) {{
+  return a.length === b.length && a.every((v, i) => v === b[i]);
+}}
+function renderBadge(id, ok) {{
+  const el = document.getElementById(id);
+  el.className = 'verify-badge ' + (ok ? 'ok' : 'fail');
+  el.textContent = ok ? '✓ live-computed value matches' : '✗ MISMATCH — check console';
+}}
+function renderBalls(elId, nums, cls) {{
+  document.getElementById(elId).innerHTML = nums.map(n => '<span class="nb ' + cls + '">' + n + '</span>').join('');
+}}
+
+const KNOWN_BASE = {json.dumps(base['pool'])};
+const KNOWN_BASE_ORDERED = {json.dumps(base['poolOrdered'])};
+
+const liveBase = pcg64Predict({SEED}, {TARGET_SERIAL}, {K_PICKS});
+const liveBaseOrdered = pcg64PredictRaw({SEED}, {TARGET_SERIAL}, {K_PICKS});
+renderBalls('baseBalls', liveBase, 'b4');
+renderBalls('baseBallsOrdered', liveBaseOrdered, 'b4');
+renderBadge('badgeBase', arraysEqual(liveBase, KNOWN_BASE));
+renderBadge('badgeBaseOrdered', arraysEqual(liveBaseOrdered, KNOWN_BASE_ORDERED));
+if (!arraysEqual(liveBase, KNOWN_BASE)) console.error('Base mismatch', liveBase, KNOWN_BASE);
+if (!arraysEqual(liveBaseOrdered, KNOWN_BASE_ORDERED)) console.error('Base (generation order) mismatch', liveBaseOrdered, KNOWN_BASE_ORDERED);
+
+// ── Hot/cold pattern filter: walk-forward top-18/bottom-19 split, computed
+// live from the embedded historical winning-combo set. ─────────────────────
+let HOT_SET = new Set();
+function hotCount(combo) {{
+  return combo.filter(n => HOT_SET.has(n)).length;
+}}
+
+// ── Remaining combos + historical set: fetch, paginate, filter, download ────
+const POOL_BASE = liveBase;
+let REMAINING = [];
+let filtered = [];
+const PAGE_SIZE = 100;
+let curPage = 0;
+const numState = new Map();
+
+Promise.all([
+  fetch('/pcg64_elim_{TARGET_SERIAL}_combos.json').then(r => r.json()),
+  fetch('/pcg64_elim_{TARGET_SERIAL}_historical.json').then(r => r.json())
+]).then(([combosData, historicalData]) => {{
+  REMAINING = combosData;
+  filtered = REMAINING;
+  document.getElementById('loadingMsg').style.display = 'none';
+  document.getElementById('comboUI').style.display = 'block';
+
+  const freq = new Array(38).fill(0);
+  historicalData.forEach(combo => combo.forEach(n => freq[n]++));
+  const nums = Array.from({{length: 37}}, (_, i) => i + 1);
+  nums.sort((a, b) => freq[b] - freq[a] || a - b);
+  HOT_SET = new Set(nums.slice(0, 18));
+
+  buildFilterGrid();
+  render();
+}}).catch(err => {{
+  document.getElementById('loadingMsg').textContent = 'Failed to load combinations: ' + err;
+}});
+
+function getBallColor(n) {{
+  if (n <= 6) return '#e74c3c';
+  if (n <= 11) return '#e67e22';
+  if (n <= 16) return '#2ecc71';
+  if (n <= 21) return '#3498db';
+  if (n <= 26) return '#9b59b6';
+  if (n <= 31) return '#16a085';
+  return '#e91e8c';
+}}
+function buildFilterGrid() {{
+  const grid = document.getElementById('filterGrid');
+  grid.innerHTML = POOL_BASE.map(n =>
+    '<button class="num-btn" data-n="' + n + '" style="background:' + getBallColor(n) + '" onclick="toggleNum(' + n + ')">' + n + '</button>'
+  ).join('');
+}}
+function toggleNum(n) {{
+  const cur = numState.get(n);
+  const next = cur === undefined ? 'include' : cur === 'include' ? 'exclude' : undefined;
+  if (next === undefined) numState.delete(n); else numState.set(n, next);
+  const btn = document.querySelector('.num-btn[data-n="' + n + '"]');
+  btn.classList.remove('include', 'exclude');
+  if (next) btn.classList.add(next);
+  applyFilter();
+}}
+function clearFilter() {{
+  numState.clear();
+  document.querySelectorAll('.num-btn.include, .num-btn.exclude').forEach(b => b.classList.remove('include', 'exclude'));
+  document.getElementById('hcFilterSelect').value = '';
+  applyFilter();
+}}
+function applyFilter() {{
+  const includeNums = [...numState.entries()].filter(([n, s]) => s === 'include').map(([n]) => n);
+  const excludeNums = [...numState.entries()].filter(([n, s]) => s === 'exclude').map(([n]) => n);
+  const hcVal = document.getElementById('hcFilterSelect').value;
+  filtered = (includeNums.length === 0 && excludeNums.length === 0 && hcVal === '') ? REMAINING : REMAINING.filter(c => {{
+    for (const n of includeNums) if (!c.includes(n)) return false;
+    for (const n of excludeNums) if (c.includes(n)) return false;
+    if (hcVal !== '' && hotCount(c) !== parseInt(hcVal, 10)) return false;
+    return true;
+  }});
+  const parts = [];
+  if (includeNums.length) parts.push('contain ' + includeNums.sort((a,b)=>a-b).join(', '));
+  if (excludeNums.length) parts.push('exclude ' + excludeNums.sort((a,b)=>a-b).join(', '));
+  if (hcVal !== '') parts.push(hcVal + 'h/' + (7 - parseInt(hcVal, 10)) + 'c pattern');
+  document.getElementById('filterInfo').textContent = parts.length === 0 ? '' :
+    (filtered.length.toLocaleString() + ' / ' + REMAINING.length.toLocaleString() + ' combos ' + parts.join(' and '));
+  curPage = 0;
+  render();
+}}
+
+// ── Diverse sample generator: greedy coverage-maximizing pick, same
+// algorithm used on the other elimination pages. ─────────────────────────
+function generateSamples(n) {{
+  const pool = filtered.length > 0 ? filtered : REMAINING;
+  const container = document.getElementById('generatedResults');
+  if (pool.length === 0) {{
+    container.innerHTML = '<p style="color:#64748b;font-size:.85rem">No combos match the current filter to sample from.</p>';
+    return;
+  }}
+  const count = Math.min(n, pool.length);
+
+  const order = Array.from({{length: pool.length}}, (_, i) => i);
+  for (let i = order.length - 1; i > 0; i--) {{
+    const j = Math.floor(Math.random() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }}
+
+  const usage = new Map();
+  const takenPositions = new Set();
+  const picks = [];
+  for (let round = 0; round < count; round++) {{
+    let bestPos = -1;
+    let bestScore = Infinity;
+    for (let k = 0; k < order.length; k++) {{
+      if (takenPositions.has(k)) continue;
+      const c = pool[order[k]];
+      let score = 0;
+      for (let m = 0; m < c.length; m++) score += (usage.get(c[m]) || 0);
+      if (score < bestScore) {{
+        bestScore = score;
+        bestPos = k;
+        if (bestScore === 0 && round === 0) break;
+      }}
+    }}
+    const chosen = pool[order[bestPos]];
+    takenPositions.add(bestPos);
+    picks.push(chosen);
+    for (const num of chosen) usage.set(num, (usage.get(num) || 0) + 1);
+  }}
+
+  const distinctCovered = new Set(picks.flat()).size;
+  const sourceLabel = filtered.length > 0 && filtered.length < REMAINING.length ? filtered.length.toLocaleString() + ' filtered' : REMAINING.length.toLocaleString() + ' total';
+  container.innerHTML =
+    '<div class="gen-hdr">Generated ' + picks.length + ' diverse combo' + (picks.length !== 1 ? 's' : '') +
+    ' from ' + sourceLabel + ' — covers ' + distinctCovered + ' distinct pool numbers:</div>' +
+    picks.map(c => '<div class="balls gen-row">' + c.map(n2 =>
+      '<span class="nb" style="background:' + getBallColor(n2) + '33;color:#e2e8f0;border:1px solid ' + getBallColor(n2) + '">' + n2 + '</span>'
+    ).join('') + '</div>').join('');
+}}
+function totalPages() {{ return Math.max(1, Math.ceil(filtered.length / PAGE_SIZE)); }}
+function goPage(p) {{ curPage = Math.max(0, Math.min(p, totalPages()-1)); render(); }}
+function render() {{
+  const start = curPage * PAGE_SIZE;
+  const pageRows = filtered.slice(start, start + PAGE_SIZE);
+  document.getElementById('comboBody').innerHTML = pageRows.map((c, i) => {{
+    const balls = c.map(n => '<span class="nb" style="width:26px;height:26px;font-size:.72rem;background:' + getBallColor(n) + '33;color:#e2e8f0;border:1px solid ' + getBallColor(n) + '">' + n + '</span>').join('');
+    return '<tr><td>' + (start+i+1) + '</td><td><div class="balls">' + balls + '</div></td></tr>';
+  }}).join('');
+  document.getElementById('pageInfo').textContent =
+    filtered.length === 0 ? 'No combinations match' :
+    'Showing ' + (start+1) + '-' + Math.min(start+PAGE_SIZE, filtered.length) + ' of ' + filtered.length.toLocaleString() + ' (page ' + (curPage+1) + ' / ' + totalPages() + ')';
+  document.getElementById('firstBtn').disabled = curPage === 0;
+  document.getElementById('prevBtn').disabled = curPage === 0;
+  document.getElementById('nextBtn').disabled = curPage >= totalPages()-1;
+  document.getElementById('lastBtn').disabled = curPage >= totalPages()-1;
+}}
+function downloadCSV() {{
+  const rows = filtered.length > 0 ? filtered : REMAINING;
+  let csv = 'n1,n2,n3,n4,n5,n6,n7\\n' + rows.map(c => c.join(',')).join('\\n');
+  const blob = new Blob([csv], {{type: 'text/csv'}});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'loto7_draw_{TARGET_SERIAL}_pcg64_base_combos.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}}
+</script>
+</body>
+</html>"""
+
+with open(HTML_OUT, 'w', encoding='utf-8') as f:
+    f.write(page)
+print(f"Wrote {HTML_OUT} ({len(page)//1024} KB)")
