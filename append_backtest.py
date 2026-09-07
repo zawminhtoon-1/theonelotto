@@ -18,6 +18,11 @@ BASE      = r"C:\Users\Zaw Min Htoon\source\repos\theonelotto"
 HTML_PATH = BASE + r"\public\backtest.html"
 DATA_PATH = BASE + r"\public\combo_evo_data.json"
 ROUNDS_PATH = BASE + r"\public\combo_evo_rounds.json"
+if 'DATABASE_URL' not in os.environ:
+    with open(BASE + r"\.env.local", encoding='utf-8') as f:
+        env_text = f.read()
+    m = re.search(r'DATABASE_URL=(.+)', env_text)
+    os.environ['DATABASE_URL'] = m.group(1).strip()
 DB_URL    = os.environ["DATABASE_URL"]
 LOTO6_MAX = 43
 K_DEFAULT = 15   # picks per method (except ModularCycle=28)

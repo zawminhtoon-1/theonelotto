@@ -54,8 +54,8 @@ META_OUT = BASE + r"\xoshiro_k38_x_modularcycle_k38_stats_meta.json"
 LOTO6_MAX = 43
 K = 38
 SEED_XO = 692809
-TARGET_SERIAL = 2133
-BACKTEST_LO, BACKTEST_HI = 44, 2132  # see docstring for rationale on #44
+TARGET_SERIAL = 2135
+BACKTEST_LO, BACKTEST_HI = 44, 2134  # see docstring for rationale on #44
 
 MASK64 = 0xFFFFFFFFFFFFFFFF
 

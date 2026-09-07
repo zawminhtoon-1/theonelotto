@@ -1,8 +1,8 @@
 {
   "nDraws": 100,
   "drawRange": [
-    2030,
-    2129
+    2035,
+    2134
   ],
   "nWorstSeeds": 1000,
   "kRandom": 15,
@@ -13,97 +13,12 @@
     2
   ],
   "outcomeSummary": {
-    "never_in_base": 86,
-    "eliminated_pass2": 6,
+    "eliminated_pass2": 8,
+    "never_in_base": 84,
     "survived": 7,
     "eliminated_pass1": 1
   },
   "results": [
-    {
-      "serial": 2030,
-      "date": "2025-09-01",
-      "actual": [
-        3,
-        7,
-        28,
-        29,
-        32,
-        36
-      ],
-      "kBase": 28,
-      "universe": 376740,
-      "inBase": false,
-      "baseOverlap": 4,
-      "outcome": "never_in_base"
-    },
-    {
-      "serial": 2031,
-      "date": "2025-09-04",
-      "actual": [
-        2,
-        3,
-        16,
-        20,
-        23,
-        29
-      ],
-      "kBase": 29,
-      "universe": 475020,
-      "inBase": false,
-      "baseOverlap": 4,
-      "outcome": "never_in_base"
-    },
-    {
-      "serial": 2032,
-      "date": "2025-09-08",
-      "actual": [
-        8,
-        15,
-        27,
-        33,
-        37,
-        39
-      ],
-      "kBase": 29,
-      "universe": 475020,
-      "inBase": false,
-      "baseOverlap": 4,
-      "outcome": "never_in_base"
-    },
-    {
-      "serial": 2033,
-      "date": "2025-09-11",
-      "actual": [
-        5,
-        16,
-        21,
-        22,
-        33,
-        35
-      ],
-      "kBase": 29,
-      "universe": 475020,
-      "inBase": false,
-      "baseOverlap": 3,
-      "outcome": "never_in_base"
-    },
-    {
-      "serial": 2034,
-      "date": "2025-09-15",
-      "actual": [
-        2,
-        13,
-        22,
-        25,
-        35,
-        37
-      ],
-      "kBase": 28,
-      "universe": 376740,
-      "inBase": false,
-      "baseOverlap": 4,
-      "outcome": "never_in_base"
-    },
     {
       "serial": 2035,
       "date": "2025-09-18",
@@ -120,9 +35,9 @@
       "inBase": true,
       "baseOverlap": 6,
       "after1": 438548,
-      "after2": 191564,
+      "after2": 190889,
       "outcome": "eliminated_pass2",
-      "finalRemaining": 191564
+      "finalRemaining": 190889
     },
     {
       "serial": 2036,
@@ -276,9 +191,9 @@
       "inBase": true,
       "baseOverlap": 6,
       "after1": 435348,
-      "after2": 200394,
+      "after2": 199648,
       "outcome": "eliminated_pass2",
-      "finalRemaining": 200394
+      "finalRemaining": 199648
     },
     {
       "serial": 2045,
@@ -364,9 +279,9 @@
       "inBase": true,
       "baseOverlap": 6,
       "after1": 452666,
-      "after2": 204188,
+      "after2": 207220,
       "outcome": "eliminated_pass2",
-      "finalRemaining": 204188
+      "finalRemaining": 207220
     },
     {
       "serial": 2050,
@@ -588,11 +503,11 @@
       "inBase": true,
       "baseOverlap": 6,
       "after1": 447197,
-      "after2": 207228,
-      "after3": 204388,
-      "after4": 204319,
-      "after5": 204319,
-      "finalRemaining": 204319,
+      "after2": 202720,
+      "after3": 199942,
+      "after4": 199878,
+      "after5": 199878,
+      "finalRemaining": 199878,
       "outcome": "survived"
     },
     {
@@ -781,9 +696,9 @@
       "inBase": true,
       "baseOverlap": 6,
       "after1": 442284,
-      "after2": 199049,
+      "after2": 197634,
       "outcome": "eliminated_pass2",
-      "finalRemaining": 199049
+      "finalRemaining": 197634
     },
     {
       "serial": 2074,
@@ -869,11 +784,11 @@
       "inBase": true,
       "baseOverlap": 6,
       "after1": 420651,
-      "after2": 181966,
-      "after3": 179329,
-      "after4": 179272,
-      "after5": 179152,
-      "finalRemaining": 179152,
+      "after2": 180381,
+      "after3": 177778,
+      "after4": 177722,
+      "after5": 177572,
+      "finalRemaining": 177572,
       "outcome": "survived"
     },
     {
@@ -909,11 +824,11 @@
       "inBase": true,
       "baseOverlap": 6,
       "after1": 412852,
-      "after2": 177648,
-      "after3": 174888,
-      "after4": 174822,
-      "after5": 174692,
-      "finalRemaining": 174692,
+      "after2": 179099,
+      "after3": 176247,
+      "after4": 176173,
+      "after5": 176032,
+      "finalRemaining": 176032,
       "outcome": "survived"
     },
     {
@@ -1034,11 +949,11 @@
       "inBase": true,
       "baseOverlap": 6,
       "after1": 421798,
-      "after2": 183431,
-      "after3": 177706,
-      "after4": 177646,
-      "after5": 177646,
-      "finalRemaining": 177646,
+      "after2": 185445,
+      "after3": 179786,
+      "after4": 179725,
+      "after5": 179725,
+      "finalRemaining": 179725,
       "outcome": "survived"
     },
     {
@@ -1212,11 +1127,11 @@
       "inBase": true,
       "baseOverlap": 6,
       "after1": 444873,
-      "after2": 201609,
-      "after3": 196847,
-      "after4": 196780,
-      "after5": 196735,
-      "finalRemaining": 196735,
+      "after2": 200144,
+      "after3": 195376,
+      "after4": 195313,
+      "after5": 195265,
+      "finalRemaining": 195265,
       "outcome": "survived"
     },
     {
@@ -1405,11 +1320,11 @@
       "inBase": true,
       "baseOverlap": 6,
       "after1": 428477,
-      "after2": 191742,
-      "after3": 183870,
-      "after4": 183789,
-      "after5": 183780,
-      "finalRemaining": 183780,
+      "after2": 188738,
+      "after3": 180819,
+      "after4": 180743,
+      "after5": 180734,
+      "finalRemaining": 180734,
       "outcome": "survived"
     },
     {
@@ -1445,9 +1360,9 @@
       "inBase": true,
       "baseOverlap": 6,
       "after1": 676635,
-      "after2": 280563,
+      "after2": 283729,
       "outcome": "eliminated_pass2",
-      "finalRemaining": 280563
+      "finalRemaining": 283729
     },
     {
       "serial": 2111,
@@ -1499,9 +1414,9 @@
       "inBase": true,
       "baseOverlap": 6,
       "after1": 512005,
-      "after2": 230528,
+      "after2": 223074,
       "outcome": "eliminated_pass2",
-      "finalRemaining": 230528
+      "finalRemaining": 223074
     },
     {
       "serial": 2114,
@@ -1587,12 +1502,9 @@
       "inBase": true,
       "baseOverlap": 6,
       "after1": 436400,
-      "after2": 192900,
-      "after3": 191659,
-      "after4": 191597,
-      "after5": 191021,
-      "finalRemaining": 191021,
-      "outcome": "survived"
+      "after2": 191497,
+      "outcome": "eliminated_pass2",
+      "finalRemaining": 191497
     },
     {
       "serial": 2119,
@@ -1780,7 +1692,101 @@
       "inBase": false,
       "baseOverlap": 4,
       "outcome": "never_in_base"
+    },
+    {
+      "serial": 2130,
+      "date": "2026-08-20",
+      "actual": [
+        12,
+        18,
+        35,
+        40,
+        41,
+        43
+      ],
+      "kBase": 28,
+      "universe": 376740,
+      "inBase": true,
+      "baseOverlap": 6,
+      "after1": 325944,
+      "after2": 134775,
+      "after3": 132416,
+      "after4": 132364,
+      "after5": 132364,
+      "finalRemaining": 132364,
+      "outcome": "survived"
+    },
+    {
+      "serial": 2131,
+      "date": "2026-08-24",
+      "actual": [
+        25,
+        26,
+        28,
+        33,
+        35,
+        43
+      ],
+      "kBase": 29,
+      "universe": 475020,
+      "inBase": false,
+      "baseOverlap": 5,
+      "outcome": "never_in_base"
+    },
+    {
+      "serial": 2132,
+      "date": "2026-08-27",
+      "actual": [
+        9,
+        15,
+        16,
+        19,
+        31,
+        32
+      ],
+      "kBase": 30,
+      "universe": 593775,
+      "inBase": true,
+      "baseOverlap": 6,
+      "after1": 536698,
+      "after2": 231071,
+      "outcome": "eliminated_pass2",
+      "finalRemaining": 231071
+    },
+    {
+      "serial": 2133,
+      "date": "2026-08-31",
+      "actual": [
+        1,
+        11,
+        14,
+        20,
+        29,
+        38
+      ],
+      "kBase": 28,
+      "universe": 376740,
+      "inBase": false,
+      "baseOverlap": 5,
+      "outcome": "never_in_base"
+    },
+    {
+      "serial": 2134,
+      "date": "2026-09-03",
+      "actual": [
+        5,
+        9,
+        10,
+        19,
+        26,
+        35
+      ],
+      "kBase": 31,
+      "universe": 736281,
+      "inBase": false,
+      "baseOverlap": 5,
+      "outcome": "never_in_base"
     }
   ],
-  "elapsedSeconds": 493.2082324028015
+  "elapsedSeconds": 551.7520532608032
 }
