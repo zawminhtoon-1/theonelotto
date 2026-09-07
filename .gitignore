@@ -25,3 +25,15 @@ next-env.d.ts
 # Local SQLite DB
 *.db
 *.sqlite
+*.db.bak*
+
+# Python bytecode cache
+__pycache__/
+
+# Root-level scan-stage scratch artifacts (raw seed-scan stage dumps and
+# their logs -- can reach gigabyte scale; the final combined result gets
+# committed deliberately, staging dumps shouldn't be)
+*_stage*.json
+*_stage*.log
+*_seed_scan_*.json
+*.log
