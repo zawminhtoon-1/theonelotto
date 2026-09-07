@@ -190,8 +190,8 @@ table.pd-table td.pd-draw{{color:#e2e8f0;font-weight:600;white-space:nowrap}}
 <body>
 
 <script src="/site-nav.js"></script>
-<script src="/pcg64-core.js"></script>
 <script src="/xoshiro256.js"></script>
+<script src="/pcg64-core.js"></script>
 <div class="wrap">
   <h1>📊 Two-Way K=38 Intersection — xoshiro × PCG64</h1>
   <p class="subtitle">Current #{TARGET_SERIAL} pool + walk-forward backtest across three windows: #{B50_LO}–{B50_HI} ({s50['n']} draws), #{B101_LO}–{B101_HI} ({s101['n']} draws), #{B250_LO}–{B250_HI} ({s250['n']} draws)</p>

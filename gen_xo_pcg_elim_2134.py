@@ -215,8 +215,8 @@ table.combos tr:hover td{{background:#111827}}
 
 <script src="/site-nav.js"></script>
 <script src="/diverse-sample.js"></script>
-<script src="/pcg64-core.js"></script>
 <script src="/xoshiro256.js"></script>
+<script src="/pcg64-core.js"></script>
 <div class="wrap">
   <h1>✂️ Xoshiro K=38 × PCG64 K=38 + 16-Method Elimination — Draw #{TARGET_SERIAL}</h1>
   <p class="subtitle">Combinatorial set-difference: (xoshiro K=38 ∩ PCG64 K=38) pick, minus combos covered by any of the 16 prediction methods' K={method_k} picks, minus a handful of well-supported pattern filters, minus a triple-method-agreement restriction</p>

@@ -278,6 +278,7 @@ tbody td.tr{{text-align:right}}
 <body>
 
 <script src="/site-nav.js"></script>
+<script src="/xoshiro256.js"></script>
 <script src="/pcg64-core.js"></script>
 <div class="wrap">
   <h1>🎯 PCG64 Seed Scan — K=38 (seeds -5,000,000 to 5,000,000)</h1>
