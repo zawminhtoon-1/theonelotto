@@ -626,7 +626,11 @@ table.combos tr:hover td{{background:#111827}}
   <div class="section">
     <h2>Browse remaining combinations</h2>
     <p class="desc">Fetched from a separate JSON asset (not inlined — {final_remaining:,} rows is too large for the page itself).</p>
-    <div id="loadingMsg">Loading {final_remaining:,} combinations…</div>
+    <div id="loadPrompt" style="text-align:center;padding:28px 12px">
+      <button class="btn primary" onclick="loadCombos()">📂 Load {final_remaining:,} combinations</button>
+      <p class="page-info" style="margin-top:8px">Not fetched automatically to save bandwidth — click to load the combo browser.</p>
+    </div>
+    <div id="loadingMsg" style="display:none">Loading {final_remaining:,} combinations…</div>
     <div id="comboUI" style="display:none">
       <div class="lookup">
         <button class="btn" onclick="clearFilter()">Clear filter</button>
@@ -855,9 +859,12 @@ let curPage = 0;
 // include -> exclude -> neutral. Both constraint types apply simultaneously.
 const numState = new Map();
 
-fetch('/xoshiro_elim_{TARGET_SERIAL}_staging_combos.json')
-  .then(r => r.json())
-  .then(data => {{
+function loadCombos() {{
+  document.getElementById('loadPrompt').style.display = 'none';
+  document.getElementById('loadingMsg').style.display = 'block';
+  fetch('/xoshiro_elim_{TARGET_SERIAL}_staging_combos.json')
+    .then(r => r.json())
+    .then(data => {{
     REMAINING = data;
     filtered = REMAINING;
     document.getElementById('loadingMsg').style.display = 'none';
@@ -891,6 +898,7 @@ fetch('/xoshiro_elim_{TARGET_SERIAL}_staging_combos.json')
   .catch(err => {{
     document.getElementById('loadingMsg').textContent = 'Failed to load combinations: ' + err;
   }});
+}}
 
 function getBallColor(n) {{
   if (n <= 7) return '#e74c3c';
