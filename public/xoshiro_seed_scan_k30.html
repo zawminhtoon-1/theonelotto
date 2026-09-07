@@ -373,8 +373,7 @@ tbody td.tr{text-align:right}
 
   <p class="footer">
     Xoshiro256** (seeded via SplitMix64): picks = partial Fisher-Yates(range(1,44), 30) with combined seed = seed×10⁷ + draw_serial.
-    Algorithm verified against independent reference sources before running — see
-    <a href="/xoshiro_seed_backtest.html" style="color:#64748b">the 0–1000 seed page</a> for full verification details, plus a
+    Algorithm verified against independent reference sources before running, plus a
     dedicated negative-seed self-check (Python's <code>&amp;</code> on negative ints correctly wraps to 64-bit
     two's complement, matching the modular reference bit-exact) run before every stage.<br>
     Data read live from <code>seed_hit_xoshiro_k30</code> in <code>loto6_local.db</code>. Draw records for #1–2050

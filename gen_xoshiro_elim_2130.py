@@ -203,9 +203,8 @@ table.combos tr:hover td{{background:#111827}}
     to expanding each pick to its C({random_k},6) sub-combos and removing anything present in the union of those {len(random_seeds)} sets, just
     done via bitmask containment instead of literal enumeration. Any Pass-1-remaining combo fully contained within ANY single one of
     these {len(random_seeds)} picks gets removed, leaving {final_remaining_pass2:,}.</p>
-    <p><strong style="color:#e2e8f0">Pass 3</strong> is <a href="/xoshiro_seed_backtest.html" style="color:#a78bfa">xoshiro256**</a>
-    K={pass3_k} seeds {', '.join(str(p3['seed']) for p3 in pass3_seeds)} &mdash; the same K=21 algorithm used on the 0&ndash;1,000
-    seed page. Each seed's K={pass3_k} pick for draw #{TARGET_SERIAL} uses the same verified xoshiro256** implementation as Base's
+    <p><strong style="color:#e2e8f0">Pass 3</strong> is xoshiro256**
+    K={pass3_k} seeds {', '.join(str(p3['seed']) for p3 in pass3_seeds)}. Each seed's K={pass3_k} pick for draw #{TARGET_SERIAL} uses the same verified xoshiro256** implementation as Base's
     xoshiro side. Any Pass-2-remaining combo fully contained within ANY single one of these {len(pass3_seeds)} picks gets removed,
     leaving {final_remaining_pass3:,}.</p>
     <p><strong style="color:#e2e8f0">Pass 4</strong> is a historical repeat filter &mdash; the same "zero repeats in
@@ -263,7 +262,7 @@ table.combos tr:hover td{{background:#111827}}
 
   <div class="section">
     <h2>Pass 3 — xoshiro256** K={pass3_k} seeds {', '.join(str(p3['seed']) for p3 in pass3_seeds)}, pick for draw #{TARGET_SERIAL} <span id="badgePass3" class="verify-badge pending">verifying…</span></h2>
-    <p class="desc">Same xoshiro256** implementation as Base's xoshiro side, K={pass3_k} (the same K used on <a href="/xoshiro_seed_backtest.html" style="color:#a78bfa">the 0&ndash;1,000 seed page</a>). Picks recomputed live below and checked against server-embedded references.</p>
+    <p class="desc">Same xoshiro256** implementation as Base's xoshiro side, K={pass3_k}. Picks recomputed live below and checked against server-embedded references.</p>
     <table class="methods-table">
       <tbody>{pass3_rows_html}</tbody>
     </table>
@@ -392,7 +391,7 @@ table.combos tr:hover td{{background:#111827}}
 
   <p class="footer">
     Xoshiro256** (seeded via SplitMix64): picks = partial Fisher-Yates(range(1,44), K) with combined seed = seed×10⁷ + draw_serial.
-    Algorithm verified against independent reference sources — see <a href="/xoshiro_seed_backtest.html" style="color:#64748b">the 0–1000 seed page</a>.<br>
+    Algorithm verified against independent reference sources.<br>
     16 methods: Poly Regression, Moving Avg-43, Exp-Weighted Avg, Frequency, Markov Chain, ARIMA(2,1,0), Random Forest, RL (Linear Q),
     HMM, k-NN, Modular Cycle, Apriori, Monte Carlo, Naive Bayes, Weighted MA-43, LSTM — same 16 used throughout
     <a href="/backtest.html" style="color:#64748b">backtest.html</a> / <a href="/predictions" style="color:#64748b">predictions</a>.<br>

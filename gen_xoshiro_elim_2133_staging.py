@@ -276,9 +276,8 @@ table.combos tr:hover td{{background:#111827}}
     walk-forward (trained on all {TRAINED_THROUGH:,} real draws through #{TRAINED_THROUGH}) then normalized to exactly {method_k} numbers via the same
     cross-method-consensus trim/pad algorithm as <a href="/backtest.html" style="color:#a78bfa">backtest.html</a>'s <code>topKNums()</code>.
     Any of Base's combos fully contained within ANY single one of these 16 sets gets removed, leaving {final_remaining_pass1:,}.</p>
-    <p><strong style="color:#e2e8f0">Pass 2</strong> is <a href="/xoshiro_seed_backtest.html" style="color:#a78bfa">xoshiro256**</a>
-    K={pass2_k} seeds {', '.join(str(p2['seed']) for p2 in pass2_seeds)} &mdash; the same K=21 algorithm used on the 0&ndash;1,000
-    seed page. Each seed's K={pass2_k} pick for draw #{TARGET_SERIAL} uses the same verified xoshiro256** implementation as Base's
+    <p><strong style="color:#e2e8f0">Pass 2</strong> is xoshiro256**
+    K={pass2_k} seeds {', '.join(str(p2['seed']) for p2 in pass2_seeds)}. Each seed's K={pass2_k} pick for draw #{TARGET_SERIAL} uses the same verified xoshiro256** implementation as Base's
     xoshiro side. Any Pass-1-remaining combo fully contained within ANY single one of these {len(pass2_seeds)} picks gets removed,
     leaving {final_remaining_pass2:,}.</p>
     <p><strong style="color:#e2e8f0">Pass 3</strong> is a historical repeat filter &mdash; the same "zero repeats in
@@ -382,7 +381,7 @@ table.combos tr:hover td{{background:#111827}}
 
   <div class="section">
     <h2>Pass 2 — xoshiro256** K={pass2_k} seeds {', '.join(str(p2['seed']) for p2 in pass2_seeds)}, pick for draw #{TARGET_SERIAL} <span id="badgePass2" class="verify-badge pending">verifying…</span></h2>
-    <p class="desc">Same xoshiro256** implementation as Base's xoshiro side, K={pass2_k} (the same K used on <a href="/xoshiro_seed_backtest.html" style="color:#a78bfa">the 0&ndash;1,000 seed page</a>). Picks recomputed live below and checked against server-embedded references.</p>
+    <p class="desc">Same xoshiro256** implementation as Base's xoshiro side, K={pass2_k}. Picks recomputed live below and checked against server-embedded references.</p>
     <table class="methods-table">
       <tbody>{pass2_rows_html}</tbody>
     </table>
@@ -658,7 +657,7 @@ table.combos tr:hover td{{background:#111827}}
 
   <p class="footer">
     Xoshiro256** (seeded via SplitMix64): picks = partial Fisher-Yates(range(1,44), K) with combined seed = seed×10⁷ + draw_serial.
-    Algorithm verified against independent reference sources — see <a href="/xoshiro_seed_backtest.html" style="color:#64748b">the 0–1000 seed page</a>.<br>
+    Algorithm verified against independent reference sources.<br>
     16 methods: Poly Regression, Moving Avg-43, Exp-Weighted Avg, Frequency, Markov Chain, ARIMA(2,1,0), Random Forest, RL (Linear Q),
     HMM, k-NN, Modular Cycle, Apriori, Monte Carlo, Naive Bayes, Weighted MA-43, LSTM — same 16 used throughout
     <a href="/backtest.html" style="color:#64748b">backtest.html</a> / <a href="/predictions" style="color:#64748b">predictions</a>.<br>

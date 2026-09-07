@@ -68,7 +68,7 @@
     },
     {
       "source": "/xoshiro_seed_scan_100k.html",
-      "destination": "/xoshiro_seed_backtest.html",
+      "destination": "/predictions",
       "permanent": true
     }
   ]

@@ -294,8 +294,7 @@ tbody td.tr{{text-align:right}}
 
   <p class="footer">
     Xoshiro256** (seeded via SplitMix64): picks = partial Fisher-Yates(range(1,44), {K_PICKS}) with combined seed = seed×10⁷ + draw_serial.
-    Algorithm verified against independent reference sources before running — see
-    <a href="/xoshiro_seed_backtest.html" style="color:#64748b">the 0–1000 seed page</a> for full verification details.<br>
+    Algorithm verified against independent reference sources before running.<br>
     Data read live from <code>{TABLE}</code> in <code>loto6_local.db</code>. Draw records for #{DRAW_START}–{DRAW_END}
     sourced directly from the production database (not <code>backtest.html</code>'s embedded array, which doesn't cover
     this far back), verified for exactly {N_DRAWS} consecutive rows with no gaps before scanning.<br>

@@ -261,7 +261,7 @@ table.combos tr:hover td{{background:#111827}}
 
   <p class="footer">
     Xoshiro256** (seeded via SplitMix64): picks = partial Fisher-Yates(range(1,{POOL_MAX}), {K_PICKS}) with combined seed = seed×10⁷ + draw_serial.
-    Algorithm verified against independent reference sources — see <a href="/xoshiro_seed_backtest.html" style="color:#64748b">the K=21 seed-backtest page</a>.<br>
+    Algorithm verified against independent reference sources.<br>
     Base = the overall winner of the completed K=38 seed scan (0–1,000,000 seeds). Pass 1 = 16 methods' K={method_k} picks,
     same style as loto7_elim_693.html. {final_remaining_pass1:,} of {universe_count:,} combos remain.<br>
     16 methods: {', '.join(method_names)} — same 16 used throughout

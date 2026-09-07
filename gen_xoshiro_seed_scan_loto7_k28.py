@@ -250,7 +250,7 @@ tbody td.tr{{text-align:right}}
   <div class="note">
     Reuses the <a href="/xoshiro_seed_scan_loto7_k25.html" style="color:#a78bfa">Loto7 K=25 scan</a>'s infrastructure
     directly at the full {SEED_LO:,} to {SEED_HI:,} range ({num_seeds:,} seeds, K={K_PICKS} instead of K=25) &mdash;
-    same staged negative-seed pattern already verified on <a href="/xoshiro_seed_scan_k35.html" style="color:#a78bfa">the Loto6 K=35 scan</a>:
+    same staged negative-seed pattern already verified on the Loto6 K=35 scan:
     run in 4 batches of ~500,000 seeds each (Python's bitwise AND on negative integers correctly produces the same
     64-bit two's-complement result as unsigned arithmetic, self-checked against a from-scratch modular reference
     &mdash; including negative-seed cases &mdash; before each batch). Same xoshiro256**/SplitMix64 algorithm and

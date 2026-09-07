@@ -286,7 +286,7 @@ tbody td.tr{{text-align:right}}
     and #2131 (~12.5s) — each extension an incremental per-seed delta rather than a full rescan — draw records pulled
     directly from the production database and verified for exactly {N_DRAWS} consecutive rows with no gaps. Seed-detail
     picks below are shown in <b>generation order</b> (the actual sequence the partial Fisher-Yates shuffle produces
-    them in), not sorted ascending — same as <a href="/xoshiro_seed_scan_k35.html" style="color:#a78bfa">the K=35 page</a>.
+    them in), not sorted ascending.
   </div>
 
   <div class="lookup">
@@ -364,8 +364,7 @@ tbody td.tr{{text-align:right}}
 
   <p class="footer">
     Xoshiro256** (seeded via SplitMix64): picks = partial Fisher-Yates(range(1,44), {K_PICKS}) with combined seed = seed×10⁷ + draw_serial.
-    Algorithm verified against independent reference sources before running — see
-    <a href="/xoshiro_seed_backtest.html" style="color:#64748b">the 0–1000 seed page</a> for full verification details.<br>
+    Algorithm verified against independent reference sources before running.<br>
     Data read live from <code>{TABLE}</code> in <code>loto6_local.db</code>. Draw records for #{DRAW_START}–{DRAW_END}
     sourced directly from the production database, verified for exactly {N_DRAWS} consecutive rows with no gaps before scanning.<br>
     Formula-based only · Not financial advice · Loto 6 is random.

@@ -259,9 +259,8 @@ table.combos tr:hover td{{background:#111827}}
     walk-forward (trained on all {TRAINED_THROUGH:,} real draws through #{TRAINED_THROUGH}) then normalized to exactly {method_k} numbers via the same
     cross-method-consensus trim/pad algorithm as <a href="/backtest.html" style="color:#a78bfa">backtest.html</a>'s <code>topKNums()</code>.
     Any of Base's combos fully contained within ANY single one of these 16 sets gets removed, leaving {final_remaining_pass1:,}.</p>
-    <p><strong style="color:#e2e8f0">Pass 2</strong> is <a href="/xoshiro_seed_backtest.html" style="color:#a78bfa">xoshiro256**</a>
-    K={pass2_k} seeds {', '.join(str(p2['seed']) for p2 in pass2_seeds)} &mdash; the same K=21 algorithm used on the 0&ndash;1,000
-    seed page. Each seed's K={pass2_k} pick for draw #{TARGET_SERIAL} uses the same verified xoshiro256** implementation used elsewhere
+    <p><strong style="color:#e2e8f0">Pass 2</strong> is xoshiro256**
+    K={pass2_k} seeds {', '.join(str(p2['seed']) for p2 in pass2_seeds)}. Each seed's K={pass2_k} pick for draw #{TARGET_SERIAL} uses the same verified xoshiro256** implementation used elsewhere
     on this site. Any Pass-1-remaining combo fully contained within ANY single one of these {len(pass2_seeds)} picks gets removed,
     leaving {final_remaining_pass2:,}.</p>
     <p><strong style="color:#e2e8f0">Pass 3</strong> is a historical repeat filter &mdash; the same "zero repeats in

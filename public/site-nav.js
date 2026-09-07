@@ -72,11 +72,8 @@
           '<div class="nav-group-btn">Xoshiro Research <span class="arrow">▼</span></div>' +
           '<div class="nav-dropdown"><div class="nav-dropdown-inner">' +
             '<div class="nav-dd-label">Xoshiro256** Seed Scans</div>' +
-            '<a href="/xoshiro_seed_backtest.html">🌀 K=21, seeds 0–1,000</a>' +
             '<a href="/xoshiro_seed_scan_k33.html">🎯 K=33, seeds 0–1,000,000</a>' +
             '<a href="/xoshiro_seed_scan_k38.html">🔷 K=38, seeds 0–1,000,000</a>' +
-            '<a href="/xoshiro_seed_scan_k35.html">🟣 K=35, seeds ±1,623,160</a>' +
-            '<a href="/xoshiro_seed_scan_k7.html">🔎 K=7, seeds 0–10,000</a>' +
             '<a href="/xoshiro_seed_scan_k20.html">🎲 K=20, seeds ±3,000,000 (2050 draws)</a>' +
             '<a href="/xoshiro_seed_scan_k30.html">🎲 K=30, seeds ±3,000,000 (2050 draws)</a>' +
             '<a href="/pcg64_seed_scan_k38.html">🎲 PCG64 K=38, seeds ±5,000,000 (2050 draws)</a>' +
