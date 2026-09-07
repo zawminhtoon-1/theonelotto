@@ -21,11 +21,6 @@ h1{font-size:1.4rem;font-weight:700;color:#f1f5f9;margin-bottom:4px}
 .section h2{font-size:1rem;font-weight:700;color:#f1f5f9;margin-bottom:4px;display:flex;align-items:center;gap:8px}
 .section h3{font-size:.86rem;font-weight:700;color:#cbd5e1;margin:14px 0 6px}
 .section .desc{font-size:.8rem;color:#64748b;margin-bottom:14px}
-.verify-badge{font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:10px;text-transform:uppercase;letter-spacing:.04em}
-.verify-badge.pending{background:#1e293b;color:#94a3b8}
-.verify-badge.ok{background:#14532d;color:#86efac}
-.verify-badge.fail{background:#450a0a;color:#fca5a5}
-.verify-badge.na{background:#1e293b;color:#64748b}
 
 .balls{display:flex;flex-wrap:wrap;gap:5px}
 .nb{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;
@@ -81,10 +76,12 @@ table.combos tr:hover td{background:#111827}
 
 .footer{margin-top:28px;font-size:.78rem;color:#475569;padding-bottom:20px;line-height:1.6}
 </style>
+<link rel="stylesheet" href="/elim-badges.css">
 </head>
 <body>
 
 <script src="/site-nav.js"></script>
+<script src="/xoshiro256.js"></script>
 <div class="wrap">
   <h1>✂️ Xoshiro K=38 × Modular Cycle K=33 + 16-Method Elimination — Draw #2129</h1>
   <p class="subtitle">Combinatorial set-difference: (Modular Cycle K=33 ∩ xoshiro K=38) pick, minus combos covered by any of the 16 prediction methods' K=19 picks</p>
@@ -309,37 +306,6 @@ table.combos tr:hover td{background:#111827}
 
 <script>
 // ── xoshiro256**, bit-exact BigInt port (identical to every other xoshiro page) ──
-const MASK64 = (1n << 64n) - 1n;
-function rotl(x, k) {
-  x &= MASK64;
-  return ((x << BigInt(k)) | (x >> BigInt(64 - k))) & MASK64;
-}
-function splitmix64Next(z) {
-  z = (z + 0x9E3779B97F4A7C15n) & MASK64;
-  let zz = z;
-  zz = ((zz ^ (zz >> 30n)) * 0xBF58476D1CE4E5B9n) & MASK64;
-  zz = ((zz ^ (zz >> 27n)) * 0x94D049BB133111EBn) & MASK64;
-  zz = zz ^ (zz >> 31n);
-  return [z, zz];
-}
-function seedState(seed) {
-  let z = BigInt(seed) & MASK64;
-  const state = [];
-  for (let i = 0; i < 4; i++) {
-    const [nz, out] = splitmix64Next(z);
-    z = nz;
-    state.push(out);
-  }
-  return state;
-}
-function xoshiroNext(s) {
-  const result = (rotl((s[1] * 5n) & MASK64, 7) * 9n) & MASK64;
-  const t = (s[1] << 17n) & MASK64;
-  s[2] ^= s[0]; s[3] ^= s[1]; s[1] ^= s[2]; s[0] ^= s[3];
-  s[2] ^= t;
-  s[3] = rotl(s[3], 45);
-  return result;
-}
 function xoshiroPredict(seed, drawSerial, k) {
   const combined = (BigInt(seed) * 10000000n + BigInt(drawSerial)) & MASK64;
   const s = seedState(combined);

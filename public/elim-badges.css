@@ -1,0 +1,12 @@
+/*
+ * elim-badges.css
+ * ---------------
+ * Shared "live-computed value" verify-badge styling used by every
+ * elimination page that re-derives a value in the browser and checks it
+ * against a server-embedded reference.
+ */
+.verify-badge{font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:10px;text-transform:uppercase;letter-spacing:.04em}
+.verify-badge.pending{background:#1e293b;color:#94a3b8}
+.verify-badge.ok{background:#14532d;color:#86efac}
+.verify-badge.fail{background:#450a0a;color:#fca5a5}
+.verify-badge.na{background:#1e293b;color:#64748b}

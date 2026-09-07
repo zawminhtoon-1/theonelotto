@@ -273,6 +273,7 @@ tbody td.tr{{text-align:right}}
 <body>
 
 <script src="/site-nav.js"></script>
+<script src="/xoshiro256.js"></script>
 <div class="wrap">
   <h1>🎯 Xoshiro Seed Scan — K=20 (seeds -3,000,000 to 3,000,000)</h1>
   <p class="subtitle">{num_seeds:,} seeds scanned so far · K={K_PICKS} picks · {N_DRAWS} draws (#{DRAW_START}–{DRAW_END}, nearly full Loto6 history) · xoshiro256** (SplitMix64-seeded)</p>
@@ -442,37 +443,6 @@ mkChart('hit4Chart', {hit4_labels_json}, {hit4_values_json}, '#e879f9');
 // elsewhere on the site -- not limited to seeds in the top-{TOP_N} table.
 const DRAWS = {js_draws};
 
-const MASK64 = (1n << 64n) - 1n;
-function rotl(x, k) {{
-  x &= MASK64;
-  return ((x << BigInt(k)) | (x >> BigInt(64 - k))) & MASK64;
-}}
-function splitmix64Next(z) {{
-  z = (z + 0x9E3779B97F4A7C15n) & MASK64;
-  let zz = z;
-  zz = ((zz ^ (zz >> 30n)) * 0xBF58476D1CE4E5B9n) & MASK64;
-  zz = ((zz ^ (zz >> 27n)) * 0x94D049BB133111EBn) & MASK64;
-  zz = zz ^ (zz >> 31n);
-  return [z, zz];
-}}
-function seedState(seed) {{
-  let z = BigInt(seed) & MASK64;
-  const state = [];
-  for (let i = 0; i < 4; i++) {{
-    const [nz, out] = splitmix64Next(z);
-    z = nz;
-    state.push(out);
-  }}
-  return state;
-}}
-function xoshiroNext(s) {{
-  const result = (rotl((s[1] * 5n) & MASK64, 7) * 9n) & MASK64;
-  const t = (s[1] << 17n) & MASK64;
-  s[2] ^= s[0]; s[3] ^= s[1]; s[1] ^= s[2]; s[0] ^= s[3];
-  s[2] ^= t;
-  s[3] = rotl(s[3], 45);
-  return result;
-}}
 function xoshiroPredict(seed, drawSerial, k) {{
   const combined = (BigInt(seed) * 10000000n + BigInt(drawSerial)) & MASK64;
   const s = seedState(combined);

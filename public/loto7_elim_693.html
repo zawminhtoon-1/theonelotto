@@ -29,11 +29,6 @@ h1{font-size:1.4rem;font-weight:700;color:#f1f5f9;margin-bottom:4px}
 .section h2{font-size:1rem;font-weight:700;color:#f1f5f9;margin-bottom:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .section h3{font-size:.86rem;font-weight:700;color:#cbd5e1;margin:14px 0 6px}
 .section .desc{font-size:.8rem;color:#64748b;margin-bottom:14px}
-.verify-badge{font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:10px;text-transform:uppercase;letter-spacing:.04em}
-.verify-badge.pending{background:#1e293b;color:#94a3b8}
-.verify-badge.ok{background:#14532d;color:#86efac}
-.verify-badge.fail{background:#450a0a;color:#fca5a5}
-.verify-badge.na{background:#1e293b;color:#64748b}
 
 .balls{display:flex;flex-wrap:wrap;gap:5px}
 .nb{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;
@@ -101,10 +96,12 @@ table.combos tr:hover td{background:#111827}
 
 .footer{margin-top:28px;font-size:.78rem;color:#475569;padding-bottom:20px;line-height:1.6}
 </style>
+<link rel="stylesheet" href="/elim-badges.css">
 </head>
 <body>
 
 <script src="/site-nav.js"></script>
+<script src="/diverse-sample.js"></script>
 <div class="wrap">
   <h1>✂️ Loto 7 — Draw #693 Elimination</h1>
   <p class="subtitle">Combinatorial set-difference: ARIMA's K=25 Base pool, minus combos covered by any of the 16 prediction methods, minus statistically-validated pattern filters</p>
@@ -589,53 +586,6 @@ function applyFilter() {
 
 // ── Diverse sample generator: greedy coverage-maximizing pick, same
 // algorithm used on the Loto6 elimination pages. ─────────────────────────
-function generateSamples(n) {
-  const pool = filtered.length > 0 ? filtered : REMAINING;
-  const container = document.getElementById('generatedResults');
-  if (pool.length === 0) {
-    container.innerHTML = '<p style="color:#64748b;font-size:.85rem">No combos match the current filter to sample from.</p>';
-    return;
-  }
-  const count = Math.min(n, pool.length);
-
-  const order = Array.from({length: pool.length}, (_, i) => i);
-  for (let i = order.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [order[i], order[j]] = [order[j], order[i]];
-  }
-
-  const usage = new Map();
-  const takenPositions = new Set();
-  const picks = [];
-  for (let round = 0; round < count; round++) {
-    let bestPos = -1;
-    let bestScore = Infinity;
-    for (let k = 0; k < order.length; k++) {
-      if (takenPositions.has(k)) continue;
-      const c = pool[order[k]];
-      let score = 0;
-      for (let m = 0; m < c.length; m++) score += (usage.get(c[m]) || 0);
-      if (score < bestScore) {
-        bestScore = score;
-        bestPos = k;
-        if (bestScore === 0 && round === 0) break;
-      }
-    }
-    const chosen = pool[order[bestPos]];
-    takenPositions.add(bestPos);
-    picks.push(chosen);
-    for (const num of chosen) usage.set(num, (usage.get(num) || 0) + 1);
-  }
-
-  const distinctCovered = new Set(picks.flat()).size;
-  const sourceLabel = filtered.length > 0 && filtered.length < REMAINING.length ? filtered.length.toLocaleString() + ' filtered' : REMAINING.length.toLocaleString() + ' total';
-  container.innerHTML =
-    '<div class="gen-hdr">Generated ' + picks.length + ' diverse combo' + (picks.length !== 1 ? 's' : '') +
-    ' from ' + sourceLabel + ' — covers ' + distinctCovered + ' distinct pool numbers:</div>' +
-    picks.map(c => '<div class="balls gen-row">' + c.map(n2 =>
-      '<span class="nb" style="background:' + getBallColor(n2) + '33;color:#e2e8f0;border:1px solid ' + getBallColor(n2) + '">' + n2 + '</span>'
-    ).join('') + '</div>').join('');
-}
 function totalPages() { return Math.max(1, Math.ceil(filtered.length / PAGE_SIZE)); }
 function goPage(p) { curPage = Math.max(0, Math.min(p, totalPages()-1)); render(); }
 function render() {

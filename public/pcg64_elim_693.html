@@ -24,10 +24,6 @@ h1{font-size:1.4rem;font-weight:700;color:#f1f5f9;margin-bottom:4px}
   margin:10px 0 5px;display:flex;align-items:center;gap:8px}
 .order-hint{font-size:.72rem;font-weight:400;text-transform:none;letter-spacing:normal;color:#475569}
 .section .desc{font-size:.8rem;color:#64748b;margin-bottom:14px}
-.verify-badge{font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:10px;text-transform:uppercase;letter-spacing:.04em}
-.verify-badge.pending{background:#1e293b;color:#94a3b8}
-.verify-badge.ok{background:#14532d;color:#86efac}
-.verify-badge.fail{background:#450a0a;color:#fca5a5}
 
 .balls{display:flex;flex-wrap:wrap;gap:5px}
 .nb{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;
@@ -48,7 +44,6 @@ h1{font-size:1.4rem;font-weight:700;color:#f1f5f9;margin-bottom:4px}
 .elim-flow .n{color:#f1f5f9}
 .elim-flow .final{color:#38bdf8}
 
-.verify-badge.na{background:#1e293b;color:#64748b}
 
 details{background:#0a0f1e;border:1px solid #1e293b;border-radius:10px;padding:12px 16px}
 summary{cursor:pointer;font-size:.85rem;font-weight:600;color:#e2e8f0;user-select:none}
@@ -99,10 +94,12 @@ table.combos tr:hover td{background:#111827}
 
 .footer{margin-top:28px;font-size:.78rem;color:#475569;padding-bottom:20px;line-height:1.6}
 </style>
+<link rel="stylesheet" href="/elim-badges.css">
 </head>
 <body>
 
 <script src="/site-nav.js"></script>
+<script src="/diverse-sample.js"></script>
 <div class="wrap">
   <h1>✂️ Loto 7 PCG64 Seed — Draw #693 Elimination</h1>
   <p class="subtitle">PCG64 K=30 seed #-2,826,673's pick for draw #693 — Pass 1 = 16 methods' K=20 picks — Pass 2 = 16 methods' K=31 picks ∩ Base — Pass 3 = overlap≥5 vs last 100 draws — Pass 4 = consecutive-pairs≥4 — Pass 5 = historical repeat filter</p>
@@ -596,53 +593,6 @@ function applyFilter() {
 
 // ── Diverse sample generator: greedy coverage-maximizing pick, same
 // algorithm used on the other elimination pages. ─────────────────────────
-function generateSamples(n) {
-  const pool = filtered.length > 0 ? filtered : REMAINING;
-  const container = document.getElementById('generatedResults');
-  if (pool.length === 0) {
-    container.innerHTML = '<p style="color:#64748b;font-size:.85rem">No combos match the current filter to sample from.</p>';
-    return;
-  }
-  const count = Math.min(n, pool.length);
-
-  const order = Array.from({length: pool.length}, (_, i) => i);
-  for (let i = order.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [order[i], order[j]] = [order[j], order[i]];
-  }
-
-  const usage = new Map();
-  const takenPositions = new Set();
-  const picks = [];
-  for (let round = 0; round < count; round++) {
-    let bestPos = -1;
-    let bestScore = Infinity;
-    for (let k = 0; k < order.length; k++) {
-      if (takenPositions.has(k)) continue;
-      const c = pool[order[k]];
-      let score = 0;
-      for (let m = 0; m < c.length; m++) score += (usage.get(c[m]) || 0);
-      if (score < bestScore) {
-        bestScore = score;
-        bestPos = k;
-        if (bestScore === 0 && round === 0) break;
-      }
-    }
-    const chosen = pool[order[bestPos]];
-    takenPositions.add(bestPos);
-    picks.push(chosen);
-    for (const num of chosen) usage.set(num, (usage.get(num) || 0) + 1);
-  }
-
-  const distinctCovered = new Set(picks.flat()).size;
-  const sourceLabel = filtered.length > 0 && filtered.length < REMAINING.length ? filtered.length.toLocaleString() + ' filtered' : REMAINING.length.toLocaleString() + ' total';
-  container.innerHTML =
-    '<div class="gen-hdr">Generated ' + picks.length + ' diverse combo' + (picks.length !== 1 ? 's' : '') +
-    ' from ' + sourceLabel + ' — covers ' + distinctCovered + ' distinct pool numbers:</div>' +
-    picks.map(c => '<div class="balls gen-row">' + c.map(n2 =>
-      '<span class="nb" style="background:' + getBallColor(n2) + '33;color:#e2e8f0;border:1px solid ' + getBallColor(n2) + '">' + n2 + '</span>'
-    ).join('') + '</div>').join('');
-}
 function totalPages() { return Math.max(1, Math.ceil(filtered.length / PAGE_SIZE)); }
 function goPage(p) { curPage = Math.max(0, Math.min(p, totalPages()-1)); render(); }
 function render() {

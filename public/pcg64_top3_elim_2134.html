@@ -32,11 +32,6 @@ h1{font-size:1.4rem;font-weight:700;color:#f1f5f9;margin-bottom:4px}
   margin:10px 0 5px;display:flex;align-items:center;gap:8px}
 .order-hint{font-size:.72rem;font-weight:400;text-transform:none;letter-spacing:normal;color:#475569}
 .section .desc{font-size:.8rem;color:#64748b;margin-bottom:14px}
-.verify-badge{font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:10px;text-transform:uppercase;letter-spacing:.04em}
-.verify-badge.pending{background:#1e293b;color:#94a3b8}
-.verify-badge.ok{background:#14532d;color:#86efac}
-.verify-badge.fail{background:#450a0a;color:#fca5a5}
-.verify-badge.na{background:#1e293b;color:#64748b}
 
 .balls{display:flex;flex-wrap:wrap;gap:5px}
 .nb{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;
@@ -107,10 +102,14 @@ table.combos tr:hover td{background:#111827}
 
 .footer{margin-top:28px;font-size:.78rem;color:#475569;padding-bottom:20px;line-height:1.6}
 </style>
+<link rel="stylesheet" href="/elim-badges.css">
 </head>
 <body>
 
 <script src="/site-nav.js"></script>
+<script src="/diverse-sample.js"></script>
+<script src="/pcg64-core.js"></script>
+<script src="/xoshiro256.js"></script>
 <div class="wrap">
   <h1>✂️ Top-3 PCG64 K=38 Seeds (Triple Intersection) + 16-Method Elimination — Draw #2134</h1>
   <p class="subtitle">Combinatorial set-difference: the triple intersection of the top-3 PCG64 K=38 seeds by hit6b, minus combos covered by any of the 16 prediction methods' K=19 picks, minus a handful of well-supported pattern filters</p>
@@ -436,37 +435,6 @@ table.combos tr:hover td{background:#111827}
 
 <script>
 // ── xoshiro256**, bit-exact BigInt port (needed only for Pass 2) ────────────
-const MASK64 = (1n << 64n) - 1n;
-function rotl(x, k) {
-  x &= MASK64;
-  return ((x << BigInt(k)) | (x >> BigInt(64 - k))) & MASK64;
-}
-function splitmix64Next(z) {
-  z = (z + 0x9E3779B97F4A7C15n) & MASK64;
-  let zz = z;
-  zz = ((zz ^ (zz >> 30n)) * 0xBF58476D1CE4E5B9n) & MASK64;
-  zz = ((zz ^ (zz >> 27n)) * 0x94D049BB133111EBn) & MASK64;
-  zz = zz ^ (zz >> 31n);
-  return [z, zz];
-}
-function seedState(seed) {
-  let z = BigInt(seed) & MASK64;
-  const state = [];
-  for (let i = 0; i < 4; i++) {
-    const [nz, out] = splitmix64Next(z);
-    z = nz;
-    state.push(out);
-  }
-  return state;
-}
-function xoshiroNext(s) {
-  const result = (rotl((s[1] * 5n) & MASK64, 7) * 9n) & MASK64;
-  const t = (s[1] << 17n) & MASK64;
-  s[2] ^= s[0]; s[3] ^= s[1]; s[1] ^= s[2]; s[0] ^= s[3];
-  s[2] ^= t;
-  s[3] = rotl(s[3], 45);
-  return result;
-}
 function xoshiroPredictRaw(seed, drawSerial, k) {
   const combined = (BigInt(seed) * 10000000n + BigInt(drawSerial)) & MASK64;
   const s = seedState(combined);
@@ -486,32 +454,6 @@ function xoshiroPredict(seed, drawSerial, k) {
 }
 
 // ── PCG64 (O'Neill XSL-RR 128/64), bit-exact BigInt port ────────────────────
-const MASK128 = (1n << 128n) - 1n;
-const PCG_MULT_128 = 0x2360ed051fc65da44385df649fccf645n;
-function expandSeedToPcgState(combined) {
-  let z = combined & MASK64;
-  const outs = [];
-  for (let i = 0; i < 4; i++) {
-    const [nz, o] = splitmix64Next(z);
-    z = nz;
-    outs.push(o);
-  }
-  const state = ((outs[0] << 64n) | outs[1]) & MASK128;
-  const inc = (((outs[2] << 64n) | outs[3]) | 1n) & MASK128;
-  return [state, inc];
-}
-function rotr64(v, rot) {
-  rot &= 63n;
-  const shift = (64n - rot) % 64n;
-  return ((v >> rot) | (v << shift)) & MASK64;
-}
-function pcg64Next(state, inc) {
-  state = (state * PCG_MULT_128 + inc) & MASK128;
-  const xored = (state >> 64n) ^ (state & MASK64);
-  const rot = (state >> 122n) & 0x3fn;
-  const out = rotr64(xored, rot);
-  return [state, out];
-}
 function pcg64PredictRaw(seed, drawSerial, k) {
   const combined = (BigInt(seed) * 10000000n + BigInt(drawSerial)) & MASK64;
   let [state, inc] = expandSeedToPcgState(combined);
@@ -739,54 +681,6 @@ function applyFilter() {
 // wins, in shuffled order), update usage counts, repeat. Spreads the
 // sample across as many distinct pool numbers as possible instead of a
 // uniform random draw. ───────────────────────────────────────────────────
-function generateSamples(n) {
-  const pool = filtered.length > 0 ? filtered : REMAINING;
-  const container = document.getElementById('generatedResults');
-  if (pool.length === 0) {
-    container.innerHTML = '<p style="color:#64748b;font-size:.85rem">No combos match the current filter to sample from.</p>';
-    return;
-  }
-  const count = Math.min(n, pool.length);
-
-  // Shuffle candidate order once (Fisher-Yates), doesn't mutate pool itself.
-  const order = Array.from({length: pool.length}, (_, i) => i);
-  for (let i = order.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [order[i], order[j]] = [order[j], order[i]];
-  }
-
-  const usage = new Map();
-  const takenPositions = new Set();
-  const picks = [];
-  for (let round = 0; round < count; round++) {
-    let bestPos = -1;
-    let bestScore = Infinity;
-    for (let k = 0; k < order.length; k++) {
-      if (takenPositions.has(k)) continue;
-      const c = pool[order[k]];
-      let score = 0;
-      for (let m = 0; m < c.length; m++) score += (usage.get(c[m]) || 0);
-      if (score < bestScore) {
-        bestScore = score;
-        bestPos = k;
-        if (bestScore === 0 && round === 0) break; // first round: any 0-score combo is equally good, take the first
-      }
-    }
-    const chosen = pool[order[bestPos]];
-    takenPositions.add(bestPos);
-    picks.push(chosen);
-    for (const num of chosen) usage.set(num, (usage.get(num) || 0) + 1);
-  }
-
-  const distinctCovered = new Set(picks.flat()).size;
-  const sourceLabel = filtered.length > 0 && filtered.length < REMAINING.length ? filtered.length.toLocaleString() + ' filtered' : REMAINING.length.toLocaleString() + ' total';
-  container.innerHTML =
-    '<div class="gen-hdr">Generated ' + picks.length + ' diverse combo' + (picks.length !== 1 ? 's' : '') +
-    ' from ' + sourceLabel + ' — covers ' + distinctCovered + ' distinct pool numbers:</div>' +
-    picks.map(c => '<div class="balls gen-row">' + c.map(n2 =>
-      '<span class="nb" style="background:' + getBallColor(n2) + '33;color:#e2e8f0;border:1px solid ' + getBallColor(n2) + '">' + n2 + '</span>'
-    ).join('') + '</div>').join('');
-}
 function totalPages() { return Math.max(1, Math.ceil(filtered.length / PAGE_SIZE)); }
 function goPage(p) { curPage = Math.max(0, Math.min(p, totalPages()-1)); render(); }
 function render() {

@@ -274,6 +274,7 @@ tbody td.tr{{text-align:right}}
 <body>
 
 <script src="/site-nav.js"></script>
+<script src="/pcg64-core.js"></script>
 <div class="wrap">
   <h1>🎯 PCG64 Seed Scan — Loto 7 K=30 (seeds -5,000,000 to 5,000,000)</h1>
   <p class="subtitle">{num_seeds:,} seeds scanned so far · K={K_PICKS} picks · {N_DRAWS} draws (#{DRAW_START}–{DRAW_END}) · PCG64 (O'Neill XSL-RR 128/64, SplitMix64-expanded)</p>
@@ -464,41 +465,6 @@ mkChart('hit4Chart', {json.dumps(hit4_labels)}, {json.dumps(hit4_values)}, '#e87
 const DRAWS = {js_draws};
 
 const MASK64 = (1n << 64n) - 1n;
-const MASK128 = (1n << 128n) - 1n;
-const PCG_MULT_128 = 0x2360ed051fc65da44385df649fccf645n;
-
-function splitmix64Next(z) {{
-  z = (z + 0x9E3779B97F4A7C15n) & MASK64;
-  let zz = z;
-  zz = ((zz ^ (zz >> 30n)) * 0xBF58476D1CE4E5B9n) & MASK64;
-  zz = ((zz ^ (zz >> 27n)) * 0x94D049BB133111EBn) & MASK64;
-  zz = zz ^ (zz >> 31n);
-  return [z, zz];
-}}
-function expandSeedToPcgState(combined) {{
-  let z = combined & MASK64;
-  const outs = [];
-  for (let i = 0; i < 4; i++) {{
-    const [nz, o] = splitmix64Next(z);
-    z = nz;
-    outs.push(o);
-  }}
-  const state = ((outs[0] << 64n) | outs[1]) & MASK128;
-  const inc = (((outs[2] << 64n) | outs[3]) | 1n) & MASK128;
-  return [state, inc];
-}}
-function rotr64(v, rot) {{
-  rot &= 63n;
-  const shift = (64n - rot) % 64n;
-  return ((v >> rot) | (v << shift)) & MASK64;
-}}
-function pcg64Next(state, inc) {{
-  state = (state * PCG_MULT_128 + inc) & MASK128;
-  const xored = (state >> 64n) ^ (state & MASK64);
-  const rot = (state >> 122n) & 0x3fn;
-  const out = rotr64(xored, rot);
-  return [state, out];
-}}
 function pcg64Predict(seed, drawSerial, k) {{
   const combined = (BigInt(seed) * 10000000n + BigInt(drawSerial)) & MASK64;
   let [state, inc] = expandSeedToPcgState(combined);
