@@ -29,6 +29,47 @@
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=300, stale-while-revalidate=86400" }
       ]
+    },
+    {
+      "source": "/xoshiro256.js",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=300, stale-while-revalidate=86400" }
+      ]
+    },
+    {
+      "source": "/pcg64-core.js",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=300, stale-while-revalidate=86400" }
+      ]
+    },
+    {
+      "source": "/diverse-sample.js",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=300, stale-while-revalidate=86400" }
+      ]
+    },
+    {
+      "source": "/elim-badges.css",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=300, stale-while-revalidate=86400" }
+      ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/custom_avg.html",
+      "destination": "/avg_hub.html",
+      "permanent": true
+    },
+    {
+      "source": "/custom_avg3.html",
+      "destination": "/avg_hub.html",
+      "permanent": true
+    },
+    {
+      "source": "/xoshiro_seed_scan_100k.html",
+      "destination": "/xoshiro_seed_backtest.html",
+      "permanent": true
     }
   ]
 }

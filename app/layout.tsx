@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import Script from "next/script";
 import "./globals.css";
 
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           Data sourced from Mizuho Bank · Japan Loto 6 · Not affiliated with Mizuho or JORA
         </footer>
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
