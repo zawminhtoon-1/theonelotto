@@ -27,6 +27,9 @@
   var NAV_HTML =
     '<nav class="site-nav">' +
       '<a class="nav-logo" href="/">🎱 The<span>One</span>Lotto</a>' +
+      '<div class="nav-search-wrap">' +
+        '<input type="search" class="nav-search" placeholder="🔍 Search pages…" aria-label="Search navigation">' +
+      '</div>' +
       '<button class="nav-hamburger" type="button" aria-label="Menu" aria-expanded="false">☰</button>' +
       '<div class="nav-groups">' +
         '<div class="nav-group">' +
@@ -79,15 +82,17 @@
             '<a href="/pcg64_seed_scan_k38.html">🎲 PCG64 K=38, seeds ±5,000,000 (2050 draws)</a>' +
             '<div class="nav-divider"></div>' +
             '<div class="nav-dd-label">Predictions</div>' +
-            '<a href="/xoshiro_elim_2128.html">✂️ Draw #2128 Elimination</a>' +
-            '<a href="/xoshiro_elim_2129.html">✂️ Draw #2129 Elimination</a>' +
-            '<a href="/xoshiro_elim_2130.html">✂️ Draw #2130 Elimination</a>' +
-            '<a href="/xoshiro_elim_2131.html">✂️ Draw #2131 Elimination</a>' +
-            '<a href="/xoshiro_elim_2132.html">✂️ Draw #2132 Elimination</a>' +
-            '<a href="/xoshiro_elim_2133.html">✂️ Draw #2133 Elimination</a>' +
             '<a href="/xoshiro_elim_2134.html">✂️ Draw #2134 Elimination (native K=38 Base)</a>' +
             '<a href="/xo_pcg_elim_2134.html">✂️ Draw #2134 Elimination (xoshiro × PCG64 Base)</a>' +
             '<a href="/pcg64_top3_elim_2134.html">✂️ Draw #2134 Elimination (Top-3 PCG64 Seeds Base)</a>' +
+            '<details class="nav-archive"><summary>📦 Past draws (#2128–#2133)</summary>' +
+              '<a href="/xoshiro_elim_2128.html">✂️ Draw #2128 Elimination</a>' +
+              '<a href="/xoshiro_elim_2129.html">✂️ Draw #2129 Elimination</a>' +
+              '<a href="/xoshiro_elim_2130.html">✂️ Draw #2130 Elimination</a>' +
+              '<a href="/xoshiro_elim_2131.html">✂️ Draw #2131 Elimination</a>' +
+              '<a href="/xoshiro_elim_2132.html">✂️ Draw #2132 Elimination</a>' +
+              '<a href="/xoshiro_elim_2133.html">✂️ Draw #2133 Elimination</a>' +
+            '</details>' +
             '<a href="/xoshiro_k38_5seed_intersection.html">✂️ K=38 5-Seed Intersection Backtest</a>' +
             '<a href="/xoshiro_k35_5seed_intersection.html">✂️ K=35 5-Seed Intersection Backtest</a>' +
             '<a href="/xoshiro_k38_x_modularcycle_k28_intersection.html">✂️ Modular Cycle (K=28) × K=38</a>' +
@@ -122,9 +127,11 @@
             '<a href="/loto7_backtest.html">📊 Backtest</a>' +
             '<a href="/loto7_backtest100_multik.html">🎯 100-Draw Multi-K Backtest</a>' +
             '<a href="/loto7_backtest_full.html">📊 Full-History Backtest</a>' +
-            '<a href="/loto7_elim_691.html">✂️ Draw #691 Elimination</a>' +
-            '<a href="/loto7_elim_693.html">✂️ Draw #693 Elimination</a>' +
-            '<a href="/pcg64_elim_693.html">✂️ Draw #693 Elimination (PCG64 Seed Base)</a>' +
+            '<details class="nav-archive"><summary>📦 Past draws (#691, #693)</summary>' +
+              '<a href="/loto7_elim_691.html">✂️ Draw #691 Elimination</a>' +
+              '<a href="/loto7_elim_693.html">✂️ Draw #693 Elimination</a>' +
+              '<a href="/pcg64_elim_693.html">✂️ Draw #693 Elimination (PCG64 Seed Base)</a>' +
+            '</details>' +
             '<a href="/xoshiro_seed_scan_loto7_k25.html">🌀 Xoshiro Seed Scan K=25 (±1,000,000)</a>' +
             '<a href="/xoshiro_seed_scan_loto7_k28.html">🌀 Xoshiro Seed Scan K=28 (±1,000,000)</a>' +
             '<a href="/xoshiro_seed_scan_loto7_k30.html">🌀 Xoshiro Seed Scan K=30 (±1,000,000)</a>' +
@@ -176,9 +183,40 @@
     '.nav-hamburger{display:none;background:none;border:none;color:#94a3b8;font-size:1.3rem;' +
       'cursor:pointer;padding:6px 8px;margin-left:auto;line-height:1}' +
     '.nav-hamburger:hover{color:#f1f5f9}' +
+    '.nav-search-wrap{flex:0 1 190px;margin-right:10px}' +
+    '.nav-search{width:100%;background:#0d1526;border:1px solid #1e293b;border-radius:7px;' +
+      'color:#e2e8f0;font-size:.8rem;padding:6px 10px;outline:none;transition:.15s;' +
+      'font-family:inherit}' +
+    '.nav-search::placeholder{color:#475569}' +
+    '.nav-search:focus{border-color:#38bdf8;background:#0a0f1e}' +
+    '.nav-archive{margin:2px 0}' +
+    '.nav-archive summary{display:flex;align-items:center;gap:8px;list-style:none;cursor:pointer;' +
+      'padding:8px 12px;border-radius:6px;color:#64748b;font-size:.82rem;white-space:nowrap;transition:.12s}' +
+    '.nav-archive summary::-webkit-details-marker{display:none}' +
+    '.nav-archive summary::marker{content:""}' +
+    '.nav-archive summary:hover{color:#f1f5f9;background:#1e293b}' +
+    '.nav-archive summary::after{content:"▸";margin-left:auto;font-size:.65rem;opacity:.6;transition:transform .15s}' +
+    '.nav-archive[open] summary::after{transform:rotate(90deg)}' +
+    '.nav-archive a{padding-left:28px}' +
+    // Search results mode: force the full vertical panel layout (same shape
+    // as the mobile hamburger panel) at ANY viewport width, show only groups
+    // with a match, and auto-expand archived (<details>) sections that
+    // contain one -- overrides the hover-dropdown/media-query rules below.
+    '.site-nav.search-mode .nav-groups{display:flex!important;position:fixed;top:52px;left:0;right:0;bottom:0;' +
+      'background:#0a0f1e;flex-direction:column;align-items:stretch;padding:8px;overflow-y:auto;gap:2px;z-index:9998}' +
+    '.site-nav.search-mode .nav-group{width:100%}' +
+    '.site-nav.search-mode .nav-group:not(.has-match){display:none}' +
+    '.site-nav.search-mode .nav-group-btn{width:100%;justify-content:space-between;padding:13px 10px;cursor:default}' +
+    '.site-nav.search-mode .nav-group-btn:hover{background:none;border-color:transparent;color:#94a3b8}' +
+    '.site-nav.search-mode .nav-group-btn .arrow{display:none}' +
+    '.site-nav.search-mode .nav-dropdown{position:static;padding-top:0;min-width:0;display:block}' +
+    '.site-nav.search-mode .nav-dropdown-inner{box-shadow:none;border:none;background:transparent;' +
+      'padding:0 0 6px 14px;max-height:none;border-radius:0;overflow:visible}' +
+    '.site-nav.search-mode .nav-dropdown a{padding:11px 12px}' +
     '@media (max-width: 860px){' +
       '.site-nav{padding:0 12px}' +
       '.nav-hamburger{display:block}' +
+      '.nav-search-wrap{flex:1 1 auto;margin:0 8px}' +
       '.nav-groups{display:none;position:fixed;top:52px;left:0;right:0;bottom:0;' +
         'background:#0a0f1e;flex-direction:column;align-items:stretch;' +
         'padding:8px;overflow-y:auto;gap:2px;z-index:9998}' +
@@ -256,6 +294,58 @@
       var allGroups = document.querySelectorAll('.nav-group.open');
       for (var g = 0; g < allGroups.length; g++) allGroups[g].classList.remove('open');
       if (!wasOpen) group.classList.add('open');
+    });
+  }
+
+  // Nav search: live-filters every link's text across all dropdowns
+  // (including collapsed "Past draws" archives, which auto-expand when one
+  // of their links matches). Clearing the box restores normal hover/tap
+  // navigation and re-collapses the archives.
+  var searchInput = document.querySelector('.nav-search');
+  var siteNavEl = document.querySelector('.site-nav');
+  if (searchInput && siteNavEl) {
+    var allGroupEls = document.querySelectorAll('.nav-group');
+    var runFilter = function () {
+      var q = searchInput.value.trim().toLowerCase();
+      if (!q) {
+        siteNavEl.classList.remove('search-mode');
+        var links = document.querySelectorAll('.nav-dropdown a');
+        for (var i = 0; i < links.length; i++) links[i].style.display = '';
+        for (var g2 = 0; g2 < allGroupEls.length; g2++) allGroupEls[g2].classList.remove('has-match');
+        var archivesReset = document.querySelectorAll('.nav-archive');
+        for (var d = 0; d < archivesReset.length; d++) archivesReset[d].open = false;
+        return;
+      }
+      siteNavEl.classList.add('search-mode');
+      for (var gi = 0; gi < allGroupEls.length; gi++) {
+        var group = allGroupEls[gi];
+        var groupLinks = group.querySelectorAll('.nav-dropdown a');
+        var anyMatch = false;
+        for (var li = 0; li < groupLinks.length; li++) {
+          var link = groupLinks[li];
+          var matches = link.textContent.toLowerCase().indexOf(q) !== -1;
+          link.style.display = matches ? '' : 'none';
+          if (matches) anyMatch = true;
+        }
+        group.classList.toggle('has-match', anyMatch);
+        var archives = group.querySelectorAll('.nav-archive');
+        for (var ai = 0; ai < archives.length; ai++) {
+          var archiveLinks = archives[ai].querySelectorAll('a');
+          var archiveMatch = false;
+          for (var li2 = 0; li2 < archiveLinks.length; li2++) {
+            if (archiveLinks[li2].style.display !== 'none') { archiveMatch = true; break; }
+          }
+          archives[ai].open = archiveMatch;
+        }
+      }
+    };
+    searchInput.addEventListener('input', runFilter);
+    searchInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        searchInput.value = '';
+        runFilter();
+        searchInput.blur();
+      }
     });
   }
 })();
