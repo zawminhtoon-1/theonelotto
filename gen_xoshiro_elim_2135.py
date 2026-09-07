@@ -1,0 +1,384 @@
+"""
+gen_xoshiro_elim_2135.py
+--------------------------
+Generates the Loto6 draw #2135 elimination page's Base stage -- Base
+pool only, no elimination passes yet, per explicit instruction. Passes
+will be added in later, separately-directed builds (same pattern as
+pcg64_elim_693.html's build).
+
+Uses the shared /xoshiro256.js and /elim-badges.css files (single
+source of truth for this site's duplicated JS/CSS, see
+public/site-nav.js's own docstring for the rationale) rather than
+inlining -- this page is new, so there's no reason to duplicate what
+already exists as a shared file.
+
+Combo browser fetch is gated behind an explicit "Load N combinations"
+button (not auto-fetched on page load) -- same lazy-load pattern every
+other elimination page on this site uses. Mirrors
+xoshiro_elim_2134.html's combo browser exactly (number include/exclude
+filter grid, pagination, CSV download) -- no hot/cold filter or
+diverse-sample generator, since the Loto6 xoshiro_elim_* family doesn't
+have those (unlike the Loto7 pages / pcg64_top3_elim_2134 /
+xo_pcg_elim_2134), so there's no historical-combos asset either.
+
+Reads xoshiro_elim_2135_meta.json (small: base pool, seed, counts).
+The large combo list lives separately at
+public/xoshiro_elim_2135_combos.json, fetched client-side, not
+inlined.
+
+Output: public/xoshiro_elim_2135.html
+Run: python gen_xoshiro_elim_2135.py
+"""
+import json
+
+BASE = r"C:\Users\Zaw Min Htoon\source\repos\theonelotto"
+META_PATH = BASE + r"\xoshiro_elim_2135_meta.json"
+HTML_OUT = BASE + r"\public\xoshiro_elim_2135.html"
+
+with open(META_PATH, encoding='utf-8') as f:
+    meta = json.load(f)
+
+TARGET_SERIAL = meta['targetSerial']
+TRAINED_THROUGH = meta['trainedThroughSerial']
+SEED = meta['seed']
+K_PICKS = meta['k']
+POOL_MAX = meta['poolMax']
+base = meta['base']
+universe_count = meta['universeCount']
+
+page = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Loto 6 Xoshiro Seed — Draw #{TARGET_SERIAL} Elimination (Base)</title>
+<style>
+
+*{{box-sizing:border-box;margin:0;padding:0}}
+body{{background:#0a0f1e;color:#e2e8f0;font-family:system-ui,sans-serif;padding-top:60px;min-height:100vh}}
+.wrap{{max-width:1200px;margin:0 auto;padding:24px 16px}}
+h1{{font-size:1.4rem;font-weight:700;color:#f1f5f9;margin-bottom:4px}}
+.subtitle{{font-size:.85rem;color:#64748b;margin-bottom:20px}}
+
+.note{{background:#0d1526;border:1px solid #1e293b;border-radius:10px;padding:14px 18px;
+  font-size:.8rem;color:#94a3b8;margin-bottom:20px;line-height:1.6}}
+.note p+p{{margin-top:8px}}
+.note code{{background:#0a0f1e;padding:1px 5px;border-radius:4px;font-size:.85em}}
+
+.section{{background:#0d1526;border:1px solid #1e293b;border-radius:12px;padding:20px;margin-bottom:20px}}
+.section h2{{font-size:1rem;font-weight:700;color:#f1f5f9;margin-bottom:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}}
+.order-label{{font-size:.7rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;
+  margin:10px 0 5px;display:flex;align-items:center;gap:8px}}
+.order-hint{{font-size:.72rem;font-weight:400;text-transform:none;letter-spacing:normal;color:#475569}}
+.section .desc{{font-size:.8rem;color:#64748b;margin-bottom:14px}}
+
+.balls{{display:flex;flex-wrap:wrap;gap:5px}}
+.nb{{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;
+  border-radius:50%;font-size:.78rem;font-weight:700;background:#312e5f;color:#c4b5fd;
+  border:1px solid #7c3aed55;flex-shrink:0}}
+.nb.b4{{background:#052e16;color:#86efac;border-color:#22c55e55}}
+
+.stats-row{{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}}
+.stat-card{{background:#0a0f1e;border:1px solid #1e293b;border-radius:10px;padding:14px 18px;flex:1;min-width:150px}}
+.stat-card .lbl{{font-size:.7rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}}
+.stat-card .val{{font-size:1.35rem;font-weight:700;color:#f1f5f9}}
+.stat-card .sub{{font-size:.75rem;color:#94a3b8;margin-top:2px}}
+
+.lookup{{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}}
+.lookup .btn{{padding:6px 14px;background:#1e293b;border:1px solid #334155;border-radius:7px;
+  color:#94a3b8;font-size:.8rem;cursor:pointer}}
+.lookup .btn:hover{{color:#f1f5f9}}
+.lookup .btn.primary{{background:#7c3aed;border-color:#7c3aed;color:#fff}}
+.lookup .btn.primary:hover{{background:#6d28d9}}
+.lookup .btn:disabled{{opacity:.4;cursor:default}}
+.filter-grid{{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}}
+.num-btn{{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;
+  border-radius:50%;font-size:.72rem;font-weight:700;color:#fff;background:#312e5f;
+  border:none;cursor:pointer;opacity:.65;transition:all .12s;flex-shrink:0}}
+.num-btn:hover{{opacity:.9}}
+.num-btn.include{{opacity:1;box-shadow:0 0 0 2px #0a0f1e,0 0 0 4px #22c55e;transform:scale(1.08)}}
+.num-btn.exclude{{opacity:.55;box-shadow:0 0 0 2px #0a0f1e,0 0 0 4px #ef4444;transform:scale(1.08);
+  text-decoration:line-through;text-decoration-thickness:2px}}
+.filter-legend{{font-size:.72rem;color:#64748b;margin-bottom:8px}}
+.filter-legend .swatch{{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;
+  border-radius:50%;font-size:0;margin:0 3px -3px 0}}
+.filter-legend .swatch.neutral{{background:#312e5f;opacity:.65}}
+.filter-legend .swatch.include{{background:#312e5f;box-shadow:0 0 0 1px #0a0f1e,0 0 0 2px #22c55e}}
+.filter-legend .swatch.exclude{{background:#312e5f;opacity:.55;box-shadow:0 0 0 1px #0a0f1e,0 0 0 2px #ef4444}}
+.page-info{{font-size:.8rem;color:#94a3b8}}
+.lookup select{{background:#0a0f1e;border:1px solid #334155;border-radius:7px;padding:7px 10px;
+  color:#e2e8f0;font-size:.82rem}}
+.pd-lbl{{font-size:.72rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em}}
+#generatedResults{{margin-bottom:14px}}
+#generatedResults .gen-hdr{{font-size:.78rem;color:#94a3b8;margin-bottom:8px}}
+#generatedResults .gen-row{{margin-bottom:6px}}
+.tbl-wrap{{overflow-x:auto;border-radius:10px;border:1px solid #1e293b}}
+table.combos{{width:100%;border-collapse:collapse;font-size:.83rem}}
+table.combos th{{background:#0a0f1e;padding:8px 12px;text-align:left;color:#94a3b8;
+  font-weight:600;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;
+  border-bottom:1px solid #1e293b}}
+table.combos td{{padding:6px 12px;border-bottom:1px solid #0f172a}}
+table.combos tr:hover td{{background:#111827}}
+#loadingMsg{{padding:30px;text-align:center;color:#64748b;font-size:.85rem}}
+
+.footer{{margin-top:28px;font-size:.78rem;color:#475569;padding-bottom:20px;line-height:1.6}}
+</style>
+<link rel="stylesheet" href="/elim-badges.css">
+</head>
+<body>
+
+<script src="/site-nav.js"></script>
+<script src="/xoshiro256.js"></script>
+<div class="wrap">
+  <h1>✂️ Loto 6 Xoshiro Seed — Draw #{TARGET_SERIAL} Elimination (Base)</h1>
+  <p class="subtitle">Base only, no elimination passes yet — xoshiro256** K={K_PICKS} seed #{SEED:,}'s pick for draw #{TARGET_SERIAL}</p>
+
+  <div class="note">
+    <p><strong style="color:#e2e8f0">Base</strong> is <strong>xoshiro256** K={K_PICKS} seed
+    #{SEED:,}'s pick</strong> for draw #{TARGET_SERIAL} (not yet drawn), walk-forward — a pure function of
+    (seed, draw serial), no training data needed. This seed is the overall winner of
+    <a href="/xoshiro_seed_scan_k38.html" style="color:#a78bfa">the completed K=38 seed scan</a>
+    (0–1,000,000 seeds). Single-source construction — deliberately simpler than
+    <a href="/xoshiro_elim_2134.html" style="color:#a78bfa">xoshiro_elim_2134.html</a>'s two-way
+    (xoshiro ∩ Modular Cycle) Base, per explicit instruction for this build. It defines the working universe: all
+    C({base['k']},6) = {universe_count:,} six-number combinations drawable from this {base['k']}-number pool.</p>
+    <p><strong style="color:#fbbf24">No elimination passes yet</strong> — this page is Base only, per explicit
+    instruction. Every one of the {universe_count:,} combos below is still in play; nothing has been removed.
+    Passes will be added in later, separately-directed builds (see
+    <a href="/xoshiro_elim_2134.html" style="color:#a78bfa">xoshiro_elim_2134.html</a> and
+    <a href="/pcg64_elim_693.html" style="color:#a78bfa">pcg64_elim_693.html</a> for what a fully-built
+    multi-pass elimination page on this site looks like).</p>
+    <p>The Base pool is recomputed <strong>live in your browser</strong> below (bit-exact BigInt xoshiro256** port, same
+    implementation used on every other xoshiro page on this site) and checked against the server-embedded reference — check the
+    verification badge.</p>
+  </div>
+
+  <div class="section">
+    <h2>Base — xoshiro256** K={K_PICKS} seed #{SEED:,} <span id="badgeBase" class="verify-badge pending">verifying…</span></h2>
+    <p class="desc">Pure function of (seed, draw serial) — no training data needed.</p>
+    <div class="order-label">Ascending order</div>
+    <div class="balls" id="baseBalls"></div>
+    <div class="order-label">Generation order <span class="order-hint">(partial Fisher-Yates order)</span> <span id="badgeBaseOrdered" class="verify-badge pending">verifying…</span></div>
+    <div class="balls" id="baseBallsOrdered"></div>
+  </div>
+
+  <div class="section">
+    <h2>Universe</h2>
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="lbl">Universe (Base)</div>
+        <div class="val">{universe_count:,}</div>
+        <div class="sub">C({base['k']},6)</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Base pool size</div>
+        <div class="val">{base['k']}</div>
+        <div class="sub">of {POOL_MAX} numbers</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Elimination passes applied</div>
+        <div class="val">0</div>
+        <div class="sub">Base only — nothing removed yet</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Browse combinations</h2>
+    <p class="desc">Fetched from a separate JSON asset (not inlined — {universe_count:,} rows is too large for the page itself).</p>
+    <div id="loadPrompt" style="text-align:center;padding:28px 12px">
+      <button class="btn primary" onclick="loadCombos()">📂 Load {universe_count:,} combinations</button>
+      <p class="page-info" style="margin-top:8px">Not fetched automatically to save bandwidth — click to load the combo browser.</p>
+    </div>
+    <div id="loadingMsg" style="display:none">Loading {universe_count:,} combinations…</div>
+    <div id="comboUI" style="display:none">
+      <div class="lookup">
+        <button class="btn" onclick="clearFilter()">Clear filter</button>
+        <button class="btn primary" onclick="downloadCSV()">⬇ Download CSV</button>
+        <span id="filterInfo" class="page-info"></span>
+      </div>
+      <div class="filter-legend">Click a number to cycle: <span class="swatch neutral"></span>neutral (no filter) &rarr;
+        <span class="swatch include"></span>include (must contain) &rarr; <span class="swatch exclude"></span>exclude (must not
+        contain) &rarr; back to neutral. Include and exclude constraints apply together.</div>
+      <div class="filter-grid" id="filterGrid"></div>
+
+      <div class="tbl-wrap">
+        <div class="lookup" style="justify-content:space-between;padding:10px 12px;margin-bottom:0">
+          <span id="pageInfo" class="page-info"></span>
+          <div style="display:flex;gap:6px">
+            <button class="btn" id="firstBtn" onclick="goPage(0)">&laquo; First</button>
+            <button class="btn" id="prevBtn" onclick="goPage(curPage-1)">&lsaquo; Prev</button>
+            <button class="btn" id="nextBtn" onclick="goPage(curPage+1)">Next &rsaquo;</button>
+            <button class="btn" id="lastBtn" onclick="goPage(totalPages()-1)">Last &raquo;</button>
+          </div>
+        </div>
+        <table class="combos">
+          <thead><tr><th>#</th><th>Combination</th></tr></thead>
+          <tbody id="comboBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <p class="footer">
+    Xoshiro256** (seeded via SplitMix64): picks = partial Fisher-Yates(range(1,{POOL_MAX}), {K_PICKS}) with combined seed = seed×10⁷ + draw_serial.
+    Algorithm verified against independent reference sources — see <a href="/xoshiro_seed_backtest.html" style="color:#64748b">the K=21 seed-backtest page</a>.<br>
+    Base = the overall winner of the completed K=38 seed scan (0–1,000,000 seeds). No elimination passes applied — this
+    page currently shows the raw C({base['k']},6) universe in full.<br>
+    Formula-based only · Not financial advice · Loto 6 is random.
+  </p>
+</div>
+
+<script>
+function arraysEqual(a, b) {{
+  return a.length === b.length && a.every((v, i) => v === b[i]);
+}}
+function renderBadge(id, ok) {{
+  const el = document.getElementById(id);
+  el.className = 'verify-badge ' + (ok ? 'ok' : 'fail');
+  el.textContent = ok ? '✓ live-computed value matches' : '✗ MISMATCH — check console';
+}}
+function renderBalls(elId, nums, cls) {{
+  document.getElementById(elId).innerHTML = nums.map(n => '<span class="nb ' + cls + '">' + n + '</span>').join('');
+}}
+
+function xoshiroPredictRaw(seed, drawSerial, k) {{
+  const combined = (BigInt(seed) * 10000000n + BigInt(drawSerial)) & MASK64;
+  const s = seedState(combined);
+  const arr = Array.from({{length: {POOL_MAX}}}, (_, i) => i + 1);
+  const n = arr.length;
+  const order = [];
+  for (let i = n - 1; i >= n - k; i--) {{
+    const r = xoshiroNext(s);
+    const j = Number(r % BigInt(i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+    order.push(arr[i]);
+  }}
+  return order;
+}}
+function xoshiroPredict(seed, drawSerial, k) {{
+  return xoshiroPredictRaw(seed, drawSerial, k).slice().sort((a, b) => a - b);
+}}
+
+const KNOWN_BASE = {json.dumps(base['pool'])};
+const KNOWN_BASE_ORDERED = {json.dumps(base['poolOrdered'])};
+
+const liveBase = xoshiroPredict({SEED}, {TARGET_SERIAL}, {K_PICKS});
+const liveBaseOrdered = xoshiroPredictRaw({SEED}, {TARGET_SERIAL}, {K_PICKS});
+renderBalls('baseBalls', liveBase, 'b4');
+renderBalls('baseBallsOrdered', liveBaseOrdered, 'b4');
+renderBadge('badgeBase', arraysEqual(liveBase, KNOWN_BASE));
+renderBadge('badgeBaseOrdered', arraysEqual(liveBaseOrdered, KNOWN_BASE_ORDERED));
+if (!arraysEqual(liveBase, KNOWN_BASE)) console.error('Base mismatch', liveBase, KNOWN_BASE);
+if (!arraysEqual(liveBaseOrdered, KNOWN_BASE_ORDERED)) console.error('Base (generation order) mismatch', liveBaseOrdered, KNOWN_BASE_ORDERED);
+
+// ── Remaining combos: fetch, paginate, filter, download ─────────────────────
+const POOL_BASE = liveBase;
+let REMAINING = [];
+let filtered = [];
+const PAGE_SIZE = 100;
+let curPage = 0;
+// 3-state per-number filter: 'include' (must contain), 'exclude' (must not
+// contain), or absent (neutral, no constraint). Cycle on click: neutral ->
+// include -> exclude -> neutral. Both constraint types apply simultaneously.
+const numState = new Map();
+
+function loadCombos() {{
+  document.getElementById('loadPrompt').style.display = 'none';
+  document.getElementById('loadingMsg').style.display = 'block';
+  fetch('/xoshiro_elim_{TARGET_SERIAL}_combos.json')
+    .then(r => r.json())
+    .then(data => {{
+      REMAINING = data;
+      filtered = REMAINING;
+      document.getElementById('loadingMsg').style.display = 'none';
+      document.getElementById('comboUI').style.display = 'block';
+      buildFilterGrid();
+      render();
+    }})
+    .catch(err => {{
+      document.getElementById('loadingMsg').textContent = 'Failed to load combinations: ' + err;
+    }});
+}}
+
+function getBallColor(n) {{
+  if (n <= 7) return '#e74c3c';
+  if (n <= 13) return '#e67e22';
+  if (n <= 19) return '#2ecc71';
+  if (n <= 25) return '#3498db';
+  if (n <= 31) return '#9b59b6';
+  if (n <= 37) return '#16a085';
+  return '#e91e8c';
+}}
+function buildFilterGrid() {{
+  const grid = document.getElementById('filterGrid');
+  grid.innerHTML = POOL_BASE.map(n =>
+    '<button class="num-btn" data-n="' + n + '" style="background:' + getBallColor(n) + '" onclick="toggleNum(' + n + ')">' + n + '</button>'
+  ).join('');
+}}
+function toggleNum(n) {{
+  const cur = numState.get(n);
+  const next = cur === undefined ? 'include' : cur === 'include' ? 'exclude' : undefined;
+  if (next === undefined) numState.delete(n); else numState.set(n, next);
+  const btn = document.querySelector('.num-btn[data-n="' + n + '"]');
+  btn.classList.remove('include', 'exclude');
+  if (next) btn.classList.add(next);
+  applyFilter();
+}}
+function clearFilter() {{
+  numState.clear();
+  document.querySelectorAll('.num-btn.include, .num-btn.exclude').forEach(b => b.classList.remove('include', 'exclude'));
+  applyFilter();
+}}
+function applyFilter() {{
+  const includeNums = [...numState.entries()].filter(([n, s]) => s === 'include').map(([n]) => n);
+  const excludeNums = [...numState.entries()].filter(([n, s]) => s === 'exclude').map(([n]) => n);
+  filtered = (includeNums.length === 0 && excludeNums.length === 0) ? REMAINING : REMAINING.filter(c => {{
+    for (const n of includeNums) if (!c.includes(n)) return false;
+    for (const n of excludeNums) if (c.includes(n)) return false;
+    return true;
+  }});
+  const parts = [];
+  if (includeNums.length) parts.push('contain ' + includeNums.sort((a,b)=>a-b).join(', '));
+  if (excludeNums.length) parts.push('exclude ' + excludeNums.sort((a,b)=>a-b).join(', '));
+  document.getElementById('filterInfo').textContent = parts.length === 0 ? '' :
+    (filtered.length.toLocaleString() + ' / ' + REMAINING.length.toLocaleString() + ' combos ' + parts.join(' and '));
+  curPage = 0;
+  render();
+}}
+
+function totalPages() {{ return Math.max(1, Math.ceil(filtered.length / PAGE_SIZE)); }}
+function goPage(p) {{ curPage = Math.max(0, Math.min(p, totalPages()-1)); render(); }}
+function render() {{
+  const start = curPage * PAGE_SIZE;
+  const pageRows = filtered.slice(start, start + PAGE_SIZE);
+  document.getElementById('comboBody').innerHTML = pageRows.map((c, i) => {{
+    const balls = c.map(n => '<span class="nb" style="width:26px;height:26px;font-size:.72rem;background:' + getBallColor(n) + '33;color:#e2e8f0;border:1px solid ' + getBallColor(n) + '">' + n + '</span>').join('');
+    return '<tr><td>' + (start+i+1) + '</td><td><div class="balls">' + balls + '</div></td></tr>';
+  }}).join('');
+  document.getElementById('pageInfo').textContent =
+    filtered.length === 0 ? 'No combinations match' :
+    'Showing ' + (start+1) + '-' + Math.min(start+PAGE_SIZE, filtered.length) + ' of ' + filtered.length.toLocaleString() + ' (page ' + (curPage+1) + ' / ' + totalPages() + ')';
+  document.getElementById('firstBtn').disabled = curPage === 0;
+  document.getElementById('prevBtn').disabled = curPage === 0;
+  document.getElementById('nextBtn').disabled = curPage >= totalPages()-1;
+  document.getElementById('lastBtn').disabled = curPage >= totalPages()-1;
+}}
+function downloadCSV() {{
+  const rows = filtered.length > 0 ? filtered : REMAINING;
+  let csv = 'n1,n2,n3,n4,n5,n6\\n' + rows.map(c => c.join(',')).join('\\n');
+  const blob = new Blob([csv], {{type: 'text/csv'}});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'loto6_draw_{TARGET_SERIAL}_xoshiro_base_combos.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}}
+</script>
+</body>
+</html>"""
+
+with open(HTML_OUT, 'w', encoding='utf-8') as f:
+    f.write(page)
+print(f"Wrote {HTML_OUT} ({len(page)//1024} KB)")

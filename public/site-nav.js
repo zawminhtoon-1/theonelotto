@@ -82,6 +82,7 @@
             '<a href="/pcg64_seed_scan_k38.html">🎲 PCG64 K=38, seeds ±5,000,000 (2050 draws)</a>' +
             '<div class="nav-divider"></div>' +
             '<div class="nav-dd-label">Predictions</div>' +
+            '<a href="/xoshiro_elim_2135.html">✂️ Draw #2135 Elimination (Base only)</a>' +
             '<details class="nav-archive"><summary>📦 Past draws (#2128–#2134)</summary>' +
               '<a href="/xoshiro_elim_2128.html">✂️ Draw #2128 Elimination</a>' +
               '<a href="/xoshiro_elim_2129.html">✂️ Draw #2129 Elimination</a>' +
