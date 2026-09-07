@@ -91,7 +91,7 @@ tr.upcoming-row td:first-child{font-weight:700;color:#38bdf8}
 
 <script src="/site-nav.js"></script>
 <div class="wrap">
-  <h1>🧪 Base Pool Construction Review — Last 1000 Draws (#1133–2132)</h1>
+  <h1>🧪 Base Pool Construction Review — Last 1000 Draws (#1135–2134)</h1>
   <p class="subtitle">Narrower than the full 5-pass elimination backtest — just the Base-pool-construction stage, with generation-order detail for both inputs.</p>
 
   <div class="note">
@@ -110,9 +110,9 @@ tr.upcoming-row td:first-child{font-weight:700;color:#38bdf8}
     that method at all.</p>
     <p><strong style="color:#e2e8f0">This is Base construction only</strong> &mdash; it does NOT run the elimination passes
     (see <a href="/xoshiro_elim_backtest100.html" style="color:#a78bfa">the full 5-pass elimination backtest</a> for that). Base is
-    a fixed ~30-number pool, so by pure combinatorics only about C(29,6)/C(43,6) &asymp; 7.8%
+    a fixed ~31-number pool, so by pure combinatorics only about C(29,6)/C(43,6) &asymp; 7.8%
     of possible 6-number combos could ever be fully contained in it &mdash; before any elimination logic runs. Full run took
-    2604s (43.4 min) for all 1000 draws.</p>
+    1960s (32.7 min) for all 1000 draws.</p>
   </div>
 
   <div class="section">
@@ -121,17 +121,17 @@ tr.upcoming-row td:first-child{font-weight:700;color:#38bdf8}
       <div class="stat-card">
         <div class="lbl">Draws reviewed</div>
         <div class="val">1000</div>
-        <div class="sub">#1133–2132</div>
+        <div class="sub">#1135–2134</div>
       </div>
       <div class="stat-card hit">
         <div class="lbl">All 6 in Base</div>
-        <div class="val">113</div>
-        <div class="sub">11.3% of draws</div>
+        <div class="val">112</div>
+        <div class="sub">11.2% of draws</div>
       </div>
       <div class="stat-card">
         <div class="lbl">Partial (1–5 in Base)</div>
-        <div class="val">887</div>
-        <div class="sub">88.7% of draws</div>
+        <div class="val">888</div>
+        <div class="sub">88.8% of draws</div>
       </div>
       <div class="stat-card neverbase">
         <div class="lbl">Zero in Base</div>
@@ -146,12 +146,12 @@ tr.upcoming-row td:first-child{font-weight:700;color:#38bdf8}
     <p class="desc">How many of a draw's 6 actual numbers landed in that draw's own walk-forward Base pool.</p>
     <div class="funnel"><div class="funnel-row">
         <div class="funnel-lbl">6/6 in Base</div>
-        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:11.3%;background:#22c55e"></div></div>
-        <div class="funnel-val">113</div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:11.2%;background:#22c55e"></div></div>
+        <div class="funnel-val">112</div>
       </div><div class="funnel-row">
         <div class="funnel-lbl">5/6 in Base</div>
-        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:27.9%;background:#4ade80"></div></div>
-        <div class="funnel-val">279</div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:28.0%;background:#4ade80"></div></div>
+        <div class="funnel-val">280</div>
       </div><div class="funnel-row">
         <div class="funnel-lbl">4/6 in Base</div>
         <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:33.6%;background:#a3e635"></div></div>
@@ -182,8 +182,8 @@ tr.upcoming-row td:first-child{font-weight:700;color:#38bdf8}
     intersection requirement.</p>
     <div class="funnel"><div class="funnel-row">
         <div class="funnel-lbl" style="width:230px">Base (Modular Cycle ∩ xoshiro)</div>
-        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:21.9%;background:#38bdf8"></div></div>
-        <div class="funnel-val">113 <span style="color:#64748b;font-weight:400">(11.3%)</span></div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:21.7%;background:#38bdf8"></div></div>
+        <div class="funnel-val">112 <span style="color:#64748b;font-weight:400">(11.2%)</span></div>
       </div><div class="funnel-row">
         <div class="funnel-lbl" style="width:230px">xoshiro K=38 alone</div>
         <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:100.0%;background:#a78bfa"></div></div>
@@ -198,8 +198,8 @@ tr.upcoming-row td:first-child{font-weight:700;color:#38bdf8}
       6/6 on 515 of 1000 draws (51.5%) &mdash; over half the time, since a
       38-number pool out of 43 leaves little room to miss. Modular Cycle K=33 alone hits 201
       (20.1%). Requiring BOTH (the actual Base pool this whole page analyzes) drops that to just
-      113 (11.3%) &mdash; 402 fewer 6/6 draws than xoshiro alone would
-      have covered, and 88 fewer than Modular Cycle alone. The intersection buys a dramatically smaller
+      112 (11.2%) &mdash; 403 fewer 6/6 draws than xoshiro alone would
+      have covered, and 89 fewer than Modular Cycle alone. The intersection buys a dramatically smaller
       elimination universe (~29-30 numbers vs. 33 or 38) at the cost of roughly 78% of the
       coverage xoshiro alone would provide, and 44% of what Modular Cycle alone would provide
       &mdash; the classic precision/recall tradeoff of narrowing a candidate pool.</p>
@@ -245,12 +245,12 @@ tr.upcoming-row td:first-child{font-weight:700;color:#38bdf8}
       </div></div>
 
     <h3 style="font-size:.85rem;color:#c4b5fd;margin-bottom:8px">Exact-index frequency ranking</h3>
-    <p class="desc">5,366 hit instances (vs. 4,158 for the Base-intersection analysis) &mdash; top 15 by hit
+    <p class="desc">5,366 hit instances (vs. 4,157 for the Base-intersection analysis) &mdash; top 15 by hit
     count, full list below.</p>
     <div class="note" style="border-color:#fbbf2455;background:#1c1608;margin-bottom:16px">
       <p style="color:#fbbf24"><strong>⚠️ Still not statistically significant.</strong> Chi-square goodness-of-fit against a
-      uniform distribution: <strong style="color:#f1f5f9">&chi;&sup2;=40.41, df=37, p=0.322</strong>
-      (expected count per index &asymp;141.2). Despite 1,208
+      uniform distribution: <strong style="color:#f1f5f9">&chi;&sup2;=41.91, df=37, p=0.266</strong>
+      (expected count per index &asymp;141.2). Despite 1,209
       more hit instances than the smaller Base-intersection sample, the larger sample size did NOT surface a hidden pattern
       &mdash; the p-value stays comfortably in "consistent with uniform" territory. More data made the ranking more stable, not
       more meaningful.</p>
@@ -258,33 +258,33 @@ tr.upcoming-row td:first-child{font-weight:700;color:#38bdf8}
     <div class="tbl-wrap" style="margin-bottom:10px">
       <table class="results">
         <thead><tr><th class="tc">Index</th><th class="tc">Hits</th><th class="tc">%</th><th class="tc">vs. expected</th></tr></thead>
-        <tbody><tr><td class="tc">#10</td><td class="tc">170</td><td class="tc">4.09%</td>
-      <td class="tc" style="color:#4ade80">+20.4%</td></tr><tr><td class="tc">#37</td><td class="tc">161</td><td class="tc">3.87%</td>
+        <tbody><tr><td class="tc">#10</td><td class="tc">171</td><td class="tc">4.11%</td>
+      <td class="tc" style="color:#4ade80">+21.1%</td></tr><tr><td class="tc">#37</td><td class="tc">162</td><td class="tc">3.90%</td>
+      <td class="tc" style="color:#4ade80">+14.7%</td></tr><tr><td class="tc">#9</td><td class="tc">161</td><td class="tc">3.87%</td>
       <td class="tc" style="color:#4ade80">+14.0%</td></tr><tr><td class="tc">#4</td><td class="tc">159</td><td class="tc">3.82%</td>
-      <td class="tc" style="color:#4ade80">+12.6%</td></tr><tr><td class="tc">#9</td><td class="tc">159</td><td class="tc">3.82%</td>
       <td class="tc" style="color:#4ade80">+12.6%</td></tr><tr><td class="tc">#1</td><td class="tc">158</td><td class="tc">3.80%</td>
-      <td class="tc" style="color:#4ade80">+11.9%</td></tr><tr><td class="tc">#31</td><td class="tc">155</td><td class="tc">3.73%</td>
-      <td class="tc" style="color:#4ade80">+9.8%</td></tr><tr><td class="tc">#23</td><td class="tc">154</td><td class="tc">3.70%</td>
-      <td class="tc" style="color:#4ade80">+9.1%</td></tr><tr><td class="tc">#2</td><td class="tc">153</td><td class="tc">3.68%</td>
-      <td class="tc" style="color:#4ade80">+8.3%</td></tr><tr><td class="tc">#3</td><td class="tc">151</td><td class="tc">3.63%</td>
-      <td class="tc" style="color:#4ade80">+6.9%</td></tr><tr><td class="tc">#20</td><td class="tc">148</td><td class="tc">3.56%</td>
-      <td class="tc" style="color:#4ade80">+4.8%</td></tr><tr><td class="tc">#25</td><td class="tc">148</td><td class="tc">3.56%</td>
-      <td class="tc" style="color:#4ade80">+4.8%</td></tr><tr><td class="tc">#5</td><td class="tc">147</td><td class="tc">3.54%</td>
-      <td class="tc" style="color:#4ade80">+4.1%</td></tr><tr><td class="tc">#17</td><td class="tc">147</td><td class="tc">3.54%</td>
-      <td class="tc" style="color:#4ade80">+4.1%</td></tr><tr><td class="tc">#18</td><td class="tc">146</td><td class="tc">3.51%</td>
-      <td class="tc" style="color:#4ade80">+3.4%</td></tr><tr><td class="tc">#24</td><td class="tc">146</td><td class="tc">3.51%</td>
+      <td class="tc" style="color:#4ade80">+11.9%</td></tr><tr><td class="tc">#2</td><td class="tc">154</td><td class="tc">3.70%</td>
+      <td class="tc" style="color:#4ade80">+9.1%</td></tr><tr><td class="tc">#23</td><td class="tc">154</td><td class="tc">3.70%</td>
+      <td class="tc" style="color:#4ade80">+9.1%</td></tr><tr><td class="tc">#31</td><td class="tc">154</td><td class="tc">3.70%</td>
+      <td class="tc" style="color:#4ade80">+9.1%</td></tr><tr><td class="tc">#3</td><td class="tc">149</td><td class="tc">3.58%</td>
+      <td class="tc" style="color:#4ade80">+5.5%</td></tr><tr><td class="tc">#18</td><td class="tc">148</td><td class="tc">3.56%</td>
+      <td class="tc" style="color:#4ade80">+4.8%</td></tr><tr><td class="tc">#20</td><td class="tc">148</td><td class="tc">3.56%</td>
+      <td class="tc" style="color:#4ade80">+4.8%</td></tr><tr><td class="tc">#17</td><td class="tc">147</td><td class="tc">3.54%</td>
+      <td class="tc" style="color:#4ade80">+4.1%</td></tr><tr><td class="tc">#24</td><td class="tc">147</td><td class="tc">3.54%</td>
+      <td class="tc" style="color:#4ade80">+4.1%</td></tr><tr><td class="tc">#25</td><td class="tc">147</td><td class="tc">3.54%</td>
+      <td class="tc" style="color:#4ade80">+4.1%</td></tr><tr><td class="tc">#5</td><td class="tc">146</td><td class="tc">3.51%</td>
       <td class="tc" style="color:#4ade80">+3.4%</td></tr></tbody>
       </table>
     </div>
     <details style="margin-bottom:22px">
       <summary style="cursor:pointer;color:#94a3b8;font-size:.78rem;padding:6px 0">Show full ranked list (all 38 indices)</summary>
-      <p style="font-size:.75rem;color:#94a3b8;line-height:1.8;margin-top:8px;font-family:monospace">#10(170) #37(161) #4(159) #9(159) #1(158) #31(155) #23(154) #2(153) #3(151) #20(148) #25(148) #5(147) #17(147) #18(146) #24(146) #34(145) #13(144) #16(144) #36(143) #11(138) #8(137) #32(137) #38(137) #7(136) #14(136) #35(136) #12(134) #6(133) #15(133) #27(133) #30(132) #33(130) #22(127) #26(125) #19(124) #21(122) #29(122) #28(116)</p>
+      <p style="font-size:.75rem;color:#94a3b8;line-height:1.8;margin-top:8px;font-family:monospace">#10(171) #37(162) #9(161) #4(159) #1(158) #2(154) #23(154) #31(154) #3(149) #18(148) #20(148) #17(147) #24(147) #25(147) #5(146) #34(145) #13(144) #16(144) #36(143) #38(138) #8(137) #11(137) #7(136) #14(136) #32(136) #35(136) #12(134) #6(133) #15(133) #27(133) #30(131) #33(130) #22(127) #26(125) #19(123) #21(122) #29(122) #28(116)</p>
     </details>
 
     <h3 style="font-size:.85rem;color:#c4b5fd;margin-bottom:8px">Repeat-pattern check at 6/6</h3>
     <div class="note" style="margin-bottom:16px">
       <p><strong style="color:#e2e8f0">Still zero repeats, exactly as expected.</strong> 515 draws hit 6/6 on
-      xoshiro standalone (vs. 113 for the Base intersection) &mdash; 515 distinct 6-index sets,
+      xoshiro standalone (vs. 112 for the Base intersection) &mdash; 515 distinct 6-index sets,
       <strong style="color:#f1f5f9">0 repeats</strong>. Universe: C(38,6) =
       2,760,681. Expected collisions under pure chance (birthday-paradox math):
       <strong style="color:#f1f5f9">0.0479</strong>. Even with 515 draws
@@ -300,6 +300,10 @@ tr.upcoming-row td:first-child{font-weight:700;color:#38bdf8}
       <table class="results">
         <thead><tr><th class="tc">Draw</th><th class="tc">Date</th><th>xoshiro index-set</th></tr></thead>
         <tbody><tr>
+  <td class="tc">#2133</td>
+  <td class="tc">2026-08-31</td>
+  <td style="color:#c4b5fd;font-family:monospace;font-size:.8rem">{2, 9, 17, 18, 24, 38}</td>
+</tr><tr>
   <td class="tc">#2132</td>
   <td class="tc">2026-08-27</td>
   <td style="color:#c4b5fd;font-family:monospace;font-size:.8rem">{4, 6, 10, 15, 20, 35}</td>
@@ -2355,10 +2359,6 @@ tr.upcoming-row td:first-child{font-weight:700;color:#38bdf8}
   <td class="tc">#1135</td>
   <td class="tc">2016-12-26</td>
   <td style="color:#c4b5fd;font-family:monospace;font-size:.8rem">{2, 16, 21, 23, 27, 32}</td>
-</tr><tr>
-  <td class="tc">#1133</td>
-  <td class="tc">2016-12-19</td>
-  <td style="color:#c4b5fd;font-family:monospace;font-size:.8rem">{3, 5, 11, 17, 30, 32}</td>
 </tr></tbody>
       </table>
     </div>
@@ -2380,30 +2380,30 @@ tr.upcoming-row td:first-child{font-weight:700;color:#38bdf8}
       </div>
       <div class="stat-card">
         <div class="lbl">In both (&rarr; in Base)</div>
-        <div class="val">4,158</div>
+        <div class="val">4,157</div>
         <div class="sub">69.3% of all instances</div>
       </div>
       <div class="stat-card">
         <div class="lbl">In neither</div>
-        <div class="val">157</div>
+        <div class="val">156</div>
         <div class="sub">2.6% of all instances</div>
       </div>
       <div class="stat-card">
         <div class="lbl">MC only (xoshiro missed it)</div>
-        <div class="val">477</div>
+        <div class="val">478</div>
         <div class="sub">8.0% of all instances</div>
       </div>
       <div class="stat-card">
         <div class="lbl">xoshiro only (MC missed it)</div>
-        <div class="val">1,208</div>
-        <div class="sub">20.1% of all instances</div>
+        <div class="val">1,209</div>
+        <div class="sub">20.2% of all instances</div>
       </div>
     </div>
   </div>
 
   <div class="section">
     <h2>Hit-index distribution</h2>
-    <p class="desc">Across all 4,158 hit numbers found in this window (numbers present in BOTH picks, i.e. actually
+    <p class="desc">Across all 4,157 hit numbers found in this window (numbers present in BOTH picks, i.e. actually
     inside Base), where did each land in its method's own generation order? Bucketed into width-5 ranges &mdash; a flat
     distribution means hits land roughly evenly across the whole K; a skew toward low ranges means hits tend to be
     high-confidence/early picks for that method.</p>
@@ -2412,31 +2412,31 @@ tr.upcoming-row td:first-child{font-weight:700;color:#38bdf8}
       <div class="funnel"><div class="funnel-row">
         <div class="funnel-lbl">#1–5</div>
         <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:100.0%;background:#38bdf8"></div></div>
-        <div class="funnel-val">665 <span style="color:#64748b;font-weight:400">(16.0%)</span></div>
+        <div class="funnel-val">664 <span style="color:#64748b;font-weight:400">(16.0%)</span></div>
       </div><div class="funnel-row">
         <div class="funnel-lbl">#6–10</div>
-        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:93.7%;background:#38bdf8"></div></div>
-        <div class="funnel-val">623 <span style="color:#64748b;font-weight:400">(15.0%)</span></div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:93.4%;background:#38bdf8"></div></div>
+        <div class="funnel-val">620 <span style="color:#64748b;font-weight:400">(14.9%)</span></div>
       </div><div class="funnel-row">
         <div class="funnel-lbl">#11–15</div>
-        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:96.7%;background:#38bdf8"></div></div>
-        <div class="funnel-val">643 <span style="color:#64748b;font-weight:400">(15.5%)</span></div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:97.6%;background:#38bdf8"></div></div>
+        <div class="funnel-val">648 <span style="color:#64748b;font-weight:400">(15.6%)</span></div>
       </div><div class="funnel-row">
         <div class="funnel-lbl">#16–20</div>
-        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:92.8%;background:#38bdf8"></div></div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:92.9%;background:#38bdf8"></div></div>
         <div class="funnel-val">617 <span style="color:#64748b;font-weight:400">(14.8%)</span></div>
       </div><div class="funnel-row">
         <div class="funnel-lbl">#21–25</div>
         <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:91.4%;background:#38bdf8"></div></div>
-        <div class="funnel-val">608 <span style="color:#64748b;font-weight:400">(14.6%)</span></div>
+        <div class="funnel-val">607 <span style="color:#64748b;font-weight:400">(14.6%)</span></div>
       </div><div class="funnel-row">
         <div class="funnel-lbl">#26–30</div>
-        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:90.7%;background:#38bdf8"></div></div>
-        <div class="funnel-val">603 <span style="color:#64748b;font-weight:400">(14.5%)</span></div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:90.5%;background:#38bdf8"></div></div>
+        <div class="funnel-val">601 <span style="color:#64748b;font-weight:400">(14.5%)</span></div>
       </div><div class="funnel-row">
         <div class="funnel-lbl">#31–33</div>
-        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:60.0%;background:#38bdf8"></div></div>
-        <div class="funnel-val">399 <span style="color:#64748b;font-weight:400">(9.6%)</span></div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:60.2%;background:#38bdf8"></div></div>
+        <div class="funnel-val">400 <span style="color:#64748b;font-weight:400">(9.6%)</span></div>
       </div></div>
     </div>
     <div>
@@ -2444,35 +2444,35 @@ tr.upcoming-row td:first-child{font-weight:700;color:#38bdf8}
       <div class="funnel"><div class="funnel-row">
         <div class="funnel-lbl">#1–5</div>
         <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:100.0%;background:#a78bfa"></div></div>
-        <div class="funnel-val">598 <span style="color:#64748b;font-weight:400">(14.4%)</span></div>
+        <div class="funnel-val">596 <span style="color:#64748b;font-weight:400">(14.3%)</span></div>
       </div><div class="funnel-row">
         <div class="funnel-lbl">#6–10</div>
-        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:97.2%;background:#a78bfa"></div></div>
-        <div class="funnel-val">581 <span style="color:#64748b;font-weight:400">(14.0%)</span></div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:98.0%;background:#a78bfa"></div></div>
+        <div class="funnel-val">584 <span style="color:#64748b;font-weight:400">(14.0%)</span></div>
       </div><div class="funnel-row">
         <div class="funnel-lbl">#11–15</div>
-        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:88.8%;background:#a78bfa"></div></div>
-        <div class="funnel-val">531 <span style="color:#64748b;font-weight:400">(12.8%)</span></div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:88.9%;background:#a78bfa"></div></div>
+        <div class="funnel-val">530 <span style="color:#64748b;font-weight:400">(12.7%)</span></div>
       </div><div class="funnel-row">
         <div class="funnel-lbl">#16–20</div>
-        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:93.6%;background:#a78bfa"></div></div>
-        <div class="funnel-val">560 <span style="color:#64748b;font-weight:400">(13.5%)</span></div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:94.1%;background:#a78bfa"></div></div>
+        <div class="funnel-val">561 <span style="color:#64748b;font-weight:400">(13.5%)</span></div>
       </div><div class="funnel-row">
         <div class="funnel-lbl">#21–25</div>
-        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:87.0%;background:#a78bfa"></div></div>
-        <div class="funnel-val">520 <span style="color:#64748b;font-weight:400">(12.5%)</span></div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:87.1%;background:#a78bfa"></div></div>
+        <div class="funnel-val">519 <span style="color:#64748b;font-weight:400">(12.5%)</span></div>
       </div><div class="funnel-row">
         <div class="funnel-lbl">#26–30</div>
-        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:82.1%;background:#a78bfa"></div></div>
-        <div class="funnel-val">491 <span style="color:#64748b;font-weight:400">(11.8%)</span></div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:82.2%;background:#a78bfa"></div></div>
+        <div class="funnel-val">490 <span style="color:#64748b;font-weight:400">(11.8%)</span></div>
       </div><div class="funnel-row">
         <div class="funnel-lbl">#31–35</div>
         <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:91.8%;background:#a78bfa"></div></div>
-        <div class="funnel-val">549 <span style="color:#64748b;font-weight:400">(13.2%)</span></div>
+        <div class="funnel-val">547 <span style="color:#64748b;font-weight:400">(13.2%)</span></div>
       </div><div class="funnel-row">
         <div class="funnel-lbl">#36–38</div>
-        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:54.8%;background:#a78bfa"></div></div>
-        <div class="funnel-val">328 <span style="color:#64748b;font-weight:400">(7.9%)</span></div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:55.4%;background:#a78bfa"></div></div>
+        <div class="funnel-val">330 <span style="color:#64748b;font-weight:400">(7.9%)</span></div>
       </div></div>
     </div>
   </div>
@@ -2483,8 +2483,8 @@ tr.upcoming-row td:first-child{font-weight:700;color:#38bdf8}
     number landed there, for each method separately.</p>
     <div class="note" style="border-color:#fbbf2455;background:#1c1608;margin-bottom:16px">
       <p style="color:#fbbf24"><strong>⚠️ Not statistically significant.</strong> A chi-square goodness-of-fit test against a
-      uniform distribution gives <strong style="color:#f1f5f9">MC: &chi;&sup2;=27.02, df=32, p=0.72</strong>
-      and <strong style="color:#f1f5f9">XO: &chi;&sup2;=35.78, df=37, p=0.53</strong> &mdash; both far
+      uniform distribution gives <strong style="color:#f1f5f9">MC: &chi;&sup2;=27.47, df=32, p=0.70</strong>
+      and <strong style="color:#f1f5f9">XO: &chi;&sup2;=37.34, df=37, p=0.45</strong> &mdash; both far
       above the p&lt;0.05 threshold. The spread between the top and bottom index below is fully consistent with random sampling
       noise around a flat distribution (expected count per index: MC &asymp;126.0, XO &asymp;109.4), not a
       real preferred position. This ranking would likely reshuffle noticeably on a different 1000-draw window &mdash; treat it as
@@ -2495,54 +2495,54 @@ tr.upcoming-row td:first-child{font-weight:700;color:#38bdf8}
     <div class="tbl-wrap" style="margin-bottom:10px">
       <table class="results">
         <thead><tr><th class="tc">Index</th><th class="tc">Hits</th><th class="tc">%</th><th class="tc">vs. expected</th></tr></thead>
-        <tbody><tr><td class="tc">#3</td><td class="tc">144</td><td class="tc">3.46%</td>
-      <td class="tc" style="color:#4ade80">+14.3%</td></tr><tr><td class="tc">#5</td><td class="tc">143</td><td class="tc">3.44%</td>
-      <td class="tc" style="color:#4ade80">+13.5%</td></tr><tr><td class="tc">#18</td><td class="tc">143</td><td class="tc">3.44%</td>
-      <td class="tc" style="color:#4ade80">+13.5%</td></tr><tr><td class="tc">#16</td><td class="tc">140</td><td class="tc">3.37%</td>
-      <td class="tc" style="color:#4ade80">+11.1%</td></tr><tr><td class="tc">#11</td><td class="tc">138</td><td class="tc">3.32%</td>
-      <td class="tc" style="color:#4ade80">+9.5%</td></tr><tr><td class="tc">#32</td><td class="tc">137</td><td class="tc">3.29%</td>
-      <td class="tc" style="color:#4ade80">+8.7%</td></tr><tr><td class="tc">#7</td><td class="tc">133</td><td class="tc">3.20%</td>
-      <td class="tc" style="color:#4ade80">+5.6%</td></tr><tr><td class="tc">#14</td><td class="tc">133</td><td class="tc">3.20%</td>
-      <td class="tc" style="color:#4ade80">+5.6%</td></tr><tr><td class="tc">#15</td><td class="tc">133</td><td class="tc">3.20%</td>
+        <tbody><tr><td class="tc">#18</td><td class="tc">144</td><td class="tc">3.46%</td>
+      <td class="tc" style="color:#4ade80">+14.3%</td></tr><tr><td class="tc">#3</td><td class="tc">143</td><td class="tc">3.44%</td>
+      <td class="tc" style="color:#4ade80">+13.5%</td></tr><tr><td class="tc">#5</td><td class="tc">143</td><td class="tc">3.44%</td>
+      <td class="tc" style="color:#4ade80">+13.5%</td></tr><tr><td class="tc">#11</td><td class="tc">140</td><td class="tc">3.37%</td>
+      <td class="tc" style="color:#4ade80">+11.1%</td></tr><tr><td class="tc">#16</td><td class="tc">140</td><td class="tc">3.37%</td>
+      <td class="tc" style="color:#4ade80">+11.1%</td></tr><tr><td class="tc">#32</td><td class="tc">137</td><td class="tc">3.30%</td>
+      <td class="tc" style="color:#4ade80">+8.8%</td></tr><tr><td class="tc">#14</td><td class="tc">134</td><td class="tc">3.22%</td>
+      <td class="tc" style="color:#4ade80">+6.4%</td></tr><tr><td class="tc">#15</td><td class="tc">133</td><td class="tc">3.20%</td>
       <td class="tc" style="color:#4ade80">+5.6%</td></tr><tr><td class="tc">#33</td><td class="tc">133</td><td class="tc">3.20%</td>
-      <td class="tc" style="color:#4ade80">+5.6%</td></tr><tr><td class="tc">#2</td><td class="tc">130</td><td class="tc">3.13%</td>
+      <td class="tc" style="color:#4ade80">+5.6%</td></tr><tr><td class="tc">#7</td><td class="tc">131</td><td class="tc">3.15%</td>
+      <td class="tc" style="color:#4ade80">+4.0%</td></tr><tr><td class="tc">#2</td><td class="tc">130</td><td class="tc">3.13%</td>
       <td class="tc" style="color:#4ade80">+3.2%</td></tr><tr><td class="tc">#13</td><td class="tc">130</td><td class="tc">3.13%</td>
-      <td class="tc" style="color:#4ade80">+3.2%</td></tr><tr><td class="tc">#31</td><td class="tc">129</td><td class="tc">3.10%</td>
-      <td class="tc" style="color:#4ade80">+2.4%</td></tr><tr><td class="tc">#6</td><td class="tc">128</td><td class="tc">3.08%</td>
+      <td class="tc" style="color:#4ade80">+3.2%</td></tr><tr><td class="tc">#31</td><td class="tc">130</td><td class="tc">3.13%</td>
+      <td class="tc" style="color:#4ade80">+3.2%</td></tr><tr><td class="tc">#6</td><td class="tc">128</td><td class="tc">3.08%</td>
       <td class="tc" style="color:#4ade80">+1.6%</td></tr><tr><td class="tc">#21</td><td class="tc">128</td><td class="tc">3.08%</td>
       <td class="tc" style="color:#4ade80">+1.6%</td></tr></tbody>
       </table>
     </div>
     <details style="margin-bottom:22px">
       <summary style="cursor:pointer;color:#94a3b8;font-size:.78rem;padding:6px 0">Show full ranked list (all 33 indices)</summary>
-      <p style="font-size:.75rem;color:#94a3b8;line-height:1.8;margin-top:8px;font-family:monospace">#3(144) #5(143) #18(143) #16(140) #11(138) #32(137) #7(133) #14(133) #15(133) #33(133) #2(130) #13(130) #31(129) #6(128) #21(128) #25(128) #9(127) #29(125) #1(124) #4(124) #8(124) #26(124) #30(124) #23(121) #28(120) #20(118) #22(117) #24(114) #10(111) #27(110) #12(109) #19(109) #17(107)</p>
+      <p style="font-size:.75rem;color:#94a3b8;line-height:1.8;margin-top:8px;font-family:monospace">#18(144) #3(143) #5(143) #11(140) #16(140) #32(137) #14(134) #15(133) #33(133) #7(131) #2(130) #13(130) #31(130) #6(128) #21(128) #25(128) #9(127) #1(124) #4(124) #26(124) #30(124) #8(123) #29(123) #23(121) #28(120) #20(118) #22(116) #24(114) #10(111) #12(111) #27(110) #19(109) #17(106)</p>
     </details>
 
     <h3 style="font-size:.85rem;color:#c4b5fd;margin-bottom:8px">xoshiro K=38 &mdash; top 15</h3>
     <div class="tbl-wrap" style="margin-bottom:10px">
       <table class="results">
         <thead><tr><th class="tc">Index</th><th class="tc">Hits</th><th class="tc">%</th><th class="tc">vs. expected</th></tr></thead>
-        <tbody><tr><td class="tc">#9</td><td class="tc">135</td><td class="tc">3.25%</td>
-      <td class="tc" style="color:#4ade80">+23.4%</td></tr><tr><td class="tc">#10</td><td class="tc">131</td><td class="tc">3.15%</td>
-      <td class="tc" style="color:#4ade80">+19.7%</td></tr><tr><td class="tc">#4</td><td class="tc">125</td><td class="tc">3.01%</td>
-      <td class="tc" style="color:#4ade80">+14.2%</td></tr><tr><td class="tc">#1</td><td class="tc">122</td><td class="tc">2.93%</td>
-      <td class="tc" style="color:#4ade80">+11.5%</td></tr><tr><td class="tc">#2</td><td class="tc">120</td><td class="tc">2.89%</td>
-      <td class="tc" style="color:#4ade80">+9.7%</td></tr><tr><td class="tc">#20</td><td class="tc">118</td><td class="tc">2.84%</td>
-      <td class="tc" style="color:#4ade80">+7.8%</td></tr><tr><td class="tc">#16</td><td class="tc">117</td><td class="tc">2.81%</td>
-      <td class="tc" style="color:#4ade80">+6.9%</td></tr><tr><td class="tc">#31</td><td class="tc">117</td><td class="tc">2.81%</td>
-      <td class="tc" style="color:#4ade80">+6.9%</td></tr><tr><td class="tc">#3</td><td class="tc">116</td><td class="tc">2.79%</td>
-      <td class="tc" style="color:#4ade80">+6.0%</td></tr><tr><td class="tc">#37</td><td class="tc">116</td><td class="tc">2.79%</td>
-      <td class="tc" style="color:#4ade80">+6.0%</td></tr><tr><td class="tc">#5</td><td class="tc">115</td><td class="tc">2.77%</td>
-      <td class="tc" style="color:#4ade80">+5.1%</td></tr><tr><td class="tc">#13</td><td class="tc">114</td><td class="tc">2.74%</td>
-      <td class="tc" style="color:#4ade80">+4.2%</td></tr><tr><td class="tc">#11</td><td class="tc">113</td><td class="tc">2.72%</td>
-      <td class="tc" style="color:#4ade80">+3.3%</td></tr><tr><td class="tc">#18</td><td class="tc">113</td><td class="tc">2.72%</td>
-      <td class="tc" style="color:#4ade80">+3.3%</td></tr><tr><td class="tc">#23</td><td class="tc">113</td><td class="tc">2.72%</td>
-      <td class="tc" style="color:#4ade80">+3.3%</td></tr></tbody>
+        <tbody><tr><td class="tc">#9</td><td class="tc">137</td><td class="tc">3.30%</td>
+      <td class="tc" style="color:#4ade80">+25.2%</td></tr><tr><td class="tc">#10</td><td class="tc">132</td><td class="tc">3.18%</td>
+      <td class="tc" style="color:#4ade80">+20.7%</td></tr><tr><td class="tc">#4</td><td class="tc">125</td><td class="tc">3.01%</td>
+      <td class="tc" style="color:#4ade80">+14.3%</td></tr><tr><td class="tc">#1</td><td class="tc">122</td><td class="tc">2.93%</td>
+      <td class="tc" style="color:#4ade80">+11.5%</td></tr><tr><td class="tc">#2</td><td class="tc">121</td><td class="tc">2.91%</td>
+      <td class="tc" style="color:#4ade80">+10.6%</td></tr><tr><td class="tc">#20</td><td class="tc">118</td><td class="tc">2.84%</td>
+      <td class="tc" style="color:#4ade80">+7.9%</td></tr><tr><td class="tc">#16</td><td class="tc">117</td><td class="tc">2.81%</td>
+      <td class="tc" style="color:#4ade80">+7.0%</td></tr><tr><td class="tc">#37</td><td class="tc">117</td><td class="tc">2.81%</td>
+      <td class="tc" style="color:#4ade80">+7.0%</td></tr><tr><td class="tc">#31</td><td class="tc">116</td><td class="tc">2.79%</td>
+      <td class="tc" style="color:#4ade80">+6.0%</td></tr><tr><td class="tc">#18</td><td class="tc">115</td><td class="tc">2.77%</td>
+      <td class="tc" style="color:#4ade80">+5.1%</td></tr><tr><td class="tc">#3</td><td class="tc">114</td><td class="tc">2.74%</td>
+      <td class="tc" style="color:#4ade80">+4.2%</td></tr><tr><td class="tc">#5</td><td class="tc">114</td><td class="tc">2.74%</td>
+      <td class="tc" style="color:#4ade80">+4.2%</td></tr><tr><td class="tc">#13</td><td class="tc">114</td><td class="tc">2.74%</td>
+      <td class="tc" style="color:#4ade80">+4.2%</td></tr><tr><td class="tc">#23</td><td class="tc">113</td><td class="tc">2.72%</td>
+      <td class="tc" style="color:#4ade80">+3.3%</td></tr><tr><td class="tc">#11</td><td class="tc">112</td><td class="tc">2.69%</td>
+      <td class="tc" style="color:#4ade80">+2.4%</td></tr></tbody>
       </table>
     </div>
     <details>
       <summary style="cursor:pointer;color:#94a3b8;font-size:.78rem;padding:6px 0">Show full ranked list (all 38 indices)</summary>
-      <p style="font-size:.75rem;color:#94a3b8;line-height:1.8;margin-top:8px;font-family:monospace">#9(135) #10(131) #4(125) #1(122) #2(120) #20(118) #16(117) #31(117) #3(116) #37(116) #5(115) #13(114) #11(113) #18(113) #23(113) #17(112) #25(112) #35(112) #7(111) #32(110) #34(110) #36(110) #24(109) #27(104) #6(103) #12(103) #14(103) #30(102) #38(102) #8(101) #26(101) #19(100) #33(100) #15(98) #21(97) #29(93) #28(91) #22(89)</p>
+      <p style="font-size:.75rem;color:#94a3b8;line-height:1.8;margin-top:8px;font-family:monospace">#9(137) #10(132) #4(125) #1(122) #2(121) #20(118) #16(117) #37(117) #31(116) #18(115) #3(114) #5(114) #13(114) #23(113) #11(112) #17(112) #35(112) #7(111) #25(111) #34(110) #36(110) #24(109) #32(109) #27(104) #6(103) #12(103) #14(103) #38(103) #8(101) #26(101) #30(101) #33(100) #19(99) #15(98) #21(97) #29(93) #28(91) #22(89)</p>
     </details>
   </div>
 
@@ -2553,29 +2553,29 @@ tr.upcoming-row td:first-child{font-weight:700;color:#38bdf8}
     <div class="stats-row" style="margin-bottom:16px">
       <div class="stat-card">
         <div class="lbl">Pearson r (linear)</div>
-        <div class="val">-0.0036</div>
+        <div class="val">-0.0049</div>
         <div class="sub">~0 = no linear relationship</div>
       </div>
       <div class="stat-card">
         <div class="lbl">Spearman &rho; (rank)</div>
-        <div class="val">-0.0037</div>
+        <div class="val">-0.0050</div>
         <div class="sub">~0 = no monotonic relationship</div>
       </div>
       <div class="stat-card">
         <div class="lbl">Cross-tab &chi;&sup2; test</div>
-        <div class="val">p=0.232</div>
-        <div class="sub">&chi;&sup2;=48.35, df=42 &mdash; not significant</div>
+        <div class="val">p=0.320</div>
+        <div class="sub">&chi;&sup2;=45.74, df=42 &mdash; not significant</div>
       </div>
       <div class="stat-card">
         <div class="lbl">Cramer's V (effect size)</div>
-        <div class="val">0.0440</div>
+        <div class="val">0.0428</div>
         <div class="sub">~0 = negligible association</div>
       </div>
     </div>
     <div class="note" style="margin-bottom:16px">
       <p><strong style="color:#e2e8f0">No relationship.</strong> Both correlation coefficients are indistinguishable from zero
       (two orders of magnitude below what would count as even a weak correlation), and the cross-tab independence test fails to
-      reject the null hypothesis of independence (p=0.23 &gt;&gt; 0.05) with a negligible effect size. This matches
+      reject the null hypothesis of independence (p=0.32 &gt;&gt; 0.05) with a negligible effect size. This matches
       what the two methods' mechanics predict: Modular Cycle's order comes from a mod-43 draw-frequency ranking (a function of
       historical draw data), xoshiro's comes from an independently-seeded Fisher-Yates shuffle &mdash; no shared derivation, no
       shared state, and empirically, no shared structure either. A number that's an early pick for one method is exactly as
@@ -2585,7 +2585,7 @@ tr.upcoming-row td:first-child{font-weight:700;color:#38bdf8}
     <div class="tbl-wrap">
       <table class="results">
         <thead><tr><th class="tc">MC \ XO</th><th class="tc">#1–5</th><th class="tc">#6–10</th><th class="tc">#11–15</th><th class="tc">#16–20</th><th class="tc">#21–25</th><th class="tc">#26–30</th><th class="tc">#31–35</th><th class="tc">#36–38</th></tr></thead>
-        <tbody><tr><td class="tc" style="font-weight:600;color:#7dd3fc">#1–5</td><td class="tc">100</td><td class="tc">80</td><td class="tc">92</td><td class="tc">90</td><td class="tc">79</td><td class="tc">84</td><td class="tc">85</td><td class="tc">55</td></tr><tr><td class="tc" style="font-weight:600;color:#7dd3fc">#6–10</td><td class="tc">91</td><td class="tc">88</td><td class="tc">77</td><td class="tc">96</td><td class="tc">82</td><td class="tc">70</td><td class="tc">75</td><td class="tc">44</td></tr><tr><td class="tc" style="font-weight:600;color:#7dd3fc">#11–15</td><td class="tc">80</td><td class="tc">92</td><td class="tc">96</td><td class="tc">72</td><td class="tc">73</td><td class="tc">69</td><td class="tc">103</td><td class="tc">58</td></tr><tr><td class="tc" style="font-weight:600;color:#7dd3fc">#16–20</td><td class="tc">101</td><td class="tc">90</td><td class="tc">69</td><td class="tc">87</td><td class="tc">61</td><td class="tc">73</td><td class="tc">91</td><td class="tc">45</td></tr><tr><td class="tc" style="font-weight:600;color:#7dd3fc">#21–25</td><td class="tc">89</td><td class="tc">92</td><td class="tc">63</td><td class="tc">73</td><td class="tc">101</td><td class="tc">73</td><td class="tc">63</td><td class="tc">54</td></tr><tr><td class="tc" style="font-weight:600;color:#7dd3fc">#26–30</td><td class="tc">81</td><td class="tc">79</td><td class="tc">78</td><td class="tc">88</td><td class="tc">79</td><td class="tc">73</td><td class="tc">80</td><td class="tc">45</td></tr><tr><td class="tc" style="font-weight:600;color:#7dd3fc">#31–33</td><td class="tc">56</td><td class="tc">60</td><td class="tc">56</td><td class="tc">54</td><td class="tc">45</td><td class="tc">49</td><td class="tc">52</td><td class="tc">27</td></tr></tbody>
+        <tbody><tr><td class="tc" style="font-weight:600;color:#7dd3fc">#1–5</td><td class="tc">99</td><td class="tc">81</td><td class="tc">91</td><td class="tc">90</td><td class="tc">79</td><td class="tc">84</td><td class="tc">85</td><td class="tc">55</td></tr><tr><td class="tc" style="font-weight:600;color:#7dd3fc">#6–10</td><td class="tc">90</td><td class="tc">89</td><td class="tc">77</td><td class="tc">94</td><td class="tc">81</td><td class="tc">70</td><td class="tc">75</td><td class="tc">44</td></tr><tr><td class="tc" style="font-weight:600;color:#7dd3fc">#11–15</td><td class="tc">81</td><td class="tc">92</td><td class="tc">96</td><td class="tc">75</td><td class="tc">73</td><td class="tc">69</td><td class="tc">103</td><td class="tc">59</td></tr><tr><td class="tc" style="font-weight:600;color:#7dd3fc">#16–20</td><td class="tc">100</td><td class="tc">90</td><td class="tc">69</td><td class="tc">88</td><td class="tc">61</td><td class="tc">73</td><td class="tc">90</td><td class="tc">46</td></tr><tr><td class="tc" style="font-weight:600;color:#7dd3fc">#21–25</td><td class="tc">89</td><td class="tc">92</td><td class="tc">63</td><td class="tc">73</td><td class="tc">101</td><td class="tc">72</td><td class="tc">63</td><td class="tc">54</td></tr><tr><td class="tc" style="font-weight:600;color:#7dd3fc">#26–30</td><td class="tc">81</td><td class="tc">79</td><td class="tc">78</td><td class="tc">87</td><td class="tc">79</td><td class="tc">73</td><td class="tc">79</td><td class="tc">45</td></tr><tr><td class="tc" style="font-weight:600;color:#7dd3fc">#31–33</td><td class="tc">56</td><td class="tc">61</td><td class="tc">56</td><td class="tc">54</td><td class="tc">45</td><td class="tc">49</td><td class="tc">52</td><td class="tc">27</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -2596,12 +2596,12 @@ tr.upcoming-row td:first-child{font-weight:700;color:#38bdf8}
     a draw with 5 hits might show Modular Cycle <code>{8, 12, 13, 14, 29}</code> and xoshiro <code>{4, 6, 24, 30, 37}</code>.
     Organized by hit-count tier, filterable below.</p>
     <div class="note" style="margin-bottom:16px">
-      <p><strong style="color:#f1f5f9">6/6:</strong> no repeats in either method &mdash; all 113 draws produced 113 distinct index-sets for both Modular Cycle (universe C(33,6)=1,107,568) and xoshiro (universe C(38,6)=2,760,681).</p><p><strong style="color:#f1f5f9">5/6:</strong> no repeats in either method &mdash; all 279 draws produced 279 distinct index-sets for both Modular Cycle (universe C(33,5)=237,336) and xoshiro (universe C(38,5)=501,942).</p><p><strong style="color:#f1f5f9">4/6 down to 1/6:</strong> <strong style="color:#f1f5f9">4/6:</strong> MC 1 repeat(s) &mdash; {8, 9, 31, 33} (#1384/#1465); XO 1 repeat(s) &mdash; {6, 10, 23, 26} (#1196/#1364) &nbsp;|&nbsp; <strong style="color:#f1f5f9">3/6:</strong> MC 3 repeat(s) &mdash; {22, 32, 33} (#1225/#1313), {5, 17, 27} (#1297/#1686), {11, 20, 25} (#1616/#1761); XO 6 repeat(s) &mdash; {9, 21, 36} (#1211/#1977), {3, 9, 11} (#1238/#1934), {17, 35, 36} (#1347/#1697), {4, 5, 29} (#1348/#1414), {1, 31, 37} (#1625/#1878) &nbsp;|&nbsp; <strong style="color:#f1f5f9">2/6:</strong> MC 2 repeat(s) &mdash; {7, 28} (#1344/#1976), {14, 28} (#2063/#2103); XO 2 repeat(s) &mdash; {17, 31} (#1332/#1905), {9, 33} (#1897/#1935) &nbsp;|&nbsp; <strong style="color:#f1f5f9">1/6:</strong> MC 1 repeat(s) &mdash; {8} (#1582/#2088/#2107); XO 2 repeat(s) &mdash; {26} (#1599/#2088/#2107), {25} (#1163/#1999). Every one of these counts is within normal statistical noise of what pure chance predicts (birthday-paradox math on each tier's combinatorial universe) &mdash; not a discovered pattern.</p>
+      <p><strong style="color:#f1f5f9">6/6:</strong> no repeats in either method &mdash; all 112 draws produced 112 distinct index-sets for both Modular Cycle (universe C(33,6)=1,107,568) and xoshiro (universe C(38,6)=2,760,681).</p><p><strong style="color:#f1f5f9">5/6:</strong> no repeats in either method &mdash; all 280 draws produced 280 distinct index-sets for both Modular Cycle (universe C(33,5)=237,336) and xoshiro (universe C(38,5)=501,942).</p><p><strong style="color:#f1f5f9">4/6 down to 1/6:</strong> <strong style="color:#f1f5f9">4/6:</strong> MC 1 repeat(s) &mdash; {8, 9, 31, 33} (#1384/#1465); XO 1 repeat(s) &mdash; {6, 10, 23, 26} (#1196/#1364) &nbsp;|&nbsp; <strong style="color:#f1f5f9">3/6:</strong> MC 3 repeat(s) &mdash; {22, 32, 33} (#1225/#1313), {5, 17, 27} (#1297/#1686), {11, 20, 25} (#1616/#1761); XO 6 repeat(s) &mdash; {9, 21, 36} (#1211/#1977), {3, 9, 11} (#1238/#1934), {17, 35, 36} (#1347/#1697), {4, 5, 29} (#1348/#1414), {1, 31, 37} (#1625/#1878) &nbsp;|&nbsp; <strong style="color:#f1f5f9">2/6:</strong> MC 2 repeat(s) &mdash; {7, 28} (#1344/#1976), {14, 28} (#2063/#2103); XO 2 repeat(s) &mdash; {17, 31} (#1332/#1905), {9, 33} (#1897/#1935) &nbsp;|&nbsp; <strong style="color:#f1f5f9">1/6:</strong> MC 1 repeat(s) &mdash; {8} (#1582/#2088/#2107); XO 2 repeat(s) &mdash; {26} (#1599/#2088/#2107), {25} (#1163/#1999). Every one of these counts is within normal statistical noise of what pure chance predicts (birthday-paradox math on each tier's combinatorial universe) &mdash; not a discovered pattern.</p>
     </div>
     <div class="controls">
       <select id="patternsTierSel" onchange="applyPatternsFilter()">
         <option value="all">Show: All tiers (1000 draws)</option>
-        <option value="6">Show: 6/6 hits (113 draws)</option><option value="5">Show: 5/6 hits (279 draws)</option><option value="4">Show: 4/6 hits (336 draws)</option><option value="3">Show: 3/6 hits (207 draws)</option><option value="2">Show: 2/6 hits (55 draws)</option><option value="1">Show: 1/6 hits (10 draws)</option><option value="0">Show: 0/6 hits (0 draws)</option>
+        <option value="6">Show: 6/6 hits (112 draws)</option><option value="5">Show: 5/6 hits (280 draws)</option><option value="4">Show: 4/6 hits (336 draws)</option><option value="3">Show: 3/6 hits (207 draws)</option><option value="2">Show: 2/6 hits (55 draws)</option><option value="1">Show: 1/6 hits (10 draws)</option><option value="0">Show: 0/6 hits (0 draws)</option>
       </select>
       <span id="patternsFilterCount" class="desc" style="margin:0"></span>
     </div>
@@ -2614,7 +2614,19 @@ tr.upcoming-row td:first-child{font-weight:700;color:#38bdf8}
           <th>Modular Cycle index-set</th>
           <th>xoshiro index-set</th>
         </tr></thead>
-        <tbody id="patternsBody"><tr data-tier="6" data-serial="2132">
+        <tbody id="patternsBody"><tr data-tier="5" data-serial="2134">
+  <td class="tc">#2134</td>
+  <td class="tc">2026-09-03</td>
+  <td class="tc">5/6</td>
+  <td style="color:#7dd3fc;font-family:monospace;font-size:.8rem">{6, 11, 12, 16, 31}</td>
+  <td style="color:#c4b5fd;font-family:monospace;font-size:.8rem">{9, 10, 16, 18, 37}</td>
+</tr><tr data-tier="5" data-serial="2133">
+  <td class="tc">#2133</td>
+  <td class="tc">2026-08-31</td>
+  <td class="tc">5/6</td>
+  <td style="color:#7dd3fc;font-family:monospace;font-size:.8rem">{1, 11, 12, 14, 18}</td>
+  <td style="color:#c4b5fd;font-family:monospace;font-size:.8rem">{2, 9, 17, 18, 38}</td>
+</tr><tr data-tier="6" data-serial="2132">
   <td class="tc">#2132</td>
   <td class="tc">2026-08-27</td>
   <td class="tc">6/6</td>
@@ -8602,18 +8614,6 @@ tr.upcoming-row td:first-child{font-weight:700;color:#38bdf8}
   <td class="tc">3/6</td>
   <td style="color:#7dd3fc;font-family:monospace;font-size:.8rem">{8, 10, 22}</td>
   <td style="color:#c4b5fd;font-family:monospace;font-size:.8rem">{2, 21, 23}</td>
-</tr><tr data-tier="5" data-serial="1134">
-  <td class="tc">#1134</td>
-  <td class="tc">2016-12-22</td>
-  <td class="tc">5/6</td>
-  <td style="color:#7dd3fc;font-family:monospace;font-size:.8rem">{3, 6, 7, 17, 29}</td>
-  <td style="color:#c4b5fd;font-family:monospace;font-size:.8rem">{3, 16, 19, 25, 31}</td>
-</tr><tr data-tier="6" data-serial="1133">
-  <td class="tc">#1133</td>
-  <td class="tc">2016-12-19</td>
-  <td class="tc">6/6</td>
-  <td style="color:#7dd3fc;font-family:monospace;font-size:.8rem">{1, 7, 8, 16, 22, 29}</td>
-  <td style="color:#c4b5fd;font-family:monospace;font-size:.8rem">{3, 5, 11, 17, 30, 32}</td>
 </tr></tbody>
       </table>
     </div>
@@ -8650,13 +8650,73 @@ tr.upcoming-row td:first-child{font-weight:700;color:#38bdf8}
           <th class="tc">Base coverage</th><th class="tc">|Base|</th>
         </tr></thead>
         <tbody id="resultsBody"><tr class="upcoming-row" data-upcoming="1">
-  <td class="tc">#2133</td>
+  <td class="tc">#2135</td>
   <td class="tc"><em>upcoming</em></td>
   <td>
-    <div class="upcoming-label">⏳ Base pool for draw #2133 &mdash; not yet drawn, no actual result to compare against yet</div>
-    <div class="numchips"><span class="nb up">2</span><span class="nb up">3</span><span class="nb up">4</span><span class="nb up">7</span><span class="nb up">9</span><span class="nb up">10</span><span class="nb up">11</span><span class="nb up">12</span><span class="nb up">13</span><span class="nb up">14</span><span class="nb up">16</span><span class="nb up">18</span><span class="nb up">19</span><span class="nb up">20</span><span class="nb up">21</span><span class="nb up">22</span><span class="nb up">23</span><span class="nb up">24</span><span class="nb up">26</span><span class="nb up">27</span><span class="nb up">29</span><span class="nb up">31</span><span class="nb up">32</span><span class="nb up">33</span><span class="nb up">37</span><span class="nb up">38</span><span class="nb up">42</span><span class="nb up">43</span></div>
+    <div class="upcoming-label">⏳ Base pool for draw #2135 &mdash; not yet drawn, no actual result to compare against yet</div>
+    <div class="numchips"><span class="nb up">1</span><span class="nb up">2</span><span class="nb up">3</span><span class="nb up">4</span><span class="nb up">5</span><span class="nb up">6</span><span class="nb up">7</span><span class="nb up">8</span><span class="nb up">9</span><span class="nb up">10</span><span class="nb up">11</span><span class="nb up">13</span><span class="nb up">14</span><span class="nb up">17</span><span class="nb up">18</span><span class="nb up">19</span><span class="nb up">22</span><span class="nb up">24</span><span class="nb up">26</span><span class="nb up">27</span><span class="nb up">28</span><span class="nb up">30</span><span class="nb up">35</span><span class="nb up">36</span><span class="nb up">37</span><span class="nb up">38</span><span class="nb up">40</span><span class="nb up">41</span><span class="nb up">42</span></div>
   </td>
   <td class="tc"><em style="color:#64748b">not yet drawn</em></td>
+  <td class="tc">29</td>
+</tr><tr data-overlap="5">
+  <td class="tc">#2134</td>
+  <td class="tc">2026-09-03</td>
+  <td><div class="numchips"><div class="numchip hit">
+        <span class="nb">5</span>
+        <div class="hit-tag">🎯 HIT</div>
+        <div class="idxrow"><span class="idx-badge early">MC #11</span><span class="idx-badge late">XO #37</span></div>
+      </div><div class="numchip hit">
+        <span class="nb">9</span>
+        <div class="hit-tag">🎯 HIT</div>
+        <div class="idxrow"><span class="idx-badge late">MC #16</span><span class="idx-badge late">XO #18</span></div>
+      </div><div class="numchip hit">
+        <span class="nb">10</span>
+        <div class="hit-tag">🎯 HIT</div>
+        <div class="idxrow"><span class="idx-badge early">MC #6</span><span class="idx-badge early">XO #10</span></div>
+      </div><div class="numchip hit">
+        <span class="nb">19</span>
+        <div class="hit-tag">🎯 HIT</div>
+        <div class="idxrow"><span class="idx-badge late">MC #12</span><span class="idx-badge late">XO #16</span></div>
+      </div><div class="numchip">
+        <span class="nb">26</span>
+        
+        <div class="idxrow"><span class="idx-badge late">MC #32</span><span class="idx-badge absent">XO —</span></div>
+      </div><div class="numchip hit">
+        <span class="nb">35</span>
+        <div class="hit-tag">🎯 HIT</div>
+        <div class="idxrow"><span class="idx-badge late">MC #31</span><span class="idx-badge early">XO #9</span></div>
+      </div></div><div class="hit-summary">🎯 Hit numbers' generation-order index: <strong>5</strong> (MC #11, XO #37), <strong>9</strong> (MC #16, XO #18), <strong>10</strong> (MC #6, XO #10), <strong>19</strong> (MC #12, XO #16), <strong>35</strong> (MC #31, XO #9)</div></td>
+  <td class="tc"><span class="cov-pill cov-partial">5/6 — Partial</span></td>
+  <td class="tc">31</td>
+</tr><tr data-overlap="5">
+  <td class="tc">#2133</td>
+  <td class="tc">2026-08-31</td>
+  <td><div class="numchips"><div class="numchip">
+        <span class="nb">1</span>
+        
+        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge late">XO #24</span></div>
+      </div><div class="numchip hit">
+        <span class="nb">11</span>
+        <div class="hit-tag">🎯 HIT</div>
+        <div class="idxrow"><span class="idx-badge late">MC #12</span><span class="idx-badge late">XO #18</span></div>
+      </div><div class="numchip hit">
+        <span class="nb">14</span>
+        <div class="hit-tag">🎯 HIT</div>
+        <div class="idxrow"><span class="idx-badge early">MC #1</span><span class="idx-badge early">XO #9</span></div>
+      </div><div class="numchip hit">
+        <span class="nb">20</span>
+        <div class="hit-tag">🎯 HIT</div>
+        <div class="idxrow"><span class="idx-badge late">MC #14</span><span class="idx-badge early">XO #2</span></div>
+      </div><div class="numchip hit">
+        <span class="nb">29</span>
+        <div class="hit-tag">🎯 HIT</div>
+        <div class="idxrow"><span class="idx-badge late">MC #18</span><span class="idx-badge late">XO #38</span></div>
+      </div><div class="numchip hit">
+        <span class="nb">38</span>
+        <div class="hit-tag">🎯 HIT</div>
+        <div class="idxrow"><span class="idx-badge early">MC #11</span><span class="idx-badge late">XO #17</span></div>
+      </div></div><div class="hit-summary">🎯 Hit numbers' generation-order index: <strong>11</strong> (MC #12, XO #18), <strong>14</strong> (MC #1, XO #9), <strong>20</strong> (MC #14, XO #2), <strong>29</strong> (MC #18, XO #38), <strong>38</strong> (MC #11, XO #17)</div></td>
+  <td class="tc"><span class="cov-pill cov-partial">5/6 — Partial</span></td>
   <td class="tc">28</td>
 </tr><tr data-overlap="6">
   <td class="tc">#2132</td>
@@ -38598,66 +38658,6 @@ tr.upcoming-row td:first-child{font-weight:700;color:#38bdf8}
       </div></div><div class="hit-summary">🎯 Hit numbers' generation-order index: <strong>28</strong> (MC #22, XO #23), <strong>29</strong> (MC #8, XO #21), <strong>32</strong> (MC #10, XO #2)</div></td>
   <td class="tc"><span class="cov-pill cov-partial">3/6 — Partial</span></td>
   <td class="tc">30</td>
-</tr><tr data-overlap="5">
-  <td class="tc">#1134</td>
-  <td class="tc">2016-12-22</td>
-  <td><div class="numchips"><div class="numchip hit">
-        <span class="nb">5</span>
-        <div class="hit-tag">🎯 HIT</div>
-        <div class="idxrow"><span class="idx-badge early">MC #7</span><span class="idx-badge late">XO #16</span></div>
-      </div><div class="numchip hit">
-        <span class="nb">6</span>
-        <div class="hit-tag">🎯 HIT</div>
-        <div class="idxrow"><span class="idx-badge early">MC #3</span><span class="idx-badge early">XO #3</span></div>
-      </div><div class="numchip hit">
-        <span class="nb">12</span>
-        <div class="hit-tag">🎯 HIT</div>
-        <div class="idxrow"><span class="idx-badge late">MC #17</span><span class="idx-badge late">XO #31</span></div>
-      </div><div class="numchip">
-        <span class="nb">14</span>
-        
-        <div class="idxrow"><span class="idx-badge absent">MC —</span><span class="idx-badge absent">XO —</span></div>
-      </div><div class="numchip hit">
-        <span class="nb">30</span>
-        <div class="hit-tag">🎯 HIT</div>
-        <div class="idxrow"><span class="idx-badge early">MC #6</span><span class="idx-badge late">XO #25</span></div>
-      </div><div class="numchip hit">
-        <span class="nb">38</span>
-        <div class="hit-tag">🎯 HIT</div>
-        <div class="idxrow"><span class="idx-badge late">MC #29</span><span class="idx-badge late">XO #19</span></div>
-      </div></div><div class="hit-summary">🎯 Hit numbers' generation-order index: <strong>5</strong> (MC #7, XO #16), <strong>6</strong> (MC #3, XO #3), <strong>12</strong> (MC #17, XO #31), <strong>30</strong> (MC #6, XO #25), <strong>38</strong> (MC #29, XO #19)</div></td>
-  <td class="tc"><span class="cov-pill cov-partial">5/6 — Partial</span></td>
-  <td class="tc">30</td>
-</tr><tr data-overlap="6">
-  <td class="tc">#1133</td>
-  <td class="tc">2016-12-19</td>
-  <td><div class="numchips"><div class="numchip hit">
-        <span class="nb">3</span>
-        <div class="hit-tag">🎯 HIT</div>
-        <div class="idxrow"><span class="idx-badge early">MC #7</span><span class="idx-badge early">XO #3</span></div>
-      </div><div class="numchip hit">
-        <span class="nb">18</span>
-        <div class="hit-tag">🎯 HIT</div>
-        <div class="idxrow"><span class="idx-badge early">MC #8</span><span class="idx-badge late">XO #17</span></div>
-      </div><div class="numchip hit">
-        <span class="nb">19</span>
-        <div class="hit-tag">🎯 HIT</div>
-        <div class="idxrow"><span class="idx-badge late">MC #16</span><span class="idx-badge early">XO #5</span></div>
-      </div><div class="numchip hit">
-        <span class="nb">20</span>
-        <div class="hit-tag">🎯 HIT</div>
-        <div class="idxrow"><span class="idx-badge early">MC #1</span><span class="idx-badge early">XO #11</span></div>
-      </div><div class="numchip hit">
-        <span class="nb">37</span>
-        <div class="hit-tag">🎯 HIT</div>
-        <div class="idxrow"><span class="idx-badge late">MC #29</span><span class="idx-badge late">XO #32</span></div>
-      </div><div class="numchip hit">
-        <span class="nb">38</span>
-        <div class="hit-tag">🎯 HIT</div>
-        <div class="idxrow"><span class="idx-badge late">MC #22</span><span class="idx-badge late">XO #30</span></div>
-      </div></div><div class="hit-summary">🎯 Hit numbers' generation-order index: <strong>3</strong> (MC #7, XO #3), <strong>18</strong> (MC #8, XO #17), <strong>19</strong> (MC #16, XO #5), <strong>20</strong> (MC #1, XO #11), <strong>37</strong> (MC #29, XO #32), <strong>38</strong> (MC #22, XO #30)</div></td>
-  <td class="tc"><span class="cov-pill cov-all">6/6 — All in Base ✓</span></td>
-  <td class="tc">29</td>
 </tr></tbody>
       </table>
     </div>
