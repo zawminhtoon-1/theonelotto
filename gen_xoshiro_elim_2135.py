@@ -1,9 +1,10 @@
 """
 gen_xoshiro_elim_2135.py
 --------------------------
-Generates the Loto6 draw #2135 elimination page's Base stage -- Base
-pool only, no elimination passes yet, per explicit instruction. Passes
-will be added in later, separately-directed builds (same pattern as
+Generates the Loto6 draw #2135 elimination page: Base pool + Pass 1
+(16 prediction methods' K=22 pick, checked independently -- same
+pattern as loto7_elim_693.html's Pass 1). Passes beyond this will be
+added in later, separately-directed builds (same pattern as
 pcg64_elim_693.html's build).
 
 Uses the shared /xoshiro256.js and /elim-badges.css files (single
@@ -46,12 +47,25 @@ POOL_MAX = meta['poolMax']
 base = meta['base']
 universe_count = meta['universeCount']
 
+method_names = meta['methodNames']
+method_k = meta['methodK']
+method_picks = meta['methodPicks']
+removed_by_methods = meta['removedByMethods']
+final_remaining_pass1 = meta['finalRemainingPass1']
+pass1_pct_removed = removed_by_methods / universe_count * 100
+pass1_pct_remaining = final_remaining_pass1 / universe_count * 100
+
+methods_rows_html = ""
+for name, pool in zip(method_names, method_picks):
+    balls = "".join(f'<span class="nb">{n}</span>' for n in pool)
+    methods_rows_html += f"""<tr><td class="mname">{name}</td><td><div class="balls">{balls}</div></td></tr>"""
+
 page = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Loto 6 Xoshiro Seed — Draw #{TARGET_SERIAL} Elimination (Base)</title>
+<title>Loto 6 Xoshiro Seed — Draw #{TARGET_SERIAL} Elimination</title>
 <style>
 
 *{{box-sizing:border-box;margin:0;padding:0}}
@@ -83,6 +97,14 @@ h1{{font-size:1.4rem;font-weight:700;color:#f1f5f9;margin-bottom:4px}}
 .stat-card .lbl{{font-size:.7rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}}
 .stat-card .val{{font-size:1.35rem;font-weight:700;color:#f1f5f9}}
 .stat-card .sub{{font-size:.75rem;color:#94a3b8;margin-top:2px}}
+
+details{{background:#0a0f1e;border:1px solid #1e293b;border-radius:10px;padding:12px 16px}}
+summary{{cursor:pointer;font-size:.85rem;font-weight:600;color:#e2e8f0;user-select:none}}
+summary:hover{{color:#f1f5f9}}
+.methods-table{{width:100%;border-collapse:collapse;font-size:.82rem;margin-top:12px}}
+.methods-table td{{padding:7px 10px;border-bottom:1px solid #1e293b;vertical-align:middle}}
+.methods-table td.mname{{color:#94a3b8;white-space:nowrap;font-weight:600;width:180px}}
+.methods-table .nb{{width:26px;height:26px;font-size:.7rem;background:#1e293b;color:#94a3b8;border:none}}
 
 .lookup{{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}}
 .lookup .btn{{padding:6px 14px;background:#1e293b;border:1px solid #334155;border-radius:7px;
@@ -130,8 +152,8 @@ table.combos tr:hover td{{background:#111827}}
 <script src="/site-nav.js"></script>
 <script src="/xoshiro256.js"></script>
 <div class="wrap">
-  <h1>✂️ Loto 6 Xoshiro Seed — Draw #{TARGET_SERIAL} Elimination (Base)</h1>
-  <p class="subtitle">Base only, no elimination passes yet — xoshiro256** K={K_PICKS} seed #{SEED:,}'s pick for draw #{TARGET_SERIAL}</p>
+  <h1>✂️ Loto 6 Xoshiro Seed — Draw #{TARGET_SERIAL} Elimination</h1>
+  <p class="subtitle">xoshiro256** K={K_PICKS} seed #{SEED:,}'s pick for draw #{TARGET_SERIAL} — Pass 1 = 16 methods' K={method_k} picks</p>
 
   <div class="note">
     <p><strong style="color:#e2e8f0">Base</strong> is <strong>xoshiro256** K={K_PICKS} seed
@@ -142,15 +164,21 @@ table.combos tr:hover td{{background:#111827}}
     <a href="/xoshiro_elim_2134.html" style="color:#a78bfa">xoshiro_elim_2134.html</a>'s two-way
     (xoshiro ∩ Modular Cycle) Base, per explicit instruction for this build. It defines the working universe: all
     C({base['k']},6) = {universe_count:,} six-number combinations drawable from this {base['k']}-number pool.</p>
-    <p><strong style="color:#fbbf24">No elimination passes yet</strong> — this page is Base only, per explicit
-    instruction. Every one of the {universe_count:,} combos below is still in play; nothing has been removed.
-    Passes will be added in later, separately-directed builds (see
+    <p><strong style="color:#e2e8f0">Pass 1</strong> is each of the 16 prediction methods' K={method_k} pick for draw
+    #{TARGET_SERIAL} (native K=15 pool — K=28 for Modular Cycle — normalized to K={method_k} via
+    <code>topKNums()</code>, walk-forward trained through #{TRAINED_THROUGH}), checked <strong>independently</strong> —
+    NOT a union of raw numbers, same style as <a href="/loto7_elim_693.html" style="color:#a78bfa">loto7_elim_693.html</a>'s
+    Pass 1 (same K=22). Any Base combo fully contained within ANY single one of these 16 K={method_k} sets gets removed,
+    leaving {final_remaining_pass1:,}.</p>
+    <p><strong style="color:#fbbf24">No further passes yet beyond Pass 1</strong> — per explicit instruction. Passes
+    will be added in later, separately-directed builds (see
     <a href="/xoshiro_elim_2134.html" style="color:#a78bfa">xoshiro_elim_2134.html</a> and
     <a href="/pcg64_elim_693.html" style="color:#a78bfa">pcg64_elim_693.html</a> for what a fully-built
     multi-pass elimination page on this site looks like).</p>
     <p>The Base pool is recomputed <strong>live in your browser</strong> below (bit-exact BigInt xoshiro256** port, same
     implementation used on every other xoshiro page on this site) and checked against the server-embedded reference — check the
-    verification badge.</p>
+    verification badge. Pass 1's 16 statistical/ML methods can't (practically) run in a browser, so that's precomputed
+    server-side and embedded as static data.</p>
   </div>
 
   <div class="section">
@@ -163,7 +191,18 @@ table.combos tr:hover td{{background:#111827}}
   </div>
 
   <div class="section">
-    <h2>Universe</h2>
+    <h2>Pass 1 — 16 prediction methods, K={method_k} pick for draw #{TARGET_SERIAL} <span class="verify-badge na">server-computed</span></h2>
+    <p class="desc">Each method's native K=15 pool (K=28 for Modular Cycle) normalized to K={method_k}, checked independently against the Base pool.</p>
+    <details>
+      <summary>Show all 16 methods' K={method_k} picks</summary>
+      <table class="methods-table">
+        <tbody>{methods_rows_html}</tbody>
+      </table>
+    </details>
+  </div>
+
+  <div class="section">
+    <h2>Elimination summary</h2>
     <div class="stats-row">
       <div class="stat-card">
         <div class="lbl">Universe (Base)</div>
@@ -171,26 +210,26 @@ table.combos tr:hover td{{background:#111827}}
         <div class="sub">C({base['k']},6)</div>
       </div>
       <div class="stat-card">
-        <div class="lbl">Base pool size</div>
-        <div class="val">{base['k']}</div>
-        <div class="sub">of {POOL_MAX} numbers</div>
+        <div class="lbl">Removed by 16 methods (Pass 1)</div>
+        <div class="val">{removed_by_methods:,}</div>
+        <div class="sub">{pass1_pct_removed:.2f}% of universe — contained in ANY method's K={method_k}</div>
       </div>
       <div class="stat-card">
-        <div class="lbl">Elimination passes applied</div>
-        <div class="val">0</div>
-        <div class="sub">Base only — nothing removed yet</div>
+        <div class="lbl">After Pass 1</div>
+        <div class="val">{final_remaining_pass1:,}</div>
+        <div class="sub">{pass1_pct_remaining:.2f}% of universe retained</div>
       </div>
     </div>
   </div>
 
   <div class="section">
     <h2>Browse combinations</h2>
-    <p class="desc">Fetched from a separate JSON asset (not inlined — {universe_count:,} rows is too large for the page itself).</p>
+    <p class="desc">Fetched from a separate JSON asset (not inlined — {final_remaining_pass1:,} rows is too large for the page itself).</p>
     <div id="loadPrompt" style="text-align:center;padding:28px 12px">
-      <button class="btn primary" onclick="loadCombos()">📂 Load {universe_count:,} combinations</button>
+      <button class="btn primary" onclick="loadCombos()">📂 Load {final_remaining_pass1:,} combinations</button>
       <p class="page-info" style="margin-top:8px">Not fetched automatically to save bandwidth — click to load the combo browser.</p>
     </div>
-    <div id="loadingMsg" style="display:none">Loading {universe_count:,} combinations…</div>
+    <div id="loadingMsg" style="display:none">Loading {final_remaining_pass1:,} combinations…</div>
     <div id="comboUI" style="display:none">
       <div class="lookup">
         <button class="btn" onclick="clearFilter()">Clear filter</button>
@@ -223,8 +262,10 @@ table.combos tr:hover td{{background:#111827}}
   <p class="footer">
     Xoshiro256** (seeded via SplitMix64): picks = partial Fisher-Yates(range(1,{POOL_MAX}), {K_PICKS}) with combined seed = seed×10⁷ + draw_serial.
     Algorithm verified against independent reference sources — see <a href="/xoshiro_seed_backtest.html" style="color:#64748b">the K=21 seed-backtest page</a>.<br>
-    Base = the overall winner of the completed K=38 seed scan (0–1,000,000 seeds). No elimination passes applied — this
-    page currently shows the raw C({base['k']},6) universe in full.<br>
+    Base = the overall winner of the completed K=38 seed scan (0–1,000,000 seeds). Pass 1 = 16 methods' K={method_k} picks,
+    same style as loto7_elim_693.html. {final_remaining_pass1:,} of {universe_count:,} combos remain.<br>
+    16 methods: {', '.join(method_names)} — same 16 used throughout
+    <a href="/backtest.html" style="color:#64748b">backtest.html</a> / <a href="/predictions" style="color:#64748b">predictions</a>.<br>
     Formula-based only · Not financial advice · Loto 6 is random.
   </p>
 </div>
