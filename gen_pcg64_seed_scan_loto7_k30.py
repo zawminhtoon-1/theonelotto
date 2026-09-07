@@ -465,7 +465,6 @@ mkChart('hit4Chart', {json.dumps(hit4_labels)}, {json.dumps(hit4_values)}, '#e87
 // BigInt PCG64 port -- not limited to seeds in the top-{TOP_N} table.
 const DRAWS = {js_draws};
 
-const MASK64 = (1n << 64n) - 1n;
 function pcg64Predict(seed, drawSerial, k) {{
   const combined = (BigInt(seed) * 10000000n + BigInt(drawSerial)) & MASK64;
   let [state, inc] = expandSeedToPcgState(combined);
