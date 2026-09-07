@@ -82,16 +82,16 @@
             '<a href="/pcg64_seed_scan_k38.html">🎲 PCG64 K=38, seeds ±5,000,000 (2050 draws)</a>' +
             '<div class="nav-divider"></div>' +
             '<div class="nav-dd-label">Predictions</div>' +
-            '<a href="/xoshiro_elim_2134.html">✂️ Draw #2134 Elimination (native K=38 Base)</a>' +
-            '<a href="/xo_pcg_elim_2134.html">✂️ Draw #2134 Elimination (xoshiro × PCG64 Base)</a>' +
-            '<a href="/pcg64_top3_elim_2134.html">✂️ Draw #2134 Elimination (Top-3 PCG64 Seeds Base)</a>' +
-            '<details class="nav-archive"><summary>📦 Past draws (#2128–#2133)</summary>' +
+            '<details class="nav-archive"><summary>📦 Past draws (#2128–#2134)</summary>' +
               '<a href="/xoshiro_elim_2128.html">✂️ Draw #2128 Elimination</a>' +
               '<a href="/xoshiro_elim_2129.html">✂️ Draw #2129 Elimination</a>' +
               '<a href="/xoshiro_elim_2130.html">✂️ Draw #2130 Elimination</a>' +
               '<a href="/xoshiro_elim_2131.html">✂️ Draw #2131 Elimination</a>' +
               '<a href="/xoshiro_elim_2132.html">✂️ Draw #2132 Elimination</a>' +
               '<a href="/xoshiro_elim_2133.html">✂️ Draw #2133 Elimination</a>' +
+              '<a href="/xoshiro_elim_2134.html">✂️ Draw #2134 Elimination (native K=38 Base)</a>' +
+              '<a href="/xo_pcg_elim_2134.html">✂️ Draw #2134 Elimination (xoshiro × PCG64 Base)</a>' +
+              '<a href="/pcg64_top3_elim_2134.html">✂️ Draw #2134 Elimination (Top-3 PCG64 Seeds Base)</a>' +
             '</details>' +
             '<a href="/xoshiro_k38_5seed_intersection.html">✂️ K=38 5-Seed Intersection Backtest</a>' +
             '<a href="/xoshiro_k35_5seed_intersection.html">✂️ K=35 5-Seed Intersection Backtest</a>' +
