@@ -14,9 +14,29 @@ against the site's established known-good reference vector (seed
 692809, draw 2129, K=38) plus an inline-vs-modular cross-check on
 each stage's own boundary seeds before trusting the stage.
 
+SCORING (v2, replaces the original hit6b-first ranking): per-draw
+score based on how many of the 6 winning numbers land in the seed's
+K=38 pick, summed across all draws in the scan window --
+  0 hits -> -5   1 hit -> -4   2 hits -> -3   3 hits -> -2   4+ hits -> +1
+Best seed = highest total score, worst = lowest. This needs the full
+per-draw hit-count histogram (0 through 6) per seed, not just the
+hit6b/hit6/hit5/hit4 aggregates the v1 version of this script tracked
+-- v1's 0/1/2/3-hit draws were discarded entirely (never bucketed),
+so v1's stage checkpoints (stage1-3.json, produced before this
+rewrite) can't be rescored after the fact and were deleted; this
+version starts the full 20-stage run over from stage 1. (Restarting
+was unavoidable for a different reason too: this driver runs all 20
+stages in one continuous process, and editing this file on disk
+can't change an already-running process's code -- Python doesn't
+hot-reload -- so getting the new scoring applied at all, even just
+for not-yet-started stages, requires restarting the driver.)
+
 Benchmarked on this machine before starting: 7.22 seeds/s
 single-process at K=38 x 2100 draws -> ~50.5 seeds/s aggregate with
-7 workers -> ~110 hours (~4.6 days) for the full 20,000,001 seeds.
+7 workers -> ~110 hours (~4.6 days) for the full 20,000,001 seeds
+(v1 benchmark; the extra hit0-3 bucketing added here is a few more
+cheap branches on a value already computed per draw, not expected to
+meaningfully change this).
 
 Staged in 20 chunks of ~1,000,000 seeds each (same round-million
 boundary convention as the PCG64 K=30/K=38 scans' 10-stage split),
@@ -27,8 +47,8 @@ already exists, so a crash or restart just picks up where it left off
 by re-running this same script.
 
 After all 20 stages, combines every stage's results to report the
-global best-10 / worst-10 across the full -10,000,000 to 10,000,000
-range and writes xoshiro_seed_scan_k38_full_summary.json.
+global best-10 / worst-10 (by score) across the full -10,000,000 to
+10,000,000 range and writes xoshiro_seed_scan_k38_full_summary.json.
 
 Run: python xoshiro_seed_scan_k38_full.py
 """
@@ -130,15 +150,21 @@ def init_worker(data_bytes):
     _DATA = [(r['s'], frozenset(r['a']), r['b']) for r in rows]
 
 
+# Per-draw score by hit count, per the new scoring definition.
+SCORE_BY_HITS = {0: -5, 1: -4, 2: -3, 3: -2, 4: 1, 5: 1, 6: 1}
+
+
 def process_chunk(seed_chunk):
     arr_template = list(range(1, LOTO6_MAX + 1))
     out = []
     for seed in seed_chunk:
-        hit6b = hit6 = hit5 = hit4 = 0
+        hit6b = hit6 = hit5 = hit4 = hit3 = hit2 = hit1 = hit0 = 0
+        score = 0
         for serial, actual_set, bonus in _DATA:
             picks = xoshiro_predict_inline(seed, serial, K_PICKS, LOTO6_MAX, arr_template)
             picks_set = frozenset(picks)
             h = len(actual_set & picks_set)
+            score += SCORE_BY_HITS[h]
             if h == 6:
                 hit6 += 1
                 if bonus in picks_set:
@@ -147,7 +173,15 @@ def process_chunk(seed_chunk):
                 hit5 += 1
             elif h == 4:
                 hit4 += 1
-        out.append((seed, hit6b, hit6, hit5, hit4))
+            elif h == 3:
+                hit3 += 1
+            elif h == 2:
+                hit2 += 1
+            elif h == 1:
+                hit1 += 1
+            else:
+                hit0 += 1
+        out.append((seed, score, hit6b, hit6, hit5, hit4, hit3, hit2, hit1, hit0))
     return out
 
 
@@ -218,20 +252,27 @@ def run_stage(stage_num, seed_lo, seed_hi, data_bytes, arr_t):
     elapsed_total = time.time() - t0
     print(f"[Stage {stage_num}] DONE scanning in {elapsed_total:.1f}s ({elapsed_total/3600:.2f} hr)")
 
+    # r = (seed, score, hit6b, hit6, hit5, hit4, hit3, hit2, hit1, hit0)
     all_results.sort(key=lambda r: r[0])
-    ranked_best = sorted(all_results, key=lambda r: (-r[1], -r[2], -r[3], -r[4], r[0]))
-    ranked_worst = sorted(all_results, key=lambda r: (r[1], r[2], r[3], r[4], r[0]))
+    ranked_best = sorted(all_results, key=lambda r: (-r[1], r[0]))
+    ranked_worst = sorted(all_results, key=lambda r: (r[1], r[0]))
     best, worst = ranked_best[0], ranked_worst[0]
-    print(f"[Stage {stage_num}] Best  seed in this range: #{best[0]}  hit6b={best[1]}  hit6={best[2]}  hit5={best[3]}  hit4={best[4]}")
-    print(f"[Stage {stage_num}] Worst seed in this range: #{worst[0]}  hit6b={worst[1]}  hit6={worst[2]}  hit5={worst[3]}  hit4={worst[4]}")
+
+    def _rec(r):
+        return {'seed': r[0], 'score': r[1], 'hit6b': r[2], 'hit6': r[3], 'hit5': r[4],
+                'hit4': r[5], 'hit3': r[6], 'hit2': r[7], 'hit1': r[8], 'hit0': r[9]}
+
+    print(f"[Stage {stage_num}] Best  seed in this range: #{best[0]}  score={best[1]}  hit6b={best[2]}  hit6={best[3]}  hit5={best[4]}  hit4={best[5]}")
+    print(f"[Stage {stage_num}] Worst seed in this range: #{worst[0]}  score={worst[1]}  hit6b={worst[2]}  hit6={worst[3]}  hit5={worst[4]}  hit4={worst[5]}")
 
     out = {
         'stage': stage_num, 'seedRange': [seed_lo, seed_hi], 'numSeeds': num_seeds,
         'kPicks': K_PICKS, 'nDraws': N_DRAWS, 'drawRange': [DRAW_START, DRAW_END], 'algorithm': 'xoshiro256**',
-        'best': {'seed': best[0], 'hit6b': best[1], 'hit6': best[2], 'hit5': best[3], 'hit4': best[4]},
-        'worst': {'seed': worst[0], 'hit6b': worst[1], 'hit6': worst[2], 'hit5': worst[3], 'hit4': worst[4]},
-        'top10': [{'seed': r[0], 'hit6b': r[1], 'hit6': r[2], 'hit5': r[3], 'hit4': r[4]} for r in ranked_best[:10]],
-        'bottom10': [{'seed': r[0], 'hit6b': r[1], 'hit6': r[2], 'hit5': r[3], 'hit4': r[4]} for r in ranked_worst[:10]],
+        'scoring': 'v2: -5/-4/-3/-2/+1 for 0/1/2/3/4+ hits per draw, summed',
+        'best': _rec(best),
+        'worst': _rec(worst),
+        'top10': [_rec(r) for r in ranked_best[:10]],
+        'bottom10': [_rec(r) for r in ranked_worst[:10]],
         'elapsedSeconds': elapsed_total,
         'results': all_results,
     }
@@ -252,13 +293,14 @@ def combine_and_summarize():
         all_top10.extend(d['top10'])
         all_bottom10.extend(d['bottom10'])
 
-    ranked_best = sorted(all_top10, key=lambda r: (-r['hit6b'], -r['hit6'], -r['hit5'], -r['hit4'], r['seed']))[:10]
-    ranked_worst = sorted(all_bottom10, key=lambda r: (r['hit6b'], r['hit6'], r['hit5'], r['hit4'], r['seed']))[:10]
+    ranked_best = sorted(all_top10, key=lambda r: (-r['score'], r['seed']))[:10]
+    ranked_worst = sorted(all_bottom10, key=lambda r: (r['score'], r['seed']))[:10]
 
     summary = {
         'seedRange': [-10_000_000, 10_000_000],
         'numSeeds': total_seeds,
         'kPicks': K_PICKS, 'nDraws': N_DRAWS, 'drawRange': [DRAW_START, DRAW_END], 'algorithm': 'xoshiro256**',
+        'scoring': 'v2: -5/-4/-3/-2/+1 for 0/1/2/3/4+ hits per draw, summed',
         'best10': ranked_best,
         'worst10': ranked_worst,
         'numStages': len(STAGE_BOUNDS),
@@ -269,12 +311,12 @@ def combine_and_summarize():
     print("\n" + "=" * 70)
     print(f"FULL SCAN COMPLETE: {total_seeds:,} seeds x {N_DRAWS} draws")
     print("=" * 70)
-    print("\nBest 10 seeds (hit6b desc, hit6 desc, hit5 desc, hit4 desc):")
+    print("\nBest 10 seeds (by score, highest first):")
     for r in ranked_best:
-        print(f"  seed={r['seed']:11d}  hit6b={r['hit6b']:4d}  hit6={r['hit6']:4d}  hit5={r['hit5']:4d}  hit4={r['hit4']:4d}")
-    print("\nWorst 10 seeds:")
+        print(f"  seed={r['seed']:11d}  score={r['score']:6d}  hit6b={r['hit6b']:4d}  hit6={r['hit6']:4d}  hit5={r['hit5']:4d}  hit4={r['hit4']:4d}")
+    print("\nWorst 10 seeds (by score, lowest first):")
     for r in ranked_worst:
-        print(f"  seed={r['seed']:11d}  hit6b={r['hit6b']:4d}  hit6={r['hit6']:4d}  hit5={r['hit5']:4d}  hit4={r['hit4']:4d}")
+        print(f"  seed={r['seed']:11d}  score={r['score']:6d}  hit6b={r['hit6b']:4d}  hit6={r['hit6']:4d}  hit5={r['hit5']:4d}  hit4={r['hit4']:4d}")
     print(f"\nSaved {BASE}\\xoshiro_seed_scan_k38_full_summary.json")
 
 
