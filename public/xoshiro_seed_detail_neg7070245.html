@@ -65,6 +65,12 @@ details{background:#0a0f1e;border:1px solid #1e293b;border-radius:10px;padding:1
 summary{cursor:pointer;font-size:.85rem;font-weight:600;color:#e2e8f0;user-select:none}
 summary:hover{color:#f1f5f9}
 
+.view-toggle{display:flex;gap:8px;margin-top:12px}
+.toggle-btn{background:#1e293b;border:1px solid #334155;color:#94a3b8;padding:7px 14px;
+  border-radius:7px;cursor:pointer;font-size:.8rem;font-weight:600}
+.toggle-btn:hover{color:#f1f5f9}
+.toggle-btn.active{background:#7c3aed;border-color:#7c3aed;color:#fff}
+
 .tbl-wrap{overflow-x:auto;overflow-y:auto;max-height:600px;border-radius:10px;border:1px solid #1e293b;margin-top:12px}
 .draw-tbl{width:100%;border-collapse:collapse;font-size:.78rem}
 .draw-tbl thead{position:sticky;top:0;background:#0a0f1e;z-index:1}
@@ -168,12 +174,16 @@ summary:hover{color:#f1f5f9}
 
   <div class="section">
     <h2>Full 2134-draw breakdown for seed #-7,070,245</h2>
-    <p class="desc">Rendered live in your browser from the embedded draw records — the amber-tinted rows are the out-of-sample #2101–2134 draws.</p>
+    <p class="desc">Rendered live in your browser from the embedded draw records — the amber-tinted rows are the out-of-sample #2101–2134 draws. Toggle below to switch between chronological order and ranked-by-hit-count order.</p>
     <details id="ownBreakdownDetails">
       <summary>Show all 2134 draws</summary>
+      <div class="view-toggle">
+        <button class="toggle-btn active" id="btnChrono" onclick="setOwnView('chrono')">📅 Draw order</button>
+        <button class="toggle-btn" id="btnRanked" onclick="setOwnView('ranked')">🏆 Ranked by hits</button>
+      </div>
       <div class="tbl-wrap">
         <table class="draw-tbl">
-          <thead><tr><th>Draw</th><th>Date</th><th>Actual (6) + bonus</th><th>Picks (38) · generation order</th><th style="text-align:center">Hits</th></tr></thead>
+          <thead><tr><th style="text-align:right">#</th><th>Draw</th><th>Date</th><th>Actual (6) + bonus</th><th>Picks (38) · generation order</th><th style="text-align:center">Hits</th></tr></thead>
           <tbody id="ownBreakdownTbody"></tbody>
         </table>
       </div>
@@ -293,7 +303,6 @@ const rowsIn = DRAWS.filter(r => r.s <= IN_SAMPLE_END);
 const rowsOos = DRAWS.filter(r => r.s > IN_SAMPLE_END);
 const inResult = tallyAndRenderRows(SEED, rowsIn);
 const oosResult = tallyAndRenderRows(SEED, rowsOos);
-document.getElementById('ownBreakdownTbody').innerHTML = oosResult.html + inResult.html;
 
 const inOk = arraysEqual(inResult.tally, KNOWN_IN_SAMPLE);
 const oosOk = arraysEqual(oosResult.tally, KNOWN_OOS);
@@ -301,6 +310,57 @@ renderBadge('badgeIn', inOk, '✓ in-sample matches', '✗ in-sample MISMATCH');
 renderBadge('badgeOos', oosOk, '✓ out-of-sample matches', '✗ out-of-sample MISMATCH');
 if (!inOk) console.error('In-sample mismatch', inResult.tally, KNOWN_IN_SAMPLE);
 if (!oosOk) console.error('Out-of-sample mismatch', oosResult.tally, KNOWN_OOS);
+
+// ── Own breakdown table: chronological (default) vs ranked-by-hits toggle ───
+function computeOwnRecords(seed, rows) {
+  return rows.map(row => {
+    const picks = xoshiroPredict(seed, row.s, 38);
+    const actualSet = new Set(row.a);
+    const picksSet = new Set(picks);
+    const hits = picks.filter(p => actualSet.has(p)).length;
+    const bh = picksSet.has(row.b);
+    return { row, picks, actualSet, hits, bh };
+  });
+}
+function renderOwnRow(rec, idx) {
+  const { row, picks, actualSet, hits, bh } = rec;
+  const actualHtml = row.a.map(n => '<span class="nb nm">' + n + '</span>').join('') +
+    '<span class="nb nb-b">' + row.b + '</span>';
+  const picksHtml = picks.map(n =>
+    '<span class="nb' + (actualSet.has(n) ? ' nm' : '') + (n === row.b ? ' nb-bh' : '') + '">' + n + '</span>'
+  ).join('');
+  const hc = hits >= 5 ? '#22c55e' : hits >= 4 ? '#4ade80' : hits >= 3 ? '#fbbf24' : hits >= 2 ? '#fb923c' : '#475569';
+  const rowCls = row.s > IN_SAMPLE_END ? ' class="oos-row"' : '';
+  return '<tr' + rowCls + '><td style="color:#64748b;text-align:right">' + idx + '</td>' +
+    '<td style="color:#64748b;white-space:nowrap">' + row.s + '</td>' +
+    '<td style="color:#64748b;white-space:nowrap">' + (row.d || '') + '</td>' +
+    '<td style="white-space:nowrap">' + actualHtml + '</td>' +
+    '<td style="white-space:nowrap">' + picksHtml + '</td>' +
+    '<td style="text-align:center;font-weight:700;color:' + hc + '">' + hits + (bh ? '<span style="color:#a78bfa;font-size:.7rem">+B</span>' : '') + '</td></tr>';
+}
+// Ranked-by-hits comparator: highest hit count first; among ties, a hit6b
+// (6 main + bonus) row ranks above a plain hit6 row; final tiebreak is
+// chronological ascending, purely for stable/readable ordering.
+function ownRankComparator(a, b) {
+  if (b.hits !== a.hits) return b.hits - a.hits;
+  if (b.bh !== a.bh) return (b.bh ? 1 : 0) - (a.bh ? 1 : 0);
+  return a.row.s - b.row.s;
+}
+const ownRecords = computeOwnRecords(SEED, DRAWS); // chronological ascending, as embedded
+let ownView = 'chrono';
+function renderOwnBreakdown() {
+  const recs = ownView === 'ranked'
+    ? [...ownRecords].sort(ownRankComparator)
+    : [...ownRecords].reverse(); // newest draw first (previous default behavior)
+  document.getElementById('ownBreakdownTbody').innerHTML = recs.map((rec, i) => renderOwnRow(rec, i + 1)).join('');
+}
+function setOwnView(view) {
+  ownView = view;
+  document.getElementById('btnChrono').classList.toggle('active', view === 'chrono');
+  document.getElementById('btnRanked').classList.toggle('active', view === 'ranked');
+  renderOwnBreakdown();
+}
+renderOwnBreakdown();
 
 const liveNextOrder = xoshiroPredict(SEED, 2135, 38);
 if (!arraysEqual(liveNextOrder, KNOWN_NEXT_ORDER)) console.error('Next-draw pick mismatch', liveNextOrder, KNOWN_NEXT_ORDER);
