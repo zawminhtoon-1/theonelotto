@@ -207,6 +207,45 @@ for row in DRAWS:
 assert gen_idx_total_hits == _check_total, f"MISMATCH: gen-index total {gen_idx_total_hits} vs per-draw hit total {_check_total}"
 print(f"[Verify] Generation-index tally total ({gen_idx_total_hits}) matches independently-computed per-draw hit total.")
 
+# ── Truncated K=18 sub-pool hit-tier tally ───────────────────────────────────
+# Generation indices 1-18 of a K=38 run are bit-identical to a fresh K=18
+# partial Fisher-Yates with the same seed (the PRNG state and the sequence of
+# array positions touched depend only on how many iterations have run so far,
+# not on the target k) -- so slicing each draw's already-computed 38-pick down
+# to its first 18 elements is equivalent to re-running the algorithm with
+# k=18. Same walk-forward, per-draw methodology as every hit tally elsewhere
+# on this page: for each draw, count how many of the 6 actual winning numbers
+# fall in the (now 18-number) pool, and whether the bonus is also in it when
+# all 6 hit.
+K_TRUNC = 18
+
+def truncated_pool_tally(seed, rows, k_trunc):
+    hit_counts = [0] * 7  # index h = number of draws with exactly h of 6 hits
+    hit6b = 0
+    for row in rows:
+        trunc_set = frozenset(xoshiro_predict(seed, row['s'])[:k_trunc])
+        actual_set = frozenset(row['a'])
+        h = len(actual_set & trunc_set)
+        hit_counts[h] += 1
+        if h == 6 and row['b'] in trunc_set:
+            hit6b += 1
+    return hit_counts, hit6b
+
+trunc_hit_counts, trunc_hit6b = truncated_pool_tally(SEED, DRAWS, K_TRUNC)
+assert sum(trunc_hit_counts) == COMBINED_N, f"K={K_TRUNC} tally count mismatch: {sum(trunc_hit_counts)} vs {COMBINED_N} draws"
+trunc_hit6, trunc_hit5, trunc_hit4, trunc_hit3, trunc_hit2, trunc_hit1, trunc_hit0 = (
+    trunc_hit_counts[6], trunc_hit_counts[5], trunc_hit_counts[4], trunc_hit_counts[3],
+    trunc_hit_counts[2], trunc_hit_counts[1], trunc_hit_counts[0],
+)
+print(f"[Verify] K={K_TRUNC} truncated-pool tally (n={COMBINED_N}): "
+      f"hit6b={trunc_hit6b} hit6={trunc_hit6} hit5={trunc_hit5} hit4={trunc_hit4} "
+      f"hit3={trunc_hit3} hit2={trunc_hit2} hit1={trunc_hit1} hit0={trunc_hit0}")
+
+trunc_rates = [rate100(v, COMBINED_N) for v in
+               [trunc_hit6b, trunc_hit6, trunc_hit5, trunc_hit4, trunc_hit3, trunc_hit2, trunc_hit1, trunc_hit0]]
+js_trunc_hit_counts = json.dumps(trunc_hit_counts)  # [hit0..hit6] by index
+js_trunc_hit6b = json.dumps(trunc_hit6b)
+
 # Rank 1..38 by count descending; ties broken by ascending generation index.
 gen_idx_order = sorted(range(K_PICKS), key=lambda i: (-gen_idx_counts[i], i))
 js_gen_idx_counts = json.dumps(gen_idx_counts)
@@ -428,6 +467,30 @@ summary:hover{{color:#f1f5f9}}
   </div>
 
   <div class="section">
+    <h2>Truncated K={K_TRUNC} sub-pool <span id="badgeTrunc" class="verify-badge pending">verifying…</span></h2>
+    <p class="desc">What if seed #{seed_str}'s pick were cut down to just generation indices 1–{K_TRUNC} (the first {K_TRUNC} numbers
+    the partial Fisher-Yates produces) instead of the full K={K_PICKS}? Slicing each draw's already-computed 38-pick to its first
+    {K_TRUNC} elements is equivalent to re-running the algorithm with k={K_TRUNC} directly — the PRNG sequence and array positions
+    touched at each step depend only on how many iterations have run, not on the target k. Same walk-forward, per-draw methodology
+    as every hit tally on this page, now over the much smaller {K_TRUNC}-number pool: full hit tiers 0–6 are all reported since
+    hit5/hit6 become rare at this pool size. Recomputed live in your browser and checked against the server-embedded reference —
+    see the badge above.</p>
+    <div class="tbl-wrap" style="max-height:none">
+      <table class="cmp-tbl">
+        <thead><tr><th>Pool</th><th>hit6b</th><th>/100</th><th>hit6</th><th>/100</th><th>hit5</th><th>/100</th><th>hit4</th><th>/100</th>
+          <th>hit3</th><th>/100</th><th>hit2</th><th>/100</th><th>hit1</th><th>/100</th><th>hit0</th><th>/100</th></tr></thead>
+        <tbody>
+          <tr><td>K={K_PICKS} (full, #{DRAW_START}–{DRAW_END})</td><td>{combined[0]}</td><td>{combined_rates[0]}</td><td>{combined[1]}</td><td>{combined_rates[1]}</td><td>{combined[2]}</td><td>{combined_rates[2]}</td><td>{combined[3]}</td><td>{combined_rates[3]}</td><td>N/A</td><td>N/A</td><td>N/A</td><td>N/A</td><td>N/A</td><td>N/A</td><td>N/A</td><td>N/A</td></tr>
+          <tr id="truncRow"><td>K={K_TRUNC} (truncated, #{DRAW_START}–{DRAW_END})</td><td>{trunc_hit6b}</td><td>{trunc_rates[0]}</td><td>{trunc_hit6}</td><td>{trunc_rates[1]}</td><td>{trunc_hit5}</td><td>{trunc_rates[2]}</td><td>{trunc_hit4}</td><td>{trunc_rates[3]}</td><td>{trunc_hit3}</td><td>{trunc_rates[4]}</td><td>{trunc_hit2}</td><td>{trunc_rates[5]}</td><td>{trunc_hit1}</td><td>{trunc_rates[6]}</td><td>{trunc_hit0}</td><td>{trunc_rates[7]}</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="caution" style="margin-top:10px">hit0–hit3 are N/A for the full K={K_PICKS} pool — this page (and every other K=38 page
+    on this site) only ever tracks hit4/hit5/hit6/hit6b, never the lower tiers, since they're rare enough at K=38 to not be the
+    interesting metric there. At K={K_TRUNC} they're the majority of draws, so all 7 tiers are shown.</p>
+  </div>
+
+  <div class="section">
     <div class="lookup">
       <span class="lbl">🔍 Compare another seed</span>
       <input id="seedLookupInput" type="number" step="1" placeholder="e.g. 692809 or -7070245" onkeydown="if(event.key==='Enter')lookupSeed()">
@@ -480,6 +543,9 @@ const KNOWN_OOS = {list(out_of_sample)};
 const KNOWN_NEXT_ORDER = {js_next_order};
 const KNOWN_NEXT_SORTED = {js_next_sorted};
 const KNOWN_GEN_IDX_COUNTS = {js_gen_idx_counts};
+const K_TRUNC = {K_TRUNC};
+const KNOWN_TRUNC_HIT_COUNTS = {js_trunc_hit_counts}; // [hit0, hit1, ..., hit6]
+const KNOWN_TRUNC_HIT6B = {js_trunc_hit6b};
 
 function arraysEqual(a, b) {{
   return a.length === b.length && a.every((v, i) => v === b[i]);
@@ -629,6 +695,25 @@ document.getElementById('genIdxTbody').innerHTML = genIdxRankOrder.map((zeroBase
   '<td style="text-align:right;font-weight:600">' + (zeroBasedIdx + 1) + '</td>' +
   '<td style="text-align:right;font-weight:700;color:#f1f5f9">' + genIdxCounts[zeroBasedIdx] + '</td></tr>'
 ).join('');
+
+// ── Truncated K=18 sub-pool: slice each draw's already-computed 38-pick
+// down to its first 18 elements (equivalent to a fresh k=18 run, see the
+// Python-side comment for why) and re-tally hit tiers 0-6 + hit6b. ──────────
+function computeTruncatedPoolTally(seed, rows, kTrunc) {{
+  const hitCounts = new Array(7).fill(0);
+  let hit6b = 0;
+  rows.forEach(row => {{
+    const truncSet = new Set(xoshiroPredict(seed, row.s, 38).slice(0, kTrunc));
+    const h = row.a.filter(n => truncSet.has(n)).length;
+    hitCounts[h]++;
+    if (h === 6 && truncSet.has(row.b)) hit6b++;
+  }});
+  return {{ hitCounts, hit6b }};
+}}
+const truncResult = computeTruncatedPoolTally(SEED, DRAWS, K_TRUNC);
+const truncOk = arraysEqual(truncResult.hitCounts, KNOWN_TRUNC_HIT_COUNTS) && truncResult.hit6b === KNOWN_TRUNC_HIT6B;
+renderBadge('badgeTrunc', truncOk, '✓ live-computed values match', '✗ MISMATCH — check console');
+if (!truncOk) console.error('Truncated K=' + K_TRUNC + ' tally mismatch', truncResult, KNOWN_TRUNC_HIT_COUNTS, KNOWN_TRUNC_HIT6B);
 
 // ── "Compare another seed" lookup, reusing the same modal pattern used on
 // xoshiro_seed_scan_k38.html, scoped to this page's #{DRAW_START}\u2013{DRAW_END} window ──
