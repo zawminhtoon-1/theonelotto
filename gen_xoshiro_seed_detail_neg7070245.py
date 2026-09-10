@@ -250,6 +250,50 @@ js_trunc_hit6b = json.dumps(trunc_hit6b)
 gen_idx_order = sorted(range(K_PICKS), key=lambda i: (-gen_idx_counts[i], i))
 js_gen_idx_counts = json.dumps(gen_idx_counts)
 
+# ── "Curve-fit" top-18-by-hit-rank sub-pool (explicitly in-sample/circular) ──
+# Takes the top 18 generation indices BY HIT-RANK from the table above (same
+# order, same tie-break) rather than the first 18 sequentially. For each
+# draw, the sub-pool is the actual numbers that landed at those 18 specific
+# generation-index positions in THAT draw's pick. This is look-ahead bias by
+# construction: the 18 positions were chosen because they scored best on this
+# exact 2,134-draw dataset, which is the same dataset being re-tested here --
+# so an inflated-looking result is the expected artifact of curve-fitting to
+# one's own history, not evidence of anything predictive. See the on-page
+# warning (same pattern as xoshiro_k38_5seed_intersection.html's look-ahead
+# bias caveat) for the full explanation.
+CURVEFIT_TOP_N = 18
+curvefit_positions = gen_idx_order[:CURVEFIT_TOP_N]  # 0-based generation-index positions
+curvefit_display_indices = [i + 1 for i in curvefit_positions]  # 1-based, in rank order
+
+def position_set_tally(seed, rows, positions):
+    hit_counts = [0] * 7
+    hit6b = 0
+    for row in rows:
+        order = xoshiro_predict(seed, row['s'])
+        sub_pool = frozenset(order[i] for i in positions)
+        actual_set = frozenset(row['a'])
+        h = len(actual_set & sub_pool)
+        hit_counts[h] += 1
+        if h == 6 and row['b'] in sub_pool:
+            hit6b += 1
+    return hit_counts, hit6b
+
+curvefit_hit_counts, curvefit_hit6b = position_set_tally(SEED, DRAWS, curvefit_positions)
+assert sum(curvefit_hit_counts) == COMBINED_N, f"curve-fit tally count mismatch: {sum(curvefit_hit_counts)} vs {COMBINED_N} draws"
+cf_hit6, cf_hit5, cf_hit4, cf_hit3, cf_hit2, cf_hit1, cf_hit0 = (
+    curvefit_hit_counts[6], curvefit_hit_counts[5], curvefit_hit_counts[4], curvefit_hit_counts[3],
+    curvefit_hit_counts[2], curvefit_hit_counts[1], curvefit_hit_counts[0],
+)
+print(f"[Verify] Curve-fit top-{CURVEFIT_TOP_N}-by-rank sub-pool tally (n={COMBINED_N}, IN-SAMPLE/CIRCULAR): "
+      f"hit6b={curvefit_hit6b} hit6={cf_hit6} hit5={cf_hit5} hit4={cf_hit4} "
+      f"hit3={cf_hit3} hit2={cf_hit2} hit1={cf_hit1} hit0={cf_hit0}")
+
+curvefit_rates = [rate100(v, COMBINED_N) for v in
+                   [curvefit_hit6b, cf_hit6, cf_hit5, cf_hit4, cf_hit3, cf_hit2, cf_hit1, cf_hit0]]
+js_curvefit_hit_counts = json.dumps(curvefit_hit_counts)
+js_curvefit_hit6b = json.dumps(curvefit_hit6b)
+curvefit_indices_str = ", ".join(str(i) for i in curvefit_display_indices)
+
 js_draws = json.dumps(DRAWS, separators=(',', ':'))
 js_next_order = json.dumps(next_pick_order)
 js_next_sorted = json.dumps(next_pick_sorted)
@@ -277,6 +321,8 @@ h1{{font-size:1.4rem;font-weight:700;color:#f1f5f9;margin-bottom:4px}}
 .note p+p{{margin-top:8px}}
 .note code{{background:#0a0f1e;padding:1px 5px;border-radius:4px;font-size:.85em}}
 .note b.warn{{color:#fbbf24}}
+.note.warn{{border-color:#f59e0b55;background:#1c1206}}
+.note.warn strong{{color:#fbbf24}}
 
 .section{{background:#0d1526;border:1px solid #1e293b;border-radius:12px;padding:20px;margin-bottom:20px}}
 .section h2{{font-size:1rem;font-weight:700;color:#f1f5f9;margin-bottom:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}}
@@ -491,6 +537,40 @@ summary:hover{{color:#f1f5f9}}
   </div>
 
   <div class="section">
+    <h2>"Curve-fit" top-{CURVEFIT_TOP_N}-by-rank sub-pool <span id="badgeCurvefit" class="verify-badge pending">verifying…</span></h2>
+    <div class="note warn">
+      <p><strong>Not a finding — this is what look-ahead bias looks like.</strong> The {CURVEFIT_TOP_N} generation-index positions
+      used below ({curvefit_indices_str}, in the exact rank order from the "Generation-index hit distribution" table above,
+      ties broken the same way) were selected <em>because</em> they had the highest hit counts on THIS SAME {COMBINED_N}-draw
+      dataset being re-tested here. A subset of positions chosen for scoring well on a dataset will trivially look better on
+      that same dataset — this is circular by construction, the same category of look-ahead bias flagged on
+      <a href="/xoshiro_k38_5seed_intersection.html" style="color:#fbbf24">xoshiro_k38_5seed_intersection.html</a>. It is
+      <strong>not</strong> evidence these 18 positions predict anything; there is no independent (out-of-sample) draw data left
+      to validate against. Read the numbers below as "what curve-fitting to one's own history produces," not as a result.</p>
+    </div>
+    <p class="desc">Unlike the sequential K={K_TRUNC} section above (generation indices 1–{K_TRUNC} in order), this sub-pool
+    is built per-draw from whichever actual numbers land at those {CURVEFIT_TOP_N} specific rank-selected generation-index
+    positions — a different set of numbers each draw, since generation order depends on the draw. Same walk-forward, per-draw
+    hit-tally methodology as the rest of the page. Recomputed live in your browser (reusing the exact same rank order computed
+    for the table above) and checked against the server-embedded reference — see the badge above.</p>
+    <div class="tbl-wrap" style="max-height:none">
+      <table class="cmp-tbl">
+        <thead><tr><th>Pool</th><th>hit6b</th><th>/100</th><th>hit6</th><th>/100</th><th>hit5</th><th>/100</th><th>hit4</th><th>/100</th>
+          <th>hit3</th><th>/100</th><th>hit2</th><th>/100</th><th>hit1</th><th>/100</th><th>hit0</th><th>/100</th></tr></thead>
+        <tbody>
+          <tr><td>K={K_TRUNC} (sequential 1–{K_TRUNC}, for reference)</td><td>{trunc_hit6b}</td><td>{trunc_rates[0]}</td><td>{trunc_hit6}</td><td>{trunc_rates[1]}</td><td>{trunc_hit5}</td><td>{trunc_rates[2]}</td><td>{trunc_hit4}</td><td>{trunc_rates[3]}</td><td>{trunc_hit3}</td><td>{trunc_rates[4]}</td><td>{trunc_hit2}</td><td>{trunc_rates[5]}</td><td>{trunc_hit1}</td><td>{trunc_rates[6]}</td><td>{trunc_hit0}</td><td>{trunc_rates[7]}</td></tr>
+          <tr id="curvefitRow" style="background:#1c1206"><td>Top-{CURVEFIT_TOP_N}-by-rank (circular)</td><td>{curvefit_hit6b}</td><td>{curvefit_rates[0]}</td><td>{cf_hit6}</td><td>{curvefit_rates[1]}</td><td>{cf_hit5}</td><td>{curvefit_rates[2]}</td><td>{cf_hit4}</td><td>{curvefit_rates[3]}</td><td>{cf_hit3}</td><td>{curvefit_rates[4]}</td><td>{cf_hit2}</td><td>{curvefit_rates[5]}</td><td>{cf_hit1}</td><td>{curvefit_rates[6]}</td><td>{cf_hit0}</td><td>{curvefit_rates[7]}</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="caution" style="margin-top:10px">Note the result isn't uniformly "better" even with the circularity baked in —
+    hit6/hit6b are actually slightly lower than the sequential K={K_TRUNC} baseline ({cf_hit6} vs {trunc_hit6}, {curvefit_hit6b} vs
+    {trunc_hit6b}) while the middling tiers (hit3–hit5) shift up. The 18 positions were ranked by raw total-hit count, which
+    rewards frequent modest hits, not perfect 6-of-6s — a reminder that even a circular, curve-fit selection doesn't
+    automatically dominate on every metric.</p>
+  </div>
+
+  <div class="section">
     <div class="lookup">
       <span class="lbl">🔍 Compare another seed</span>
       <input id="seedLookupInput" type="number" step="1" placeholder="e.g. 692809 or -7070245" onkeydown="if(event.key==='Enter')lookupSeed()">
@@ -546,6 +626,9 @@ const KNOWN_GEN_IDX_COUNTS = {js_gen_idx_counts};
 const K_TRUNC = {K_TRUNC};
 const KNOWN_TRUNC_HIT_COUNTS = {js_trunc_hit_counts}; // [hit0, hit1, ..., hit6]
 const KNOWN_TRUNC_HIT6B = {js_trunc_hit6b};
+const CURVEFIT_TOP_N = {CURVEFIT_TOP_N};
+const KNOWN_CURVEFIT_HIT_COUNTS = {js_curvefit_hit_counts};
+const KNOWN_CURVEFIT_HIT6B = {js_curvefit_hit6b};
 
 function arraysEqual(a, b) {{
   return a.length === b.length && a.every((v, i) => v === b[i]);
@@ -714,6 +797,28 @@ const truncResult = computeTruncatedPoolTally(SEED, DRAWS, K_TRUNC);
 const truncOk = arraysEqual(truncResult.hitCounts, KNOWN_TRUNC_HIT_COUNTS) && truncResult.hit6b === KNOWN_TRUNC_HIT6B;
 renderBadge('badgeTrunc', truncOk, '✓ live-computed values match', '✗ MISMATCH — check console');
 if (!truncOk) console.error('Truncated K=' + K_TRUNC + ' tally mismatch', truncResult, KNOWN_TRUNC_HIT_COUNTS, KNOWN_TRUNC_HIT6B);
+
+// ── "Curve-fit" top-N-by-rank sub-pool (explicitly in-sample/circular) ──────
+// Reuses genIdxRankOrder (computed above for the generation-index table) so
+// the position selection and its tie-break are guaranteed identical to what
+// the table displays -- no separate ranking logic to drift out of sync.
+const curvefitPositions = genIdxRankOrder.slice(0, CURVEFIT_TOP_N);
+function computePositionSetTally(seed, rows, positions) {{
+  const hitCounts = new Array(7).fill(0);
+  let hit6b = 0;
+  rows.forEach(row => {{
+    const order = xoshiroPredict(seed, row.s, 38);
+    const subPool = new Set(positions.map(i => order[i]));
+    const h = row.a.filter(n => subPool.has(n)).length;
+    hitCounts[h]++;
+    if (h === 6 && subPool.has(row.b)) hit6b++;
+  }});
+  return {{ hitCounts, hit6b }};
+}}
+const curvefitResult = computePositionSetTally(SEED, DRAWS, curvefitPositions);
+const curvefitOk = arraysEqual(curvefitResult.hitCounts, KNOWN_CURVEFIT_HIT_COUNTS) && curvefitResult.hit6b === KNOWN_CURVEFIT_HIT6B;
+renderBadge('badgeCurvefit', curvefitOk, '✓ live-computed values match', '✗ MISMATCH — check console');
+if (!curvefitOk) console.error('Curve-fit top-N tally mismatch', curvefitResult, KNOWN_CURVEFIT_HIT_COUNTS, KNOWN_CURVEFIT_HIT6B);
 
 // ── "Compare another seed" lookup, reusing the same modal pattern used on
 // xoshiro_seed_scan_k38.html, scoped to this page's #{DRAW_START}\u2013{DRAW_END} window ──
