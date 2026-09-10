@@ -191,6 +191,22 @@ summary:hover{color:#f1f5f9}
   </div>
 
   <div class="section">
+    <h2>Generation-index hit distribution <span id="badgeGenIdx" class="verify-badge pending">verifying…</span></h2>
+    <p class="desc">Each draw's partial Fisher-Yates produces an <b>ordered</b> list of 38 numbers — generation index 1 is the first number
+    produced, generation index 38 is the last. For each of that draw's 6 actual winning numbers, this finds which generation index it
+    landed at (if it landed in the pick at all), then sums that across all 2134 draws (#1–2134) for
+    seed #-7,070,245. Ranked descending by total hits — tests whether earlier-generated numbers hit more often than later-generated
+    ones. Ties broken by ascending generation index. Recomputed live in your browser and checked against the server-embedded
+    reference — see the badge above.</p>
+    <div class="tbl-wrap" style="max-height:600px">
+      <table class="draw-tbl">
+        <thead><tr><th style="text-align:right">Rank (of 38)</th><th style="text-align:right">Generation index</th><th style="text-align:right">Total hits (#1–2134)</th></tr></thead>
+        <tbody id="genIdxTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
     <div class="lookup">
       <span class="lbl">🔍 Compare another seed</span>
       <input id="seedLookupInput" type="number" step="1" placeholder="e.g. 692809 or -7070245" onkeydown="if(event.key==='Enter')lookupSeed()">
@@ -242,6 +258,7 @@ const KNOWN_IN_SAMPLE = [935, 1054, 777, 250];
 const KNOWN_OOS = [9, 13, 13, 7];
 const KNOWN_NEXT_ORDER = [37, 5, 31, 42, 8, 25, 40, 36, 28, 20, 10, 22, 24, 35, 39, 30, 15, 21, 19, 29, 4, 7, 14, 23, 33, 3, 1, 34, 18, 38, 27, 12, 41, 11, 13, 17, 2, 9];
 const KNOWN_NEXT_SORTED = [1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 29, 30, 31, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42];
+const KNOWN_GEN_IDX_COUNTS = [324, 297, 287, 290, 283, 324, 300, 313, 312, 286, 261, 297, 296, 311, 289, 288, 321, 300, 277, 307, 332, 309, 322, 287, 324, 309, 294, 296, 300, 332, 292, 269, 298, 295, 295, 319, 280, 324];
 
 function arraysEqual(a, b) {
   return a.length === b.length && a.every((v, i) => v === b[i]);
@@ -364,6 +381,33 @@ renderOwnBreakdown();
 
 const liveNextOrder = xoshiroPredict(SEED, 2135, 38);
 if (!arraysEqual(liveNextOrder, KNOWN_NEXT_ORDER)) console.error('Next-draw pick mismatch', liveNextOrder, KNOWN_NEXT_ORDER);
+
+// ── Generation-index hit distribution: for each draw's ordered 38-pick,
+// which position (1-38) did each of the 6 actual winning numbers land at? ──
+function computeGenerationIndexCounts(seed, rows) {
+  const counts = new Array(38).fill(0);
+  rows.forEach(row => {
+    const picksOrder = xoshiroPredict(seed, row.s, 38);
+    const posOf = new Map();
+    picksOrder.forEach((n, i) => posOf.set(n, i));
+    row.a.forEach(num => {
+      if (posOf.has(num)) counts[posOf.get(num)]++;
+    });
+  });
+  return counts;
+}
+const genIdxCounts = computeGenerationIndexCounts(SEED, DRAWS);
+const genIdxOk = arraysEqual(genIdxCounts, KNOWN_GEN_IDX_COUNTS);
+renderBadge('badgeGenIdx', genIdxOk, '✓ live-computed values match', '✗ MISMATCH — check console');
+if (!genIdxOk) console.error('Generation-index counts mismatch', genIdxCounts, KNOWN_GEN_IDX_COUNTS);
+
+// Rank descending by count; ties broken by ascending generation index (1-38).
+const genIdxRankOrder = [...Array(38).keys()].sort((a, b) => genIdxCounts[b] - genIdxCounts[a] || a - b);
+document.getElementById('genIdxTbody').innerHTML = genIdxRankOrder.map((zeroBasedIdx, i) =>
+  '<tr><td style="text-align:right;color:#94a3b8">' + (i + 1) + '</td>' +
+  '<td style="text-align:right;font-weight:600">' + (zeroBasedIdx + 1) + '</td>' +
+  '<td style="text-align:right;font-weight:700;color:#f1f5f9">' + genIdxCounts[zeroBasedIdx] + '</td></tr>'
+).join('');
 
 // ── "Compare another seed" lookup, reusing the same modal pattern used on
 // xoshiro_seed_scan_k38.html, scoped to this page's #1–2134 window ──
