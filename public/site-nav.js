@@ -74,6 +74,7 @@
             '<div class="nav-dd-label">Xoshiro256** Seed Scans</div>' +
             '<a href="/xoshiro_seed_scan_k33.html">🎯 K=33, seeds 0–1,000,000</a>' +
             '<a href="/xoshiro_seed_scan_k38.html">🔷 K=38, seeds 0–1,000,000</a>' +
+            '<a href="/xoshiro_seed_detail_neg7070245.html">🔎 K=38 Seed #-7,070,245 Detail (stopped scan spot-check)</a>' +
             '<a href="/xoshiro_seed_scan_k20.html">🎲 K=20, seeds ±3,000,000 (2050 draws)</a>' +
             '<a href="/xoshiro_seed_scan_k30.html">🎲 K=30, seeds ±3,000,000 (2050 draws)</a>' +
             '<a href="/pcg64_seed_scan_k38.html">🎲 PCG64 K=38, seeds ±5,000,000 (2050 draws)</a>' +
