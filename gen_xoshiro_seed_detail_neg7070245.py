@@ -39,7 +39,7 @@ Follows the site's established single-seed-detail conventions:
 Output: public/xoshiro_seed_detail_neg7070245.html
 Run: python gen_xoshiro_seed_detail_neg7070245.py
 """
-import json, re, os
+import json, re, os, math
 
 BASE = r"C:\Users\Zaw Min Htoon\source\repos\theonelotto"
 ENV_LOCAL = BASE + r"\.env.local"
@@ -294,6 +294,14 @@ js_curvefit_hit_counts = json.dumps(curvefit_hit_counts)
 js_curvefit_hit6b = json.dumps(curvefit_hit6b)
 curvefit_indices_str = ", ".join(str(i) for i in curvefit_display_indices)
 
+# ── Draw #2135 pick, restricted to the top-18-by-rank pool (same circularity
+# caveat as the section above -- these positions were selected for scoring
+# well on #1-2134, then applied to a real upcoming draw) ────────────────────
+d2135_pool_numbers = [next_pick_order[i] for i in curvefit_positions]
+assert len(d2135_pool_numbers) == CURVEFIT_TOP_N and len(set(d2135_pool_numbers)) == CURVEFIT_TOP_N, \
+    f"expected {CURVEFIT_TOP_N} distinct numbers, got {d2135_pool_numbers}"
+js_d2135_pool = json.dumps(d2135_pool_numbers)
+
 js_draws = json.dumps(DRAWS, separators=(',', ':'))
 js_next_order = json.dumps(next_pick_order)
 js_next_sorted = json.dumps(next_pick_sorted)
@@ -384,6 +392,7 @@ summary:hover{{color:#f1f5f9}}
 .draw-tbl td{{padding:6px 10px;border-bottom:1px solid #0f172a;vertical-align:middle}}
 .draw-tbl tr:hover td{{background:#0f172a}}
 .draw-tbl tr.oos-row td{{background:#1c1508}}
+.balls{{display:flex;flex-wrap:wrap;gap:5px}}
 .nb{{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#1e293b;color:#64748b;font-size:.66rem;font-weight:700;margin:1px}}
 .nm{{background:#14532d;color:#86efac}}
 .nb-b{{background:#451a03;color:#fde68a;border:1px solid #92400e}}
@@ -399,6 +408,10 @@ summary:hover{{color:#f1f5f9}}
 .modal-close:hover{{background:#334155;color:#f1f5f9}}
 .modal-body{{overflow-y:auto;flex:1}}
 
+#generatedResults{{margin-top:14px}}
+#generatedResults .gen-hdr{{font-size:.78rem;color:#94a3b8;margin-bottom:8px}}
+#generatedResults .gen-row{{margin-bottom:6px}}
+
 .footer{{margin-top:28px;font-size:.78rem;color:#475569;padding-bottom:20px;line-height:1.6}}
 </style>
 <link rel="stylesheet" href="/elim-badges.css">
@@ -407,6 +420,7 @@ summary:hover{{color:#f1f5f9}}
 
 <script src="/site-nav.js"></script>
 <script src="/xoshiro256.js"></script>
+<script src="/diverse-sample.js"></script>
 <div class="wrap">
   <h1>🔎 Xoshiro Seed Detail — #{seed_str} (K=38)</h1>
   <p class="subtitle">xoshiro256** (SplitMix64-seeded) · K=38 picks · draws #{DRAW_START}\u2013{DRAW_END} available in the production database</p>
@@ -571,6 +585,31 @@ summary:hover{{color:#f1f5f9}}
   </div>
 
   <div class="section">
+    <h2>Draw #{NEXT_SERIAL} pick — top-{CURVEFIT_TOP_N}-by-rank pool <span id="badgeD2135Pool" class="verify-badge pending">verifying…</span></h2>
+    <div class="note warn">
+      <p><strong>Same circularity caveat as the section above.</strong> These {CURVEFIT_TOP_N} numbers are seed #{seed_str}'s
+      walk-forward pick for draw #{NEXT_SERIAL} (an actual upcoming draw), restricted to the generation-index positions that
+      were selected <em>because</em> they scored best on the #{DRAW_START}–{DRAW_END} history already re-tested against itself.
+      Combinations generated below demonstrate what a curve-fit selection produces when pointed at a real draw — they are
+      <strong>not</strong> a validated prediction. See the full explanation in the "Curve-fit top-{CURVEFIT_TOP_N}-by-rank
+      sub-pool" section above.</p>
+    </div>
+    <p class="desc">Seed #{seed_str}'s K={K_PICKS} pick for draw #{NEXT_SERIAL}, walk-forward through the latest actual draw
+    #{DRAW_END}, restricted to just the numbers landing at the top-{CURVEFIT_TOP_N}-by-rank generation-index positions
+    (same {CURVEFIT_TOP_N} positions/order as above: {curvefit_indices_str}). Recomputed live in your browser and checked
+    against the server-embedded reference — see the badge above.</p>
+    <div class="balls" id="d2135PoolBalls"></div>
+    <div class="lookup" style="margin-top:14px">
+      <span class="lbl">🎲 Sample combinations</span>
+      <button onclick="generateSamples(10)">Generate 10</button>
+      <span class="hint">Greedy coverage-maximizing pick across all C({CURVEFIT_TOP_N},6) = {math.comb(CURVEFIT_TOP_N, 6):,}
+      six-number combinations of this pool — the same shared <code>/diverse-sample.js</code> algorithm used by every other
+      combo-browser page on this site, not a new/different one.</span>
+    </div>
+    <div id="generatedResults"></div>
+  </div>
+
+  <div class="section">
     <div class="lookup">
       <span class="lbl">🔍 Compare another seed</span>
       <input id="seedLookupInput" type="number" step="1" placeholder="e.g. 692809 or -7070245" onkeydown="if(event.key==='Enter')lookupSeed()">
@@ -629,6 +668,7 @@ const KNOWN_TRUNC_HIT6B = {js_trunc_hit6b};
 const CURVEFIT_TOP_N = {CURVEFIT_TOP_N};
 const KNOWN_CURVEFIT_HIT_COUNTS = {js_curvefit_hit_counts};
 const KNOWN_CURVEFIT_HIT6B = {js_curvefit_hit6b};
+const KNOWN_D2135_POOL = {js_d2135_pool};
 
 function arraysEqual(a, b) {{
   return a.length === b.length && a.every((v, i) => v === b[i]);
@@ -819,6 +859,47 @@ const curvefitResult = computePositionSetTally(SEED, DRAWS, curvefitPositions);
 const curvefitOk = arraysEqual(curvefitResult.hitCounts, KNOWN_CURVEFIT_HIT_COUNTS) && curvefitResult.hit6b === KNOWN_CURVEFIT_HIT6B;
 renderBadge('badgeCurvefit', curvefitOk, '✓ live-computed values match', '✗ MISMATCH — check console');
 if (!curvefitOk) console.error('Curve-fit top-N tally mismatch', curvefitResult, KNOWN_CURVEFIT_HIT_COUNTS, KNOWN_CURVEFIT_HIT6B);
+
+// ── Draw #{NEXT_SERIAL} pick, restricted to the top-{CURVEFIT_TOP_N}-by-rank
+// pool -- reuses liveNextOrder (already computed above) and curvefitPositions
+// (already computed above), so this is purely a re-slice, no new prediction. ──
+function getBallColor(n) {{
+  if (n <= 7) return '#e74c3c';
+  if (n <= 13) return '#e67e22';
+  if (n <= 19) return '#2ecc71';
+  if (n <= 25) return '#3498db';
+  if (n <= 31) return '#9b59b6';
+  if (n <= 37) return '#16a085';
+  return '#e91e8c';
+}}
+function combinationsOf6(arr) {{
+  const result = [];
+  const combo = [];
+  const n = arr.length;
+  function backtrack(start) {{
+    if (combo.length === 6) {{ result.push(combo.slice()); return; }}
+    for (let i = start; i < n; i++) {{
+      combo.push(arr[i]);
+      backtrack(i + 1);
+      combo.pop();
+    }}
+  }}
+  backtrack(0);
+  return result;
+}}
+
+const d2135PoolNumbers = curvefitPositions.map(i => liveNextOrder[i]);
+const d2135PoolOk = arraysEqual(d2135PoolNumbers, KNOWN_D2135_POOL);
+renderBadge('badgeD2135Pool', d2135PoolOk, '✓ live-computed values match', '✗ MISMATCH — check console');
+if (!d2135PoolOk) console.error('Draw #{NEXT_SERIAL} top-N pool mismatch', d2135PoolNumbers, KNOWN_D2135_POOL);
+
+document.getElementById('d2135PoolBalls').innerHTML = d2135PoolNumbers.map(n =>
+  '<span class="nb" style="background:' + getBallColor(n) + '33;border:1px solid ' + getBallColor(n) + ';color:#e2e8f0">' + n + '</span>'
+).join('');
+
+// diverse-sample.js reads these two page globals + getBallColor() directly.
+let REMAINING = combinationsOf6(d2135PoolNumbers);
+let filtered = [];
 
 // ── "Compare another seed" lookup, reusing the same modal pattern used on
 // xoshiro_seed_scan_k38.html, scoped to this page's #{DRAW_START}\u2013{DRAW_END} window ──
