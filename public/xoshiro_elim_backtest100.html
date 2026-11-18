@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Full Elimination Backtest — Last 100 Draws</title>
+<title>Full Elimination Backtest — Last 121 Draws</title>
 <style>
 
 *{box-sizing:border-box;margin:0;padding:0}
@@ -64,7 +64,7 @@ table.results td.tc{text-align:center}
 
 <script src="/site-nav.js"></script>
 <div class="wrap">
-  <h1>🎯 Full Elimination Backtest — Last 100 Draws (#2035–2134)</h1>
+  <h1>🎯 Full Elimination Backtest — Last 121 Draws (#2035–2155)</h1>
   <p class="subtitle">The complete 5-pass methodology from /xoshiro_elim_2130.html, run retroactively against each real draw — did the actual winning combo survive?</p>
 
   <div class="note">
@@ -72,7 +72,7 @@ table.results td.tc{text-align:center}
     (Base = Modular Cycle K=33 &cap; xoshiro K=38 seed #692,809 &rarr; Pass 1 = 16 methods K=19 &rarr; Pass 2 = top 1,000
     worst-coverage <code>seed_hit_random_k17</code> seeds K=15 &rarr; Pass 3 = xoshiro K=21 seeds
     0, 1, 2 &rarr; Pass 4 = historical repeat filter &rarr; Pass 5 = Worst Combo Anti-Pick K=15)
-    to each of the last 100 real draws, one at a time.</p>
+    to each of the last 121 real draws, one at a time.</p>
     <p><strong style="color:#e2e8f0">Strict walk-forward, no leakage:</strong> every ML-derived component (Modular Cycle, the 16
     methods, the Worst Combo replica) is trained ONLY on draws strictly before the draw being tested. Pass 4's historical-repeat
     filter is likewise restricted to draws strictly before the target &mdash; NOT including it, unlike the #2129 page's
@@ -82,8 +82,8 @@ table.results td.tc{text-align:center}
     xoshiro), so by pure combinatorics only about C(28,6)/C(43,6) &asymp; 6.2% of possible 6-number combos
     could ever be contained in it &mdash; before any elimination pass runs. Most real draws are expected to land outside Base
     entirely; this isn't a pipeline failure, it's a structural ceiling on the whole methodology's best-case hit rate.</p>
-    <p>Full run took 552s (9.2 min) for all 100 draws. Per-draw remaining-combo lists
-    are not stored (100 draws &times; up to ~150K combos each would be far too much data) &mdash; only aggregate counts and each
+    <p>Full run took 646s (10.8 min) for all 121 draws. Per-draw remaining-combo lists
+    are not stored (121 draws &times; up to ~150K combos each would be far too much data) &mdash; only aggregate counts and each
     draw's elimination outcome.</p>
   </div>
 
@@ -92,50 +92,50 @@ table.results td.tc{text-align:center}
     <div class="stats-row">
       <div class="stat-card">
         <div class="lbl">Draws tested</div>
-        <div class="val">100</div>
-        <div class="sub">#2035–2134</div>
+        <div class="val">121</div>
+        <div class="sub">#2035–2155</div>
       </div>
       <div class="stat-card neverbase">
         <div class="lbl">Never in Base</div>
-        <div class="val">84</div>
-        <div class="sub">84.0% of draws</div>
+        <div class="val">103</div>
+        <div class="sub">85.1% of draws</div>
       </div>
       <div class="stat-card">
         <div class="lbl">Reached elimination passes</div>
-        <div class="val">16</div>
-        <div class="sub">16.0% of draws</div>
+        <div class="val">18</div>
+        <div class="sub">14.9% of draws</div>
       </div>
       <div class="stat-card">
         <div class="lbl">Eliminated (Pass 1–5)</div>
-        <div class="val">9</div>
-        <div class="sub">of 16 that reached Base</div>
+        <div class="val">11</div>
+        <div class="sub">of 18 that reached Base</div>
       </div>
       <div class="stat-card hit">
         <div class="lbl">Survived all 5 (HIT)</div>
         <div class="val">7</div>
-        <div class="sub">7.0% of all 100 draws</div>
+        <div class="sub">5.8% of all 121 draws</div>
       </div>
     </div>
   </div>
 
   <div class="section">
     <h2>Outcome funnel</h2>
-    <p class="desc">Where each of the 100 draws' actual winning combo ended up.</p>
+    <p class="desc">Where each of the 121 draws' actual winning combo ended up.</p>
     <div class="funnel">
       <div class="funnel-row">
         <div class="funnel-lbl">Never in Base</div>
-        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:84.0%;background:#475569"></div></div>
-        <div class="funnel-val">84</div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:85.1%;background:#475569"></div></div>
+        <div class="funnel-val">103</div>
       </div>
       <div class="funnel-row">
         <div class="funnel-lbl">Eliminated — Pass 1</div>
-        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:1.0%;background:#f87171"></div></div>
-        <div class="funnel-val">1</div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:1.7%;background:#f87171"></div></div>
+        <div class="funnel-val">2</div>
       </div>
       <div class="funnel-row">
         <div class="funnel-lbl">Eliminated — Pass 2</div>
-        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:8.0%;background:#fb923c"></div></div>
-        <div class="funnel-val">8</div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:7.4%;background:#fb923c"></div></div>
+        <div class="funnel-val">9</div>
       </div>
       <div class="funnel-row">
         <div class="funnel-lbl">Eliminated — Pass 3</div>
@@ -154,7 +154,7 @@ table.results td.tc{text-align:center}
       </div>
       <div class="funnel-row">
         <div class="funnel-lbl">Survived (HIT)</div>
-        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:7.0%;background:#22c55e"></div></div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:5.8%;background:#22c55e"></div></div>
         <div class="funnel-val">7</div>
       </div>
     </div>
@@ -165,7 +165,7 @@ table.results td.tc{text-align:center}
     <p class="desc">Newest draw first. "After N" columns show the remaining-combo count after that pass ran for THIS draw's own Base pool — only populated up to the pass that eliminated the combo (or all 5 if it survived).</p>
     <div class="controls">
       <select id="filterSel" onchange="applyFilter()">
-        <option value="all">Show: All 100 draws</option>
+        <option value="all">Show: All 121 draws</option>
         <option value="survived">Show: Survived (HIT) only</option>
         <option value="never_in_base">Show: Never in Base only</option>
         <option value="eliminated">Show: Eliminated (any pass) only</option>
@@ -179,6 +179,237 @@ table.results td.tc{text-align:center}
           <th>Outcome</th><th>After 1</th><th>After 2</th><th>After 3</th><th>After 4</th><th>After 5</th>
         </tr></thead>
         <tbody id="resultsBody"><tr>
+  <td class="tc">#2155</td>
+  <td class="tc">2026-11-16</td>
+  <td><div class="balls"><span class="nb">4</span><span class="nb">9</span><span class="nb">15</span><span class="nb">29</span><span class="nb">35</span><span class="nb">40</span></div></td>
+  <td class="tc">3/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2154</td>
+  <td class="tc">2026-11-12</td>
+  <td><div class="balls"><span class="nb">5</span><span class="nb">8</span><span class="nb">10</span><span class="nb">15</span><span class="nb">34</span><span class="nb">35</span></div></td>
+  <td class="tc">6/6 in Base ✓</td>
+  <td><span class="outcome-pill" style="background:#fb923c22;color:#fb923c;border:1px solid #fb923c55">Eliminated — Pass 2</span></td>
+  <td class="tr">439,598</td>
+  <td class="tr">195,660</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2153</td>
+  <td class="tc">2026-11-09</td>
+  <td><div class="balls"><span class="nb">10</span><span class="nb">11</span><span class="nb">14</span><span class="nb">21</span><span class="nb">25</span><span class="nb">37</span></div></td>
+  <td class="tc">2/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2152</td>
+  <td class="tc">2026-11-05</td>
+  <td><div class="balls"><span class="nb">7</span><span class="nb">8</span><span class="nb">12</span><span class="nb">20</span><span class="nb">28</span><span class="nb">41</span></div></td>
+  <td class="tc">4/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2151</td>
+  <td class="tc">2026-11-02</td>
+  <td><div class="balls"><span class="nb">4</span><span class="nb">9</span><span class="nb">11</span><span class="nb">23</span><span class="nb">24</span><span class="nb">37</span></div></td>
+  <td class="tc">5/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2150</td>
+  <td class="tc">2026-10-29</td>
+  <td><div class="balls"><span class="nb">1</span><span class="nb">2</span><span class="nb">14</span><span class="nb">18</span><span class="nb">35</span><span class="nb">38</span></div></td>
+  <td class="tc">4/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2149</td>
+  <td class="tc">2026-10-26</td>
+  <td><div class="balls"><span class="nb">2</span><span class="nb">11</span><span class="nb">15</span><span class="nb">19</span><span class="nb">24</span><span class="nb">36</span></div></td>
+  <td class="tc">6/6 in Base ✓</td>
+  <td><span class="outcome-pill" style="background:#f8717122;color:#f87171;border:1px solid #f8717155">Eliminated — Pass 1</span></td>
+  <td class="tr">434,285</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2148</td>
+  <td class="tc">2026-10-22</td>
+  <td><div class="balls"><span class="nb">6</span><span class="nb">11</span><span class="nb">14</span><span class="nb">16</span><span class="nb">40</span><span class="nb">42</span></div></td>
+  <td class="tc">4/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2147</td>
+  <td class="tc">2026-10-19</td>
+  <td><div class="balls"><span class="nb">9</span><span class="nb">16</span><span class="nb">22</span><span class="nb">23</span><span class="nb">27</span><span class="nb">29</span></div></td>
+  <td class="tc">3/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2146</td>
+  <td class="tc">2026-10-15</td>
+  <td><div class="balls"><span class="nb">15</span><span class="nb">17</span><span class="nb">19</span><span class="nb">34</span><span class="nb">36</span><span class="nb">37</span></div></td>
+  <td class="tc">4/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2145</td>
+  <td class="tc">2026-10-12</td>
+  <td><div class="balls"><span class="nb">4</span><span class="nb">6</span><span class="nb">8</span><span class="nb">11</span><span class="nb">24</span><span class="nb">27</span></div></td>
+  <td class="tc">4/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2144</td>
+  <td class="tc">2026-10-08</td>
+  <td><div class="balls"><span class="nb">5</span><span class="nb">6</span><span class="nb">11</span><span class="nb">25</span><span class="nb">31</span><span class="nb">32</span></div></td>
+  <td class="tc">4/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2143</td>
+  <td class="tc">2026-10-05</td>
+  <td><div class="balls"><span class="nb">1</span><span class="nb">7</span><span class="nb">8</span><span class="nb">29</span><span class="nb">40</span><span class="nb">43</span></div></td>
+  <td class="tc">3/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2142</td>
+  <td class="tc">2026-10-01</td>
+  <td><div class="balls"><span class="nb">2</span><span class="nb">14</span><span class="nb">20</span><span class="nb">21</span><span class="nb">31</span><span class="nb">39</span></div></td>
+  <td class="tc">5/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2141</td>
+  <td class="tc">2026-09-28</td>
+  <td><div class="balls"><span class="nb">14</span><span class="nb">15</span><span class="nb">22</span><span class="nb">32</span><span class="nb">37</span><span class="nb">41</span></div></td>
+  <td class="tc">3/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2140</td>
+  <td class="tc">2026-09-24</td>
+  <td><div class="balls"><span class="nb">4</span><span class="nb">10</span><span class="nb">11</span><span class="nb">19</span><span class="nb">21</span><span class="nb">33</span></div></td>
+  <td class="tc">5/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2139</td>
+  <td class="tc">2026-09-21</td>
+  <td><div class="balls"><span class="nb">3</span><span class="nb">6</span><span class="nb">23</span><span class="nb">34</span><span class="nb">36</span><span class="nb">43</span></div></td>
+  <td class="tc">3/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2138</td>
+  <td class="tc">2026-09-17</td>
+  <td><div class="balls"><span class="nb">9</span><span class="nb">16</span><span class="nb">21</span><span class="nb">26</span><span class="nb">38</span><span class="nb">40</span></div></td>
+  <td class="tc">5/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2137</td>
+  <td class="tc">2026-09-14</td>
+  <td><div class="balls"><span class="nb">4</span><span class="nb">8</span><span class="nb">10</span><span class="nb">25</span><span class="nb">28</span><span class="nb">33</span></div></td>
+  <td class="tc">5/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2136</td>
+  <td class="tc">2026-09-10</td>
+  <td><div class="balls"><span class="nb">6</span><span class="nb">7</span><span class="nb">33</span><span class="nb">37</span><span class="nb">41</span><span class="nb">43</span></div></td>
+  <td class="tc">5/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
+  <td class="tc">#2135</td>
+  <td class="tc">2026-09-07</td>
+  <td><div class="balls"><span class="nb">7</span><span class="nb">13</span><span class="nb">32</span><span class="nb">34</span><span class="nb">37</span><span class="nb">39</span></div></td>
+  <td class="tc">3/6 in Base</td>
+  <td><span class="outcome-pill" style="background:#47556922;color:#475569;border:1px solid #47556955">Never in Base</span></td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+  <td class="tr">—</td>
+</tr><tr>
   <td class="tc">#2134</td>
   <td class="tc">2026-09-03</td>
   <td><div class="balls"><span class="nb">5</span><span class="nb">9</span><span class="nb">10</span><span class="nb">19</span><span class="nb">26</span><span class="nb">35</span></div></td>
@@ -1292,7 +1523,7 @@ table.results td.tc{text-align:center}
 </div>
 
 <script>
-const OUTCOME_DATA = ["eliminated_pass2", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "eliminated_pass2", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "eliminated_pass2", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "survived", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "eliminated_pass2", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "survived", "never_in_base", "survived", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "survived", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "eliminated_pass1", "never_in_base", "never_in_base", "never_in_base", "survived", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "survived", "never_in_base", "eliminated_pass2", "never_in_base", "never_in_base", "eliminated_pass2", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "eliminated_pass2", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "survived", "never_in_base", "eliminated_pass2", "never_in_base", "never_in_base"];
+const OUTCOME_DATA = ["eliminated_pass2", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "eliminated_pass2", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "eliminated_pass2", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "survived", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "eliminated_pass2", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "survived", "never_in_base", "survived", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "survived", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "eliminated_pass1", "never_in_base", "never_in_base", "never_in_base", "survived", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "survived", "never_in_base", "eliminated_pass2", "never_in_base", "never_in_base", "eliminated_pass2", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "eliminated_pass2", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "survived", "never_in_base", "eliminated_pass2", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "eliminated_pass1", "never_in_base", "never_in_base", "never_in_base", "never_in_base", "eliminated_pass2", "never_in_base"];
 function applyFilter() {
   const sel = document.getElementById('filterSel').value;
   const rows = document.querySelectorAll('#resultsBody tr');

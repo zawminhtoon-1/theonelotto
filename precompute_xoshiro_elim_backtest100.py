@@ -56,7 +56,8 @@ RANDOM_TABLE = "seed_hit_random_k17"
 K_PASS3 = 21
 PASS3_SEEDS = [0, 1, 2]
 SEED_XO = 692809
-N_DRAWS_BACKTEST = 100
+N_DRAWS_BACKTEST = 100  # original window size (#2035-2134); no longer used for selection
+DRAW_START = 2035       # window start is fixed; extended to #2155 via extend_xoshiro_elim_backtest_2155.py
 
 MASK64 = 0xFFFFFFFFFFFFFFFF
 def splitmix64_next(z):
@@ -648,8 +649,10 @@ def run_for_draw(target_serial, draw_date, actual_main6, worst_seeds_cached):
 def main():
     conn = psycopg2.connect(os.environ['DATABASE_URL'])
     cur = conn.cursor()
+    # Fixed start (#2035) so a full rerun reproduces/extends the published window
+    # instead of sliding it forward; covers every draw from DRAW_START to the DB's latest.
     cur.execute("SELECT draw_serial, draw_date, num1,num2,num3,num4,num5,num6 FROM loto6_results "
-                "ORDER BY draw_serial DESC LIMIT %s", (N_DRAWS_BACKTEST,))
+                "WHERE draw_serial >= %s ORDER BY draw_serial", (DRAW_START,))
     rows = cur.fetchall()
     conn.close()
     rows.sort(key=lambda r: r[0])

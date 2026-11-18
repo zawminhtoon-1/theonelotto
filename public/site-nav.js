@@ -96,7 +96,7 @@
             '<a href="/xoshiro_k35_5seed_intersection.html">✂️ K=35 5-Seed Intersection Backtest</a>' +
             '<a href="/xoshiro_k38_x_modularcycle_k28_intersection.html">✂️ Modular Cycle (K=28) × K=38</a>' +
             '<a href="/xoshiro_k38_x_modularcycle_k33_intersection.html">✂️ Modular Cycle (K=33) × K=38</a>' +
-            '<a href="/xoshiro_elim_backtest100.html">🎯 Full Elimination Backtest (100 Draws)</a>' +
+            '<a href="/xoshiro_elim_backtest100.html">🎯 Full Elimination Backtest (121 Draws)</a>' +
             '<a href="/xoshiro_base_review100.html">🧪 Base Pool Construction Review (100 Draws)</a>' +
             '<a href="/xoshiro_base_review1000.html">🧪 Base Pool Construction Review (1000 Draws)</a>' +
             '<a href="/xoshiro_k38_x_modularcycle_k38_stats.html">📊 Modular Cycle (native K=38) × K=38 — Stats</a>' +

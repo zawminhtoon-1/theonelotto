@@ -178,7 +178,7 @@ table.results td.tc{{text-align:center}}
     could ever be contained in it &mdash; before any elimination pass runs. Most real draws are expected to land outside Base
     entirely; this isn't a pipeline failure, it's a structural ceiling on the whole methodology's best-case hit rate.</p>
     <p>Full run took {elapsed_seconds:.0f}s ({elapsed_seconds/60:.1f} min) for all {n_draws} draws. Per-draw remaining-combo lists
-    are not stored (100 draws &times; up to ~150K combos each would be far too much data) &mdash; only aggregate counts and each
+    are not stored ({n_draws} draws &times; up to ~150K combos each would be far too much data) &mdash; only aggregate counts and each
     draw's elimination outcome.</p>
   </div>
 
